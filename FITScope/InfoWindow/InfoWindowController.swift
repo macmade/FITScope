@@ -30,10 +30,21 @@ public class InfoWindowController: NSWindowController
     private var name: String
     private var file: FITSFile
     
+    @objc public dynamic var sections:        [ InfoSection ]
+    @objc public dynamic var selectedSection: InfoSection?
+    
+    @IBOutlet private var sectionsController: NSArrayController?
+    @IBOutlet private var valuesController:   NSArrayController?
+    @IBOutlet private var valuesTableView:    NSTableView?
+    @IBOutlet private var optionsMenu:        NSMenu?
+    
+    private var sectionSelectionObserver: NSKeyValueObservation?
+    
     public init( name: String, file: FITSFile )
     {
-        self.name = name
-        self.file = file
+        self.name     = name
+        self.file     = file
+        self.sections = InfoSection.info( from: file.sections )
         
         super.init( window: nil )
     }
@@ -52,6 +63,112 @@ public class InfoWindowController: NSWindowController
     {
         super.windowDidLoad()
         
-        self.window?.title = self.name
+        self.window?.title                     = self.name
+        self.selectedSection                   = self.sections.first
+        self.valuesController?.sortDescriptors = [ NSSortDescriptor( keyPath: \InfoField.index, ascending: true ) ]
+        
+        self.valuesTableView?.sizeLastColumnToFit()
+        self.valuesTableView?.scrollRowToVisible( 0 )
+    }
+    
+    @IBAction
+    private func showOptions( _ sender: Any? )
+    {
+        guard let view  = sender as? NSView,
+              let menu  = self.optionsMenu,
+              let event = NSApp.currentEvent
+        else
+        {
+            NSSound.beep()
+            
+            return
+        }
+        
+        NSMenu.popUpContextMenu( menu, with: event, for: view )
+    }
+    
+    @IBAction
+    private func exportToTSV( _ sender: Any? )
+    {
+        guard let window = self.window
+        else
+        {
+            NSSound.beep()
+            
+            return
+        }
+        
+        let panel                  = NSSavePanel()
+        panel.canCreateDirectories = true
+        panel.allowedContentTypes  = [ .tabSeparatedText ]
+        panel.nameFieldStringValue = NSString( string: self.name ).deletingPathExtension
+        
+        panel.beginSheetModal( for: window )
+        {
+            if $0 == .OK, let url = panel.url
+            {
+                self.exportToTSV( url: url )
+            }
+        }
+    }
+    
+    private func exportToTSV( url: URL )
+    {
+        let selected   = self.valuesController?.selectedObjects as? [ InfoField ] ?? []
+        let all        = self.valuesController?.arrangedObjects as? [ InfoField ] ?? []
+        let properties = selected.isEmpty ? all : selected
+        let tsv        = properties.map
+        {
+            InfoWindowController.tsvForProperty( $0 )
+        }
+        .joined( separator: "\n" )
+        
+        guard let data = tsv.data( using: .utf8 )
+        else
+        {
+            let alert             = NSAlert()
+            alert.messageText     = "Error"
+            alert.informativeText = "Unable to create TSV data from selected properties."
+            
+            alert.showOnWindow( self.window, completion: nil )
+            
+            return
+        }
+        
+        do
+        {
+            try data.write( to: url )
+        }
+        catch
+        {
+            let alert             = NSAlert()
+            alert.messageText     = "Error"
+            alert.informativeText = "Unable to write TSV data to file: \( error.localizedDescription )"
+            
+            alert.showOnWindow( self.window, completion: nil )
+            
+            return
+        }
+    }
+    
+    private class func tsvForProperty( _ property: InfoField ) -> String
+    {
+        let values =
+        [
+            property.name,
+            property.kind,
+            property.value   ?? "",
+            property.comment ?? ""
+        ]
+        .map
+        {
+            $0.replacingOccurrences( of: "\t", with: "\\t" )
+        }
+        .map
+        {
+            $0.replacingOccurrences( of: "\n", with: "\\n" )
+        }
+        
+        return values.joined( separator: "\t" )
     }
 }
