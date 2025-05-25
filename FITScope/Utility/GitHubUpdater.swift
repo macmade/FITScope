@@ -42,135 +42,161 @@ public final class GitHubUpdater: Sendable
         self.repository = repository
         self.url        = url
     }
-    
-    @MainActor
-    private func showErrorAlert( message: String )
-    {
-        let alert             = NSAlert()
-        alert.messageText     = "Error"
-        alert.informativeText = message
-
-        alert.runModal()
-    }
-    
-    @MainActor
-    private func showUpToDateAlert( application: String, version: String )
-    {
-        let alert             = NSAlert()
-        alert.messageText     = "You're up-to-date!"
-        alert.informativeText = "\( application ) \( version ) is currently the newest available version."
-        
-        alert.runModal()
-    }
-    
-    @MainActor
-    private func showUpdateAvailableAlert( application: String, version: String, update: String, url: URL )
-    {
-        let alert             = NSAlert()
-        alert.messageText     = "Update Available"
-        alert.informativeText = "\( application ) \( update ) is available.\nYou are currently on version \( version ).\n\nWould you like to download the new version?"
-
-        alert.addButton( withTitle: "View and Download" )
-        alert.addButton( withTitle: "Later" )
-
-        if alert.runModal() == .alertFirstButtonReturn
-        {
-            NSWorkspace.shared.open( url )
-        }
-    }
 
     @MainActor
     public func checkForUpdates()
+    {
+        Task.detached( priority: .userInitiated )
+        {
+            await self.checkForUpdates( showMessages: true )
+        }
+    }
+    
+    @MainActor
+    public func checkForUpdatesInBackground()
+    {
+        Task.detached( priority: .background )
+        {
+            await self.checkForUpdates( showMessages: false )
+        }
+    }
+    
+    private func showErrorAlert( message: String )
+    {
+        Task
+        {
+            @MainActor in
+            
+            let alert             = NSAlert()
+            alert.messageText     = "Error"
+            alert.informativeText = message
+
+            alert.runModal()
+        }
+    }
+    
+    private func showUpToDateAlert( application: String, version: String )
+    {
+        Task
+        {
+            @MainActor in
+            
+            let alert             = NSAlert()
+            alert.messageText     = "You're up-to-date!"
+            alert.informativeText = "\( application ) \( version ) is currently the newest available version."
+            
+            alert.runModal()
+        }
+    }
+    
+    private func showUpdateAvailableAlert( application: String, version: String, update: String, url: URL )
+    {
+        Task
+        {
+            @MainActor in
+            
+            let alert             = NSAlert()
+            alert.messageText     = "Update Available"
+            alert.informativeText = "\( application ) \( update ) is available.\nYou are currently on version \( version ).\n\nWould you like to download the new version?"
+
+            alert.addButton( withTitle: "View and Download" )
+            alert.addButton( withTitle: "Later" )
+
+            if alert.runModal() == .alertFirstButtonReturn
+            {
+                NSWorkspace.shared.open( url )
+            }
+        }
+    }
+    
+    private func checkForUpdates( showMessages: Bool ) async
     {
         guard let current = Bundle.main.object( forInfoDictionaryKey: "CFBundleShortVersionString" ) as? String,
               let program = Bundle.main.object( forInfoDictionaryKey: "CFBundleName" ) as? String
         else
         {
-            self.showErrorAlert( message: "Unable to determine current version." )
+            if showMessages
+            {
+                self.showErrorAlert( message: "Unable to determine current version." )
+            }
             
             return
         }
         
-        DispatchQueue.global( qos: .background ).async
+        guard let ( data, _ ) = try? await URLSession.shared.data( from: self.url )
+        else
         {
-            Task
+            if showMessages
             {
-                guard let ( data, _ ) = try? await URLSession.shared.data( from: self.url )
-                else
-                {
-                    DispatchQueue.main.async
-                    {
-                        self.showErrorAlert( message: "Unable to fetch release information from GitHub." )
-                    }
-                    
-                    return
-                }
-
-                guard let releases = try? JSONSerialization.jsonObject( with: data ) as? [ [ String: Any ] ]
-                else
-                {
-                    DispatchQueue.main.async
-                    {
-                        self.showErrorAlert( message: "Unable to parse release information from GitHub." )
-                    }
-                    
-                    return
-                }
-
-                let versions: [ ( version: String, url: String ) ] = releases.compactMap
-                {
-                    guard let version = $0[ "tag_name" ] as? String,
-                          let url     = $0[ "html_url" ] as? String
-                    else
-                    {
-                        return nil
-                    }
-
-                    return ( version: version, url: url )
-                }
-                .sorted
-                {
-                    $0.version.compare( $1.version, options: .numeric ) == .orderedDescending
-                }
-                
-                guard let latest = versions.first
-                else
-                {
-                    DispatchQueue.main.async
-                    {
-                        self.showUpToDateAlert( application: program, version: current )
-                    }
-                    
-                    return
-                }
-
-                guard current.compare( latest.version, options: .numeric ) == .orderedAscending
-                else
-                {
-                    DispatchQueue.main.async
-                    {
-                        self.showUpToDateAlert( application: program, version: current )
-                    }
-                    
-                    return
-                }
-                
-                guard let url = URL( string: latest.url )
-                else
-                {
-                    DispatchQueue.main.async
-                    {
-                        self.showErrorAlert( message: "Unable to parse release URL." )
-                    }
-                    
-                    return
-                }
-
-                DispatchQueue.main.async
-                {
-                    self.showUpdateAvailableAlert( application: program, version: current, update: latest.version, url: url )
-                }
+                self.showErrorAlert( message: "Unable to fetch release information from GitHub." )
             }
+            
+            return
+        }
+
+        guard let releases = try? JSONSerialization.jsonObject( with: data ) as? [ [ String: Any ] ]
+        else
+        {
+            if showMessages
+            {
+                self.showErrorAlert( message: "Unable to parse release information from GitHub." )
+            }
+            
+            return
+        }
+
+        let versions: [ ( version: String, url: String ) ] = releases.compactMap
+        {
+            guard let version = $0[ "tag_name" ] as? String,
+                  let url     = $0[ "html_url" ] as? String
+            else
+            {
+                return nil
+            }
+
+            return ( version: version, url: url )
+        }
+        .sorted
+        {
+            $0.version.compare( $1.version, options: .numeric ) == .orderedDescending
+        }
+        
+        guard let latest = versions.first
+        else
+        {
+            if showMessages
+            {
+                self.showUpToDateAlert( application: program, version: current )
+            }
+            
+            return
+        }
+
+        guard current.compare( latest.version, options: .numeric ) == .orderedAscending
+        else
+        {
+            if showMessages
+            {
+                self.showUpToDateAlert( application: program, version: current )
+            }
+            
+            return
+        }
+        
+        guard let url = URL( string: latest.url )
+        else
+        {
+            if showMessages
+            {
+                self.showErrorAlert( message: "Unable to parse release URL." )
+            }
+            
+            return
+        }
+
+        if showMessages
+        {
+            self.showUpdateAvailableAlert( application: program, version: current, update: latest.version, url: url )
         }
     }
 }
