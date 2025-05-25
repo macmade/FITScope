@@ -34,6 +34,7 @@ public class ApplicationDelegate: NSObject, NSApplicationDelegate
     public func applicationDidFinishLaunching( _ notification: Notification )
     {
         self.openDocument( nil )
+        self.updater?.checkForUpdatesInBackground()
     }
 
     public func applicationWillTerminate( _ notification: Notification )
