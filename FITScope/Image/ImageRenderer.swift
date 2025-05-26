@@ -257,59 +257,36 @@ public class ImageRenderer
             throw RuntimeError( message: "Data size does not match expected size: \( data.count ) != \( size )" )
         }
         
-        return switch bitsPerPixel
+        return data.withUnsafeBytes
         {
-            case .uint8: data.prefix( count ).map
+            buffer in
+            
+            switch bitsPerPixel
             {
-                Double( $0 )
-            }
-
-            case .int16: ( 0 ..< count ).map
-            {
-                let size   = 2
-                let offset = $0 * size
-                let value  = data.subdata( in: offset ..< offset + size ).withUnsafeBytes
+                case .uint8: return ( 0 ..< count ).map
                 {
-                    Int16( bigEndian: $0.load( as: Int16.self ) )
+                    Double( buffer[ $0 ] )
                 }
                 
-                return Double( value )
-            }
-
-            case .int32: ( 0 ..< count ).map
-            {
-                let size   = 4
-                let offset = $0 * size
-                let value  = data.subdata( in: offset ..< offset + size ).withUnsafeBytes
+                case .int16: return ( 0 ..< count ).map
                 {
-                    Int32( bigEndian: $0.load( as: Int32.self ) )
+                    Double( Int16( bigEndian: buffer.load( fromByteOffset: $0 * 2, as: Int16.self ) ) )
                 }
                 
-                return Double( value )
-            }
-
-            case .float32: ( 0 ..< count ).map
-            {
-                let size   = 4
-                let offset = $0 * size
-                let value  = data.subdata( in: offset ..< offset + size ).withUnsafeBytes
+                case .int32: return ( 0 ..< count).map
                 {
-                    Float32( bitPattern: UInt32( bigEndian: $0.load( as: UInt32.self ) ) )
+                    Double( Int32( bigEndian: buffer.load( fromByteOffset: $0 * 4, as: Int32.self ) ) )
                 }
                 
-                return Double( value )
-            }
-
-            case .float64: ( 0 ..< count ).map
-            {
-                let size   = 8
-                let offset = $0 * size
-                let value  = data.subdata( in: offset ..< offset + size ).withUnsafeBytes
+                case .float32: return ( 0 ..< count ).map
                 {
-                    Float64( bitPattern: UInt64( bigEndian: $0.load( as: UInt64.self ) ) )
+                    Double( Float32( bitPattern: UInt32( bigEndian: buffer.load( fromByteOffset: $0 * 4, as: UInt32.self ) ) ) )
                 }
                 
-                return value
+                case .float64: return ( 0 ..< count ).map
+                {
+                    Double( bitPattern: UInt64( bigEndian: buffer.load( fromByteOffset: $0 * 8, as: UInt64.self ) ) )
+                }
             }
         }
     }
