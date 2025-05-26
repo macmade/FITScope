@@ -25,6 +25,7 @@
 import Cocoa
 import SwiftFITS
 import CoreGraphics
+import Accelerate
 
 public class ImageRenderer
 {
@@ -191,7 +192,7 @@ public class ImageRenderer
         
         let scaled = Benchmark.run( label: "Applying Scale" )
         {
-            self.scale( pixels: raw, scale: options.scale, offset: options.scaleOffset )
+            self.scaleWithAccelerate( pixels: raw, scale: options.scale, offset: options.scaleOffset )
         }
 
         let rgb = if let pattern = options.bayerPattern
@@ -211,7 +212,7 @@ public class ImageRenderer
         
         let normalized = Benchmark.run( label: "Normalizing Pixels" )
         {
-            self.normalize( pixels: rgb )
+            self.normalizeWithAccelerate( pixels: rgb )
         }
         
         guard let provider = CGDataProvider( data: Data( normalized ) as CFData )
@@ -321,6 +322,18 @@ public class ImageRenderer
         }
     }
     
+    public class func scaleWithAccelerate( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
+    {
+        var result = [ Double ]( repeating: 0.0, count: pixels.count )
+        var scalar = scale
+        var addend = Double( offset )
+    
+        vDSP_vsmulD( pixels, 1, &scalar, &result, 1, vDSP_Length( pixels.count ) )
+        vDSP_vsaddD( result, 1, &addend, &result, 1, vDSP_Length( pixels.count ) )
+        
+        return result
+    }
+    
     public class func normalize( pixels: [ Double ] ) -> [ UInt8 ]
     {
         let minPixel = pixels.min() ?? 0
@@ -331,5 +344,43 @@ public class ImageRenderer
         {
             UInt8( max( 0, min( 255, ( $0 - minPixel ) / range * 255.0 ) ) )
         }
+    }
+    
+    public class func normalizeWithAccelerate( pixels: [ Double ] ) -> [ UInt8 ]
+    {
+        guard pixels.isEmpty == false
+        else
+        {
+            return []
+        }
+
+        var minPixel = 0.0
+        var maxPixel = 0.0
+        
+        vDSP_minvD( pixels, 1, &minPixel, vDSP_Length( pixels.count ) )
+        vDSP_maxvD( pixels, 1, &maxPixel, vDSP_Length( pixels.count ) )
+
+        let range      = max( 1.0, maxPixel - minPixel )
+        let scale      = 255.0 / range
+        let offset     = -minPixel * scale
+        var normalized = [ Double ]( repeating: 0.0, count: pixels.count )
+        
+        vDSP_vsmsaD( pixels, 1, [ scale ], [ offset ], &normalized, 1, vDSP_Length( pixels.count ) )
+
+        var clipped    = [ Double ]( repeating: 0.0, count: pixels.count )
+        var lowerBound = 0.0
+        var upperBound = 255.0
+        
+        vDSP_vclipD( normalized, 1, &lowerBound, &upperBound, &clipped, 1, vDSP_Length( pixels.count ) )
+
+        var floatPixels = [ Float ]( repeating: 0.0, count: pixels.count )
+        
+        vDSP_vdpsp( clipped, 1, &floatPixels, 1, vDSP_Length( pixels.count ) )
+
+        var result = [ UInt8 ]( repeating: 0, count: pixels.count )
+        
+        vDSP_vfixu8( floatPixels, 1, &result, 1, vDSP_Length( pixels.count ) )
+
+        return result
     }
 }
