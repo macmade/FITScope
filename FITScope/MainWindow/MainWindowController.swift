@@ -27,12 +27,13 @@ import SwiftFITS
 
 public class MainWindowController: NSWindowController, NSWindowDelegate
 {
-    private var url:                  URL
-    private var onClose:              ( ( MainWindowController ) -> Void )?
-    private var file:                 FITSFile?
-    private var infoWindowController: InfoWindowController?
+    @MainActor private var url:                  URL
+    @MainActor private var onClose:              ( ( MainWindowController ) -> Void )?
+    @MainActor private var file:                 FITSFile?
+    @MainActor private var infoWindowController: InfoWindowController?
     
     @objc private dynamic var loading = false
+    @objc private dynamic var image:    NSImage?
     
     public init( url: URL, onClose: ( ( MainWindowController ) -> Void )? )
     {
@@ -61,33 +62,47 @@ public class MainWindowController: NSWindowController, NSWindowDelegate
         self.loading          = true
         let url               = self.url
         
-        DispatchQueue.global( qos: .userInitiated ).async
+        Task.detached( priority: .userInitiated )
         {
             do
             {
                 let file = try FITSFile( url: url )
+                let send = UnsafeSendable( file )
                 
-                DispatchQueue.main.async
+                await MainActor.run
                 {
+                    self.file = send.value
+                }
+                
+                // TODO: Support for extension data
+                guard file.sections.count >= 2, file.sections[ 0 ].kind == .header, file.sections[ 1 ].kind == .data
+                else
+                {
+                    throw RuntimeError( message: "No data section found" )
+                }
+                
+                let image = try ImageRenderer.render( data: file.sections[ 1 ].data, properties: file.sections[ 0 ].properties )
+                
+                Task
+                {
+                    @MainActor in
+                    
                     self.loading = false
-                    self.file    = file
+                    self.image   = image
                 }
             }
             catch
             {
-                DispatchQueue.main.async
+                Task
                 {
-                    self.loading = false
-                    let alert    = NSAlert( error: error )
+                    @MainActor in
                     
-                    if let window = self.window
-                    {
-                        alert.beginSheetModal( for: window )
-                    }
-                    else
-                    {
-                        alert.runModal()
-                    }
+                    self.loading          = false
+                    let alert             = NSAlert()
+                    alert.messageText     = "Cannot Read FITS File"
+                    alert.informativeText = error.localizedDescription
+                    
+                    alert.showOnWindow( self.window, completion: nil )
                 }
             }
         }

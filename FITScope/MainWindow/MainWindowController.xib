@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="23504" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="23727" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="23504"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="23727"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -21,6 +21,34 @@
             <view key="contentView" wantsLayer="YES" id="EiT-Mj-1SZ">
                 <rect key="frame" x="0.0" y="0.0" width="400" height="300"/>
                 <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="wYl-yF-nGY">
+                        <rect key="frame" x="20" y="20" width="360" height="246"/>
+                        <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="gYq-sE-4r0"/>
+                        <connections>
+                            <binding destination="-2" name="value" keyPath="self.image" id="LOw-0I-fdL"/>
+                        </connections>
+                    </imageView>
+                    <progressIndicator maxValue="100" indeterminate="YES" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="tac-vB-FOK">
+                        <rect key="frame" x="184" y="127" width="32" height="32"/>
+                        <connections>
+                            <binding destination="-2" name="animate" keyPath="self.loading" id="J7t-7M-L2f"/>
+                            <binding destination="-2" name="hidden" keyPath="self.loading" id="zwy-aj-Vmh">
+                                <dictionary key="options">
+                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                </dictionary>
+                            </binding>
+                        </connections>
+                    </progressIndicator>
+                </subviews>
+                <constraints>
+                    <constraint firstItem="tac-vB-FOK" firstAttribute="centerY" secondItem="wYl-yF-nGY" secondAttribute="centerY" id="069-Yh-kvn"/>
+                    <constraint firstItem="wYl-yF-nGY" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" constant="34" id="5cP-XX-IPc"/>
+                    <constraint firstItem="tac-vB-FOK" firstAttribute="centerX" secondItem="wYl-yF-nGY" secondAttribute="centerX" id="B0m-P4-4Hc"/>
+                    <constraint firstAttribute="bottom" secondItem="wYl-yF-nGY" secondAttribute="bottom" constant="20" symbolic="YES" id="key-XN-5YT"/>
+                    <constraint firstItem="wYl-yF-nGY" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="20" symbolic="YES" id="wrK-Uy-1rz"/>
+                    <constraint firstAttribute="trailing" secondItem="wYl-yF-nGY" secondAttribute="trailing" constant="20" symbolic="YES" id="xDL-y0-PzQ"/>
+                </constraints>
             </view>
             <point key="canvasLocation" x="67" y="144"/>
         </window>
