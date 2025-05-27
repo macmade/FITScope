@@ -42,18 +42,18 @@ public enum Debayer
         case blue
     }
 
-    public static func vng( pattern: Pattern, width: Int, height: Int, data: [ Double ] ) throws -> [ Double ]
+    public static func vng( pixels: [ Double ], pattern: Pattern, width: Int, height: Int ) throws -> [ Double ]
     {
-        guard data.count == width * height
+        guard pixels.count == width * height
         else
         {
-            throw RuntimeError( message: "Data size does not match expected size: \( data.count ) != \( width * height )")
+            throw RuntimeError( message: "Data size does not match expected size: \( pixels.count ) != \( width * height )")
         }
 
         let colorMap = self.colorMap( width: width, height: height, pattern: pattern )
         var output   = [ Double ]( repeating: 0.0, count: width * height * 3 )
 
-        try data.withUnsafeBufferPointer
+        try pixels.withUnsafeBufferPointer
         {
             guard let baseAddress = $0.baseAddress
             else

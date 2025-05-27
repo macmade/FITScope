@@ -44,7 +44,7 @@ public enum PixelUtilities
             guard let baseAddress = $0.baseAddress
             else
             {
-                throw RuntimeError( message: "Failed to access raw bytes of data" )
+                throw RuntimeError( message: "Failed to access data buffer" )
             }
 
             switch bitsPerPixel
@@ -99,12 +99,34 @@ public enum PixelUtilities
         return result.value
     }
     
+    public static func scale( pixels: UnsafeMutableBufferPointer< Double >, scale: Double, offset: Int64 )
+    {
+        pixels.indices.forEach
+        {
+            pixels[ $0 ] = pixels[ $0 ] * scale + Double( offset )
+        }
+    }
+    
     public static func scale( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
     {
         pixels.map
         {
             $0 * scale + Double( offset )
         }
+    }
+    
+    public static func convertToRGBTriplets( pixels: [ Double ] ) -> [ Double ]
+    {
+        var rgb = [ Double ]( repeating: 0, count: pixels.count * 3 )
+    
+        pixels.forEach
+        {
+            rgb.append( $0 )
+            rgb.append( $0 )
+            rgb.append( $0 )
+        }
+    
+        return rgb
     }
     
     public static func normalize( pixels: [ Double ] ) -> [ UInt8 ]

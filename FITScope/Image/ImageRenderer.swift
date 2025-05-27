@@ -147,37 +147,18 @@ public enum ImageRenderer
     
     public static func render( data: Data, options: RenderOptions ) throws -> CGImage
     {
-        let raw = try Benchmark.run( label: "Reading Raw Pixels" )
-        {
-            try PixelUtilities.readRawPixels( data: data, width: options.width, height: options.height, bitsPerPixel: options.bitsPerPixel )
-        }
+        let pixels = try PixelPipeline(
+            data:         data,
+            width:        options.width,
+            height:       options.height,
+            bitsPerPixel: options.bitsPerPixel,
+            options:      .useAccelerate
+        )
+        .scale( scale: options.scale, offset: options.scaleOffset )
+        .debayerOrConvertToRGBTriplets( pattern: options.bayerPattern )
+        .normalized()
         
-        let scaled = Benchmark.run( label: "Applying Scale" )
-        {
-            PixelUtilities.Accelerate.scale( pixels: raw, scale: options.scale, offset: options.scaleOffset )
-        }
-
-        let rgb = if let pattern = options.bayerPattern
-        {
-            try Benchmark.run( label: "Debayering (VNG)" )
-            {
-                try Debayer.vng( pattern: pattern, width: options.width, height: options.height, data: scaled )
-            }
-        }
-        else
-        {
-            scaled.flatMap
-            {
-                [ $0, $0, $0 ]
-            }
-        }
-        
-        let normalized = Benchmark.run( label: "Normalizing Pixels" )
-        {
-            PixelUtilities.Accelerate.normalize( pixels: rgb )
-        }
-        
-        guard let provider = CGDataProvider( data: Data( normalized ) as CFData )
+        guard let provider = CGDataProvider( data: Data( pixels ) as CFData )
         else
         {
             throw RuntimeError( message: "Unable to create a data provider" )

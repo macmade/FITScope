@@ -29,16 +29,31 @@ public extension PixelUtilities
 {
     enum Accelerate
     {
-        public static func scale( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
+        public static func scale( pixels: UnsafeMutableBufferPointer< Double >, scale: Double, offset: Int64 ) throws
         {
-            var result = [ Double ]( repeating: 0.0, count: pixels.count )
+            guard let baseAddress = pixels.baseAddress
+            else
+            {
+                throw RuntimeError( message: "Failed to access data buffer" )
+            }
+            
             var scalar = scale
             var addend = Double( offset )
         
-            vDSP_vsmulD( pixels, 1, &scalar, &result, 1, vDSP_Length( pixels.count ) )
-            vDSP_vsaddD( result, 1, &addend, &result, 1, vDSP_Length( pixels.count ) )
+            vDSP_vsmulD( baseAddress, 1, &scalar, baseAddress, 1, vDSP_Length( pixels.count ) )
+            vDSP_vsaddD( baseAddress, 1, &addend, baseAddress, 1, vDSP_Length( pixels.count ) )
+        }
+        
+        public static func scale( pixels: [ Double ], scale: Double, offset: Int64 ) throws -> [ Double ]
+        {
+            var pixels = pixels
             
-            return result
+            try pixels.withUnsafeMutableBufferPointer
+            {
+                try self.scale( pixels: $0, scale: scale, offset: offset )
+            }
+            
+            return pixels
         }
         
         public static func normalize( pixels: [ Double ] ) -> [ UInt8 ]
