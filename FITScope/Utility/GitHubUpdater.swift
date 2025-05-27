@@ -51,7 +51,7 @@ public final class GitHubUpdater: Sendable
             await self.checkForUpdates( showMessages: true )
         }
     }
-    
+
     @MainActor
     public func checkForUpdatesInBackground()
     {
@@ -60,13 +60,13 @@ public final class GitHubUpdater: Sendable
             await self.checkForUpdates( showMessages: false )
         }
     }
-    
+
     private func showErrorAlert( message: String )
     {
         Task
         {
             @MainActor in
-            
+
             let alert             = NSAlert()
             alert.messageText     = "Error"
             alert.informativeText = message
@@ -74,27 +74,27 @@ public final class GitHubUpdater: Sendable
             alert.runModal()
         }
     }
-    
+
     private func showUpToDateAlert( application: String, version: String )
     {
         Task
         {
             @MainActor in
-            
+
             let alert             = NSAlert()
             alert.messageText     = "You're up-to-date!"
             alert.informativeText = "\( application ) \( version ) is currently the newest available version."
-            
+
             alert.runModal()
         }
     }
-    
+
     private func showUpdateAvailableAlert( application: String, version: String, update: String, url: URL )
     {
         Task
         {
             @MainActor in
-            
+
             let alert             = NSAlert()
             alert.messageText     = "Update Available"
             alert.informativeText = "\( application ) \( update ) is available.\nYou are currently on version \( version ).\n\nWould you like to download the new version?"
@@ -108,7 +108,7 @@ public final class GitHubUpdater: Sendable
             }
         }
     }
-    
+
     private func checkForUpdates( showMessages: Bool ) async
     {
         guard let current = Bundle.main.object( forInfoDictionaryKey: "CFBundleShortVersionString" ) as? String,
@@ -119,10 +119,10 @@ public final class GitHubUpdater: Sendable
             {
                 self.showErrorAlert( message: "Unable to determine current version." )
             }
-            
+
             return
         }
-        
+
         guard let ( data, _ ) = try? await URLSession.shared.data( from: self.url )
         else
         {
@@ -130,7 +130,7 @@ public final class GitHubUpdater: Sendable
             {
                 self.showErrorAlert( message: "Unable to fetch release information from GitHub." )
             }
-            
+
             return
         }
 
@@ -141,7 +141,7 @@ public final class GitHubUpdater: Sendable
             {
                 self.showErrorAlert( message: "Unable to parse release information from GitHub." )
             }
-            
+
             return
         }
 
@@ -160,7 +160,7 @@ public final class GitHubUpdater: Sendable
         {
             $0.version.compare( $1.version, options: .numeric ) == .orderedDescending
         }
-        
+
         guard let latest = versions.first
         else
         {
@@ -168,7 +168,7 @@ public final class GitHubUpdater: Sendable
             {
                 self.showUpToDateAlert( application: program, version: current )
             }
-            
+
             return
         }
 
@@ -179,10 +179,10 @@ public final class GitHubUpdater: Sendable
             {
                 self.showUpToDateAlert( application: program, version: current )
             }
-            
+
             return
         }
-        
+
         guard let url = URL( string: latest.url )
         else
         {
@@ -190,7 +190,7 @@ public final class GitHubUpdater: Sendable
             {
                 self.showErrorAlert( message: "Unable to parse release URL." )
             }
-            
+
             return
         }
 

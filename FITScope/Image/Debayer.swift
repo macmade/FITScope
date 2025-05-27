@@ -1,19 +1,19 @@
 /*******************************************************************************
  * The MIT License (MIT)
- * 
- * Copyright (c) 2025 Jean-David Gadina - www.xs-labs.com
+ *
+ * Copyright (c) 2025, Jean-David Gadina - www.xs-labs.com
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files (the Software), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *
+ * THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Foundation
 import Accelerate
+import Foundation
 
 public enum Debayer
 {
@@ -47,7 +47,7 @@ public enum Debayer
         guard pixels.count == width * height
         else
         {
-            throw RuntimeError( message: "Data size does not match expected size: \( pixels.count ) != \( width * height )")
+            throw RuntimeError( message: "Data size does not match expected size: \( pixels.count ) != \( width * height )" )
         }
 
         let colorMap = self.colorMap( width: width, height: height, pattern: pattern )
@@ -60,9 +60,9 @@ public enum Debayer
             {
                 throw RuntimeError( message: "Failed to access input data buffer" )
             }
-            
+
             let input = UnsafeSendable( baseAddress )
-            
+
             try output.withUnsafeMutableBufferPointer
             {
                 guard let baseAddress = $0.baseAddress
@@ -70,7 +70,7 @@ public enum Debayer
                 {
                     throw RuntimeError( message: "Failed to access output data buffer" )
                 }
-                
+
                 let output = UnsafeSendable( baseAddress )
 
                 DispatchQueue.concurrentPerform( iterations: height )
@@ -78,19 +78,19 @@ public enum Debayer
                     y in ( 0 ..< width ).forEach
                     {
                         x in
-                        
+
                         let i         = index( x: x, y: y, width: width )
                         let val       = input.value[ i ]
                         let colorType = colorMap[ i ]
-                        
+
                         var r = 0.0
                         var g = 0.0
                         var b = 0.0
-                        
+
                         switch colorType
                         {
                             case .red:
-                                
+
                                 r = val
                                 g = self.averageSIMD( values:
                                     [
@@ -110,7 +110,7 @@ public enum Debayer
                                 )
 
                             case .green:
-                                
+
                                 let left  = self.colorAt( x: x - 1, y: y, pattern: pattern )
                                 let right = self.colorAt( x: x + 1, y: y, pattern: pattern )
 
@@ -148,7 +148,7 @@ public enum Debayer
                                 }
 
                             case .blue:
-                                
+
                                 r = self.averageSIMD( values:
                                     [
                                         self.safeRead( x: x - 1, y: y - 1, width: width, height: height, data: input.value ),
@@ -184,7 +184,7 @@ public enum Debayer
     {
         return y * width + x
     }
-    
+
     private static func colorMap( width: Int, height: Int, pattern: Pattern ) -> [ ColorType ]
     {
         var map = [ ColorType ]( repeating: .red, count: width * height )
@@ -207,29 +207,36 @@ public enum Debayer
 
         switch pattern
         {
-            case .bggr: switch ( evenRow, evenCol )
-            {
-                case ( true,  true  ): return .blue
-                case ( true,  false ): return .green
-                case ( false, true  ): return .green
-                case ( false, false ): return .red
-            }
+            case .bggr:
 
-            case .rggb, .rgbg: switch ( evenRow, evenCol )
-            {
-                case ( true,  true  ): return .red
-                case ( true,  false ): return .green
-                case ( false, true  ): return .green
-                case ( false, false ): return .blue
-            }
+                switch ( evenRow, evenCol )
+                {
+                    case ( true,  true  ): return .blue
+                    case ( true,  false ): return .green
+                    case ( false, true  ): return .green
+                    case ( false, false ): return .red
+                }
 
-            case .grbg: switch ( evenRow, evenCol )
-            {
-                case ( true,  false ): return .red
-                case ( true,  true  ): return .green
-                case ( false, false ): return .green
-                case ( false, true  ): return .blue
-            }
+            case .rggb,
+                 .rgbg:
+
+                switch ( evenRow, evenCol )
+                {
+                    case ( true,  true  ): return .red
+                    case ( true,  false ): return .green
+                    case ( false, true  ): return .green
+                    case ( false, false ): return .blue
+                }
+
+            case .grbg:
+
+                switch ( evenRow, evenCol )
+                {
+                    case ( true,  false ): return .red
+                    case ( true,  true  ): return .green
+                    case ( false, false ): return .green
+                    case ( false, true  ): return .blue
+                }
         }
     }
 
@@ -237,16 +244,16 @@ public enum Debayer
     {
         let clampedX = min( max( x, 0 ), width  - 1 )
         let clampedY = min( max( y, 0 ), height - 1 )
-        
+
         return data[ self.index( x: clampedX, y: clampedY, width: width ) ]
     }
 
     private static func averageSIMD( values: [ Double ] ) -> Double
     {
         var result = 0.0
-        
+
         vDSP_meanvD( values, 1, &result, vDSP_Length( values.count ) )
-        
+
         return result
     }
 }

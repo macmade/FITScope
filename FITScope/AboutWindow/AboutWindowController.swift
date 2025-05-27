@@ -40,7 +40,7 @@ public class AboutWindowController: NSWindowController
         super.windowDidLoad()
 
         let version = Bundle.main.object( forInfoDictionaryKey: "CFBundleShortVersionString" ) as? String ?? "0.0.0"
-        
+
         self.version = if let build = Bundle.main.object( forInfoDictionaryKey: "CFBundleVersion" ) as? String
         {
             "\( version ) (\( build ))"

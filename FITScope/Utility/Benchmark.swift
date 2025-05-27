@@ -29,23 +29,23 @@ public enum Benchmark
     public static func run< T >( label: String, action: () throws -> T ) rethrows -> T
     {
         #if DEBUG
-        
-        let start = DispatchTime.now()
-        
+
+            let start = DispatchTime.now()
+
         #endif
-        
+
         let result = try action()
-        
+
         #if DEBUG
-        
-        let end         = DispatchTime.now()
-        let nanoSeconds = end.uptimeNanoseconds - start.uptimeNanoseconds
-        let duration    = Double( nanoSeconds ) / 1_000_000_000
-        
-        print( "Benchmarking - \( label ): \( duration ) seconds" )
-        
+
+            let end         = DispatchTime.now()
+            let nanoSeconds = end.uptimeNanoseconds - start.uptimeNanoseconds
+            let duration    = Double( nanoSeconds ) / 1_000_000_000
+
+            print( "Benchmarking - \( label ): \( duration ) seconds" )
+
         #endif
-        
+
         return result
     }
 }
