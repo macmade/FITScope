@@ -34,6 +34,7 @@
 		05A6F28D2DE4DD1E00E83D5A /* Benchmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F28C2DE4DD1800E83D5A /* Benchmark.swift */; };
 		05A6F2982DE5A62F00E83D5A /* PixelUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F2972DE5A62600E83D5A /* PixelUtilities.swift */; };
 		05A6F29A2DE5A67D00E83D5A /* BitsPerPixel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F2992DE5A67C00E83D5A /* BitsPerPixel.swift */; };
+		05A6F3222DE6282600E83D5A /* UnsafeMutableSendable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F3212DE6282600E83D5A /* UnsafeMutableSendable.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -157,6 +158,7 @@
 		05A6F28C2DE4DD1800E83D5A /* Benchmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Benchmark.swift; sourceTree = "<group>"; };
 		05A6F2972DE5A62600E83D5A /* PixelUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelUtilities.swift; sourceTree = "<group>"; };
 		05A6F2992DE5A67C00E83D5A /* BitsPerPixel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitsPerPixel.swift; sourceTree = "<group>"; };
+		05A6F3212DE6282600E83D5A /* UnsafeMutableSendable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsafeMutableSendable.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -425,6 +427,7 @@
 				056E5C6C2DDFAD04003254C7 /* GitHubUpdater.swift */,
 				05206B902DE0C4D000550A87 /* RuntimeError.swift */,
 				05206B882DE06ED400550A87 /* SingleLineString.swift */,
+				05A6F3212DE6282600E83D5A /* UnsafeMutableSendable.swift */,
 				05A6F2632DE4489B00E83D5A /* UnsafeSendable.swift */,
 			);
 			path = Utility;
@@ -653,6 +656,7 @@
 				05206B7D2DDFC1F900550A87 /* InfoSection.swift in Sources */,
 				056E5C6D2DDFAD04003254C7 /* GitHubUpdater.swift in Sources */,
 				05206B892DE06ED800550A87 /* SingleLineString.swift in Sources */,
+				05A6F3222DE6282600E83D5A /* UnsafeMutableSendable.swift in Sources */,
 				05A6F2982DE5A62F00E83D5A /* PixelUtilities.swift in Sources */,
 				05206B8F2DE0C41C00550A87 /* ImageRenderer.swift in Sources */,
 				0587FF102DDE64DF005DECEF /* ApplicationDelegate.swift in Sources */,

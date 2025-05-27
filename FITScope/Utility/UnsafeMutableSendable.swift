@@ -24,9 +24,9 @@
 
 import Foundation
 
-public class UnsafeSendable< T >: @unchecked Sendable
+public class UnsafeMutableSendable< T >: @unchecked Sendable
 {
-    public let value: T
+    public var value: T
     
     public init( _ value: T )
     {
