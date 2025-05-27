@@ -25,7 +25,7 @@
 import Foundation
 import Accelerate
 
-public struct Debayer
+public enum Debayer
 {
     public enum Pattern: Sendable
     {
@@ -41,9 +41,6 @@ public struct Debayer
         case green
         case blue
     }
-
-    private init()
-    {}
 
     public static func vng( pattern: Pattern, width: Int, height: Int, data: [ Double ] ) throws -> [ Double ]
     {

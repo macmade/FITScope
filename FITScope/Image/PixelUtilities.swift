@@ -25,11 +25,8 @@
 import Foundation
 import Accelerate
 
-public struct PixelUtilities
+public enum PixelUtilities
 {
-    private init()
-    {}
-    
     public static func readRawPixels( data: Data, width: Int, height: Int, bitsPerPixel: BitsPerPixel ) throws -> [ Double ]
     {
         let count = width * height

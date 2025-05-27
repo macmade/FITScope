@@ -24,12 +24,9 @@
 
 import Foundation
 
-public class Benchmark
+public enum Benchmark
 {
-    private init()
-    {}
-    
-    public class func run< T >( label: String, action: () throws -> T ) rethrows -> T
+    public static func run< T >( label: String, action: () throws -> T ) rethrows -> T
     {
         #if DEBUG
         

@@ -26,7 +26,7 @@ import Foundation
 import SwiftFITS
 import CoreGraphics
 
-public struct ImageRenderer
+public enum ImageRenderer
 {
     public struct RenderOptions
     {
@@ -37,9 +37,6 @@ public struct ImageRenderer
         public let scaleOffset:  Int64
         public let bayerPattern: Debayer.Pattern?
     }
-    
-    private init()
-    {}
     
     public static func render( data: Data, properties: [ FITSProperty ] ) throws -> CGImage
     {
