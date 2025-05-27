@@ -41,38 +41,66 @@ public struct PixelUtilities
             throw RuntimeError( message: "Data size does not match expected size: \( data.count ) != \( size )" )
         }
         
-        return data.withUnsafeBytes
+        let result = UnsafeMutableSendable( [ Double ]( repeating: 0.0, count: count ) )
+
+        try data.withUnsafeBytes
         {
-            buffer in
-            
+            guard let baseAddress = $0.baseAddress
+            else
+            {
+                throw RuntimeError( message: "Failed to access raw bytes of data" )
+            }
+
             switch bitsPerPixel
             {
-                case .uint8: return ( 0 ..< count ).map
-                {
-                    Double( buffer[ $0 ] )
-                }
-                
-                case .int16: return ( 0 ..< count ).map
-                {
-                    Double( Int16( bigEndian: buffer.load( fromByteOffset: $0 * 2, as: Int16.self ) ) )
-                }
-                
-                case .int32: return ( 0 ..< count).map
-                {
-                    Double( Int32( bigEndian: buffer.load( fromByteOffset: $0 * 4, as: Int32.self ) ) )
-                }
-                
-                case .float32: return ( 0 ..< count ).map
-                {
-                    Double( Float32( bitPattern: UInt32( bigEndian: buffer.load( fromByteOffset: $0 * 4, as: UInt32.self ) ) ) )
-                }
-                
-                case .float64: return ( 0 ..< count ).map
-                {
-                    Double( bitPattern: UInt64( bigEndian: buffer.load( fromByteOffset: $0 * 8, as: UInt64.self ) ) )
-                }
+                case .uint8:
+                    
+                    let buffer = UnsafeSendable( baseAddress.assumingMemoryBound( to: UInt8.self ) )
+                    
+                    DispatchQueue.concurrentPerform( iterations: count )
+                    {
+                        result.value[ $0 ] = Double( buffer.value[ $0 ] )
+                    }
+
+                case .int16:
+                    
+                    let buffer = UnsafeSendable( baseAddress.assumingMemoryBound( to: Int16.self ) )
+                    
+                    DispatchQueue.concurrentPerform( iterations: count )
+                    {
+                        result.value[ $0 ] = Double( Int16( bigEndian: buffer.value[ $0 ] ) )
+                    }
+
+                case .int32:
+                    
+                    let buffer = UnsafeSendable( baseAddress.assumingMemoryBound( to: Int32.self ) )
+                    
+                    DispatchQueue.concurrentPerform( iterations: count )
+                    {
+                        result.value[ $0 ] = Double( Int32( bigEndian: buffer.value[ $0 ] ) )
+                    }
+
+                case .float32:
+                    
+                    let buffer = UnsafeSendable( baseAddress.assumingMemoryBound( to: UInt32.self ) )
+                    
+                    DispatchQueue.concurrentPerform( iterations: count )
+                    {
+                        result.value[ $0 ] = Double( Float32( bitPattern: UInt32( bigEndian: buffer.value[ $0 ] ) ) )
+                    }
+
+                case .float64:
+                    
+                    let buffer = UnsafeSendable( baseAddress.assumingMemoryBound( to: UInt64.self ) )
+                    
+                    DispatchQueue.concurrentPerform( iterations: count )
+                    {
+                        result.value[$0] = Double( bitPattern: UInt64( bigEndian: buffer.value[ $0 ] ) )
+                    }
             }
         }
+        
+        return result.value
     }
     
     public static func scale( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
