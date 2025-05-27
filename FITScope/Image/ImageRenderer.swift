@@ -154,7 +154,7 @@ public enum ImageRenderer
         
         let scaled = Benchmark.run( label: "Applying Scale" )
         {
-            PixelUtilities.scaleWithAccelerate( pixels: raw, scale: options.scale, offset: options.scaleOffset )
+            PixelUtilities.Accelerate.scale( pixels: raw, scale: options.scale, offset: options.scaleOffset )
         }
 
         let rgb = if let pattern = options.bayerPattern
@@ -174,7 +174,7 @@ public enum ImageRenderer
         
         let normalized = Benchmark.run( label: "Normalizing Pixels" )
         {
-            PixelUtilities.normalizeWithAccelerate( pixels: rgb )
+            PixelUtilities.Accelerate.normalize( pixels: rgb )
         }
         
         guard let provider = CGDataProvider( data: Data( normalized ) as CFData )

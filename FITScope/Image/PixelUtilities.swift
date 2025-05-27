@@ -23,7 +23,6 @@
  ******************************************************************************/
 
 import Foundation
-import Accelerate
 
 public enum PixelUtilities
 {
@@ -108,18 +107,6 @@ public enum PixelUtilities
         }
     }
     
-    public static func scaleWithAccelerate( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
-    {
-        var result = [ Double ]( repeating: 0.0, count: pixels.count )
-        var scalar = scale
-        var addend = Double( offset )
-    
-        vDSP_vsmulD( pixels, 1, &scalar, &result, 1, vDSP_Length( pixels.count ) )
-        vDSP_vsaddD( result, 1, &addend, &result, 1, vDSP_Length( pixels.count ) )
-        
-        return result
-    }
-    
     public static func normalize( pixels: [ Double ] ) -> [ UInt8 ]
     {
         let minPixel = pixels.min() ?? 0
@@ -130,43 +117,5 @@ public enum PixelUtilities
         {
             UInt8( max( 0, min( 255, ( $0 - minPixel ) / range * 255.0 ) ) )
         }
-    }
-    
-    public static func normalizeWithAccelerate( pixels: [ Double ] ) -> [ UInt8 ]
-    {
-        guard pixels.isEmpty == false
-        else
-        {
-            return []
-        }
-
-        var minPixel = 0.0
-        var maxPixel = 0.0
-        
-        vDSP_minvD( pixels, 1, &minPixel, vDSP_Length( pixels.count ) )
-        vDSP_maxvD( pixels, 1, &maxPixel, vDSP_Length( pixels.count ) )
-
-        let range      = max( 1.0, maxPixel - minPixel )
-        let scale      = 255.0 / range
-        let offset     = -minPixel * scale
-        var normalized = [ Double ]( repeating: 0.0, count: pixels.count )
-        
-        vDSP_vsmsaD( pixels, 1, [ scale ], [ offset ], &normalized, 1, vDSP_Length( pixels.count ) )
-
-        var clipped    = [ Double ]( repeating: 0.0, count: pixels.count )
-        var lowerBound = 0.0
-        var upperBound = 255.0
-        
-        vDSP_vclipD( normalized, 1, &lowerBound, &upperBound, &clipped, 1, vDSP_Length( pixels.count ) )
-
-        var floatPixels = [ Float ]( repeating: 0.0, count: pixels.count )
-        
-        vDSP_vdpsp( clipped, 1, &floatPixels, 1, vDSP_Length( pixels.count ) )
-
-        var result = [ UInt8 ]( repeating: 0, count: pixels.count )
-        
-        vDSP_vfixu8( floatPixels, 1, &result, 1, vDSP_Length( pixels.count ) )
-
-        return result
     }
 }
