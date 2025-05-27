@@ -108,13 +108,13 @@ public class PixelPipeline
         return self
     }
     
-    public func normalized() -> [ UInt8 ]
+    public func normalized() throws -> [ UInt8 ]
     {
-        return Benchmark.run( label: "Normalizing Pixels" )
+        try Benchmark.run( label: "Normalizing Pixels" )
         {
             if self.options.contains( .useAccelerate )
             {
-                return PixelUtilities.Accelerate.normalize( pixels: self.pixels )
+                return try PixelUtilities.Accelerate.normalize( pixels: self.pixels )
             }
             else
             {

@@ -56,7 +56,7 @@ public extension PixelUtilities
             return pixels
         }
         
-        public static func normalize( pixels: [ Double ] ) -> [ UInt8 ]
+        public static func normalize( pixels: [ Double ] ) throws -> [ UInt8 ]
         {
             guard pixels.isEmpty == false
             else
@@ -66,30 +66,51 @@ public extension PixelUtilities
 
             var minPixel = 0.0
             var maxPixel = 0.0
-            
-            vDSP_minvD( pixels, 1, &minPixel, vDSP_Length( pixels.count ) )
-            vDSP_maxvD( pixels, 1, &maxPixel, vDSP_Length( pixels.count ) )
+            let count    = vDSP_Length( pixels.count )
 
-            let range      = max( 1.0, maxPixel - minPixel )
-            let scale      = 255.0 / range
-            let offset     = -minPixel * scale
-            var normalized = [ Double ]( repeating: 0.0, count: pixels.count )
-            
-            vDSP_vsmsaD( pixels, 1, [ scale ], [ offset ], &normalized, 1, vDSP_Length( pixels.count ) )
+            try pixels.withUnsafeBufferPointer
+            {
+                guard let baseAddress = $0.baseAddress
+                else
+                {
+                    throw RuntimeError( message: "Failed to access data buffer" )
+                }
+                
+                vDSP_minvD( baseAddress, 1, &minPixel, count )
+                vDSP_maxvD( baseAddress, 1, &maxPixel, count )
+            }
 
-            var clipped    = [ Double ]( repeating: 0.0, count: pixels.count )
-            var lowerBound = 0.0
-            var upperBound = 255.0
-            
-            vDSP_vclipD( normalized, 1, &lowerBound, &upperBound, &clipped, 1, vDSP_Length( pixels.count ) )
+            let range  = max( 1.0, maxPixel - minPixel )
+            let scale  = 255.0 / range
+            let offset = -minPixel * scale
+            var buffer = [ Double ]( repeating: 0, count: pixels.count )
+            var result = [ UInt8  ]( repeating: 0, count: pixels.count )
 
-            var floatPixels = [ Float ]( repeating: 0.0, count: pixels.count )
-            
-            vDSP_vdpsp( clipped, 1, &floatPixels, 1, vDSP_Length( pixels.count ) )
+            try buffer.withUnsafeMutableBufferPointer
+            {
+                guard let bufferBaseAddress = $0.baseAddress
+                else
+                {
+                    throw RuntimeError( message: "Failed to access data buffer" )
+                }
+                
+                try pixels.withUnsafeBufferPointer
+                {
+                    guard let pixelsBaseAddress = $0.baseAddress
+                    else
+                    {
+                        throw RuntimeError( message: "Failed to access data buffer" )
+                    }
+                    
+                    vDSP_vsmsaD( pixelsBaseAddress, 1, [ scale ], [ offset ], bufferBaseAddress, 1, count )
 
-            var result = [ UInt8 ]( repeating: 0, count: pixels.count )
-            
-            vDSP_vfixu8( floatPixels, 1, &result, 1, vDSP_Length( pixels.count ) )
+                    var lower = 0.0
+                    var upper = 255.0
+
+                    vDSP_vclipD( bufferBaseAddress, 1, &lower, &upper, bufferBaseAddress, 1, count )
+                    vDSP_vfixu8D( bufferBaseAddress, 1, &result, 1, count)
+                }
+            }
 
             return result
         }
