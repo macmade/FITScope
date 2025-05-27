@@ -23,10 +23,9 @@
  ******************************************************************************/
 
 import Foundation
-import CoreGraphics
 import Accelerate
 
-public class Debayer
+public struct Debayer
 {
     public enum Pattern: Sendable
     {

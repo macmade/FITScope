@@ -25,9 +25,8 @@
 import Foundation
 import SwiftFITS
 import CoreGraphics
-import Accelerate
 
-public class ImageRenderer
+public struct ImageRenderer
 {
     public struct RenderOptions
     {
@@ -42,7 +41,7 @@ public class ImageRenderer
     private init()
     {}
     
-    public class func render( data: Data, properties: [ FITSProperty ] ) throws -> CGImage
+    public static func render( data: Data, properties: [ FITSProperty ] ) throws -> CGImage
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value as? Int64
         else
@@ -149,7 +148,7 @@ public class ImageRenderer
         }
     }
     
-    public class func render( data: Data, options: RenderOptions ) throws -> CGImage
+    public static func render( data: Data, options: RenderOptions ) throws -> CGImage
     {
         let raw = try Benchmark.run( label: "Reading Raw Pixels" )
         {

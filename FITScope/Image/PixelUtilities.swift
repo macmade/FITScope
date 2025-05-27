@@ -23,16 +23,14 @@
  ******************************************************************************/
 
 import Foundation
-import SwiftFITS
-import CoreGraphics
 import Accelerate
 
-public class PixelUtilities
+public struct PixelUtilities
 {
     private init()
     {}
     
-    public class func readRawPixels( data: Data, width: Int, height: Int, bitsPerPixel: BitsPerPixel ) throws -> [ Double ]
+    public static func readRawPixels( data: Data, width: Int, height: Int, bitsPerPixel: BitsPerPixel ) throws -> [ Double ]
     {
         let count = width * height
         let size  = bitsPerPixel.size( numberOfPixels: count )
@@ -77,7 +75,7 @@ public class PixelUtilities
         }
     }
     
-    public class func scale( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
+    public static func scale( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
     {
         pixels.map
         {
@@ -85,7 +83,7 @@ public class PixelUtilities
         }
     }
     
-    public class func scaleWithAccelerate( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
+    public static func scaleWithAccelerate( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
     {
         var result = [ Double ]( repeating: 0.0, count: pixels.count )
         var scalar = scale
@@ -97,7 +95,7 @@ public class PixelUtilities
         return result
     }
     
-    public class func normalize( pixels: [ Double ] ) -> [ UInt8 ]
+    public static func normalize( pixels: [ Double ] ) -> [ UInt8 ]
     {
         let minPixel = pixels.min() ?? 0
         let maxPixel = pixels.max() ?? 1
@@ -109,7 +107,7 @@ public class PixelUtilities
         }
     }
     
-    public class func normalizeWithAccelerate( pixels: [ Double ] ) -> [ UInt8 ]
+    public static func normalizeWithAccelerate( pixels: [ Double ] ) -> [ UInt8 ]
     {
         guard pixels.isEmpty == false
         else
