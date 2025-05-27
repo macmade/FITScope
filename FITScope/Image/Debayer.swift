@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Cocoa
+import Foundation
 import CoreGraphics
 import Accelerate
 

@@ -88,7 +88,7 @@ public class MainWindowController: NSWindowController, NSWindowDelegate
                     @MainActor in
                     
                     self.loading = false
-                    self.image   = image
+                    self.image   = NSImage( cgImage: image, size: NSSize( width: image.width, height: image.height ) )
                 }
             }
             catch

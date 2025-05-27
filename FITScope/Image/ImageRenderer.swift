@@ -22,47 +22,13 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Cocoa
+import Foundation
 import SwiftFITS
 import CoreGraphics
 import Accelerate
 
 public class ImageRenderer
 {
-    public enum BitsPerPixel
-    {
-        case uint8
-        case int16
-        case int32
-        case float32
-        case float64
-        
-        public static func from< T: BinaryInteger >( value: T ) -> BitsPerPixel?
-        {
-            switch value
-            {
-                case   8: return .uint8
-                case  16: return .int16
-                case  32: return .int32
-                case -32: return .float32
-                case -64: return .float64
-                default:  return nil
-            }
-        }
-        
-        public func size( numberOfPixels: Int ) -> Int
-        {
-            switch self
-            {
-                case .uint8:   return numberOfPixels * 1
-                case .int16:   return numberOfPixels * 2
-                case .int32:   return numberOfPixels * 4
-                case .float32: return numberOfPixels * 4
-                case .float64: return numberOfPixels * 8
-            }
-        }
-    }
-    
     public struct RenderOptions
     {
         public let bitsPerPixel: BitsPerPixel
@@ -76,7 +42,7 @@ public class ImageRenderer
     private init()
     {}
     
-    public class func render( data: Data, properties: [ FITSProperty ] ) throws -> NSImage
+    public class func render( data: Data, properties: [ FITSProperty ] ) throws -> CGImage
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value as? Int64
         else
@@ -183,16 +149,16 @@ public class ImageRenderer
         }
     }
     
-    public class func render( data: Data, options: RenderOptions ) throws -> NSImage
+    public class func render( data: Data, options: RenderOptions ) throws -> CGImage
     {
         let raw = try Benchmark.run( label: "Reading Raw Pixels" )
         {
-            try self.readRawPixels( data: data, width: options.width, height: options.height, bitsPerPixel: options.bitsPerPixel )
+            try PixelUtilities.readRawPixels( data: data, width: options.width, height: options.height, bitsPerPixel: options.bitsPerPixel )
         }
         
         let scaled = Benchmark.run( label: "Applying Scale" )
         {
-            self.scaleWithAccelerate( pixels: raw, scale: options.scale, offset: options.scaleOffset )
+            PixelUtilities.scaleWithAccelerate( pixels: raw, scale: options.scale, offset: options.scaleOffset )
         }
 
         let rgb = if let pattern = options.bayerPattern
@@ -212,7 +178,7 @@ public class ImageRenderer
         
         let normalized = Benchmark.run( label: "Normalizing Pixels" )
         {
-            self.normalizeWithAccelerate( pixels: rgb )
+            PixelUtilities.normalizeWithAccelerate( pixels: rgb )
         }
         
         guard let provider = CGDataProvider( data: Data( normalized ) as CFData )
@@ -243,121 +209,6 @@ public class ImageRenderer
             throw RuntimeError( message: "Unable to create a CGImage" )
         }
 
-        return NSImage( cgImage: cgImage, size: NSSize( width: options.width, height: options.height ) )
-    }
-    
-    public class func readRawPixels( data: Data, width: Int, height: Int, bitsPerPixel: BitsPerPixel ) throws -> [ Double ]
-    {
-        let count = width * height
-        let size  = bitsPerPixel.size( numberOfPixels: count )
-        
-        guard data.count == size
-        else
-        {
-            throw RuntimeError( message: "Data size does not match expected size: \( data.count ) != \( size )" )
-        }
-        
-        return data.withUnsafeBytes
-        {
-            buffer in
-            
-            switch bitsPerPixel
-            {
-                case .uint8: return ( 0 ..< count ).map
-                {
-                    Double( buffer[ $0 ] )
-                }
-                
-                case .int16: return ( 0 ..< count ).map
-                {
-                    Double( Int16( bigEndian: buffer.load( fromByteOffset: $0 * 2, as: Int16.self ) ) )
-                }
-                
-                case .int32: return ( 0 ..< count).map
-                {
-                    Double( Int32( bigEndian: buffer.load( fromByteOffset: $0 * 4, as: Int32.self ) ) )
-                }
-                
-                case .float32: return ( 0 ..< count ).map
-                {
-                    Double( Float32( bitPattern: UInt32( bigEndian: buffer.load( fromByteOffset: $0 * 4, as: UInt32.self ) ) ) )
-                }
-                
-                case .float64: return ( 0 ..< count ).map
-                {
-                    Double( bitPattern: UInt64( bigEndian: buffer.load( fromByteOffset: $0 * 8, as: UInt64.self ) ) )
-                }
-            }
-        }
-    }
-    
-    public class func scale( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
-    {
-        pixels.map
-        {
-            $0 * scale + Double( offset )
-        }
-    }
-    
-    public class func scaleWithAccelerate( pixels: [ Double ], scale: Double, offset: Int64 ) -> [ Double ]
-    {
-        var result = [ Double ]( repeating: 0.0, count: pixels.count )
-        var scalar = scale
-        var addend = Double( offset )
-    
-        vDSP_vsmulD( pixels, 1, &scalar, &result, 1, vDSP_Length( pixels.count ) )
-        vDSP_vsaddD( result, 1, &addend, &result, 1, vDSP_Length( pixels.count ) )
-        
-        return result
-    }
-    
-    public class func normalize( pixels: [ Double ] ) -> [ UInt8 ]
-    {
-        let minPixel = pixels.min() ?? 0
-        let maxPixel = pixels.max() ?? 1
-        let range    = max( 1.0, maxPixel - minPixel )
-        
-        return pixels.map
-        {
-            UInt8( max( 0, min( 255, ( $0 - minPixel ) / range * 255.0 ) ) )
-        }
-    }
-    
-    public class func normalizeWithAccelerate( pixels: [ Double ] ) -> [ UInt8 ]
-    {
-        guard pixels.isEmpty == false
-        else
-        {
-            return []
-        }
-
-        var minPixel = 0.0
-        var maxPixel = 0.0
-        
-        vDSP_minvD( pixels, 1, &minPixel, vDSP_Length( pixels.count ) )
-        vDSP_maxvD( pixels, 1, &maxPixel, vDSP_Length( pixels.count ) )
-
-        let range      = max( 1.0, maxPixel - minPixel )
-        let scale      = 255.0 / range
-        let offset     = -minPixel * scale
-        var normalized = [ Double ]( repeating: 0.0, count: pixels.count )
-        
-        vDSP_vsmsaD( pixels, 1, [ scale ], [ offset ], &normalized, 1, vDSP_Length( pixels.count ) )
-
-        var clipped    = [ Double ]( repeating: 0.0, count: pixels.count )
-        var lowerBound = 0.0
-        var upperBound = 255.0
-        
-        vDSP_vclipD( normalized, 1, &lowerBound, &upperBound, &clipped, 1, vDSP_Length( pixels.count ) )
-
-        var floatPixels = [ Float ]( repeating: 0.0, count: pixels.count )
-        
-        vDSP_vdpsp( clipped, 1, &floatPixels, 1, vDSP_Length( pixels.count ) )
-
-        var result = [ UInt8 ]( repeating: 0, count: pixels.count )
-        
-        vDSP_vfixu8( floatPixels, 1, &result, 1, vDSP_Length( pixels.count ) )
-
-        return result
+        return cgImage
     }
 }
