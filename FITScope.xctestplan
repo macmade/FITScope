@@ -1,0 +1,31 @@
+{
+  "configurations" : [
+    {
+      "id" : "FE779F05-3E45-4829-8503-6D7FE5CA893D",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:FITScope.xcodeproj",
+        "identifier" : "053BEAB02DDDDDA900EF0C79",
+        "name" : "FITScopeTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Submodules\/SwiftFITS\/SwiftFITS.xcodeproj",
+        "identifier" : "05C5278A2DD8E36300843626",
+        "name" : "SwiftFITSTests"
+      }
+    }
+  ],
+  "version" : 1
+}

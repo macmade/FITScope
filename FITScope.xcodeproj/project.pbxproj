@@ -163,6 +163,7 @@
 		05A6F3212DE6282600E83D5A /* UnsafeMutableSendable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsafeMutableSendable.swift; sourceTree = "<group>"; };
 		05A6F3232DE629D500E83D5A /* PixelUtilities+Accelerate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PixelUtilities+Accelerate.swift"; sourceTree = "<group>"; };
 		05A6F3272DE62F7200E83D5A /* PixelPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelPipeline.swift; sourceTree = "<group>"; };
+		05E6184E2DE64C88007AED28 /* FITScope.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = FITScope.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -219,6 +220,7 @@
 				056E5C022DDF0E8B003254C7 /* README.md */,
 				056E5C012DDF0E8B003254C7 /* LICENSE */,
 				056E5C002DDF0E8B003254C7 /* CODE_OF_CONDUCT.md */,
+				05E6184E2DE64C88007AED28 /* FITScope.xctestplan */,
 				056E5C3F2DDF104D003254C7 /* SwiftFITS.xcodeproj */,
 				056E5C3E2DDF1041003254C7 /* xcconfig */,
 				056E5C062DDF0EB5003254C7 /* .github */,
