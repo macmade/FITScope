@@ -4,3 +4,6 @@
 [submodule "Submodules/SwiftFITS"]
 	path = Submodules/SwiftFITS
 	url = https://github.com/macmade/SwiftFITS.git
+[submodule "Submodules/SwiftPixel"]
+	path = Submodules/SwiftPixel
+	url = https://github.com/macmade/SwiftPixel.git
