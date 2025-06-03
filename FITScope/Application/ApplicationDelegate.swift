@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Cocoa
+import SwiftUtilities
 
 @main
 public class ApplicationDelegate: NSObject, NSApplicationDelegate

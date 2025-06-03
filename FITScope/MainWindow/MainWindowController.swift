@@ -24,6 +24,7 @@
 
 import Cocoa
 import SwiftFITS
+import SwiftUtilities
 
 public class MainWindowController: NSWindowController, NSWindowDelegate
 {

@@ -14,7 +14,7 @@
 		05206B892DE06ED800550A87 /* SingleLineString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B882DE06ED400550A87 /* SingleLineString.swift */; };
 		05206B8C2DE0A0E800550A87 /* NSAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8B2DE0A0E500550A87 /* NSAlert.swift */; };
 		05206B8F2DE0C41C00550A87 /* ImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8E2DE0C41800550A87 /* ImageRenderer.swift */; };
-		05206B912DE0C4D300550A87 /* RuntimeError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B902DE0C4D000550A87 /* RuntimeError.swift */; };
+		05398CE32DEECF4F005904EC /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
 		056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
 		056E5C522DDF1356003254C7 /* SwiftFITS.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		056E5C5B2DDF9696003254C7 /* MainWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C5A2DDF9693003254C7 /* MainWindowController.swift */; };
@@ -22,7 +22,6 @@
 		056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
 		056E5C6A2DDFAA9F003254C7 /* AboutWindowController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 056E5C692DDFAA9F003254C7 /* AboutWindowController.xib */; };
 		056E5C6B2DDFAA9F003254C7 /* AboutWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C682DDFAA9F003254C7 /* AboutWindowController.swift */; };
-		056E5C6D2DDFAD04003254C7 /* GitHubUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C6C2DDFAD04003254C7 /* GitHubUpdater.swift */; };
 		056E5C702DDFBDD2003254C7 /* InfoWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C6F2DDFBDCC003254C7 /* InfoWindowController.swift */; };
 		056E5C722DDFBDDB003254C7 /* InfoWindowController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 056E5C712DDFBDDB003254C7 /* InfoWindowController.xib */; };
 		0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF092DDE64DF005DECEF /* Assets.xcassets */; };
@@ -31,12 +30,9 @@
 		0587FF132DDE64E0005DECEF /* FITScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF112DDE64E0005DECEF /* FITScopeTests.swift */; };
 		0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */; };
 		0587FF182DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */; };
-		05A6F2642DE448A000E83D5A /* UnsafeSendable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F2632DE4489B00E83D5A /* UnsafeSendable.swift */; };
 		05A6F2892DE4CE6A00E83D5A /* Debayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F2882DE4CE6900E83D5A /* Debayer.swift */; };
-		05A6F28D2DE4DD1E00E83D5A /* Benchmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F28C2DE4DD1800E83D5A /* Benchmark.swift */; };
 		05A6F2982DE5A62F00E83D5A /* PixelUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F2972DE5A62600E83D5A /* PixelUtilities.swift */; };
 		05A6F29A2DE5A67D00E83D5A /* BitsPerPixel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F2992DE5A67C00E83D5A /* BitsPerPixel.swift */; };
-		05A6F3222DE6282600E83D5A /* UnsafeMutableSendable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F3212DE6282600E83D5A /* UnsafeMutableSendable.swift */; };
 		05A6F3242DE629DD00E83D5A /* PixelUtilities+Accelerate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F3232DE629D500E83D5A /* PixelUtilities+Accelerate.swift */; };
 		05A6F3282DE62F7200E83D5A /* PixelPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F3272DE62F7200E83D5A /* PixelPipeline.swift */; };
 /* End PBXBuildFile section */
@@ -94,7 +90,7 @@
 		05206B882DE06ED400550A87 /* SingleLineString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleLineString.swift; sourceTree = "<group>"; };
 		05206B8B2DE0A0E500550A87 /* NSAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSAlert.swift; sourceTree = "<group>"; };
 		05206B8E2DE0C41800550A87 /* ImageRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRenderer.swift; sourceTree = "<group>"; };
-		05206B902DE0C4D000550A87 /* RuntimeError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeError.swift; sourceTree = "<group>"; };
+		05398CE22DEECF4F005904EC /* SwiftUtilities.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SwiftUtilities.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAA22DDDDDA800EF0C79 /* FITScope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FITScope.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAB12DDDDDA900EF0C79 /* FITScopeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FITScopeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEABB2DDDDDA900EF0C79 /* FITScopeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FITScopeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -156,7 +152,6 @@
 		056E5C642DDFA8EB003254C7 /* UTType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UTType.swift; sourceTree = "<group>"; };
 		056E5C682DDFAA9F003254C7 /* AboutWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindowController.swift; sourceTree = "<group>"; };
 		056E5C692DDFAA9F003254C7 /* AboutWindowController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = AboutWindowController.xib; sourceTree = "<group>"; };
-		056E5C6C2DDFAD04003254C7 /* GitHubUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubUpdater.swift; sourceTree = "<group>"; };
 		056E5C6F2DDFBDCC003254C7 /* InfoWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoWindowController.swift; sourceTree = "<group>"; };
 		056E5C712DDFBDDB003254C7 /* InfoWindowController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = InfoWindowController.xib; sourceTree = "<group>"; };
 		0587FF082DDE64DF005DECEF /* ApplicationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationDelegate.swift; sourceTree = "<group>"; };
@@ -166,12 +161,9 @@
 		0587FF112DDE64E0005DECEF /* FITScopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeTests.swift; sourceTree = "<group>"; };
 		0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITests.swift; sourceTree = "<group>"; };
 		0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		05A6F2632DE4489B00E83D5A /* UnsafeSendable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsafeSendable.swift; sourceTree = "<group>"; };
 		05A6F2882DE4CE6900E83D5A /* Debayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debayer.swift; sourceTree = "<group>"; };
-		05A6F28C2DE4DD1800E83D5A /* Benchmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Benchmark.swift; sourceTree = "<group>"; };
 		05A6F2972DE5A62600E83D5A /* PixelUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelUtilities.swift; sourceTree = "<group>"; };
 		05A6F2992DE5A67C00E83D5A /* BitsPerPixel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitsPerPixel.swift; sourceTree = "<group>"; };
-		05A6F3212DE6282600E83D5A /* UnsafeMutableSendable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsafeMutableSendable.swift; sourceTree = "<group>"; };
 		05A6F3232DE629D500E83D5A /* PixelUtilities+Accelerate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PixelUtilities+Accelerate.swift"; sourceTree = "<group>"; };
 		05A6F3272DE62F7200E83D5A /* PixelPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelPipeline.swift; sourceTree = "<group>"; };
 		05E6184E2DE64C88007AED28 /* FITScope.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = FITScope.xctestplan; sourceTree = "<group>"; };
@@ -182,6 +174,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				05398CE32DEECF4F005904EC /* SwiftUtilities.framework in Frameworks */,
 				056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */,
 				050F384C2DEEC2FA00E84F97 /* SwiftPixel.framework in Frameworks */,
 			);
@@ -436,6 +429,7 @@
 		056E5C4F2DDF134F003254C7 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				05398CE22DEECF4F005904EC /* SwiftUtilities.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -452,12 +446,7 @@
 		056E5C632DDFA8E2003254C7 /* Utility */ = {
 			isa = PBXGroup;
 			children = (
-				05A6F28C2DE4DD1800E83D5A /* Benchmark.swift */,
-				056E5C6C2DDFAD04003254C7 /* GitHubUpdater.swift */,
-				05206B902DE0C4D000550A87 /* RuntimeError.swift */,
 				05206B882DE06ED400550A87 /* SingleLineString.swift */,
-				05A6F3212DE6282600E83D5A /* UnsafeMutableSendable.swift */,
-				05A6F2632DE4489B00E83D5A /* UnsafeSendable.swift */,
 			);
 			path = Utility;
 			sourceTree = "<group>";
@@ -683,22 +672,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */,
-				05A6F2642DE448A000E83D5A /* UnsafeSendable.swift in Sources */,
 				05206B7B2DDFC1F200550A87 /* InfoField.swift in Sources */,
 				056E5C702DDFBDD2003254C7 /* InfoWindowController.swift in Sources */,
-				05206B912DE0C4D300550A87 /* RuntimeError.swift in Sources */,
 				05206B8C2DE0A0E800550A87 /* NSAlert.swift in Sources */,
 				05A6F29A2DE5A67D00E83D5A /* BitsPerPixel.swift in Sources */,
-				05A6F28D2DE4DD1E00E83D5A /* Benchmark.swift in Sources */,
 				056E5C6B2DDFAA9F003254C7 /* AboutWindowController.swift in Sources */,
 				056E5C5B2DDF9696003254C7 /* MainWindowController.swift in Sources */,
 				05A6F3282DE62F7200E83D5A /* PixelPipeline.swift in Sources */,
 				05A6F2892DE4CE6A00E83D5A /* Debayer.swift in Sources */,
 				05206B7D2DDFC1F900550A87 /* InfoSection.swift in Sources */,
-				056E5C6D2DDFAD04003254C7 /* GitHubUpdater.swift in Sources */,
 				05A6F3242DE629DD00E83D5A /* PixelUtilities+Accelerate.swift in Sources */,
 				05206B892DE06ED800550A87 /* SingleLineString.swift in Sources */,
-				05A6F3222DE6282600E83D5A /* UnsafeMutableSendable.swift in Sources */,
 				05A6F2982DE5A62F00E83D5A /* PixelUtilities.swift in Sources */,
 				05206B8F2DE0C41C00550A87 /* ImageRenderer.swift in Sources */,
 				0587FF102DDE64DF005DECEF /* ApplicationDelegate.swift in Sources */,

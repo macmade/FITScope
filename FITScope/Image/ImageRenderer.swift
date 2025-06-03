@@ -25,6 +25,7 @@
 import CoreGraphics
 import Foundation
 import SwiftFITS
+import SwiftUtilities
 
 public enum ImageRenderer
 {

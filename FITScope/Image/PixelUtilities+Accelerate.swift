@@ -24,6 +24,7 @@
 
 import Accelerate
 import Foundation
+import SwiftUtilities
 
 public extension PixelUtilities
 {

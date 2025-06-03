@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftUtilities
 
 public enum PixelUtilities
 {
