@@ -87,6 +87,16 @@
                ReferencedContainer = "container:Submodules/SwiftFITS/SwiftFITS.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "05C5278A2DD8E36300843626"
+               BuildableName = "SwiftPixelTests.xctest"
+               BlueprintName = "SwiftPixelTests"
+               ReferencedContainer = "container:Submodules/SwiftPixel/SwiftPixel.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		050F384C2DEEC2FA00E84F97 /* SwiftPixel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 050F38492DEEC2F000E84F97 /* SwiftPixel.framework */; };
+		050F384D2DEEC2FA00E84F97 /* SwiftPixel.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 050F38492DEEC2F000E84F97 /* SwiftPixel.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		05206B7B2DDFC1F200550A87 /* InfoField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B7A2DDFC1F000550A87 /* InfoField.swift */; };
 		05206B7D2DDFC1F900550A87 /* InfoSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B7C2DDFC1F500550A87 /* InfoSection.swift */; };
 		05206B892DE06ED800550A87 /* SingleLineString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B882DE06ED400550A87 /* SingleLineString.swift */; };
@@ -40,6 +42,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		050F38482DEEC2F000E84F97 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 050F383F2DEEC2F000E84F97 /* SwiftPixel.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 05C527822DD8E36300843626;
+			remoteInfo = SwiftPixel;
+		};
 		053BEAB22DDDDDA900EF0C79 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 053BEA9A2DDDDDA800EF0C79 /* Project object */;
@@ -71,6 +80,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				056E5C522DDF1356003254C7 /* SwiftFITS.framework in Embed Frameworks */,
+				050F384D2DEEC2FA00E84F97 /* SwiftPixel.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -78,6 +88,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		050F383F2DEEC2F000E84F97 /* SwiftPixel.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftPixel.xcodeproj; path = Submodules/SwiftPixel/SwiftPixel.xcodeproj; sourceTree = "<group>"; };
 		05206B7A2DDFC1F000550A87 /* InfoField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoField.swift; sourceTree = "<group>"; };
 		05206B7C2DDFC1F500550A87 /* InfoSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoSection.swift; sourceTree = "<group>"; };
 		05206B882DE06ED400550A87 /* SingleLineString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleLineString.swift; sourceTree = "<group>"; };
@@ -172,6 +183,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */,
+				050F384C2DEEC2FA00E84F97 /* SwiftPixel.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -192,6 +204,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		050F38402DEEC2F000E84F97 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				050F38492DEEC2F000E84F97 /* SwiftPixel.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		05206B8A2DE0A0D900550A87 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
@@ -221,6 +241,7 @@
 				056E5C012DDF0E8B003254C7 /* LICENSE */,
 				056E5C002DDF0E8B003254C7 /* CODE_OF_CONDUCT.md */,
 				05E6184E2DE64C88007AED28 /* FITScope.xctestplan */,
+				050F383F2DEEC2F000E84F97 /* SwiftPixel.xcodeproj */,
 				056E5C3F2DDF104D003254C7 /* SwiftFITS.xcodeproj */,
 				056E5C3E2DDF1041003254C7 /* xcconfig */,
 				056E5C062DDF0EB5003254C7 /* .github */,
@@ -596,6 +617,10 @@
 					ProductGroup = 056E5C402DDF104D003254C7 /* Products */;
 					ProjectRef = 056E5C3F2DDF104D003254C7 /* SwiftFITS.xcodeproj */;
 				},
+				{
+					ProductGroup = 050F38402DEEC2F000E84F97 /* Products */;
+					ProjectRef = 050F383F2DEEC2F000E84F97 /* SwiftPixel.xcodeproj */;
+				},
 			);
 			projectRoot = "";
 			targets = (
@@ -607,6 +632,13 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		050F38492DEEC2F000E84F97 /* SwiftPixel.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = SwiftPixel.framework;
+			remoteRef = 050F38482DEEC2F000E84F97 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		056E5C452DDF104D003254C7 /* SwiftFITS.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
