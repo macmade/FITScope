@@ -12,6 +12,15 @@ FITScope
 
 FITS Image Viewer for macOS.
 
+### Cloning
+
+This project uses submodules.  
+To clone it, use the following command:
+
+```bash
+git clone --recursive https://github.com/macmade/FITScope.git
+```
+
 License
 -------
 
