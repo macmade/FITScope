@@ -30,11 +30,6 @@
 		0587FF132DDE64E0005DECEF /* FITScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF112DDE64E0005DECEF /* FITScopeTests.swift */; };
 		0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */; };
 		0587FF182DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */; };
-		05A6F2892DE4CE6A00E83D5A /* Debayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F2882DE4CE6900E83D5A /* Debayer.swift */; };
-		05A6F2982DE5A62F00E83D5A /* PixelUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F2972DE5A62600E83D5A /* PixelUtilities.swift */; };
-		05A6F29A2DE5A67D00E83D5A /* BitsPerPixel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F2992DE5A67C00E83D5A /* BitsPerPixel.swift */; };
-		05A6F3242DE629DD00E83D5A /* PixelUtilities+Accelerate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F3232DE629D500E83D5A /* PixelUtilities+Accelerate.swift */; };
-		05A6F3282DE62F7200E83D5A /* PixelPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A6F3272DE62F7200E83D5A /* PixelPipeline.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -161,11 +156,6 @@
 		0587FF112DDE64E0005DECEF /* FITScopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeTests.swift; sourceTree = "<group>"; };
 		0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITests.swift; sourceTree = "<group>"; };
 		0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		05A6F2882DE4CE6900E83D5A /* Debayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debayer.swift; sourceTree = "<group>"; };
-		05A6F2972DE5A62600E83D5A /* PixelUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelUtilities.swift; sourceTree = "<group>"; };
-		05A6F2992DE5A67C00E83D5A /* BitsPerPixel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitsPerPixel.swift; sourceTree = "<group>"; };
-		05A6F3232DE629D500E83D5A /* PixelUtilities+Accelerate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PixelUtilities+Accelerate.swift"; sourceTree = "<group>"; };
-		05A6F3272DE62F7200E83D5A /* PixelPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelPipeline.swift; sourceTree = "<group>"; };
 		05E6184E2DE64C88007AED28 /* FITScope.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = FITScope.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -217,12 +207,7 @@
 		05206B8D2DE0C41000550A87 /* Image */ = {
 			isa = PBXGroup;
 			children = (
-				05A6F2992DE5A67C00E83D5A /* BitsPerPixel.swift */,
-				05A6F2882DE4CE6900E83D5A /* Debayer.swift */,
 				05206B8E2DE0C41800550A87 /* ImageRenderer.swift */,
-				05A6F3272DE62F7200E83D5A /* PixelPipeline.swift */,
-				05A6F2972DE5A62600E83D5A /* PixelUtilities.swift */,
-				05A6F3232DE629D500E83D5A /* PixelUtilities+Accelerate.swift */,
 			);
 			path = Image;
 			sourceTree = "<group>";
@@ -675,15 +660,10 @@
 				05206B7B2DDFC1F200550A87 /* InfoField.swift in Sources */,
 				056E5C702DDFBDD2003254C7 /* InfoWindowController.swift in Sources */,
 				05206B8C2DE0A0E800550A87 /* NSAlert.swift in Sources */,
-				05A6F29A2DE5A67D00E83D5A /* BitsPerPixel.swift in Sources */,
 				056E5C6B2DDFAA9F003254C7 /* AboutWindowController.swift in Sources */,
 				056E5C5B2DDF9696003254C7 /* MainWindowController.swift in Sources */,
-				05A6F3282DE62F7200E83D5A /* PixelPipeline.swift in Sources */,
-				05A6F2892DE4CE6A00E83D5A /* Debayer.swift in Sources */,
 				05206B7D2DDFC1F900550A87 /* InfoSection.swift in Sources */,
-				05A6F3242DE629DD00E83D5A /* PixelUtilities+Accelerate.swift in Sources */,
 				05206B892DE06ED800550A87 /* SingleLineString.swift in Sources */,
-				05A6F2982DE5A62F00E83D5A /* PixelUtilities.swift in Sources */,
 				05206B8F2DE0C41C00550A87 /* ImageRenderer.swift in Sources */,
 				0587FF102DDE64DF005DECEF /* ApplicationDelegate.swift in Sources */,
 			);

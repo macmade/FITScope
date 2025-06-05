@@ -25,20 +25,11 @@
 import CoreGraphics
 import Foundation
 import SwiftFITS
+import SwiftPixel
 import SwiftUtilities
 
 public enum ImageRenderer
 {
-    public struct RenderOptions
-    {
-        public let bitsPerPixel: BitsPerPixel
-        public let width:        Int
-        public let height:       Int
-        public let scale:        Double
-        public let scaleOffset:  Int64
-        public let bayerPattern: Debayer.Pattern?
-    }
-
     public static func render( data: Data, properties: [ FITSProperty ] ) throws -> CGImage
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value as? Int64
@@ -97,7 +88,7 @@ public enum ImageRenderer
             throw RuntimeError( message: "Data size does not match expected size: \( data.count ) != \( size )" )
         }
 
-        let bayerPattern: Debayer.Pattern? = if let pattern = properties.first( where: { $0.name == "BAYERPAT" } )?.value as? String
+        let bayerPattern: Processors.Debayer.Pattern? = if let pattern = properties.first( where: { $0.name == "BAYERPAT" } )?.value as? String
         {
             switch pattern
             {
@@ -113,9 +104,9 @@ public enum ImageRenderer
             nil
         }
 
-        let offset: Int64 = if let bZero = properties.first( where: { $0.name == "BZERO" } )?.value as? Int64
+        let offset: Double = if let bZero = properties.first( where: { $0.name == "BZERO" } )?.value as? Int64
         {
-            bZero
+            Double( bZero )
         }
         else
         {
@@ -131,62 +122,12 @@ public enum ImageRenderer
             1
         }
 
-        let options = RenderOptions(
-            bitsPerPixel: bitsPerPixel,
-            width:        width,
-            height:       height,
-            scale:        scale,
-            scaleOffset:  offset,
-            bayerPattern: bayerPattern
-        )
+        let config   = PixelPipeline.Config( scale: ( scale, offset ), bayerPattern: bayerPattern, normalize: .minMax, stretch: .log( 50 ), correctGamma: 1.8, whiteBalance: .auto )
+        let pipeline = PixelPipeline( config: config )
 
         return try Benchmark.run( label: "Rendering Image" )
         {
-            try self.render( data: data, options: options )
+            return try pipeline.run( data: data, width: width, height: height, bitsPerPixel: bitsPerPixel ).createCGImage()
         }
-    }
-
-    public static func render( data: Data, options: RenderOptions ) throws -> CGImage
-    {
-        let pixels = try PixelPipeline(
-            data:         data,
-            width:        options.width,
-            height:       options.height,
-            bitsPerPixel: options.bitsPerPixel,
-            options:      .useAccelerate
-        )
-        .scale( scale: options.scale, offset: options.scaleOffset )
-        .debayerOrConvertToRGBTriplets( pattern: options.bayerPattern )
-        .normalized()
-
-        guard let provider = CGDataProvider( data: Data( pixels ) as CFData )
-        else
-        {
-            throw RuntimeError( message: "Unable to create a data provider" )
-        }
-
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let bitmapInfo = CGBitmapInfo( rawValue: CGImageAlphaInfo.none.rawValue )
-        let cgImage    = CGImage(
-            width:             options.width,
-            height:            options.height,
-            bitsPerComponent:  8,
-            bitsPerPixel:      24,
-            bytesPerRow:       options.width * 3,
-            space:             colorSpace,
-            bitmapInfo:        bitmapInfo,
-            provider:          provider,
-            decode:            nil,
-            shouldInterpolate: false,
-            intent:            .defaultIntent
-        )
-
-        guard let cgImage
-        else
-        {
-            throw RuntimeError( message: "Unable to create a CGImage" )
-        }
-
-        return cgImage
     }
 }
