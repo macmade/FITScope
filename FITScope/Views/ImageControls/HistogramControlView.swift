@@ -65,6 +65,8 @@ public struct HistogramControlView: View
                 mode:             self.mode
             )
             .frame( height: 100 )
+            .background( Color( .textBackgroundColor ) )
+            .cornerRadius( 10 )
 
             Toggle( "Separate Channels", isOn: $separateChannels )
                 .disabled( self.mode == .luminance )
@@ -73,8 +75,14 @@ public struct HistogramControlView: View
 
             if self.showStatistics
             {
-                HistogramStatisticsView( statistics: self.statistics, mode: self.mode )
-                    .padding( .vertical )
+                HStack
+                {
+                    HistogramStatisticsView( statistics: self.statistics, mode: self.mode )
+                        .padding()
+                }
+                .frame( maxWidth: .infinity, alignment: .leading )
+                .background( Color( .textBackgroundColor ) )
+                .cornerRadius( 10 )
             }
         }
     }
