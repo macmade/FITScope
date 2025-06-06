@@ -127,7 +127,7 @@ public enum PreviewHelper
             red:       red,
             green:     green,
             blue:      blue,
-            luminance: luminance,
+            luminance: luminance
         )
     }
 
