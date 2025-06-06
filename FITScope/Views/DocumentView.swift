@@ -55,10 +55,6 @@ public struct DocumentView: View
                     ImageView( renderer: image.renderer )
                         .frame( maxWidth: .infinity, maxHeight: .infinity )
                 }
-                .task
-                {
-                    await image.renderer.render()
-                }
             }
             else if let error = self.loader.error
             {
