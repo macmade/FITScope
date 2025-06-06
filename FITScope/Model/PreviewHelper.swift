@@ -104,4 +104,60 @@ public enum PreviewHelper
     {
         self.properties( file: file )?.first
     }
+
+    public static func generateRandomRGBData( count: Int ) -> [ UInt8 ]
+    {
+        let bins  = 256
+        let rHist = self.gaussianCurve( bins: bins, mean: 80, stdDev: 15 )
+        let gHist = self.gaussianCurve( bins: bins, mean: 130, stdDev: 20 )
+        let bHist = self.gaussianCurve( bins: bins, mean: 180, stdDev: 25 )
+        var data  = [ UInt8 ]()
+
+        data.reserveCapacity( count * 3 )
+
+        ( 0 ..< count ).forEach
+        {
+            _ in
+
+            let r = self.weightedRandom( from: rHist )
+            let g = self.weightedRandom( from: gHist )
+            let b = self.weightedRandom( from: bHist )
+
+            data.append( UInt8( r ) )
+            data.append( UInt8( g ) )
+            data.append( UInt8( b ) )
+        }
+
+        return data
+    }
+
+    private static func gaussianCurve( bins: Int, mean: Double, stdDev: Double ) -> [ Int ]
+    {
+        ( 0 ..< bins ).map
+        {
+            let x     = Double( $0 )
+            let value = exp( -pow( x - mean, 2 ) / ( 2 * pow( stdDev, 2 ) ) )
+
+            return Int( value * 1000 )
+        }
+    }
+
+    private static func weightedRandom( from weights: [ Int ] ) -> Int
+    {
+        let total     = weights.reduce( 0, + )
+        let threshold = Int.random( in: 0 ..< total )
+        var sum       = 0
+
+        for ( i, w ) in weights.enumerated()
+        {
+            sum += w
+
+            if sum > threshold
+            {
+                return i
+            }
+        }
+
+        return weights.count - 1
+    }
 }

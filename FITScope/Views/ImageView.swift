@@ -50,7 +50,8 @@ public struct ImageView: View
                     Divider()
 
                     ImageControlsView( bytes: result.bytes )
-                        .frame( width: 200 )
+                        .frame( width: 300 )
+                        .padding()
                 }
             }
             else if let error = self.renderer.error

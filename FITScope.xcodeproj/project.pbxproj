@@ -10,6 +10,8 @@
 		050F384C2DEEC2FA00E84F97 /* SwiftPixel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 050F38492DEEC2F000E84F97 /* SwiftPixel.framework */; };
 		050F384D2DEEC2FA00E84F97 /* SwiftPixel.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 050F38492DEEC2F000E84F97 /* SwiftPixel.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		05206B8F2DE0C41C00550A87 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8E2DE0C41800550A87 /* ImageProcessor.swift */; };
+		0524AD7E2DF3450400180358 /* HistogramStatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0524AD7D2DF3450200180358 /* HistogramStatisticsView.swift */; };
+		0524AD812DF3457D00180358 /* HistogramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0524AD802DF3457C00180358 /* HistogramView.swift */; };
 		05398CE32DEECF4F005904EC /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
 		056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
 		056E5C522DDF1356003254C7 /* SwiftFITS.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -98,6 +100,8 @@
 /* Begin PBXFileReference section */
 		050F383F2DEEC2F000E84F97 /* SwiftPixel.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftPixel.xcodeproj; path = Submodules/SwiftPixel/SwiftPixel.xcodeproj; sourceTree = "<group>"; };
 		05206B8E2DE0C41800550A87 /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
+		0524AD7D2DF3450200180358 /* HistogramStatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramStatisticsView.swift; sourceTree = "<group>"; };
+		0524AD802DF3457C00180358 /* HistogramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramView.swift; sourceTree = "<group>"; };
 		05398CE22DEECF4F005904EC /* SwiftUtilities.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SwiftUtilities.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAA22DDDDDA800EF0C79 /* FITScope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FITScope.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAB12DDDDDA900EF0C79 /* FITScopeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FITScopeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -505,9 +509,11 @@
 			children = (
 				05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */,
 				05BD7A952DF3120100F4AAFC /* GammaCorrectionControlView.swift */,
+				05BD7A9B2DF3121800F4AAFC /* HistogramControlView.swift */,
+				0524AD7D2DF3450200180358 /* HistogramStatisticsView.swift */,
+				0524AD802DF3457C00180358 /* HistogramView.swift */,
 				05BD7A972DF3120600F4AAFC /* StretchControlView.swift */,
 				05BD7A992DF3121100F4AAFC /* WhiteBalanceControlView.swift */,
-				05BD7A9B2DF3121800F4AAFC /* HistogramControlView.swift */,
 			);
 			path = ImageControls;
 			sourceTree = "<group>";
@@ -709,6 +715,7 @@
 			files = (
 				0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */,
 				0579B6122DF220D1002FDD47 /* FITSImageRenderer.swift in Sources */,
+				0524AD7E2DF3450400180358 /* HistogramStatisticsView.swift in Sources */,
 				05DC79A12DF2F82A003E2AFA /* ErrorView.swift in Sources */,
 				05BD7A9C2DF3121B00F4AAFC /* HistogramControlView.swift in Sources */,
 				0579B61C2DF245E2002FDD47 /* FITSImageInfo.swift in Sources */,
@@ -717,6 +724,7 @@
 				05BD7A942DF311F700F4AAFC /* DebayerControlView.swift in Sources */,
 				05BD7A912DF3119400F4AAFC /* ImageControlsView.swift in Sources */,
 				05C4BD762DF2E62500326B69 /* PreviewHelper.swift in Sources */,
+				0524AD812DF3457D00180358 /* HistogramView.swift in Sources */,
 				05BD7A982DF3120E00F4AAFC /* StretchControlView.swift in Sources */,
 				05BD7A9A2DF3121600F4AAFC /* WhiteBalanceControlView.swift in Sources */,
 				0579B6202DF249AD002FDD47 /* FITSImageProperty.swift in Sources */,

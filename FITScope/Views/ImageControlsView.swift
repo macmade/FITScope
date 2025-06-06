@@ -31,7 +31,7 @@ public struct ImageControlsView: View
 
     public var body: some View
     {
-        VStack
+        ScrollView
         {
             HistogramControlView( bytes: self.bytes )
             Divider()
@@ -48,11 +48,6 @@ public struct ImageControlsView: View
 
 #Preview
 {
-    let bytes = ( 0 ..< 3 * 1024 ).map
-    {
-        _ in UInt8.random( in: 0 ... UInt8.max )
-    }
-
-    ImageControlsView( bytes: bytes )
+    ImageControlsView( bytes: PreviewHelper.generateRandomRGBData( count: 1024 ) )
         .padding()
 }

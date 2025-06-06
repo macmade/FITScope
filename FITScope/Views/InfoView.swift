@@ -57,6 +57,7 @@ public struct InfoView: View
                         Text( $0.title ).tag( $0.index )
                     }
                 }
+                .labelsHidden()
                 .fixedSize()
 
                 SearchField( text: $searchText )

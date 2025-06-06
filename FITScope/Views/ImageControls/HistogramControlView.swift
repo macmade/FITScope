@@ -22,21 +22,75 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftFITS
+import SwiftPixel
 import SwiftUI
 
 public struct HistogramControlView: View
 {
+    public enum Mode: String, CaseIterable, Identifiable
+    {
+        case rgb       = "RGB"
+        case luminance = "Luminance"
+
+        public var id: String
+        {
+            self.rawValue
+        }
+    }
+
+    @State private var separateChannels = false
+    @State private var statistics       = false
+    @State private var mode             = Mode.rgb
+
     public let bytes: [ UInt8 ]
+
+    private var histogram: Histogram
+    {
+        switch self.mode
+        {
+            case .rgb:       Histogram( bytes: self.bytes, mode: .rgb )
+            case .luminance: Histogram( bytes: self.bytes, mode: .luminance )
+        }
+    }
 
     public var body: some View
     {
-        Text( "Histogram" )
+        VStack( alignment: .leading )
+        {
+            Picker( "Mode", selection: $mode )
+            {
+                ForEach( Mode.allCases )
+                {
+                    Text( $0.rawValue ).tag( $0 )
+                }
+            }
+            .labelsHidden()
+            .pickerStyle( SegmentedPickerStyle() )
+
+            HistogramView(
+                histogram:        self.histogram.data,
+                separateChannels: self.separateChannels && self.mode == .rgb,
+                mode:             self.mode
+            )
+            .frame( height: 100 )
+
+            Toggle( "Separate Channels", isOn: $separateChannels )
+                .disabled( self.mode == .luminance )
+
+            Toggle( "Statistics", isOn: $statistics )
+
+            if self.statistics
+            {
+                HistogramStatisticsView( statistics: self.histogram.data.map( HistogramStatistics.init ), mode: self.mode )
+                    .padding( .vertical )
+            }
+        }
     }
 }
 
 #Preview
 {
-    HistogramControlView( bytes: [] )
+    HistogramControlView( bytes: PreviewHelper.generateRandomRGBData( count: 1024 ) )
+        .fixedSize( horizontal: false, vertical: true )
         .padding()
 }
