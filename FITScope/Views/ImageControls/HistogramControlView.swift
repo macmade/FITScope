@@ -39,19 +39,11 @@ public struct HistogramControlView: View
     }
 
     @State private var separateChannels = false
-    @State private var statistics       = false
+    @State private var showStatistics   = false
     @State private var mode             = Mode.rgb
 
-    public let bytes: [ UInt8 ]
-
-    private var histogram: Histogram
-    {
-        switch self.mode
-        {
-            case .rgb:       Histogram( bytes: self.bytes, mode: .rgb )
-            case .luminance: Histogram( bytes: self.bytes, mode: .luminance )
-        }
-    }
+    public let histogram:  FITSImageRenderer.Histogram
+    public let statistics: FITSImageRenderer.HistogramStatistics
 
     public var body: some View
     {
@@ -68,7 +60,7 @@ public struct HistogramControlView: View
             .pickerStyle( SegmentedPickerStyle() )
 
             HistogramView(
-                histogram:        self.histogram.data,
+                histogram:        self.histogram,
                 separateChannels: self.separateChannels && self.mode == .rgb,
                 mode:             self.mode
             )
@@ -77,11 +69,11 @@ public struct HistogramControlView: View
             Toggle( "Separate Channels", isOn: $separateChannels )
                 .disabled( self.mode == .luminance )
 
-            Toggle( "Statistics", isOn: $statistics )
+            Toggle( "Statistics", isOn: $showStatistics )
 
-            if self.statistics
+            if self.showStatistics
             {
-                HistogramStatisticsView( statistics: self.histogram.data.map( HistogramStatistics.init ), mode: self.mode )
+                HistogramStatisticsView( statistics: self.statistics, mode: self.mode )
                     .padding( .vertical )
             }
         }
@@ -90,7 +82,7 @@ public struct HistogramControlView: View
 
 #Preview
 {
-    HistogramControlView( bytes: PreviewHelper.generateRandomRGBData( count: 1024 ) )
+    HistogramControlView( histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() )
         .fixedSize( horizontal: false, vertical: true )
         .padding()
 }

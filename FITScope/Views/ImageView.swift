@@ -49,7 +49,7 @@ public struct ImageView: View
 
                     Divider()
 
-                    ImageControlsView( bytes: result.bytes )
+                    ImageControlsView( histogram: result.histogram, statistics: result.statistics )
                         .frame( width: 300 )
                         .padding()
                 }

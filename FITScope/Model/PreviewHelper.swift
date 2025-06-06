@@ -24,6 +24,7 @@
 
 import Foundation
 import SwiftFITS
+import SwiftPixel
 
 public enum PreviewHelper
 {
@@ -103,6 +104,31 @@ public enum PreviewHelper
     public static func property( file: TestFile ) -> FITSImageProperty?
     {
         self.properties( file: file )?.first
+    }
+
+    public static func histogram() -> FITSImageRenderer.Histogram
+    {
+        let bytes     = self.generateRandomRGBData( count: 1000 )
+        let rgb       = Histogram( bytes: bytes, mode: .rgb )
+        let luminance = Histogram( bytes: bytes, mode: .luminance )
+
+        return FITSImageRenderer.Histogram( rgb: rgb, luminance: luminance )
+    }
+
+    public static func statistics() -> FITSImageRenderer.HistogramStatistics
+    {
+        let histogram = self.histogram()
+        let red       = HistogramStatistics( data: histogram.rgb.data[ 0 ] )
+        let green     = HistogramStatistics( data: histogram.rgb.data[ 1 ] )
+        let blue      = HistogramStatistics( data: histogram.rgb.data[ 2 ] )
+        let luminance = HistogramStatistics( data: histogram.luminance.data[ 0 ] )
+
+        return FITSImageRenderer.HistogramStatistics(
+            red:       red,
+            green:     green,
+            blue:      blue,
+            luminance: luminance,
+        )
     }
 
     public static func generateRandomRGBData( count: Int ) -> [ UInt8 ]

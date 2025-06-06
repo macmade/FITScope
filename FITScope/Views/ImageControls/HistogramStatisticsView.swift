@@ -43,7 +43,7 @@ public struct HistogramStatisticsView: View
         }
     }
 
-    public let statistics: [ HistogramStatistics ]
+    public let statistics: FITSImageRenderer.HistogramStatistics
     public let mode:       HistogramControlView.Mode
 
     private let descriptors =
@@ -72,11 +72,20 @@ public struct HistogramStatisticsView: View
                         .font( .caption )
                         .gridColumnAlignment( .trailing )
 
-                    ForEach( self.statistics.indices, id: \.self )
+                    let statistics =
+                    {
+                        switch self.mode
+                        {
+                            case .rgb:       return [ self.statistics.red, self.statistics.green, self.statistics.blue ]
+                            case .luminance: return [ self.statistics.luminance ]
+                        }
+                    }()
+
+                    ForEach( statistics.indices, id: \.self )
                     {
                         index in
 
-                        let value        = descriptor.provideValue( self.statistics[ index ] )
+                        let value        = descriptor.provideValue( statistics[ index ] )
                         let color: Color = mode == .luminance ? .gray : [ Color.red, .green, .blue ][ index ]
 
                         Text( value )
@@ -91,19 +100,13 @@ public struct HistogramStatisticsView: View
 
 #Preview
 {
-    let bytes          = PreviewHelper.generateRandomRGBData( count: 1024 )
-    let rgb            = Histogram( bytes: bytes, mode: .rgb )
-    let luminance      = Histogram( bytes: bytes, mode: .luminance )
-    let statsRed       = HistogramStatistics( data: rgb.data[ 0 ] )
-    let statsGreen     = HistogramStatistics( data: rgb.data[ 1 ] )
-    let statsBlue      = HistogramStatistics( data: rgb.data[ 2 ] )
-    let statsLuminance = HistogramStatistics( data: luminance.data[ 0 ] )
+    let statistics = PreviewHelper.statistics()
 
     VStack( alignment: .leading )
     {
-        HistogramStatisticsView( statistics: [ statsRed, statsGreen, statsBlue ], mode: .rgb )
+        HistogramStatisticsView( statistics: statistics, mode: .rgb )
         Divider()
-        HistogramStatisticsView( statistics: [ statsLuminance ], mode: .luminance )
+        HistogramStatisticsView( statistics: statistics, mode: .luminance )
     }
     .padding()
 }

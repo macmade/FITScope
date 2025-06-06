@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import SwiftFITS
+import SwiftPixel
 import SwiftUI
 import SwiftUtilities
 
@@ -31,8 +32,24 @@ public class FITSImageRenderer: ObservableObject
 {
     public struct Result
     {
-        public let image: CGImage
-        public let bytes: [ UInt8 ]
+        public let image:      CGImage
+        public let bytes:      [ UInt8 ]
+        public let histogram:  Histogram
+        public let statistics: HistogramStatistics
+    }
+
+    public struct Histogram
+    {
+        public let rgb:       SwiftPixel.Histogram
+        public let luminance: SwiftPixel.Histogram
+    }
+
+    public struct HistogramStatistics
+    {
+        public let red:       SwiftPixel.HistogramStatistics
+        public let green:     SwiftPixel.HistogramStatistics
+        public let blue:      SwiftPixel.HistogramStatistics
+        public let luminance: SwiftPixel.HistogramStatistics
     }
 
     @Published public private( set ) var result: Result?
@@ -57,7 +74,27 @@ public class FITSImageRenderer: ObservableObject
                 {
                     do
                     {
-                        let result = try ImageProcessor.render( data: file.value.sections[ 1 ].data, properties: file.value.sections.first?.properties ?? [] )
+                        let render              = try ImageProcessor.render( data: file.value.sections[ 1 ].data, properties: file.value.sections.first?.properties ?? [] )
+                        let rgbHistogram        = Benchmark.run( label: "Histogram (RGB)" ) { SwiftPixel.Histogram( bytes: render.bytes, mode: .rgb ) }
+                        let luminanceHistogram  = Benchmark.run( label: "Histogram (L)"   ) { SwiftPixel.Histogram( bytes: render.bytes, mode: .luminance ) }
+                        let redStatistics       = Benchmark.run( label: "Statistics (R)"  ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 0 ] ) }
+                        let greenStatistics     = Benchmark.run( label: "Statistics (G)"  ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 1 ] ) }
+                        let blueStatistics      = Benchmark.run( label: "Statistics (B)"  ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 2 ] ) }
+                        let luminanceStatistics = Benchmark.run( label: "Statistics (L)"  ) { SwiftPixel.HistogramStatistics( data: luminanceHistogram.data[ 0 ] ) }
+                        let histogram           = Histogram( rgb: rgbHistogram, luminance: luminanceHistogram )
+                        let statistics          = HistogramStatistics(
+                            red:       redStatistics,
+                            green:     greenStatistics,
+                            blue:      blueStatistics,
+                            luminance: luminanceStatistics
+                        )
+
+                        let result = Result(
+                            image: render.image,
+                            bytes: render.bytes,
+                            histogram: histogram,
+                            statistics: statistics
+                        )
 
                         continuation.resume( returning: result )
                     }
@@ -70,7 +107,7 @@ public class FITSImageRenderer: ObservableObject
 
             await MainActor.run
             {
-                self.result = Result( image: result.image, bytes: result.bytes )
+                self.result = result
                 self.error  = nil
             }
         }

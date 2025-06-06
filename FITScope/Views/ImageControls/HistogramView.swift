@@ -25,23 +25,24 @@
 import SwiftPixel
 import SwiftUI
 
-struct HistogramView: View
+public struct HistogramView: View
 {
-    let histogram:        [ [ Int ] ]
-    let separateChannels: Bool
-    let mode:             HistogramControlView.Mode
+    public let histogram:        FITSImageRenderer.Histogram
+    public let separateChannels: Bool
+    public let mode:             HistogramControlView.Mode
 
-    var body: some View
+    public var body: some View
     {
         GeometryReader
         {
             geometry in
 
-            let maxCount = self.maxCount
+            let data     = self.data
+            let maxCount = data.flatMap { $0 }.max() ?? 1
 
             ZStack
             {
-                if self.histogram.count == 3 && separateChannels && self.mode == .rgb
+                if self.separateChannels && self.mode == .rgb
                 {
                     VStack( spacing: 0 )
                     {
@@ -49,15 +50,13 @@ struct HistogramView: View
                         {
                             index in
 
-                            let color = [ Color.red, .green, .blue ][ index ]
-
                             Canvas
                             {
                                 context, size in
 
-                                let path = Self.path( data: histogram[ index ], size: size, maxCount: maxCount )
+                                let path = Self.path( data: data[ index ], size: size, maxCount: maxCount )
 
-                                context.fill( path, with: .color( color.opacity( 0.5 ) ) )
+                                context.fill( path, with: .color( self.color( index: index ) ) )
                             }
                             .frame( height: geometry.size.height / 3 )
                         }
@@ -65,23 +64,49 @@ struct HistogramView: View
                 }
                 else
                 {
-                    ForEach( 0 ..< histogram.count, id: \.self )
+                    ForEach( 0 ..< data.count, id: \.self )
                     {
                         index in
 
-                        let color: Color = mode == .luminance ? .gray : [ Color.red, .green, .blue ][ index ]
-
-                        Self.path( data: histogram[ index ], size: geometry.size, maxCount: maxCount )
-                            .fill( color.opacity( 0.5 ) )
+                        Self.path( data: data[ index ], size: geometry.size, maxCount: maxCount )
+                            .fill( self.color( index: index ).opacity( self.opacity ) )
                     }
                 }
             }
         }
     }
 
-    var maxCount: Int
+    private func color( index: Int ) -> Color
     {
-        self.histogram.flatMap { $0 }.max() ?? 1
+        guard index <= 2
+        else
+        {
+            return .clear
+        }
+
+        switch self.mode
+        {
+            case .luminance: return .gray
+            case .rgb:       return [ .red, .green, .blue ][ index ]
+        }
+    }
+
+    private var opacity: Double
+    {
+        switch self.mode
+        {
+            case .luminance: return 1
+            case .rgb:       return self.separateChannels ? 1 : 0.5
+        }
+    }
+
+    private var data: [ [ Int ] ]
+    {
+        switch self.mode
+        {
+            case .luminance: return self.histogram.luminance.data
+            case .rgb:       return self.histogram.rgb.data
+        }
     }
 
     private static func path( data: [ Int ], size: CGSize, maxCount: Int ) -> Path
@@ -109,17 +134,15 @@ struct HistogramView: View
 
 #Preview
 {
-    let bytes     = PreviewHelper.generateRandomRGBData( count: 1024 )
-    let rgb       = Histogram( bytes: bytes, mode: .rgb )
-    let luminance = Histogram( bytes: bytes, mode: .luminance )
+    let histogram = PreviewHelper.histogram()
 
     VStack( alignment: .leading )
     {
-        HistogramView( histogram: rgb.data, separateChannels: false, mode: .rgb )
+        HistogramView( histogram: histogram, separateChannels: false, mode: .rgb )
         Divider()
-        HistogramView( histogram: rgb.data, separateChannels: true,  mode: .rgb )
+        HistogramView( histogram: histogram, separateChannels: true,  mode: .rgb )
         Divider()
-        HistogramView( histogram: luminance.data, separateChannels: false, mode: .luminance )
+        HistogramView( histogram: histogram, separateChannels: false, mode: .luminance )
     }
     .padding()
 }

@@ -27,13 +27,14 @@ import SwiftUI
 
 public struct ImageControlsView: View
 {
-    public let bytes: [ UInt8 ]
+    public let histogram:  FITSImageRenderer.Histogram
+    public let statistics: FITSImageRenderer.HistogramStatistics
 
     public var body: some View
     {
         ScrollView
         {
-            HistogramControlView( bytes: self.bytes )
+            HistogramControlView( histogram: self.histogram, statistics: self.statistics )
             Divider()
             DebayerControlView()
             Divider()
@@ -48,6 +49,6 @@ public struct ImageControlsView: View
 
 #Preview
 {
-    ImageControlsView( bytes: PreviewHelper.generateRandomRGBData( count: 1024 ) )
+    ImageControlsView( histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() )
         .padding()
 }
