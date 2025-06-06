@@ -28,9 +28,9 @@ import SwiftFITS
 import SwiftPixel
 import SwiftUtilities
 
-public enum ImageRenderer
+public enum ImageProcessor
 {
-    public static func render( data: Data, properties: [ FITSProperty ] ) throws -> CGImage
+    public static func render( data: Data, properties: [ FITSProperty ] ) throws -> ( image: CGImage, bytes: [ UInt8 ] )
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value as? Int64
         else
@@ -127,7 +127,11 @@ public enum ImageRenderer
 
         return try Benchmark.run( label: "Rendering Image" )
         {
-            return try pipeline.run( data: data, width: width, height: height, bitsPerPixel: bitsPerPixel ).createCGImage()
+            let buffer = try pipeline.run( data: data, width: width, height: height, bitsPerPixel: bitsPerPixel )
+            let bytes  = try buffer.convertTo8Bits()
+            let image  = try PixelBuffer.createCGImage( bytes: bytes, width: buffer.width, height: buffer.height, channels: buffer.channels )
+
+            return ( image, bytes )
         }
     }
 }

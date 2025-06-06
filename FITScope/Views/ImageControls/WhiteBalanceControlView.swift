@@ -22,35 +22,19 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Cocoa
+import SwiftFITS
+import SwiftUI
 
-public class AboutWindowController: NSWindowController
+public struct WhiteBalanceControlView: View
 {
-    @objc private dynamic var name:      String?
-    @objc private dynamic var version:   String?
-    @objc private dynamic var copyright: String?
-
-    public override var windowNibName: NSNib.Name?
+    public var body: some View
     {
-        "AboutWindowController"
+        Text( "White Balance" )
     }
+}
 
-    public override func windowDidLoad()
-    {
-        super.windowDidLoad()
-
-        let version = Bundle.main.object( forInfoDictionaryKey: "CFBundleShortVersionString" ) as? String ?? "0.0.0"
-
-        self.version = if let build = Bundle.main.object( forInfoDictionaryKey: "CFBundleVersion" ) as? String
-        {
-            "\( version ) (\( build ))"
-        }
-        else
-        {
-            version
-        }
-
-        self.name      = Bundle.main.object( forInfoDictionaryKey: "CFBundleName"             ) as? String
-        self.copyright = Bundle.main.object( forInfoDictionaryKey: "NSHumanReadableCopyright" ) as? String
-    }
+#Preview
+{
+    WhiteBalanceControlView()
+        .padding()
 }

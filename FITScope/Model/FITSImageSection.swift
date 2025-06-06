@@ -22,57 +22,35 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Cocoa
+import Foundation
 import SwiftFITS
 
-@objc
-public class InfoSection: NSObject
+public struct FITSImageSection: Codable, Hashable, Identifiable
 {
-    @objc public dynamic var title:  String
-    @objc public dynamic var fields: [ InfoField ]
+    public let id:         String
+    public let index:      Int
+    public let title:      String
+    public let properties: [ FITSImageProperty ]
 
-    public convenience init( section: FITSSection )
+    public init?( index: Int, section: FITSSection )
     {
-        self.init( title: InfoSection.title( for: section ), values: InfoField.fields( from: section.properties ) )
-    }
-
-    public init( title: String, values: [ InfoField ] )
-    {
-        self.title  = title
-        self.fields = values
-    }
-
-    public override var description: String
-    {
-        return self.title
-    }
-
-    public class func info( from sections: [ FITSSection ] ) -> [ InfoSection ]
-    {
-        sections.compactMap
-        {
-            self.info( from: $0 )
-        }
-    }
-
-    public class func info( from section: FITSSection ) -> InfoSection?
-    {
-        guard section.properties.count > 0
-        else
-        {
-            return nil
-        }
-
         guard section.kind == .header || section.kind == .xtension
         else
         {
             return nil
         }
 
-        return InfoSection( section: section )
+        let title       = Self.title( for: section )
+        self.id         = "\( index )-\( title )"
+        self.index      = index
+        self.title      = title
+        self.properties = section.properties.enumerated().map
+        {
+            FITSImageProperty( index: $0.offset, property: $0.element )
+        }
     }
 
-    public class func title( for section: FITSSection ) -> String
+    public static func title( for section: FITSSection ) -> String
     {
         switch section.kind
         {

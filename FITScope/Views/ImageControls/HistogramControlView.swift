@@ -22,30 +22,21 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Cocoa
 import SwiftFITS
+import SwiftUI
 
-@objc( SingleLineString )
-public class SingleLineString: ValueTransformer
+public struct HistogramControlView: View
 {
-    public override class func transformedValueClass() -> AnyClass
-    {
-        NSString.self
-    }
+    public let bytes: [ UInt8 ]
 
-    public override class func allowsReverseTransformation() -> Bool
+    public var body: some View
     {
-        false
+        Text( "Histogram" )
     }
+}
 
-    public override func transformedValue( _ value: Any? ) -> Any?
-    {
-        guard let string = value as? String
-        else
-        {
-            return nil
-        }
-
-        return string.replacingOccurrences( of: "\n", with: "\\n" )
-    }
+#Preview
+{
+    HistogramControlView( bytes: [] )
+        .padding()
 }

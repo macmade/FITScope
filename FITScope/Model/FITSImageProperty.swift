@@ -22,36 +22,30 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Cocoa
+import Foundation
 import SwiftFITS
 
-@objc
-public class InfoField: NSObject
+public struct FITSImageProperty: Codable, Hashable, Identifiable
 {
-    @objc public dynamic var index:   Int
-    @objc public dynamic var name:    String
-    @objc public dynamic var kind:    String
-    @objc public dynamic var value:   String?
-    @objc public dynamic var comment: String?
+    public let id:      String
+    public let index:   Int
+    public let name:    String
+    public let kind:    String
+    public let value:   String
+    public let comment: String
 
     public init( index: Int, property: FITSProperty )
     {
+        let value    = Self.stringForPropertyValue( property )
         self.index   = index
         self.name    = property.name
         self.kind    = property.kind.description
-        self.value   = InfoField.stringForPropertyValue( property )
-        self.comment = property.comment
+        self.value   = value ?? ""
+        self.comment = property.comment ?? ""
+        self.id      = "\( index )-\( property.name )-\( property.kind.description )-\( value ?? "<nil>" )-\( property.comment ?? "<nil>" )"
     }
 
-    public class func fields( from properties: [ FITSProperty ] ) -> [ InfoField ]
-    {
-        properties.enumerated().map
-        {
-            InfoField( index: $0.offset, property: $0.element )
-        }
-    }
-
-    public class func stringForPropertyValue( _ property: FITSProperty ) -> String?
+    public static func stringForPropertyValue( _ property: FITSProperty ) -> String?
     {
         switch property.kind
         {
@@ -65,7 +59,7 @@ public class InfoField: NSObject
         }
     }
 
-    public class func stringForLogicalValue( _ value: Any? ) -> String?
+    public static func stringForLogicalValue( _ value: Any? ) -> String?
     {
         guard let value = value as? Bool
         else
@@ -76,7 +70,7 @@ public class InfoField: NSObject
         return value ? "T" : "F"
     }
 
-    public class func stringForIntegerValue( _ value: Any? ) -> String?
+    public static func stringForIntegerValue( _ value: Any? ) -> String?
     {
         guard let value = value as? Int64
         else
@@ -87,7 +81,7 @@ public class InfoField: NSObject
         return String( format: "%lli", value )
     }
 
-    public class func stringForFloatValue( _ value: Any? ) -> String?
+    public static func stringForFloatValue( _ value: Any? ) -> String?
     {
         guard let value = value as? Double
         else
@@ -98,17 +92,17 @@ public class InfoField: NSObject
         return String( format: "%.4f", value )
     }
 
-    public class func stringForStringValue( _ value: Any? ) -> String?
+    public static func stringForStringValue( _ value: Any? ) -> String?
     {
         value as? String
     }
 
-    public class func stringForUndefinedValue( _ value: Any? ) -> String?
+    public static func stringForUndefinedValue( _ value: Any? ) -> String?
     {
         nil
     }
 
-    public class func stringForUnknownValue( _ value: Any? ) -> String?
+    public static func stringForUnknownValue( _ value: Any? ) -> String?
     {
         guard let value = value
         else

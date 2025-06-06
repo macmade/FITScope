@@ -22,19 +22,44 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Cocoa
+import SwiftUI
 
-public extension NSAlert
+public struct AboutView: View
 {
-    func showOnWindow( _ window: NSWindow?, completion: ( ( NSApplication.ModalResponse ) -> Void )? )
+    public var body: some View
     {
-        if let window = window
+        HStack
         {
-            self.beginSheetModal( for: window, completionHandler: completion )
+            Image( nsImage: NSImage( named: NSImage.applicationIconName ) ?? NSImage() )
+                .resizable()
+                .frame( width: 200, height: 200 )
+
+            VStack( alignment: .leading )
+            {
+                Spacer()
+
+                Text( Bundle.main.title )
+                    .font( .largeTitle )
+
+                Text( Bundle.main.version )
+                    .font( .title3 )
+                    .foregroundStyle( .secondary )
+
+                Spacer()
+
+                Text( Bundle.main.copyright )
+                    .foregroundStyle( .secondary )
+
+                Spacer()
+            }
+            .padding( .trailing )
         }
-        else
-        {
-            completion?( self.runModal() )
-        }
+        .frame( maxHeight: 200 )
     }
+}
+
+#Preview
+{
+    AboutView()
+        .padding()
 }
