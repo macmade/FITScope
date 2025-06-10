@@ -84,6 +84,6 @@ public struct WhiteBalanceControlView: View
 #Preview
 {
     WhiteBalanceControlView()
-        .fixedSize( horizontal: false, vertical: true )
+        .frame( maxHeight: .infinity )
         .padding()
 }
