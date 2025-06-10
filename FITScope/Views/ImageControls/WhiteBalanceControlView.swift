@@ -27,14 +27,63 @@ import SwiftUI
 
 public struct WhiteBalanceControlView: View
 {
+    public enum Mode: CaseIterable, CustomStringConvertible
+    {
+        case none
+        case auto
+        case manual
+
+        public var description: String
+        {
+            switch self
+            {
+                case .none:   return "None"
+                case .auto:   return "Auto"
+                case .manual: return "Manual"
+            }
+        }
+    }
+
+    @State private var mode           = Mode.none
+    @State private var showRGBSliders = false
+    @State private var red            = 0.0
+    @State private var green          = 0.0
+    @State private var blue           = 0.0
+
     public var body: some View
     {
-        Text( "White Balance" )
+        Grid( alignment: .leading )
+        {
+            GridRow
+            {
+                Text( "Mode" )
+                Picker( "Mode", selection: $mode )
+                {
+                    ForEach( Mode.allCases, id: \.self )
+                    {
+                        Text( $0.description ).tag( $0 )
+                    }
+                }
+                .labelsHidden()
+            }
+
+            if self.showRGBSliders
+            {
+                SliderGridRowView( value: $red,   minimumValue: 0, maximumValue: 255, label: "Red",   image: "r.circle.fill" )
+                SliderGridRowView( value: $green, minimumValue: 0, maximumValue: 255, label: "Green", image: "g.circle.fill" )
+                SliderGridRowView( value: $blue,  minimumValue: 0, maximumValue: 255, label: "Blue",  image: "b.circle.fill" )
+            }
+        }
+        .onChange( of: self.mode )
+        {
+            self.showRGBSliders = self.mode == .manual
+        }
     }
 }
 
 #Preview
 {
     WhiteBalanceControlView()
+        .fixedSize( horizontal: false, vertical: true )
         .padding()
 }
