@@ -84,7 +84,7 @@ struct SearchField: View
 {
     struct Preview: View
     {
-        @State public var text = ""
+        @State private var text = ""
 
         var body: some View
         {
