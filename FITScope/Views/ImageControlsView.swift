@@ -36,12 +36,16 @@ public struct ImageControlsView: View
         {
             HistogramControlView( histogram: self.histogram, statistics: self.statistics )
             Divider()
+                .padding( .vertical )
             DebayerControlView()
             Divider()
+                .padding( .vertical )
             StretchControlView()
             Divider()
+                .padding( .vertical )
             GammaCorrectionControlView()
             Divider()
+                .padding( .vertical )
             WhiteBalanceControlView()
         }
     }
