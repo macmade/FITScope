@@ -27,14 +27,18 @@ import SwiftUI
 
 public struct HistogramControlView: View
 {
-    public enum Mode: String, CaseIterable, Identifiable
+    public enum Mode: CaseIterable, CustomStringConvertible
     {
-        case rgb       = "RGB"
-        case luminance = "Luminance"
+        case rgb
+        case luminance
 
-        public var id: String
+        public var description: String
         {
-            self.rawValue
+            switch self
+            {
+                case .rgb:       return "RGB"
+                case .luminance: return "Luminance"
+            }
         }
     }
 
@@ -51,9 +55,9 @@ public struct HistogramControlView: View
         {
             Picker( "Mode", selection: $mode )
             {
-                ForEach( Mode.allCases )
+                ForEach( Mode.allCases, id: \.self )
                 {
-                    Text( $0.rawValue ).tag( $0 )
+                    Text( $0.description ).tag( $0 )
                 }
             }
             .labelsHidden()
