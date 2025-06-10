@@ -29,7 +29,7 @@ public struct GammaCorrectionControlView: View
 {
     public var body: some View
     {
-        Text( "Gamma Correction" )
+        Text( "..." )
     }
 }
 

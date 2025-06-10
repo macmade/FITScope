@@ -35,18 +35,34 @@ public struct ImageControlsView: View
         ScrollView
         {
             HistogramControlView( histogram: self.histogram, statistics: self.statistics )
-            Divider()
-                .padding( .vertical )
-            DebayerControlView()
-            Divider()
-                .padding( .vertical )
-            StretchControlView()
-            Divider()
-                .padding( .vertical )
-            GammaCorrectionControlView()
-            Divider()
-                .padding( .vertical )
-            WhiteBalanceControlView()
+
+            Divider().padding( .vertical )
+
+            ImageControlContainer( label: "Debayer" )
+            {
+                DebayerControlView()
+            }
+
+            Divider().padding( .vertical )
+
+            ImageControlContainer( label: "Stretch" )
+            {
+                StretchControlView()
+            }
+
+            Divider().padding( .vertical )
+
+            ImageControlContainer( label: "Gamma Correction" )
+            {
+                GammaCorrectionControlView()
+            }
+
+            Divider().padding( .vertical )
+
+            ImageControlContainer( label: "White Balance" )
+            {
+                WhiteBalanceControlView()
+            }
         }
     }
 }

@@ -25,16 +25,29 @@
 import SwiftFITS
 import SwiftUI
 
-public struct StretchControlView: View
+public struct ImageControlContainer< Content: View >: View
 {
+    public let label: String
+
+    @ViewBuilder public let content: Content
+
     public var body: some View
     {
-        Text( "..." )
+        VStack( alignment: .leading )
+        {
+            Text( label )
+                .font( .headline )
+            self.content
+        }
+        .frame( maxWidth: .infinity, alignment: .leading )
     }
 }
 
 #Preview
 {
-    StretchControlView()
-        .padding()
+    ImageControlContainer( label: "Example Control" )
+    {
+        Text( "This is an example control view." )
+    }
+    .padding()
 }

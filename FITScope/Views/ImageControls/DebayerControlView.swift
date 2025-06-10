@@ -29,7 +29,7 @@ public struct DebayerControlView: View
 {
     public var body: some View
     {
-        Text( "Debayer" )
+        Text( "..." )
     }
 }
 

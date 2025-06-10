@@ -25,6 +25,7 @@
 		0579B6202DF249AD002FDD47 /* FITSImageProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B61F2DF249A9002FDD47 /* FITSImageProperty.swift */; };
 		0579B6222DF24C33002FDD47 /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6212DF24C31002FDD47 /* InfoView.swift */; };
 		0579B6252DF2C149002FDD47 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0579B6232DF2C120002FDD47 /* Preview Assets.xcassets */; };
+		057F611C2DF8B78600EE82D1 /* ImageControlContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 057F611B2DF8B78000EE82D1 /* ImageControlContainer.swift */; };
 		0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF092DDE64DF005DECEF /* Assets.xcassets */; };
 		0587FF0F2DDE64DF005DECEF /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF0C2DDE64DF005DECEF /* MainMenu.xib */; };
 		0587FF132DDE64E0005DECEF /* FITScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF112DDE64E0005DECEF /* FITScopeTests.swift */; };
@@ -171,6 +172,7 @@
 		0579B61F2DF249A9002FDD47 /* FITSImageProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageProperty.swift; sourceTree = "<group>"; };
 		0579B6212DF24C31002FDD47 /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
 		0579B6232DF2C120002FDD47 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		057F611B2DF8B78000EE82D1 /* ImageControlContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageControlContainer.swift; sourceTree = "<group>"; };
 		0587FF092DDE64DF005DECEF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0587FF0A2DDE64DF005DECEF /* FITScope.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScope.entitlements; sourceTree = "<group>"; };
 		0587FF0B2DDE64DF005DECEF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -539,6 +541,7 @@
 				05DC79A02DF2F827003E2AFA /* ErrorView.swift */,
 				05DC79A42DF30503003E2AFA /* ImageView.swift */,
 				05BD7A902DF3119000F4AAFC /* ImageControlsView.swift */,
+				057F611B2DF8B78000EE82D1 /* ImageControlContainer.swift */,
 				05BD7A922DF311EB00F4AAFC /* ImageControls */,
 				0579B6212DF24C31002FDD47 /* InfoView.swift */,
 				05C4BD732DF2E4F500326B69 /* InfoViewTable.swift */,
@@ -747,6 +750,7 @@
 				05D710CB2DF200EF00CE32E3 /* DocumentView.swift in Sources */,
 				05C4BD742DF2E4FD00326B69 /* InfoViewTable.swift in Sources */,
 				05C4BD782DF2E7D600326B69 /* InfoViewTableCell.swift in Sources */,
+				057F611C2DF8B78600EE82D1 /* ImageControlContainer.swift in Sources */,
 				05D710C62DF2007D00CE32E3 /* FITScopeApp.swift in Sources */,
 				05BD7A962DF3120400F4AAFC /* GammaCorrectionControlView.swift in Sources */,
 				05D710CE2DF2012500CE32E3 /* AboutView.swift in Sources */,
