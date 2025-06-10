@@ -13,6 +13,7 @@
 		0524AD7E2DF3450400180358 /* HistogramStatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0524AD7D2DF3450200180358 /* HistogramStatisticsView.swift */; };
 		0524AD812DF3457D00180358 /* HistogramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0524AD802DF3457C00180358 /* HistogramView.swift */; };
 		05398CE32DEECF4F005904EC /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
+		053C2E752DF6EE3300DA637A /* Slider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 053C2E742DF6EE3200DA637A /* Slider.swift */; };
 		056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
 		056E5C522DDF1356003254C7 /* SwiftFITS.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
@@ -29,6 +30,7 @@
 		0587FF132DDE64E0005DECEF /* FITScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF112DDE64E0005DECEF /* FITScopeTests.swift */; };
 		0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */; };
 		0587FF182DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */; };
+		05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05986B472DF892D300A55E77 /* SliderGridRowView.swift */; };
 		05BD7A912DF3119400F4AAFC /* ImageControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A902DF3119000F4AAFC /* ImageControlsView.swift */; };
 		05BD7A942DF311F700F4AAFC /* DebayerControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */; };
 		05BD7A962DF3120400F4AAFC /* GammaCorrectionControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A952DF3120100F4AAFC /* GammaCorrectionControlView.swift */; };
@@ -106,6 +108,7 @@
 		053BEAA22DDDDDA800EF0C79 /* FITScope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FITScope.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAB12DDDDDA900EF0C79 /* FITScopeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FITScopeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEABB2DDDDDA900EF0C79 /* FITScopeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FITScopeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		053C2E742DF6EE3200DA637A /* Slider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Slider.swift; sourceTree = "<group>"; };
 		056E5C002DDF0E8B003254C7 /* CODE_OF_CONDUCT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CODE_OF_CONDUCT.md; sourceTree = "<group>"; };
 		056E5C012DDF0E8B003254C7 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		056E5C022DDF0E8B003254C7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -174,6 +177,7 @@
 		0587FF112DDE64E0005DECEF /* FITScopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeTests.swift; sourceTree = "<group>"; };
 		0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITests.swift; sourceTree = "<group>"; };
 		0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		05986B472DF892D300A55E77 /* SliderGridRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderGridRowView.swift; sourceTree = "<group>"; };
 		05BD7A902DF3119000F4AAFC /* ImageControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageControlsView.swift; sourceTree = "<group>"; };
 		05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebayerControlView.swift; sourceTree = "<group>"; };
 		05BD7A952DF3120100F4AAFC /* GammaCorrectionControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GammaCorrectionControlView.swift; sourceTree = "<group>"; };
@@ -541,6 +545,8 @@
 				05C4BD772DF2E7D000326B69 /* InfoViewTableCell.swift */,
 				05DC79A22DF2FCF4003E2AFA /* LoadingView.swift */,
 				05C4BD712DF2C9A000326B69 /* SearchField.swift */,
+				053C2E742DF6EE3200DA637A /* Slider.swift */,
+				05986B472DF892D300A55E77 /* SliderGridRowView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -713,10 +719,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */,
 				0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */,
 				0579B6122DF220D1002FDD47 /* FITSImageRenderer.swift in Sources */,
 				0524AD7E2DF3450400180358 /* HistogramStatisticsView.swift in Sources */,
 				05DC79A12DF2F82A003E2AFA /* ErrorView.swift in Sources */,
+				053C2E752DF6EE3300DA637A /* Slider.swift in Sources */,
 				05BD7A9C2DF3121B00F4AAFC /* HistogramControlView.swift in Sources */,
 				0579B61C2DF245E2002FDD47 /* FITSImageInfo.swift in Sources */,
 				0579B61E2DF249A1002FDD47 /* FITSImageSection.swift in Sources */,
