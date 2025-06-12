@@ -27,14 +27,33 @@ import SwiftUI
 
 public struct GammaCorrectionControlView: View
 {
+    @State private var enabled = false
+    @State private var gamma   = 1.0
+
     public var body: some View
     {
-        Text( "..." )
+        Grid( alignment: .leading )
+        {
+            GridRow
+            {
+                Text( "Enabled" )
+                Toggle( "Enable", isOn: $enabled )
+                    .toggleStyle( SwitchToggleStyle() )
+                    .labelsHidden()
+            }
+
+            if self.enabled
+            {
+                SliderGridRowView( value: $gamma, minimumValue: 0, maximumValue: 5, label: "Gamma", image: "eye.fill" )
+            }
+        }
     }
 }
 
 #Preview
 {
     GammaCorrectionControlView()
+        .frame( maxWidth: .infinity, alignment: .leading )
+        .frame( maxHeight: .infinity, alignment: .top )
         .padding()
 }
