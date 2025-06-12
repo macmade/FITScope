@@ -27,14 +27,56 @@ import SwiftUI
 
 public struct DebayerControlView: View
 {
+    public enum Mode: CaseIterable, CustomStringConvertible
+    {
+        case none
+        case auto
+        case bggr
+        case rgbg
+        case grbg
+        case rggb
+
+        public var description: String
+        {
+            switch self
+            {
+                case .none: return "None"
+                case .auto: return "Auto"
+                case .bggr: return "BGGR"
+                case .rgbg: return "RGBG"
+                case .grbg: return "GRBG"
+                case .rggb: return "RGGB"
+            }
+        }
+    }
+
+    @State private var mode = Mode.none
+    @State private var blue           = 0.0
+
     public var body: some View
     {
-        Text( "..." )
+        Grid( alignment: .leading )
+        {
+            GridRow
+            {
+                Text( "Mode" )
+                Picker( "Mode", selection: $mode )
+                {
+                    ForEach( Mode.allCases, id: \.self )
+                    {
+                        Text( $0.description ).tag( $0 )
+                    }
+                }
+                .labelsHidden()
+            }
+        }
     }
 }
 
 #Preview
 {
     DebayerControlView()
+        .frame( maxWidth: .infinity, alignment: .leading )
+        .frame( maxHeight: .infinity, alignment: .top )
         .padding()
 }
