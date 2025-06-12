@@ -108,5 +108,7 @@ public struct HistogramStatisticsView: View
         Divider()
         HistogramStatisticsView( statistics: statistics, mode: .luminance )
     }
+    .frame( maxWidth: .infinity, alignment: .leading )
+    .frame( maxHeight: .infinity, alignment: .top )
     .padding()
 }

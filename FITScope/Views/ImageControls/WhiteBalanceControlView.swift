@@ -84,6 +84,7 @@ public struct WhiteBalanceControlView: View
 #Preview
 {
     WhiteBalanceControlView()
-        .frame( maxHeight: .infinity )
+        .frame( maxWidth: .infinity, alignment: .leading )
+        .frame( maxHeight: .infinity, alignment: .top )
         .padding()
 }

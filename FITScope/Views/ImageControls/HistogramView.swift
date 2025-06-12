@@ -144,5 +144,7 @@ public struct HistogramView: View
         Divider()
         HistogramView( histogram: histogram, separateChannels: false, mode: .luminance )
     }
+    .frame( maxWidth: .infinity, alignment: .leading )
+    .frame( maxHeight: .infinity, alignment: .top )
     .padding()
 }

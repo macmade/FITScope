@@ -95,6 +95,7 @@ public struct HistogramControlView: View
 #Preview
 {
     HistogramControlView( histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() )
-        .frame( maxHeight: .infinity )
+        .frame( maxWidth: .infinity, alignment: .leading )
+        .frame( maxHeight: .infinity, alignment: .top )
         .padding()
 }
