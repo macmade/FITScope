@@ -44,7 +44,7 @@ public struct DocumentView: View
         {
             if let image = self.loader.image
             {
-                VStack( alignment: .leading )
+                VStack( alignment: .leading, spacing: 0 )
                 {
                     Button( action: { self.openWindow( id: "InfoWindow", value: image.info ) }, label: { Text( "Properties" ) } )
                         .keyboardShortcut( "I", modifiers: [ .command ] )

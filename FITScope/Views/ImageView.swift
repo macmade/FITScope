@@ -40,12 +40,16 @@ public struct ImageView: View
         {
             if let result = self.renderer.result
             {
-                HStack( alignment: .top )
+                HStack( alignment: .top, spacing: 0 )
                 {
-                    Image( result.image, scale: 1.0, label: Text( "FITS Image" ) )
-                        .resizable()
-                        .aspectRatio( contentMode: .fit )
-                        .padding()
+                    VStack( alignment: .center )
+                    {
+                        Image( result.image, scale: 1.0, label: Text( "FITS Image" ) )
+                            .resizable()
+                            .aspectRatio( contentMode: .fit )
+                    }
+                    .frame( maxWidth: .infinity, maxHeight: .infinity )
+                    .background( .black )
 
                     Divider()
 
