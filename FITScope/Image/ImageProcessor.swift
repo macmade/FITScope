@@ -105,23 +105,7 @@ public enum ImageProcessor
             nil
         }
 
-        let offset: Double = if let bZero = properties.first( where: { $0.name == "BZERO" } )?.value.integer
-        {
-            Double( bZero )
-        }
-        else
-        {
-            0
-        }
-
-        let scale: Double = if let bScale = properties.first( where: { $0.name == "BSCALE" } )?.value.integer
-        {
-            Double( bScale )
-        }
-        else
-        {
-            1
-        }
+        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
 
         let config   = PixelPipeline.Config( scale: ( scale, offset ), debayer: bayerPattern.map { ( pattern: $0, mode: .bilinear ) }, normalize: .minMax, stretch: .log( 50 ), correctGamma: 1.8, whiteBalance: .auto )
         let pipeline = PixelPipeline( config: config )
@@ -134,5 +118,21 @@ public enum ImageProcessor
 
             return ( image, bytes )
         }
+    }
+
+    /// Reads the linear pixel-scaling keywords `BSCALE` and `BZERO`.
+    ///
+    /// - Parameter properties: The image HDU's header properties.
+    /// - Returns: The multiplicative `scale` (`BSCALE`, default 1) and additive
+    ///   `offset` (`BZERO`, default 0) to apply to raw pixel values.
+    static func scaling( from properties: [ FITSProperty ] ) -> ( scale: Double, offset: Double )
+    {
+        let bZero  = properties.first { $0.name == "BZERO"  }
+        let bScale = properties.first { $0.name == "BSCALE" }
+
+        let offset = bZero?.value.float  ?? bZero?.value.integer.map( Double.init )  ?? 0
+        let scale  = bScale?.value.float ?? bScale?.value.integer.map( Double.init ) ?? 1
+
+        return ( scale: scale, offset: offset )
     }
 }

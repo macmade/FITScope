@@ -100,6 +100,40 @@ struct FITScopeTests
         #expect( message.contains( "no image HDU" ), "expected a typed no-image-HDU error, got: \"\( message )\"" )
     }
 
+    /// Scaling keywords written in floating-point form must be honoured rather
+    /// than read as the integer defaults. UIT's `BSCALE` is float-formatted.
+    @Test
+    func floatScalingKeywordsAreHonoured() throws
+    {
+        let file = try FITSFile( data: Data( contentsOf: Self.corpusURL( "NASA/UITfuv2582gc.fits" ) ), options: .lenient )
+        let hdu  = try FITSImageRenderer.imageHDU( in: file.sections )
+
+        let headerScale = try #require( hdu.properties.first { $0.name == "BSCALE" }?.value.float )
+        let scaling     = ImageProcessor.scaling( from: hdu.properties )
+
+        #expect( scaling.scale == headerScale )
+        #expect( scaling.scale != 1, "a float BSCALE must not fall back to the default scale" )
+    }
+
+    /// Integer-formatted scaling keywords keep working. The M42 file's `BZERO`
+    /// is the integer `32768`.
+    @Test
+    func integerScalingKeywordsAreHonoured() throws
+    {
+        let file = try FITSFile( data: Data( contentsOf: Self.corpusURL( "2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits" ) ), options: .lenient )
+        let hdu  = try FITSImageRenderer.imageHDU( in: file.sections )
+
+        let scaling = ImageProcessor.scaling( from: hdu.properties )
+
+        #expect( scaling.offset == 32768 )
+    }
+
+    /// Resolves a corpus file by its path relative to the `Test Files` directory.
+    private static func corpusURL( _ relativePath: String ) -> URL
+    {
+        FITSCorpus.directory.appendingPathComponent( relativePath )
+    }
+
     /// Synthesises a minimal, valid header-only FITS file
     /// (`SIMPLE=T / BITPIX=8 / NAXIS=0 / END`) as a single space-padded block.
     private static func headerOnlyFITSData() -> Data
