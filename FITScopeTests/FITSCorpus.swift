@@ -76,7 +76,7 @@ enum FITSCorpus
             switch self
             {
                 case .sizeMismatch:            return "does not match expected size"
-                case .unsupportedGeometry:     return "Unsupported NAXIS value"
+                case .unsupportedGeometry:     return "only 2-dimensional images are supported"
                 case .extensionImageUnreached: return "Unsupported NAXIS value"
             }
         }

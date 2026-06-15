@@ -100,6 +100,24 @@ struct FITScopeTests
         #expect( message.contains( "no image HDU" ), "expected a typed no-image-HDU error, got: \"\( message )\"" )
     }
 
+    /// A valid `BITPIX = 64` image is a format the pixel pipeline does not
+    /// support; it must surface a clear, typed error naming the limitation.
+    @Test
+    @MainActor
+    func unsupportedBitpixProducesClearError() async throws
+    {
+        let file     = try FITSFile( data: Self.bitpix64FITSData(), options: .lenient )
+        let renderer = FITSImageRenderer( file: file )
+
+        await renderer.render()
+
+        #expect( renderer.result == nil, "an unsupported BITPIX should not render" )
+
+        let message = renderer.error.map { "\( $0 )" } ?? ""
+
+        #expect( message.contains( "BITPIX 64 is not supported" ), "expected a clear unsupported-BITPIX error, got: \"\( message )\"" )
+    }
+
     /// Scaling keywords written in floating-point form must be honoured rather
     /// than read as the integer defaults. UIT's `BSCALE` is float-formatted.
     @Test
@@ -284,5 +302,28 @@ struct FITScopeTests
         let header = records.map { $0.padding( toLength: 80, withPad: " ", startingAt: 0 ) }.joined()
 
         return Data( header.padding( toLength: FITSFile.blockSize, withPad: " ", startingAt: 0 ).utf8 )
+    }
+
+    /// Synthesises a minimal, valid `BITPIX = 64` image ( 1 × 1 ) — a format
+    /// the pixel pipeline does not support — as a header block plus one
+    /// zero-filled data block.
+    private static func bitpix64FITSData() -> Data
+    {
+        let records =
+        [
+            "SIMPLE  = T",
+            "BITPIX  = 64",
+            "NAXIS   = 2",
+            "NAXIS1  = 1",
+            "NAXIS2  = 1",
+            "END",
+        ]
+        let header = records.map { $0.padding( toLength: 80, withPad: " ", startingAt: 0 ) }.joined()
+
+        var data = Data( header.padding( toLength: FITSFile.blockSize, withPad: " ", startingAt: 0 ).utf8 )
+
+        data.append( Data( count: FITSFile.blockSize ) )
+
+        return data
     }
 }

@@ -121,7 +121,7 @@ public enum ImageProcessor
         guard let bitsPerPixel = BitsPerPixel.from( value: bitPix )
         else
         {
-            throw RuntimeError( message: "Unsupported BITPIX value \( bitPix )" )
+            throw RuntimeError( message: "Unsupported pixel format: BITPIX \( bitPix ) is not supported (supported values: 8, 16, 32, -32, -64)." )
         }
 
         guard let nAxis = properties.first( where: { $0.name == "NAXIS" } )?.value.integer
@@ -133,7 +133,7 @@ public enum ImageProcessor
         guard nAxis == 2
         else
         {
-            throw RuntimeError( message: "Unsupported NAXIS value \( nAxis )" )
+            throw RuntimeError( message: "Unsupported image geometry: only 2-dimensional images are supported, but this file has NAXIS = \( nAxis ). 3-D cubes and multi-plane images are not yet supported." )
         }
 
         guard let nAxis1 = properties.first( where: { $0.name == "NAXIS1" } )?.value.integer

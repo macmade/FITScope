@@ -12,6 +12,22 @@ FITScope
 
 FITS Image Viewer for macOS.
 
+### Supported Formats
+
+FITScope renders the first image HDU of a FITS file (the primary HDU, or the
+first image extension when the primary header is empty). The following formats
+are supported:
+
+  - **Pixel format (`BITPIX`):** `8`, `16`, `32`, `-32`, `-64`
+  - **Geometry (`NAXIS`):** `2` (a single two-dimensional image)
+  - **Scaling:** `BSCALE` / `BZERO`, in integer or floating-point form
+  - **Color:** optional Bayer demosaicing via `BAYERPAT`
+
+The following are not currently supported and surface a clear error message:
+
+  - `BITPIX` `64` (64-bit integer pixels)
+  - `NAXIS` other than `2` (e.g. 3-D cubes or multi-plane images)
+
 ### Cloning
 
 This project uses submodules.  
