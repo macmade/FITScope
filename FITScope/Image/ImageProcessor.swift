@@ -190,7 +190,7 @@ public enum ImageProcessor
         let config   = settings.config( scale: scale, offset: offset, headerPattern: bayerPattern )
         let pipeline = PixelPipeline( config: config )
 
-        return try Benchmark.run( label: "Rendering Image" )
+        return try Benchmark.run( label: "Rendering Image", output: Benchmarking.log )
         {
             let buffer = try pipeline.run( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel )
             let bytes  = try buffer.convertTo8Bits()

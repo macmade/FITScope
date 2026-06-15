@@ -54,7 +54,6 @@ public struct DebayerControlView: View
 
     // Seeded to mirror the pipeline's default debayer selection ( .auto ).
     @State private var mode = Mode.auto
-    @State private var blue = 0.0
 
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {

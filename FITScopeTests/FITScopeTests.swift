@@ -24,6 +24,7 @@
 
 import Foundation
 import SwiftFITS
+import SwiftUI
 import Testing
 @testable import FITScope
 
@@ -280,6 +281,16 @@ struct FITScopeTests
         #expect( DebayerControlView.selection( .auto ) == .auto )
         #expect( DebayerControlView.selection( .bggr ) == .pattern( .bggr ) )
         #expect( DebayerControlView.selection( .rggb ) == .pattern( .rggb ) )
+    }
+
+    /// An all-zero histogram has a maximum bin count of zero; the bar
+    /// y-coordinate must stay finite rather than dividing by zero into `NaN`.
+    @Test
+    @MainActor
+    func histogramYPositionHandlesAllZeroData() throws
+    {
+        #expect( HistogramView.yPosition( count: 0, maxCount: 0, height: 50 ).isFinite )
+        #expect( HistogramView.yPosition( count: 0, maxCount: 0, height: 50 ) == 50 )
     }
 
     /// Resolves a corpus file by its path relative to the `Test Files` directory.

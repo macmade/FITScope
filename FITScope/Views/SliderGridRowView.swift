@@ -70,10 +70,6 @@ public struct SliderGridRowView: View
             Text( String( format: "%.2f", self.value ) )
                 .frame( minWidth: 50 )
         }
-        .onChange( of: self.value )
-        {
-            _, _ in
-        }
     }
 }
 

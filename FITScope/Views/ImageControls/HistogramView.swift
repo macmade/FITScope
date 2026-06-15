@@ -38,7 +38,7 @@ public struct HistogramView: View
             geometry in
 
             let data     = self.data
-            let maxCount = data.flatMap { $0 }.max() ?? 1
+            let maxCount = max( 1, data.flatMap { $0 }.max() ?? 1 )
 
             ZStack
             {
@@ -109,7 +109,7 @@ public struct HistogramView: View
         }
     }
 
-    private static func path( data: [ Int ], size: CGSize, maxCount: Int ) -> Path
+    static func path( data: [ Int ], size: CGSize, maxCount: Int ) -> Path
     {
         let binWidth = size.width / CGFloat( data.count )
 
@@ -122,13 +122,21 @@ public struct HistogramView: View
             data.enumerated().forEach
             {
                 let x = CGFloat( $0.offset ) * binWidth
-                let y = size.height - CGFloat( $0.element ) / CGFloat( maxCount ) * size.height
+                let y = Self.yPosition( count: $0.element, maxCount: maxCount, height: size.height )
                 path.addLine( to: CGPoint( x: x, y: y ))
             }
 
             path.addLine( to: CGPoint( x: size.width, y: size.height ))
             path.closeSubpath()
         }
+    }
+
+    /// The y-coordinate of a histogram bar, with the bin count normalized
+    /// against the largest bin. Guards against an all-zero histogram, where the
+    /// maximum count is `0`, to avoid a divide-by-zero producing `NaN`.
+    static func yPosition( count: Int, maxCount: Int, height: CGFloat ) -> CGFloat
+    {
+        height - CGFloat( count ) / CGFloat( max( 1, maxCount ) ) * height
     }
 }
 

@@ -89,7 +89,7 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
             return nil
         }
 
-        return String( format: "%.4f", value )
+        return String( format: "%g", value )
     }
 
     public static func stringForStringValue( _ value: FITSValue ) -> String?

@@ -19,6 +19,7 @@
 		056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
 		0579B6122DF220D1002FDD47 /* FITSImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */; };
 		05C0A75C2DDE64E0005DECEF /* ImageAdjustments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */; };
+		05C0A75E2DDE64E0005DECEF /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */; };
 		0579B6152DF23DB7002FDD47 /* FITSImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6142DF23DB3002FDD47 /* FITSImage.swift */; };
 		0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */; };
 		0579B61C2DF245E2002FDD47 /* FITSImageInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B61B2DF245DE002FDD47 /* FITSImageInfo.swift */; };
@@ -168,6 +169,7 @@
 		056E5C642DDFA8EB003254C7 /* UTType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UTType.swift; sourceTree = "<group>"; };
 		0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageRenderer.swift; sourceTree = "<group>"; };
 		05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageAdjustments.swift; sourceTree = "<group>"; };
+		05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Benchmarking.swift; sourceTree = "<group>"; };
 		0579B6142DF23DB3002FDD47 /* FITSImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImage.swift; sourceTree = "<group>"; };
 		0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageLoader.swift; sourceTree = "<group>"; };
 		0579B61B2DF245DE002FDD47 /* FITSImageInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageInfo.swift; sourceTree = "<group>"; };
@@ -468,6 +470,7 @@
 				0579B61F2DF249A9002FDD47 /* FITSImageProperty.swift */,
 				0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */,
 				05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */,
+				05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */,
 				0579B61D2DF24998002FDD47 /* FITSImageSection.swift */,
 				05C4BD752DF2E62200326B69 /* PreviewHelper.swift */,
 			);
@@ -730,6 +733,7 @@
 			files = (
 				05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */,
 				05C0A75C2DDE64E0005DECEF /* ImageAdjustments.swift in Sources */,
+				05C0A75E2DDE64E0005DECEF /* Benchmarking.swift in Sources */,
 				0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */,
 				0579B6122DF220D1002FDD47 /* FITSImageRenderer.swift in Sources */,
 				0524AD7E2DF3450400180358 /* HistogramStatisticsView.swift in Sources */,
