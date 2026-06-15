@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftFITS
 import SwiftUI
 
 public struct DebayerControlView: View
@@ -50,8 +49,32 @@ public struct DebayerControlView: View
         }
     }
 
-    @State private var mode = Mode.none
-    @State private var blue           = 0.0
+    private let adjustments: ImageAdjustments
+    private let reRender:    () -> Void
+
+    // Seeded to mirror the pipeline's default debayer selection ( .auto ).
+    @State private var mode = Mode.auto
+    @State private var blue = 0.0
+
+    public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
+    {
+        self.adjustments = adjustments
+        self.reRender    = reRender
+    }
+
+    /// Maps the control's selection to a debayer selection.
+    static func selection( _ mode: Mode ) -> ImageProcessor.DebayerSelection
+    {
+        switch mode
+        {
+            case .none: return .none
+            case .auto: return .auto
+            case .bggr: return .pattern( .bggr )
+            case .rgbg: return .pattern( .rgbg )
+            case .grbg: return .pattern( .grbg )
+            case .rggb: return .pattern( .rggb )
+        }
+    }
 
     public var body: some View
     {
@@ -70,12 +93,18 @@ public struct DebayerControlView: View
                 .labelsHidden()
             }
         }
+        .onChange( of: self.mode )
+        {
+            self.adjustments.debayer = Self.selection( self.mode )
+
+            self.reRender()
+        }
     }
 }
 
 #Preview
 {
-    DebayerControlView()
+    DebayerControlView( adjustments: ImageAdjustments(), reRender: {} )
         .frame( maxWidth: .infinity, alignment: .leading )
         .frame( maxHeight: .infinity, alignment: .top )
         .padding()

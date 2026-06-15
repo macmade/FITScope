@@ -168,7 +168,7 @@ struct FITScopeTests
         // The model's defaults equal the pipeline's previously hard-coded values.
         #expect( adjustments.settings == ImageProcessor.Settings() )
 
-        let config = adjustments.settings.config( scale: 2, offset: 3, debayerPattern: .rggb )
+        let config = adjustments.settings.config( scale: 2, offset: 3, headerPattern: .rggb )
 
         // Header-derived affine scaling passes through unchanged.
         #expect( config.scale?.scale  == 2 )
@@ -180,21 +180,23 @@ struct FITScopeTests
         #expect( config.whiteBalance == .auto )
         #expect( config.normalize    == .minMax )
 
+        // The default .auto debayer selection uses the header pattern.
         let debayer = try #require( config.debayer )
 
         #expect( debayer.pattern == .rggb )
         #expect( debayer.mode    == .bilinear )
 
-        // A changed setting flows into a freshly built config.
-        adjustments.stretch     = .arcsinh( 12 )
-        adjustments.debayerMode = .vng
+        // A changed setting flows into a freshly built config, and an explicit
+        // debayer pattern overrides the header.
+        adjustments.stretch = .arcsinh( 12 )
+        adjustments.debayer = .pattern( .grbg )
 
-        let updated        = adjustments.settings.config( scale: 1, offset: 0, debayerPattern: .bggr )
+        let updated        = adjustments.settings.config( scale: 1, offset: 0, headerPattern: .bggr )
         let updatedDebayer = try #require( updated.debayer )
 
         #expect( updated.stretch        == .arcsinh( 12 ) )
-        #expect( updatedDebayer.pattern == .bggr )
-        #expect( updatedDebayer.mode    == .vng )
+        #expect( updatedDebayer.pattern == .grbg )
+        #expect( updatedDebayer.mode    == .bilinear )
     }
 
     /// Changing an adjustment and triggering the debounced re-render entry point
@@ -218,6 +220,48 @@ struct FITScopeTests
         let updated = try #require( renderer.result?.bytes )
 
         #expect( updated != original )
+    }
+
+    /// The stretch control maps its selection and slider values to the matching
+    /// algorithm, including the `.sigmoid` case.
+    @Test
+    @MainActor
+    func stretchControlMapsToAlgorithm() throws
+    {
+        #expect( StretchControlView.algorithm( mode: .none,    logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == nil )
+        #expect( StretchControlView.algorithm( mode: .log,     logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == .log( 50 ) )
+        #expect( StretchControlView.algorithm( mode: .arcsinh, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == .arcsinh( 10 ) )
+        #expect( StretchControlView.algorithm( mode: .sigmoid, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == .sigmoid( 1, 2 ) )
+    }
+
+    /// The gamma control maps the toggle and slider to a gamma exponent.
+    @Test
+    @MainActor
+    func gammaControlMapsToGamma() throws
+    {
+        #expect( GammaCorrectionControlView.gamma( enabled: false, value: 2.2 ) == nil )
+        #expect( GammaCorrectionControlView.gamma( enabled: true,  value: 2.2 ) == 2.2 )
+    }
+
+    /// The white-balance control maps its selection and sliders to a mode.
+    @Test
+    @MainActor
+    func whiteBalanceControlMapsToMode() throws
+    {
+        #expect( WhiteBalanceControlView.mode( .none,   red: 1, green: 2, blue: 3 ) == nil )
+        #expect( WhiteBalanceControlView.mode( .auto,   red: 1, green: 2, blue: 3 ) == .auto )
+        #expect( WhiteBalanceControlView.mode( .manual, red: 1, green: 2, blue: 3 ) == .manual( red: 1, green: 2, blue: 3 ) )
+    }
+
+    /// The debayer control maps its selection to a debayer selection.
+    @Test
+    @MainActor
+    func debayerControlMapsToSelection() throws
+    {
+        #expect( DebayerControlView.selection( .none ) == .none )
+        #expect( DebayerControlView.selection( .auto ) == .auto )
+        #expect( DebayerControlView.selection( .bggr ) == .pattern( .bggr ) )
+        #expect( DebayerControlView.selection( .rggb ) == .pattern( .rggb ) )
     }
 
     /// Resolves a corpus file by its path relative to the `Test Files` directory.

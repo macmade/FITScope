@@ -47,6 +47,19 @@ public struct FITSPropertySnapshot: Sendable
 
 public enum ImageProcessor
 {
+    /// The user's debayering choice, independent of the file's `BAYERPAT`.
+    public enum DebayerSelection: Sendable, Equatable
+    {
+        /// Do not debayer; treat the image as monochrome.
+        case none
+
+        /// Use the Bayer pattern declared in the file header, if any.
+        case auto
+
+        /// Force a specific Bayer pattern, overriding the header.
+        case pattern( Processors.Debayer.Pattern )
+    }
+
     /// The user-tunable pipeline parameters, as a `Sendable` snapshot.
     ///
     /// The defaults reproduce the values the pipeline used when they were
@@ -57,30 +70,38 @@ public enum ImageProcessor
         public var stretch:      Processors.Stretch.Algorithm?
         public var gamma:        Double?
         public var whiteBalance: Processors.WhiteBalance.Mode?
-        public var debayerMode:  Processors.Debayer.Mode
+        public var debayer:      DebayerSelection
 
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = .log( 50 ), gamma: Double? = 1.8, whiteBalance: Processors.WhiteBalance.Mode? = .auto, debayerMode: Processors.Debayer.Mode = .bilinear )
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = .log( 50 ), gamma: Double? = 1.8, whiteBalance: Processors.WhiteBalance.Mode? = .auto, debayer: DebayerSelection = .auto )
         {
             self.normalize    = normalize
             self.stretch      = stretch
             self.gamma        = gamma
             self.whiteBalance = whiteBalance
-            self.debayerMode  = debayerMode
+            self.debayer      = debayer
         }
 
         /// Builds the pipeline configuration, combining these tunables with the
         /// header-derived affine scaling and Bayer pattern.
         ///
         /// - Parameters:
-        ///   - scale:          The multiplicative scale from `BSCALE`.
-        ///   - offset:         The additive offset from `BZERO`.
-        ///   - debayerPattern: The Bayer pattern from `BAYERPAT`, or `nil` for mono.
+        ///   - scale:         The multiplicative scale from `BSCALE`.
+        ///   - offset:        The additive offset from `BZERO`.
+        ///   - headerPattern: The Bayer pattern from `BAYERPAT`, or `nil`. Used
+        ///                    only when the debayer selection is `.auto`.
         /// - Returns: The configured `PixelPipeline.Config`.
-        public func config( scale: Double, offset: Double, debayerPattern: Processors.Debayer.Pattern? ) -> PixelPipeline.Config
+        public func config( scale: Double, offset: Double, headerPattern: Processors.Debayer.Pattern? ) -> PixelPipeline.Config
         {
-            PixelPipeline.Config(
+            let pattern: Processors.Debayer.Pattern? = switch self.debayer
+            {
+                case .none:             nil
+                case .auto:             headerPattern
+                case .pattern( let p ): p
+            }
+
+            return PixelPipeline.Config(
                 scale:        ( scale, offset ),
-                debayer:      debayerPattern.map { ( pattern: $0, mode: self.debayerMode ) },
+                debayer:      pattern.map { ( pattern: $0, mode: .bilinear ) },
                 normalize:    self.normalize,
                 stretch:      self.stretch,
                 correctGamma: self.gamma,
@@ -166,7 +187,7 @@ public enum ImageProcessor
 
         let ( scale, offset ) = ImageProcessor.scaling( from: properties )
 
-        let config   = settings.config( scale: scale, offset: offset, debayerPattern: bayerPattern )
+        let config   = settings.config( scale: scale, offset: offset, headerPattern: bayerPattern )
         let pipeline = PixelPipeline( config: config )
 
         return try Benchmark.run( label: "Rendering Image" )

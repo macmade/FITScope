@@ -22,13 +22,28 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftFITS
 import SwiftUI
 
 public struct GammaCorrectionControlView: View
 {
-    @State private var enabled = false
-    @State private var gamma   = 1.0
+    private let adjustments: ImageAdjustments
+    private let reRender:    () -> Void
+
+    // Seeded to mirror the pipeline's default gamma ( 1.8, enabled ).
+    @State private var enabled = true
+    @State private var gamma   = 1.8
+
+    public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
+    {
+        self.adjustments = adjustments
+        self.reRender    = reRender
+    }
+
+    /// Maps the toggle and slider value to a gamma exponent ( `nil` when off ).
+    static func gamma( enabled: Bool, value: Double ) -> Double?
+    {
+        enabled ? value : nil
+    }
 
     public var body: some View
     {
@@ -47,12 +62,23 @@ public struct GammaCorrectionControlView: View
                 SliderGridRowView( value: $gamma, minimumValue: 0, maximumValue: 5, label: "Gamma", image: "eye.fill" )
             }
         }
+        .onChange( of: self.gammaValue )
+        {
+            self.adjustments.gamma = self.gammaValue
+
+            self.reRender()
+        }
+    }
+
+    private var gammaValue: Double?
+    {
+        Self.gamma( enabled: self.enabled, value: self.gamma )
     }
 }
 
 #Preview
 {
-    GammaCorrectionControlView()
+    GammaCorrectionControlView( adjustments: ImageAdjustments(), reRender: {} )
         .frame( maxWidth: .infinity, alignment: .leading )
         .frame( maxHeight: .infinity, alignment: .top )
         .padding()

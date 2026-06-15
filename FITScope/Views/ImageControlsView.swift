@@ -27,8 +27,18 @@ import SwiftUI
 
 public struct ImageControlsView: View
 {
-    public let histogram:  FITSImageRenderer.Histogram
-    public let statistics: FITSImageRenderer.HistogramStatistics
+    private let adjustments: ImageAdjustments
+    private let reRender:    () -> Void
+    private let histogram:   FITSImageRenderer.Histogram
+    private let statistics:  FITSImageRenderer.HistogramStatistics
+
+    public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void, histogram: FITSImageRenderer.Histogram, statistics: FITSImageRenderer.HistogramStatistics )
+    {
+        self.adjustments = adjustments
+        self.reRender    = reRender
+        self.histogram   = histogram
+        self.statistics  = statistics
+    }
 
     public var body: some View
     {
@@ -40,28 +50,28 @@ public struct ImageControlsView: View
 
             ImageControlContainer( label: "Debayer" )
             {
-                DebayerControlView()
+                DebayerControlView( adjustments: self.adjustments, reRender: self.reRender )
             }
 
             Divider().padding( .vertical )
 
             ImageControlContainer( label: "Stretch" )
             {
-                StretchControlView()
+                StretchControlView( adjustments: self.adjustments, reRender: self.reRender )
             }
 
             Divider().padding( .vertical )
 
             ImageControlContainer( label: "Gamma Correction" )
             {
-                GammaCorrectionControlView()
+                GammaCorrectionControlView( adjustments: self.adjustments, reRender: self.reRender )
             }
 
             Divider().padding( .vertical )
 
             ImageControlContainer( label: "White Balance" )
             {
-                WhiteBalanceControlView()
+                WhiteBalanceControlView( adjustments: self.adjustments, reRender: self.reRender )
             }
         }
     }
@@ -69,6 +79,6 @@ public struct ImageControlsView: View
 
 #Preview
 {
-    ImageControlsView( histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() )
+    ImageControlsView( adjustments: ImageAdjustments(), reRender: {}, histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() )
         .padding()
 }

@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import SwiftFITS
+import SwiftPixel
 import SwiftUI
 
 public struct StretchControlView: View
@@ -32,7 +33,7 @@ public struct StretchControlView: View
         case none
         case log
         case arcsinh
-        case sigmood
+        case sigmoid
 
         public var description: String
         {
@@ -41,19 +42,38 @@ public struct StretchControlView: View
                 case .none:    return "None"
                 case .log:     return "Logarithmic"
                 case .arcsinh: return "Inverse Hyperbolic Sine"
-                case .sigmood: return "Sigmoid"
+                case .sigmoid: return "Sigmoid"
             }
         }
     }
 
-    @State private var mode               = Mode.none
-    @State private var showLogSliders     = false
-    @State private var showArcSinHSliders = false
-    @State private var showSigmoidSliders = false
-    @State private var logN1              = 0.0
-    @State private var arcsinhN1          = 0.0
-    @State private var sigmoidN1          = 0.0
-    @State private var sigmoidN2          = 0.0
+    private let adjustments: ImageAdjustments
+    private let reRender:    () -> Void
+
+    // Seeded to mirror the pipeline's default stretch ( .log( 50 ) ).
+    @State private var mode      = Mode.log
+    @State private var logN1     = 50.0
+    @State private var arcsinhN1 = 0.0
+    @State private var sigmoidN1 = 0.0
+    @State private var sigmoidN2 = 0.0
+
+    public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
+    {
+        self.adjustments = adjustments
+        self.reRender    = reRender
+    }
+
+    /// Maps the control's selection and slider values to a stretch algorithm.
+    static func algorithm( mode: Mode, logIntensity: Double, arcsinhFactor: Double, sigmoidMidpoint: Double, sigmoidContrast: Double ) -> Processors.Stretch.Algorithm?
+    {
+        switch mode
+        {
+            case .none:    return nil
+            case .log:     return .log( logIntensity )
+            case .arcsinh: return .arcsinh( arcsinhFactor )
+            case .sigmoid: return .sigmoid( sigmoidMidpoint, sigmoidContrast )
+        }
+    }
 
     public var body: some View
     {
@@ -72,57 +92,45 @@ public struct StretchControlView: View
                 .labelsHidden()
             }
 
-            if self.showLogSliders
+            if self.mode == .log
             {
                 SliderGridRowView( value: $logN1, minimumValue: 0, maximumValue: 255, label: "Intensity", image: "n.circle.fill" )
             }
 
-            if self.showArcSinHSliders
+            if self.mode == .arcsinh
             {
                 SliderGridRowView( value: $arcsinhN1, minimumValue: 0, maximumValue: 255, label: "Factor", image: "n.circle.fill" )
             }
 
-            if self.showSigmoidSliders
+            if self.mode == .sigmoid
             {
                 SliderGridRowView( value: $sigmoidN1, minimumValue: 0, maximumValue: 255, label: "Midpoint", image: "n.circle.fill" )
                 SliderGridRowView( value: $sigmoidN2, minimumValue: 0, maximumValue: 255, label: "Contrast", image: "n.circle.fill" )
             }
         }
-        .onChange( of: self.mode )
+        .onChange( of: self.stretchAlgorithm )
         {
-            switch mode
-            {
-                case .none:
+            self.adjustments.stretch = self.stretchAlgorithm
 
-                    self.showLogSliders     = false
-                    self.showArcSinHSliders = false
-                    self.showSigmoidSliders = false
-
-                case .log:
-
-                    self.showLogSliders     = true
-                    self.showArcSinHSliders = false
-                    self.showSigmoidSliders = false
-
-                case .arcsinh:
-
-                    self.showLogSliders     = false
-                    self.showArcSinHSliders = true
-                    self.showSigmoidSliders = false
-
-                case .sigmood:
-
-                    self.showLogSliders     = false
-                    self.showArcSinHSliders = false
-                    self.showSigmoidSliders = true
-            }
+            self.reRender()
         }
+    }
+
+    private var stretchAlgorithm: Processors.Stretch.Algorithm?
+    {
+        Self.algorithm(
+            mode:            self.mode,
+            logIntensity:    self.logN1,
+            arcsinhFactor:   self.arcsinhN1,
+            sigmoidMidpoint: self.sigmoidN1,
+            sigmoidContrast: self.sigmoidN2
+        )
     }
 }
 
 #Preview
 {
-    StretchControlView()
+    StretchControlView( adjustments: ImageAdjustments(), reRender: {} )
         .frame( maxWidth: .infinity, alignment: .leading )
         .frame( maxHeight: .infinity, alignment: .top )
         .padding()

@@ -53,7 +53,7 @@ public struct ImageView: View
 
                     Divider()
 
-                    ImageControlsView( histogram: result.histogram, statistics: result.statistics )
+                    ImageControlsView( adjustments: self.renderer.adjustments, reRender: { self.renderer.scheduleReRender() }, histogram: result.histogram, statistics: result.statistics )
                         .frame( width: 300 )
                         .padding()
                 }

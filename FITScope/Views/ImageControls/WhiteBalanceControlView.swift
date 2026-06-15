@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftFITS
+import SwiftPixel
 import SwiftUI
 
 public struct WhiteBalanceControlView: View
@@ -44,11 +44,31 @@ public struct WhiteBalanceControlView: View
         }
     }
 
-    @State private var mode           = Mode.none
-    @State private var showRGBSliders = false
-    @State private var red            = 0.0
-    @State private var green          = 0.0
-    @State private var blue           = 0.0
+    private let adjustments: ImageAdjustments
+    private let reRender:    () -> Void
+
+    // Seeded to mirror the pipeline's default white balance ( .auto ).
+    @State private var mode  = Mode.auto
+    @State private var red   = 0.0
+    @State private var green = 0.0
+    @State private var blue  = 0.0
+
+    public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
+    {
+        self.adjustments = adjustments
+        self.reRender    = reRender
+    }
+
+    /// Maps the control's selection and slider values to a white-balance mode.
+    static func mode( _ mode: Mode, red: Double, green: Double, blue: Double ) -> Processors.WhiteBalance.Mode?
+    {
+        switch mode
+        {
+            case .none:   return nil
+            case .auto:   return .auto
+            case .manual: return .manual( red: red, green: green, blue: blue )
+        }
+    }
 
     public var body: some View
     {
@@ -67,23 +87,30 @@ public struct WhiteBalanceControlView: View
                 .labelsHidden()
             }
 
-            if self.showRGBSliders
+            if self.mode == .manual
             {
                 SliderGridRowView( value: $red,   minimumValue: 0, maximumValue: 255, label: "Red",   image: "r.circle.fill" )
                 SliderGridRowView( value: $green, minimumValue: 0, maximumValue: 255, label: "Green", image: "g.circle.fill" )
                 SliderGridRowView( value: $blue,  minimumValue: 0, maximumValue: 255, label: "Blue",  image: "b.circle.fill" )
             }
         }
-        .onChange( of: self.mode )
+        .onChange( of: self.whiteBalanceMode )
         {
-            self.showRGBSliders = self.mode == .manual
+            self.adjustments.whiteBalance = self.whiteBalanceMode
+
+            self.reRender()
         }
+    }
+
+    private var whiteBalanceMode: Processors.WhiteBalance.Mode?
+    {
+        Self.mode( self.mode, red: self.red, green: self.green, blue: self.blue )
     }
 }
 
 #Preview
 {
-    WhiteBalanceControlView()
+    WhiteBalanceControlView( adjustments: ImageAdjustments(), reRender: {} )
         .frame( maxWidth: .infinity, alignment: .leading )
         .frame( maxHeight: .infinity, alignment: .top )
         .padding()

@@ -35,11 +35,11 @@ import SwiftPixel
 @MainActor
 public final class ImageAdjustments: ObservableObject
 {
-    @Published public var normalize:    Processors.Normalize.Mode?    = .minMax
-    @Published public var stretch:      Processors.Stretch.Algorithm? = .log( 50 )
-    @Published public var gamma:        Double?                       = 1.8
-    @Published public var whiteBalance: Processors.WhiteBalance.Mode? = .auto
-    @Published public var debayerMode:  Processors.Debayer.Mode       = .bilinear
+    @Published public var normalize:    Processors.Normalize.Mode?      = .minMax
+    @Published public var stretch:      Processors.Stretch.Algorithm?   = .log( 50 )
+    @Published public var gamma:        Double?                         = 1.8
+    @Published public var whiteBalance: Processors.WhiteBalance.Mode?   = .auto
+    @Published public var debayer:      ImageProcessor.DebayerSelection = .auto
 
     public init()
     {}
@@ -53,7 +53,7 @@ public final class ImageAdjustments: ObservableObject
             stretch:      self.stretch,
             gamma:        self.gamma,
             whiteBalance: self.whiteBalance,
-            debayerMode:  self.debayerMode
+            debayer:      self.debayer
         )
     }
 }
