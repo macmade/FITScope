@@ -54,10 +54,11 @@ public class FITSImageLoader: ObservableObject
                 {
                     do
                     {
-                        let file = try FITSFile( data: self.document.data, options: .lenient )
-                        let info = FITSImageInfo( url: self.url, file: file )
+                        let file        = try FITSFile( data: self.document.data, options: .lenient )
+                        let info        = FITSImageInfo( url: self.url, file: file )
+                        let renderInput = Swift.Result { try FITSImageRenderer.renderInput( from: file.sections ) }
 
-                        continuation.resume( returning: ( file: file, info: info ) )
+                        continuation.resume( returning: ( file: file, info: info, renderInput: renderInput ) )
                     }
                     catch
                     {
@@ -68,7 +69,7 @@ public class FITSImageLoader: ObservableObject
 
             await MainActor.run
             {
-                let renderer       = FITSImageRenderer( file: result.file )
+                let renderer       = FITSImageRenderer( input: result.renderInput )
                 let image          = FITSImage( file: result.file, info: result.info, renderer: renderer )
                 self.image         = image
                 self.error         = nil

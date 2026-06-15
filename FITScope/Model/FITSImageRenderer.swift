@@ -52,17 +52,44 @@ public class FITSImageRenderer: ObservableObject
         public let luminance: SwiftPixel.HistogramStatistics
     }
 
+    /// The image HDU's bytes and header properties to render.
+    ///
+    /// A `Sendable` value type so it can cross the render concurrency boundary
+    /// without sharing the non-`Sendable` `FITSFile`.
+    public struct RenderInput: Sendable
+    {
+        public let data:       Data
+        public let properties: [ FITSPropertySnapshot ]
+
+        public init( data: Data, properties: [ FITSPropertySnapshot ] )
+        {
+            self.data       = data
+            self.properties = properties
+        }
+    }
+
     @Published public private( set ) var result: Result?
     @Published public private( set ) var error:  Error?
 
-    private let file: FITSFile
+    private let input: Swift.Result< RenderInput, any Error >
 
-    public init( file: FITSFile )
+    public init( input: Swift.Result< RenderInput, any Error > )
     {
-        self.file = file
+        self.input = input
     }
 
-    /// Selects the bytes and header properties of the first renderable image HDU.
+    public convenience init( input: RenderInput )
+    {
+        self.init( input: .success( input ) )
+    }
+
+    public convenience init( file: FITSFile )
+    {
+        self.init( input: Swift.Result { try FITSImageRenderer.renderInput( from: file.sections ) } )
+    }
+
+    /// Selects the first renderable image HDU and snapshots it into a Sendable
+    /// ``RenderInput``.
     ///
     /// FITS files may place the image in an extension following an empty
     /// primary header, and a header-only file has no data section at all.
@@ -72,9 +99,9 @@ public class FITSImageRenderer: ObservableObject
     /// section immediately preceding it in file order).
     ///
     /// - Parameter sections: The file's sections, in file order.
-    /// - Returns: The data section's bytes and its owning header's properties.
+    /// - Returns: The data bytes and owning-header property snapshots.
     /// - Throws: ``RuntimeError`` when the file contains no image data section.
-    nonisolated static func imageHDU( in sections: [ FITSSection ] ) throws -> ( data: Data, properties: [ FITSProperty ] )
+    nonisolated static func renderInput( from sections: [ FITSSection ] ) throws -> RenderInput
     {
         guard let dataIndex = sections.firstIndex( where: { $0.kind == .data } ), dataIndex > 0
         else
@@ -82,23 +109,23 @@ public class FITSImageRenderer: ObservableObject
             throw RuntimeError( message: "FITS file contains no image HDU" )
         }
 
-        return ( data: sections[ dataIndex ].data, properties: sections[ dataIndex - 1 ].properties )
+        let properties = sections[ dataIndex - 1 ].properties.map { FITSPropertySnapshot( name: $0.name, value: $0.value ) }
+
+        return RenderInput( data: sections[ dataIndex ].data, properties: properties )
     }
 
     public func render() async
     {
-        let file = UnsafeSendable( self.file )
-
         do
         {
+            let input  = try self.input.get()
             let result = try await withCheckedThrowingContinuation
             {
                 continuation in DispatchQueue.global( qos: .userInitiated ).async
                 {
                     do
                     {
-                        let hdu                 = try FITSImageRenderer.imageHDU( in: file.value.sections )
-                        let render              = try ImageProcessor.render( data: hdu.data, properties: hdu.properties )
+                        let render              = try ImageProcessor.render( data: input.data, properties: input.properties )
                         let rgbHistogram        = Benchmark.run( label: "Histogram (RGB)" ) { SwiftPixel.Histogram( bytes: render.bytes, channels: 3, mode: .rgb ) }
                         let luminanceHistogram  = Benchmark.run( label: "Histogram (L)"   ) { SwiftPixel.Histogram( bytes: render.bytes, channels: 3, mode: .luminance ) }
                         let redStatistics       = Benchmark.run( label: "Statistics (R)"  ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 0 ] ) }

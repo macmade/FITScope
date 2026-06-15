@@ -28,9 +28,26 @@ import SwiftFITS
 import SwiftPixel
 import SwiftUtilities
 
+/// A `Sendable` snapshot of a FITS header property.
+///
+/// `FITSProperty` is a reference type and not `Sendable`, so it cannot cross
+/// the render concurrency boundary. This value type captures the keyword name
+/// and its (already `Sendable`) value, which is all the renderer needs.
+public struct FITSPropertySnapshot: Sendable
+{
+    public let name:  String
+    public let value: FITSValue
+
+    public init( name: String, value: FITSValue )
+    {
+        self.name  = name
+        self.value = value
+    }
+}
+
 public enum ImageProcessor
 {
-    public static func render( data: Data, properties: [ FITSProperty ] ) throws -> ( image: CGImage, bytes: [ UInt8 ] )
+    public static func render( data: Data, properties: [ FITSPropertySnapshot ] ) throws -> ( image: CGImage, bytes: [ UInt8 ] )
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.integer
         else
@@ -125,7 +142,7 @@ public enum ImageProcessor
     /// - Parameter properties: The image HDU's header properties.
     /// - Returns: The multiplicative `scale` (`BSCALE`, default 1) and additive
     ///   `offset` (`BZERO`, default 0) to apply to raw pixel values.
-    static func scaling( from properties: [ FITSProperty ] ) -> ( scale: Double, offset: Double )
+    static func scaling( from properties: [ FITSPropertySnapshot ] ) -> ( scale: Double, offset: Double )
     {
         let bZero  = properties.first { $0.name == "BZERO"  }
         let bScale = properties.first { $0.name == "BSCALE" }

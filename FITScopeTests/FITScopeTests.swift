@@ -106,7 +106,7 @@ struct FITScopeTests
     func floatScalingKeywordsAreHonoured() throws
     {
         let file = try FITSFile( data: Data( contentsOf: Self.corpusURL( "NASA/UITfuv2582gc.fits" ) ), options: .lenient )
-        let hdu  = try FITSImageRenderer.imageHDU( in: file.sections )
+        let hdu  = try FITSImageRenderer.renderInput( from: file.sections )
 
         let headerScale = try #require( hdu.properties.first { $0.name == "BSCALE" }?.value.float )
         let scaling     = ImageProcessor.scaling( from: hdu.properties )
@@ -121,11 +121,40 @@ struct FITScopeTests
     func integerScalingKeywordsAreHonoured() throws
     {
         let file = try FITSFile( data: Data( contentsOf: Self.corpusURL( "2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits" ) ), options: .lenient )
-        let hdu  = try FITSImageRenderer.imageHDU( in: file.sections )
+        let hdu  = try FITSImageRenderer.renderInput( from: file.sections )
 
         let scaling = ImageProcessor.scaling( from: hdu.properties )
 
         #expect( scaling.offset == 32768 )
+    }
+
+    /// The render boundary accepts only Sendable values: a `RenderInput` built
+    /// off the main actor renders to the same bytes as a direct render of the
+    /// same input. Pins behaviour across the Sendable-boundary refactor.
+    @Test
+    @MainActor
+    func renderInputCrossesTheConcurrencyBoundary() async throws
+    {
+        let url = Self.corpusURL( "NASA/FOSy19g0309t_c2f.fits" )
+
+        // Resolve the Sendable render input off the main actor; only the input
+        // (never the non-Sendable FITSFile) crosses back to the renderer.
+        let input = try await Task.detached
+        {
+            let file = try FITSFile( data: Data( contentsOf: url ), options: .lenient )
+
+            return try FITSImageRenderer.renderInput( from: file.sections )
+        }
+        .value
+
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        let rendered = try #require( renderer.result?.bytes )
+        let direct   = try ImageProcessor.render( data: input.data, properties: input.properties )
+
+        #expect( rendered == direct.bytes )
     }
 
     /// Resolves a corpus file by its path relative to the `Test Files` directory.
