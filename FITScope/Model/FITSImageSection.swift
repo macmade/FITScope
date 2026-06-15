@@ -60,7 +60,7 @@ public struct FITSImageSection: Codable, Hashable, Identifiable
 
             case .xtension:
 
-                if let property = section.properties.first, property.name == "XTENSION", let value = property.value as? String, value.trimmingCharacters( in: .whitespaces ).isEmpty == false
+                if let property = section.properties.first, property.name == "XTENSION", let value = property.value.string, value.trimmingCharacters( in: .whitespaces ).isEmpty == false
                 {
                     return "Extension: \( value )"
                 }

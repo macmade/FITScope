@@ -32,7 +32,7 @@ public enum ImageProcessor
 {
     public static func render( data: Data, properties: [ FITSProperty ] ) throws -> ( image: CGImage, bytes: [ UInt8 ] )
     {
-        guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value as? Int64
+        guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.integer
         else
         {
             throw RuntimeError( message: "Missing BITPIX property" )
@@ -44,7 +44,7 @@ public enum ImageProcessor
             throw RuntimeError( message: "Unsupported BITPIX value \( bitPix )" )
         }
 
-        guard let nAxis = properties.first( where: { $0.name == "NAXIS" } )?.value as? Int64
+        guard let nAxis = properties.first( where: { $0.name == "NAXIS" } )?.value.integer
         else
         {
             throw RuntimeError( message: "Missing NAXIS property" )
@@ -56,7 +56,7 @@ public enum ImageProcessor
             throw RuntimeError( message: "Unsupported NAXIS value \( nAxis )" )
         }
 
-        guard let nAxis1 = properties.first( where: { $0.name == "NAXIS1" } )?.value as? Int64
+        guard let nAxis1 = properties.first( where: { $0.name == "NAXIS1" } )?.value.integer
         else
         {
             throw RuntimeError( message: "Missing NAXIS1 property" )
@@ -68,7 +68,7 @@ public enum ImageProcessor
             throw RuntimeError( message: "Invalid NAXIS1 value \( nAxis1 )" )
         }
 
-        guard let nAxis2 = properties.first( where: { $0.name == "NAXIS2" } )?.value as? Int64
+        guard let nAxis2 = properties.first( where: { $0.name == "NAXIS2" } )?.value.integer
         else
         {
             throw RuntimeError( message: "Missing NAXIS2 property" )
@@ -88,7 +88,7 @@ public enum ImageProcessor
             throw RuntimeError( message: "Data size does not match expected size: \( data.count ) != \( size )" )
         }
 
-        let bayerPattern: Processors.Debayer.Pattern? = if let pattern = properties.first( where: { $0.name == "BAYERPAT" } )?.value as? String
+        let bayerPattern: Processors.Debayer.Pattern? = if let pattern = properties.first( where: { $0.name == "BAYERPAT" } )?.value.string
         {
             switch pattern
             {
@@ -104,7 +104,7 @@ public enum ImageProcessor
             nil
         }
 
-        let offset: Double = if let bZero = properties.first( where: { $0.name == "BZERO" } )?.value as? Int64
+        let offset: Double = if let bZero = properties.first( where: { $0.name == "BZERO" } )?.value.integer
         {
             Double( bZero )
         }
@@ -113,7 +113,7 @@ public enum ImageProcessor
             0
         }
 
-        let scale: Double = if let bScale = properties.first( where: { $0.name == "BSCALE" } )?.value as? Int64
+        let scale: Double = if let bScale = properties.first( where: { $0.name == "BSCALE" } )?.value.integer
         {
             Double( bScale )
         }

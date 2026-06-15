@@ -54,7 +54,7 @@ public class FITSImageLoader: ObservableObject
                 {
                     do
                     {
-                        let file = try FITSFile( data: self.document.data )
+                        let file = try FITSFile( data: self.document.data, options: .lenient )
                         let info = FITSImageInfo( url: self.url, file: file )
 
                         continuation.resume( returning: ( file: file, info: info ) )

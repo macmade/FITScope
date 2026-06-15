@@ -39,15 +39,15 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
         let value    = Self.stringForPropertyValue( property )
         self.index   = index
         self.name    = property.name
-        self.kind    = property.kind.description
+        self.kind    = property.value.kind.description
         self.value   = value ?? ""
         self.comment = property.comment ?? ""
-        self.id      = "\( index )-\( property.name )-\( property.kind.description )-\( value ?? "<nil>" )-\( property.comment ?? "<nil>" )"
+        self.id      = "\( index )-\( property.name )-\( property.value.kind.description )-\( value ?? "<nil>" )-\( property.comment ?? "<nil>" )"
     }
 
     public static func stringForPropertyValue( _ property: FITSProperty ) -> String?
     {
-        switch property.kind
+        switch property.value.kind
         {
             case .logical:    return self.stringForLogicalValue(   property.value )
             case .integer:    return self.stringForIntegerValue(   property.value )
@@ -59,9 +59,9 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
         }
     }
 
-    public static func stringForLogicalValue( _ value: Any? ) -> String?
+    public static func stringForLogicalValue( _ value: FITSValue ) -> String?
     {
-        guard let value = value as? Bool
+        guard let value = value.logical
         else
         {
             return nil
@@ -70,9 +70,9 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
         return value ? "T" : "F"
     }
 
-    public static func stringForIntegerValue( _ value: Any? ) -> String?
+    public static func stringForIntegerValue( _ value: FITSValue ) -> String?
     {
-        guard let value = value as? Int64
+        guard let value = value.integer
         else
         {
             return nil
@@ -81,9 +81,9 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
         return String( format: "%lli", value )
     }
 
-    public static func stringForFloatValue( _ value: Any? ) -> String?
+    public static func stringForFloatValue( _ value: FITSValue ) -> String?
     {
-        guard let value = value as? Double
+        guard let value = value.float
         else
         {
             return nil
@@ -92,24 +92,24 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
         return String( format: "%.4f", value )
     }
 
-    public static func stringForStringValue( _ value: Any? ) -> String?
+    public static func stringForStringValue( _ value: FITSValue ) -> String?
     {
-        value as? String
+        value.string
     }
 
-    public static func stringForUndefinedValue( _ value: Any? ) -> String?
+    public static func stringForUndefinedValue( _ value: FITSValue ) -> String?
     {
         nil
     }
 
-    public static func stringForUnknownValue( _ value: Any? ) -> String?
+    public static func stringForUnknownValue( _ value: FITSValue ) -> String?
     {
-        guard let value = value
+        guard case .unknown( let value ) = value
         else
         {
             return nil
         }
 
-        return "\( value )"
+        return value
     }
 }

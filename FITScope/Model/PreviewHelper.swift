@@ -71,7 +71,7 @@ public enum PreviewHelper
 
         do
         {
-            return try FITSFile( url: url )
+            return try FITSFile( url: url, options: .lenient )
         }
         catch
         {
