@@ -47,7 +47,49 @@ public struct FITSPropertySnapshot: Sendable
 
 public enum ImageProcessor
 {
-    public static func render( data: Data, properties: [ FITSPropertySnapshot ] ) throws -> ( image: CGImage, bytes: [ UInt8 ] )
+    /// The user-tunable pipeline parameters, as a `Sendable` snapshot.
+    ///
+    /// The defaults reproduce the values the pipeline used when they were
+    /// hard-coded, so a render with default settings is unchanged.
+    public struct Settings: Sendable, Equatable
+    {
+        public var normalize:    Processors.Normalize.Mode?
+        public var stretch:      Processors.Stretch.Algorithm?
+        public var gamma:        Double?
+        public var whiteBalance: Processors.WhiteBalance.Mode?
+        public var debayerMode:  Processors.Debayer.Mode
+
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = .log( 50 ), gamma: Double? = 1.8, whiteBalance: Processors.WhiteBalance.Mode? = .auto, debayerMode: Processors.Debayer.Mode = .bilinear )
+        {
+            self.normalize    = normalize
+            self.stretch      = stretch
+            self.gamma        = gamma
+            self.whiteBalance = whiteBalance
+            self.debayerMode  = debayerMode
+        }
+
+        /// Builds the pipeline configuration, combining these tunables with the
+        /// header-derived affine scaling and Bayer pattern.
+        ///
+        /// - Parameters:
+        ///   - scale:          The multiplicative scale from `BSCALE`.
+        ///   - offset:         The additive offset from `BZERO`.
+        ///   - debayerPattern: The Bayer pattern from `BAYERPAT`, or `nil` for mono.
+        /// - Returns: The configured `PixelPipeline.Config`.
+        public func config( scale: Double, offset: Double, debayerPattern: Processors.Debayer.Pattern? ) -> PixelPipeline.Config
+        {
+            PixelPipeline.Config(
+                scale:        ( scale, offset ),
+                debayer:      debayerPattern.map { ( pattern: $0, mode: self.debayerMode ) },
+                normalize:    self.normalize,
+                stretch:      self.stretch,
+                correctGamma: self.gamma,
+                whiteBalance: self.whiteBalance
+            )
+        }
+    }
+
+    public static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> ( image: CGImage, bytes: [ UInt8 ] )
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.integer
         else
@@ -124,7 +166,7 @@ public enum ImageProcessor
 
         let ( scale, offset ) = ImageProcessor.scaling( from: properties )
 
-        let config   = PixelPipeline.Config( scale: ( scale, offset ), debayer: bayerPattern.map { ( pattern: $0, mode: .bilinear ) }, normalize: .minMax, stretch: .log( 50 ), correctGamma: 1.8, whiteBalance: .auto )
+        let config   = settings.config( scale: scale, offset: offset, debayerPattern: bayerPattern )
         let pipeline = PixelPipeline( config: config )
 
         return try Benchmark.run( label: "Rendering Image" )

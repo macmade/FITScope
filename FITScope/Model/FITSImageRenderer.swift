@@ -71,7 +71,16 @@ public class FITSImageRenderer: ObservableObject
     @Published public private( set ) var result: Result?
     @Published public private( set ) var error:  Error?
 
+    /// The user-tunable adjustments driving the render. Bind controls to these
+    /// and call ``scheduleReRender()`` to apply changes.
+    public let adjustments = ImageAdjustments()
+
+    /// How long to coalesce rapid re-render requests before rendering.
+    private static let reRenderDebounce = Duration.milliseconds( 150 )
+
     private let input: Swift.Result< RenderInput, any Error >
+
+    private( set ) var pendingRender: Task< Void, Never >?
 
     public init( input: Swift.Result< RenderInput, any Error > )
     {
@@ -118,14 +127,15 @@ public class FITSImageRenderer: ObservableObject
     {
         do
         {
-            let input  = try self.input.get()
-            let result = try await withCheckedThrowingContinuation
+            let input    = try self.input.get()
+            let settings = self.adjustments.settings
+            let result   = try await withCheckedThrowingContinuation
             {
                 continuation in DispatchQueue.global( qos: .userInitiated ).async
                 {
                     do
                     {
-                        let render              = try ImageProcessor.render( data: input.data, properties: input.properties )
+                        let render              = try ImageProcessor.render( data: input.data, properties: input.properties, settings: settings )
                         let rgbHistogram        = Benchmark.run( label: "Histogram (RGB)" ) { SwiftPixel.Histogram( bytes: render.bytes, channels: 3, mode: .rgb ) }
                         let luminanceHistogram  = Benchmark.run( label: "Histogram (L)"   ) { SwiftPixel.Histogram( bytes: render.bytes, channels: 3, mode: .luminance ) }
                         let redStatistics       = Benchmark.run( label: "Statistics (R)"  ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 0 ] ) }
@@ -166,6 +176,28 @@ public class FITSImageRenderer: ObservableObject
         {
             self.result = nil
             self.error  = error
+        }
+    }
+
+    /// Re-renders the image with the current adjustments, debounced to coalesce
+    /// rapid changes such as a slider drag. Any pending re-render is cancelled
+    /// first, so only the latest settings are applied.
+    public func scheduleReRender()
+    {
+        self.pendingRender?.cancel()
+        self.pendingRender = Task
+        {
+            [ weak self ] in
+
+            try? await Task.sleep( for: Self.reRenderDebounce )
+
+            guard Task.isCancelled == false
+            else
+            {
+                return
+            }
+
+            await self?.render()
         }
     }
 }

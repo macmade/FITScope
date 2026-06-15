@@ -157,6 +157,69 @@ struct FITScopeTests
         #expect( rendered == direct.bytes )
     }
 
+    /// The adjustments model builds a pipeline configuration whose fields map
+    /// across from the settings, and changes to the model flow into the config.
+    @Test
+    @MainActor
+    func adjustmentsBuildPipelineConfig() throws
+    {
+        let adjustments = ImageAdjustments()
+
+        // The model's defaults equal the pipeline's previously hard-coded values.
+        #expect( adjustments.settings == ImageProcessor.Settings() )
+
+        let config = adjustments.settings.config( scale: 2, offset: 3, debayerPattern: .rggb )
+
+        // Header-derived affine scaling passes through unchanged.
+        #expect( config.scale?.scale  == 2 )
+        #expect( config.scale?.offset == 3 )
+
+        // The defaults reproduce the previously hard-coded pipeline values.
+        #expect( config.stretch      == .log( 50 ) )
+        #expect( config.correctGamma == 1.8 )
+        #expect( config.whiteBalance == .auto )
+        #expect( config.normalize    == .minMax )
+
+        let debayer = try #require( config.debayer )
+
+        #expect( debayer.pattern == .rggb )
+        #expect( debayer.mode    == .bilinear )
+
+        // A changed setting flows into a freshly built config.
+        adjustments.stretch     = .arcsinh( 12 )
+        adjustments.debayerMode = .vng
+
+        let updated        = adjustments.settings.config( scale: 1, offset: 0, debayerPattern: .bggr )
+        let updatedDebayer = try #require( updated.debayer )
+
+        #expect( updated.stretch        == .arcsinh( 12 ) )
+        #expect( updatedDebayer.pattern == .bggr )
+        #expect( updatedDebayer.mode    == .vng )
+    }
+
+    /// Changing an adjustment and triggering the debounced re-render entry point
+    /// produces a render distinct from the default one.
+    @Test
+    @MainActor
+    func reRenderWithChangedAdjustmentsProducesNewResult() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: Self.corpusURL( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        let original = try #require( renderer.result?.bytes )
+
+        renderer.adjustments.stretch = .log( 10 )
+        renderer.scheduleReRender()
+        await renderer.pendingRender?.value
+
+        let updated = try #require( renderer.result?.bytes )
+
+        #expect( updated != original )
+    }
+
     /// Resolves a corpus file by its path relative to the `Test Files` directory.
     private static func corpusURL( _ relativePath: String ) -> URL
     {
