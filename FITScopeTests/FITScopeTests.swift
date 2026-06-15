@@ -22,12 +22,70 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-@testable import FITScope
+import Foundation
+import SwiftFITS
 import Testing
+@testable import FITScope
 
+/// End-to-end render test over the bundled FITS corpus.
+///
+/// Each corpus file is run through the same load → parse → render path the app
+/// uses (`FITSImageRenderer.render()`), and the outcome is checked against the
+/// documented baseline in `FITSCorpus`. This suite is the running scoreboard
+/// the remediation milestones edit: today only the M42 file renders, and each
+/// fix flips more entries from `.fails(...)` to `.renders`.
+@Suite( "FITS corpus render baseline" )
 struct FITScopeTests
 {
+    /// The corpus must be present on disk; fail loudly if it is missing.
     @Test
-    func test() async throws
-    {}
+    func corpusIsPresent() throws
+    {
+        let directory = FITSCorpus.directory
+
+        #expect( FileManager.default.fileExists( atPath: directory.path ), "Corpus directory is missing at \( directory.path )" )
+
+        for file in FITSCorpus.files
+        {
+            #expect( FileManager.default.fileExists( atPath: file.url.path ), "Missing corpus file: \( file.url.path )" )
+        }
+    }
+
+    /// Every corpus file produces the outcome documented in the baseline.
+    @Test( arguments: FITSCorpus.files )
+    @MainActor
+    func corpusOutcomeMatchesBaseline( file: FITSCorpus.File ) async throws
+    {
+        let data     = try Data( contentsOf: file.url )
+        let fitsFile = try FITSFile( data: data, options: .lenient )
+        let renderer = FITSImageRenderer( file: fitsFile )
+
+        await renderer.render()
+
+        switch file.expectation
+        {
+            case .renders:
+                #expect( renderer.result != nil, "\( file.label ) should render to an image" )
+                #expect( renderer.error  == nil, "\( file.label ) should not produce an error, got: \( String( describing: renderer.error ) )" )
+
+            case .fails( let reason ):
+                #expect( renderer.result == nil, "\( file.label ) should not render" )
+
+                let message = renderer.error.map { "\( $0 )" } ?? ""
+
+                #expect( message.contains( reason.currentMessageSubstring ), "\( file.label ): expected an error containing \"\( reason.currentMessageSubstring )\", got: \"\( message )\"" )
+        }
+    }
+
+    /// Deferred (C-2): a minimal header-only FITS file (`NAXIS=0`, single
+    /// section) currently *crashes* the app because `FITSImageRenderer` hard
+    /// indexes `sections[1]`. This cannot be asserted as a clean error until
+    /// M2 replaces the positional index with kind-based selection — running it
+    /// today would trap and abort the whole test process. M2 enables this and
+    /// replaces it with a real typed-error assertion.
+    @Test( .disabled( "C-2: header-only input traps on sections[1]; enable in M2" ) )
+    func headerOnlyFileErrorsCleanly() throws
+    {
+        Issue.record( "Pending M2: header-only FITS should surface a typed \"no image HDU\" error instead of crashing." )
+    }
 }

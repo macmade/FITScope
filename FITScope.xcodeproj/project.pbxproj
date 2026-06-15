@@ -29,6 +29,7 @@
 		0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF092DDE64DF005DECEF /* Assets.xcassets */; };
 		0587FF0F2DDE64DF005DECEF /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF0C2DDE64DF005DECEF /* MainMenu.xib */; };
 		0587FF132DDE64E0005DECEF /* FITScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF112DDE64E0005DECEF /* FITScopeTests.swift */; };
+		05C0A75A2DDE64E0005DECEF /* FITSCorpus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A7592DDE64E0005DECEF /* FITSCorpus.swift */; };
 		0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */; };
 		0587FF182DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */; };
 		05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05986B472DF892D300A55E77 /* SliderGridRowView.swift */; };
@@ -177,6 +178,7 @@
 		0587FF0A2DDE64DF005DECEF /* FITScope.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScope.entitlements; sourceTree = "<group>"; };
 		0587FF0B2DDE64DF005DECEF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		0587FF112DDE64E0005DECEF /* FITScopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeTests.swift; sourceTree = "<group>"; };
+		05C0A7592DDE64E0005DECEF /* FITSCorpus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSCorpus.swift; sourceTree = "<group>"; };
 		0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITests.swift; sourceTree = "<group>"; };
 		0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		05986B472DF892D300A55E77 /* SliderGridRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderGridRowView.swift; sourceTree = "<group>"; };
@@ -497,6 +499,7 @@
 			isa = PBXGroup;
 			children = (
 				0587FF112DDE64E0005DECEF /* FITScopeTests.swift */,
+				05C0A7592DDE64E0005DECEF /* FITSCorpus.swift */,
 			);
 			path = FITScopeTests;
 			sourceTree = "<group>";
@@ -762,6 +765,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0587FF132DDE64E0005DECEF /* FITScopeTests.swift in Sources */,
+				05C0A75A2DDE64E0005DECEF /* FITSCorpus.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
