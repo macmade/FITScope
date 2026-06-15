@@ -122,7 +122,7 @@ public enum ImageProcessor
             1
         }
 
-        let config   = PixelPipeline.Config( scale: ( scale, offset ), bayerPattern: bayerPattern, normalize: .minMax, stretch: .log( 50 ), correctGamma: 1.8, whiteBalance: .auto )
+        let config   = PixelPipeline.Config( scale: ( scale, offset ), debayer: bayerPattern.map { ( pattern: $0, mode: .bilinear ) }, normalize: .minMax, stretch: .log( 50 ), correctGamma: 1.8, whiteBalance: .auto )
         let pipeline = PixelPipeline( config: config )
 
         return try Benchmark.run( label: "Rendering Image" )

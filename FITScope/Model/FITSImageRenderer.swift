@@ -75,8 +75,8 @@ public class FITSImageRenderer: ObservableObject
                     do
                     {
                         let render              = try ImageProcessor.render( data: file.value.sections[ 1 ].data, properties: file.value.sections.first?.properties ?? [] )
-                        let rgbHistogram        = Benchmark.run( label: "Histogram (RGB)" ) { SwiftPixel.Histogram( bytes: render.bytes, mode: .rgb ) }
-                        let luminanceHistogram  = Benchmark.run( label: "Histogram (L)"   ) { SwiftPixel.Histogram( bytes: render.bytes, mode: .luminance ) }
+                        let rgbHistogram        = Benchmark.run( label: "Histogram (RGB)" ) { SwiftPixel.Histogram( bytes: render.bytes, channels: 3, mode: .rgb ) }
+                        let luminanceHistogram  = Benchmark.run( label: "Histogram (L)"   ) { SwiftPixel.Histogram( bytes: render.bytes, channels: 3, mode: .luminance ) }
                         let redStatistics       = Benchmark.run( label: "Statistics (R)"  ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 0 ] ) }
                         let greenStatistics     = Benchmark.run( label: "Statistics (G)"  ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 1 ] ) }
                         let blueStatistics      = Benchmark.run( label: "Statistics (B)"  ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 2 ] ) }

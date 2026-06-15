@@ -109,8 +109,8 @@ public enum PreviewHelper
     public static func histogram() -> FITSImageRenderer.Histogram
     {
         let bytes     = self.generateRandomRGBData( count: 1000 )
-        let rgb       = Histogram( bytes: bytes, mode: .rgb )
-        let luminance = Histogram( bytes: bytes, mode: .luminance )
+        let rgb       = Histogram( bytes: bytes, channels: 3, mode: .rgb )
+        let luminance = Histogram( bytes: bytes, channels: 3, mode: .luminance )
 
         return FITSImageRenderer.Histogram( rgb: rgb, luminance: luminance )
     }
