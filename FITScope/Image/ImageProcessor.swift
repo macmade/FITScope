@@ -80,12 +80,13 @@ public enum ImageProcessor
             throw RuntimeError( message: "Invalid NAXIS1 value \( nAxis1 )" )
         }
 
-        let size = bitsPerPixel.size( numberOfPixels: width * height )
+        let size      = bitsPerPixel.size( numberOfPixels: width * height )
+        let pixelData = Data( data.prefix( size ) ) // re-wrap: startIndex may be non-zero
 
-        guard data.count == size
+        guard pixelData.count == size
         else
         {
-            throw RuntimeError( message: "Data size does not match expected size: \( data.count ) != \( size )" )
+            throw RuntimeError( message: "Data too small: \( data.count ) < \( size )" )
         }
 
         let bayerPattern: Processors.Debayer.Pattern? = if let pattern = properties.first( where: { $0.name == "BAYERPAT" } )?.value.string
@@ -127,7 +128,7 @@ public enum ImageProcessor
 
         return try Benchmark.run( label: "Rendering Image" )
         {
-            let buffer = try pipeline.run( data: data, width: width, height: height, bitsPerPixel: bitsPerPixel )
+            let buffer = try pipeline.run( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel )
             let bytes  = try buffer.convertTo8Bits()
             let image  = try PixelBuffer.createCGImage( bytes: bytes, width: buffer.width, height: buffer.height, channels: buffer.channels )
 
