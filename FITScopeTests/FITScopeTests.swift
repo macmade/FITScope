@@ -31,9 +31,7 @@ import Testing
 ///
 /// Each corpus file is run through the same load → parse → render path the app
 /// uses (`FITSImageRenderer.render()`), and the outcome is checked against the
-/// documented baseline in `FITSCorpus`. This suite is the running scoreboard
-/// the remediation milestones edit: today only the M42 file renders, and each
-/// fix flips more entries from `.fails(...)` to `.renders`.
+/// expectation declared for it in `FITSCorpus`.
 @Suite( "FITS corpus render baseline" )
 struct FITScopeTests
 {
@@ -51,10 +49,10 @@ struct FITScopeTests
         }
     }
 
-    /// Every corpus file produces the outcome documented in the baseline.
+    /// Every corpus file produces the outcome declared for it in `FITSCorpus`.
     @Test( arguments: FITSCorpus.files )
     @MainActor
-    func corpusOutcomeMatchesBaseline( file: FITSCorpus.File ) async throws
+    func corpusOutcomeMatchesExpectation( file: FITSCorpus.File ) async throws
     {
         let data     = try Data( contentsOf: file.url )
         let fitsFile = try FITSFile( data: data, options: .lenient )
@@ -77,15 +75,44 @@ struct FITScopeTests
         }
     }
 
-    /// Deferred (C-2): a minimal header-only FITS file (`NAXIS=0`, single
-    /// section) currently *crashes* the app because `FITSImageRenderer` hard
-    /// indexes `sections[1]`. This cannot be asserted as a clean error until
-    /// M2 replaces the positional index with kind-based selection — running it
-    /// today would trap and abort the whole test process. M2 enables this and
-    /// replaces it with a real typed-error assertion.
-    @Test( .disabled( "C-2: header-only input traps on sections[1]; enable in M2" ) )
-    func headerOnlyFileErrorsCleanly() throws
+    /// A minimal header-only FITS file (`NAXIS=0`, single section) must surface
+    /// a clean, typed error and never trap: with a single section there is no
+    /// data section to render, and the selection must not index a fixed
+    /// position.
+    @Test
+    @MainActor
+    func headerOnlyFileErrorsCleanly() async throws
     {
-        Issue.record( "Pending M2: header-only FITS should surface a typed \"no image HDU\" error instead of crashing." )
+        let data = Self.headerOnlyFITSData()
+        let file = try FITSFile( data: data, options: .lenient )
+
+        // The file that used to trap: a single header section, no data section.
+        try #require( file.sections.count == 1 )
+
+        let renderer = FITSImageRenderer( file: file )
+
+        await renderer.render()
+
+        #expect( renderer.result == nil, "header-only input should not render" )
+
+        let message = renderer.error.map { "\( $0 )" } ?? ""
+
+        #expect( message.contains( "no image HDU" ), "expected a typed no-image-HDU error, got: \"\( message )\"" )
+    }
+
+    /// Synthesises a minimal, valid header-only FITS file
+    /// (`SIMPLE=T / BITPIX=8 / NAXIS=0 / END`) as a single space-padded block.
+    private static func headerOnlyFITSData() -> Data
+    {
+        let records =
+        [
+            "SIMPLE  = T",
+            "BITPIX  = 8",
+            "NAXIS   = 0",
+            "END",
+        ]
+        let header = records.map { $0.padding( toLength: 80, withPad: " ", startingAt: 0 ) }.joined()
+
+        return Data( header.padding( toLength: FITSFile.blockSize, withPad: " ", startingAt: 0 ).utf8 )
     }
 }

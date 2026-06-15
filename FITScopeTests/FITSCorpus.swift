@@ -28,9 +28,9 @@ import Foundation
 ///
 /// The corpus is the set of sample files shipped under
 /// `Submodules/SwiftFITS/Test Files`. Each file is paired with the outcome the
-/// real load → parse → render path produces, so the corpus suite acts as a
-/// running scoreboard: a milestone that fixes a defect flips the affected
-/// entries from `.fails(...)` to `.renders` with a one-line edit.
+/// real load → parse → render path produces, so a single parameterised test
+/// covers the whole corpus and each entry's expected result is stated in one
+/// place.
 enum FITSCorpus
 {
     /// The expected outcome of rendering a corpus file through the app's path.
@@ -52,21 +52,21 @@ enum FITSCorpus
         }
     }
 
-    /// Why a corpus file fails to render today.
+    /// Why a corpus file fails to render.
     ///
-    /// Each case also carries the substring its thrown error message contains
-    /// at present, so the baseline asserts the *actual* current behaviour while
-    /// keeping the semantic intent distinct (different reasons are fixed by
-    /// different milestones).
+    /// Each case carries the substring its thrown error message contains, so a
+    /// failure assertion checks the actual reason rather than merely that some
+    /// error occurred. The cases are kept semantically distinct so each entry
+    /// documents precisely why it does not render.
     enum FailureReason: Sendable, CustomStringConvertible
     {
-        /// C-1: the padded data unit is larger than the exact pixel-data size.
+        /// The padded data unit is larger than the exact pixel-data size.
         case sizeMismatch
 
-        /// M-2: a non-2-D geometry (3-D cube / multi-plane) is not supported.
+        /// A non-2-D geometry (3-D cube / multi-plane) is not supported.
         case unsupportedGeometry
 
-        /// M-1: the image lives in an extension HDU but the primary header
+        /// The image lives in an extension HDU but the primary header
         /// (`NAXIS=0`) is consulted instead, so it is never reached.
         case extensionImageUnreached
 
@@ -126,10 +126,7 @@ enum FITSCorpus
             .appendingPathComponent( "Submodules/SwiftFITS/Test Files" )
     }
 
-    /// The 12-file corpus and its baseline expectations on the current `main`.
-    ///
-    /// Only the M42 (`G252`) file renders today; every other entry fails with
-    /// its documented reason. Milestones flip individual entries to `.renders`.
+    /// The 12-file corpus and the outcome each file is expected to produce.
     static let files: [ File ] =
     [
         File( relativePath: "2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits", label: "M42 (G252)",           expectation: .renders ),
@@ -141,8 +138,8 @@ enum FITSCorpus
         File( relativePath: "NASA/WFPC2ASSNu5780205bx.fits",                                    label: "WFPC2 ASSN",           expectation: .renders ),
         File( relativePath: "NASA/WFPC2u5780205r_c0fx.fits",                                    label: "WFPC2 (NAXIS=3)",      expectation: .fails( .unsupportedGeometry ) ),
         File( relativePath: "NASA/DDTSUVDATA.fits",                                             label: "DDTSUVDATA (NAXIS=6)", expectation: .fails( .unsupportedGeometry ) ),
-        File( relativePath: "NASA/EUVEngc4151imgx.fits",                                        label: "EUVE (ext image)",     expectation: .fails( .extensionImageUnreached ) ),
-        File( relativePath: "NASA/IUElwp25637mxlo.fits",                                        label: "IUE (ext image)",      expectation: .fails( .extensionImageUnreached ) ),
-        File( relativePath: "NASA/NICMOSn4hk12010_mos.fits",                                    label: "NICMOS (ext image)",   expectation: .fails( .extensionImageUnreached ) ),
+        File( relativePath: "NASA/EUVEngc4151imgx.fits",                                        label: "EUVE (ext image)",     expectation: .renders ),
+        File( relativePath: "NASA/IUElwp25637mxlo.fits",                                        label: "IUE (ext image)",      expectation: .renders ),
+        File( relativePath: "NASA/NICMOSn4hk12010_mos.fits",                                    label: "NICMOS (ext image)",   expectation: .renders ),
     ]
 }
