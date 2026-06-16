@@ -116,7 +116,14 @@ public struct MainWindowView: View
     /// `nil` when no image is loaded.
     private var dimensionsSummary: String?
     {
-        self.model.selectedFile?.image == nil ? nil : ""
+        guard let info = self.model.selectedFile?.image?.info,
+              let summary = ImageInformation( info: info )
+        else
+        {
+            return nil
+        }
+
+        return "\( summary.dimensions ) • \( summary.bitDepth )"
     }
 
     /// Loads dropped file URLs into the window.

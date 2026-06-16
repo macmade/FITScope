@@ -100,6 +100,7 @@ public struct ImageCanvasView: View
         {
             await self.file.load()
             await self.file.image?.renderer.render()
+            await self.file.makeThumbnail( maxDimension: 64 )
         }
     }
 

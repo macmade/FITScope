@@ -62,4 +62,21 @@ struct OpenFileTests
 
         #expect( OpenFile( url: url ).id != OpenFile( url: url ).id, "each open file is a distinct entry even for the same URL" )
     }
+
+    @Test
+    @MainActor
+    func loadAndRenderProducesThumbnail() async throws
+    {
+        let url  = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let file = OpenFile( url: url )
+
+        await file.load()
+        await file.image?.renderer.render()
+        await file.makeThumbnail( maxDimension: 64 )
+
+        let thumbnail = try #require( file.thumbnail )
+
+        #expect( thumbnail.width <= 64 && thumbnail.height <= 64, "thumbnail is bounded by the requested max dimension" )
+        #expect( thumbnail.width >= 1 && thumbnail.height >= 1 )
+    }
 }

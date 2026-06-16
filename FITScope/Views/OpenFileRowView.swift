@@ -44,16 +44,29 @@ public struct OpenFileRowView: View
     {
         HStack( spacing: 9 )
         {
-            RoundedRectangle( cornerRadius: 5 )
-                .fill( Color( .windowBackgroundColor ) )
-                .frame( width: 42, height: 30 )
-                .overlay
+            Group
+            {
+                if let thumbnail = self.file.thumbnail
                 {
-                    if self.file.image == nil
-                    {
-                        ProgressView().controlSize( .small )
-                    }
+                    Image( thumbnail, scale: 1.0, label: Text( self.file.displayName ) )
+                        .resizable()
+                        .aspectRatio( contentMode: .fill )
                 }
+                else
+                {
+                    RoundedRectangle( cornerRadius: 5 )
+                        .fill( Color( .windowBackgroundColor ) )
+                        .overlay
+                        {
+                            if self.file.image == nil
+                            {
+                                ProgressView().controlSize( .small )
+                            }
+                        }
+                }
+            }
+            .frame( width: 42, height: 30 )
+            .clipShape( RoundedRectangle( cornerRadius: 5 ) )
 
             VStack( alignment: .leading, spacing: 2 )
             {
@@ -76,6 +89,13 @@ public struct OpenFileRowView: View
     /// placeholder while loading or on error.
     private var metadataSummary: String
     {
-        self.file.image == nil ? ( self.file.error == nil ? "Loading…" : "Failed to load" ) : "FITS"
+        guard let info = self.file.image?.info,
+              let summary = ImageInformation( info: info )
+        else
+        {
+            return self.file.error == nil ? "Loading…" : "Failed to load"
+        }
+
+        return "FITS • \( summary.bitDepth ) • \( summary.dimensions )"
     }
 }

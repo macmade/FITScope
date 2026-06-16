@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Combine
+import CoreGraphics
 import Foundation
 import SwiftUI
 
@@ -44,6 +45,10 @@ public final class OpenFile: ObservableObject, Identifiable
 
     /// The loader that parses the file into a ``FITSImage``.
     @Published public private( set ) var loader: FITSImageLoader
+
+    /// A small, downscaled preview of the rendered image for the sidebar, or
+    /// `nil` before one has been generated.
+    @Published public private( set ) var thumbnail: CGImage?
 
     /// Forwards the loader's change notifications to this object's observers.
     private var loaderObserver: AnyCancellable?
@@ -83,5 +88,61 @@ public final class OpenFile: ObservableObject, Identifiable
     public func load() async
     {
         await self.loader.load()
+    }
+
+    /// Generates a thumbnail from the current rendered image, downscaled so its
+    /// longest side is at most `maxDimension` pixels. A no-op when nothing has
+    /// rendered yet.
+    ///
+    /// - Parameter maxDimension: The maximum width or height of the thumbnail.
+    public func makeThumbnail( maxDimension: Int ) async
+    {
+        guard let source = self.image?.renderer.result?.image
+        else
+        {
+            return
+        }
+
+        let longest = max( source.width, source.height )
+        let scale   = longest > maxDimension ? Double( maxDimension ) / Double( longest ) : 1.0
+        let width   = max( 1, Int( Double( source.width  ) * scale ) )
+        let height  = max( 1, Int( Double( source.height ) * scale ) )
+
+        let thumbnail = await withCheckedContinuation
+        {
+            ( continuation: CheckedContinuation< CGImage?, Never > ) in
+
+            DispatchQueue.global( qos: .utility ).async
+            {
+                continuation.resume( returning: Self.resize( source, width: width, height: height ) )
+            }
+        }
+
+        self.thumbnail = thumbnail
+    }
+
+    /// Redraws a `CGImage` at the given pixel size, preserving its color space.
+    private nonisolated static func resize( _ image: CGImage, width: Int, height: Int ) -> CGImage?
+    {
+        let colorSpace = image.colorSpace ?? CGColorSpaceCreateDeviceRGB()
+
+        guard let context = CGContext(
+            data:             nil,
+            width:            width,
+            height:           height,
+            bitsPerComponent: 8,
+            bytesPerRow:      0,
+            space:            colorSpace,
+            bitmapInfo:       CGImageAlphaInfo.premultipliedLast.rawValue
+        )
+        else
+        {
+            return nil
+        }
+
+        context.interpolationQuality = .low
+        context.draw( image, in: CGRect( x: 0, y: 0, width: width, height: height ) )
+
+        return context.makeImage()
     }
 }

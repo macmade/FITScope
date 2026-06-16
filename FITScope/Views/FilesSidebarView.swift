@@ -84,6 +84,13 @@ public struct FilesSidebarView: View
                 }
             }
             .listStyle( .sidebar )
+
+            if let selected = self.model.selectedFile
+            {
+                Divider()
+
+                ImageInfoPanelView( file: selected )
+            }
         }
     }
 

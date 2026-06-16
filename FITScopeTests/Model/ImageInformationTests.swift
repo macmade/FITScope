@@ -24,43 +24,33 @@
 
 import Foundation
 import SwiftFITS
+import Testing
+@testable import FITScope
 
-/// A `Codable`, `Hashable` snapshot of a FITS file's header metadata, suitable
-/// for passing to an auxiliary window via SwiftUI's value-based scenes.
-public struct FITSImageInfo: Codable, Hashable
+/// Tests for `ImageInformation` keyword extraction.
+@Suite( "ImageInformation" )
+struct ImageInformationTests
 {
-    /// The URL of the source file.
-    public let url:      URL
-
-    /// The file's metadata sections (primary header and any extensions), in file
-    /// order. Data-only sections are excluded.
-    public let sections: [ FITSImageSection ]
-
-    /// Builds the metadata snapshot from a parsed file.
-    ///
-    /// Only header and extension sections are kept; sections that
-    /// ``FITSImageSection`` cannot represent (e.g. pure data) are dropped.
-    ///
-    /// - Parameters:
-    ///   - url:  The URL the file was loaded from.
-    ///   - file: The parsed FITS file.
-    public init( url: URL, file: FITSFile )
+    @Test
+    func extractsCoreFieldsFromCorpusFile() throws
     {
-        self.url      = url
-        self.sections = file.sections.enumerated().compactMap
-        {
-            FITSImageSection( index: $0.offset, section: $0.element )
-        }
+        let url  = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let file = try FITSFile( url: url, options: .lenient )
+        let info = FITSImageInfo( url: url, file: file )
+
+        let summary = try #require( ImageInformation( info: info ) )
+
+        #expect( summary.dimensions.contains( "×" ), "dimensions read NAXIS1 × NAXIS2" )
+        #expect( summary.bitDepth.contains( "bit" ), "bit depth reads BITPIX" )
+        #expect( summary.channels.isEmpty == false )
     }
 
-    /// Creates an info snapshot directly from sections, for tests and previews.
-    ///
-    /// - Parameters:
-    ///   - url:      The source URL.
-    ///   - sections: The metadata sections.
-    public init( url: URL, sections: [ FITSImageSection ] )
+    @Test
+    func returnsNilWhenGeometryKeywordsMissing() throws
     {
-        self.url      = url
-        self.sections = sections
+        let url  = URL( fileURLWithPath: "/tmp/none.fits" )
+        let info = FITSImageInfo( url: url, sections: [] )
+
+        #expect( ImageInformation( info: info ) == nil )
     }
 }
