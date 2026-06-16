@@ -30,8 +30,17 @@
 		057F611C2DF8B78600EE82D1 /* ImageControlContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 057F611B2DF8B78000EE82D1 /* ImageControlContainer.swift */; };
 		0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF092DDE64DF005DECEF /* Assets.xcassets */; };
 		0587FF0F2DDE64DF005DECEF /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF0C2DDE64DF005DECEF /* MainMenu.xib */; };
-		0587FF132DDE64E0005DECEF /* FITScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF112DDE64E0005DECEF /* FITScopeTests.swift */; };
 		05C0A75A2DDE64E0005DECEF /* FITSCorpus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A7592DDE64E0005DECEF /* FITSCorpus.swift */; };
+		05FB1000000000000000B001 /* FITSCorpusRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A001 /* FITSCorpusRenderTests.swift */; };
+		05FB1000000000000000B002 /* FITSTestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A002 /* FITSTestData.swift */; };
+		05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A003 /* ImageProcessorTests.swift */; };
+		05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A004 /* FITSImageRendererTests.swift */; };
+		05FB1000000000000000B005 /* ImageAdjustmentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */; };
+		05FB1000000000000000B006 /* StretchControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A006 /* StretchControlViewTests.swift */; };
+		05FB1000000000000000B007 /* GammaCorrectionControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A007 /* GammaCorrectionControlViewTests.swift */; };
+		05FB1000000000000000B008 /* WhiteBalanceControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A008 /* WhiteBalanceControlViewTests.swift */; };
+		05FB1000000000000000B009 /* DebayerControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A009 /* DebayerControlViewTests.swift */; };
+		05FB1000000000000000B00A /* HistogramViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A00A /* HistogramViewTests.swift */; };
 		0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */; };
 		0587FF182DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */; };
 		05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05986B472DF892D300A55E77 /* SliderGridRowView.swift */; };
@@ -182,8 +191,17 @@
 		0587FF092DDE64DF005DECEF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0587FF0A2DDE64DF005DECEF /* FITScope.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScope.entitlements; sourceTree = "<group>"; };
 		0587FF0B2DDE64DF005DECEF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
-		0587FF112DDE64E0005DECEF /* FITScopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeTests.swift; sourceTree = "<group>"; };
 		05C0A7592DDE64E0005DECEF /* FITSCorpus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSCorpus.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A001 /* FITSCorpusRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSCorpusRenderTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A002 /* FITSTestData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSTestData.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A003 /* ImageProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessorTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A004 /* FITSImageRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageRendererTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageAdjustmentsTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A006 /* StretchControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchControlViewTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A007 /* GammaCorrectionControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GammaCorrectionControlViewTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A008 /* WhiteBalanceControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteBalanceControlViewTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A009 /* DebayerControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebayerControlViewTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A00A /* HistogramViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramViewTests.swift; sourceTree = "<group>"; };
 		0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITests.swift; sourceTree = "<group>"; };
 		0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		05986B472DF892D300A55E77 /* SliderGridRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderGridRowView.swift; sourceTree = "<group>"; };
@@ -506,10 +524,59 @@
 		0587FF122DDE64E0005DECEF /* FITScopeTests */ = {
 			isa = PBXGroup;
 			children = (
-				0587FF112DDE64E0005DECEF /* FITScopeTests.swift */,
+				05FB1000000000000000C001 /* Helpers */,
+				05FB1000000000000000C002 /* Image */,
+				05FB1000000000000000C003 /* Model */,
+				05FB1000000000000000C004 /* Views */,
 				05C0A7592DDE64E0005DECEF /* FITSCorpus.swift */,
+				05FB1000000000000000A001 /* FITSCorpusRenderTests.swift */,
 			);
 			path = FITScopeTests;
+			sourceTree = "<group>";
+		};
+		05FB1000000000000000C001 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				05FB1000000000000000A002 /* FITSTestData.swift */,
+			);
+			path = Helpers;
+			sourceTree = "<group>";
+		};
+		05FB1000000000000000C002 /* Image */ = {
+			isa = PBXGroup;
+			children = (
+				05FB1000000000000000A003 /* ImageProcessorTests.swift */,
+			);
+			path = Image;
+			sourceTree = "<group>";
+		};
+		05FB1000000000000000C003 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				05FB1000000000000000A004 /* FITSImageRendererTests.swift */,
+				05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		05FB1000000000000000C004 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				05FB1000000000000000C005 /* ImageControls */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		05FB1000000000000000C005 /* ImageControls */ = {
+			isa = PBXGroup;
+			children = (
+				05FB1000000000000000A006 /* StretchControlViewTests.swift */,
+				05FB1000000000000000A007 /* GammaCorrectionControlViewTests.swift */,
+				05FB1000000000000000A008 /* WhiteBalanceControlViewTests.swift */,
+				05FB1000000000000000A009 /* DebayerControlViewTests.swift */,
+				05FB1000000000000000A00A /* HistogramViewTests.swift */,
+			);
+			path = ImageControls;
 			sourceTree = "<group>";
 		};
 		0587FF162DDE64E3005DECEF /* FITScopeUITests */ = {
@@ -776,8 +843,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0587FF132DDE64E0005DECEF /* FITScopeTests.swift in Sources */,
 				05C0A75A2DDE64E0005DECEF /* FITSCorpus.swift in Sources */,
+				05FB1000000000000000B001 /* FITSCorpusRenderTests.swift in Sources */,
+				05FB1000000000000000B002 /* FITSTestData.swift in Sources */,
+				05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */,
+				05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */,
+				05FB1000000000000000B005 /* ImageAdjustmentsTests.swift in Sources */,
+				05FB1000000000000000B006 /* StretchControlViewTests.swift in Sources */,
+				05FB1000000000000000B007 /* GammaCorrectionControlViewTests.swift in Sources */,
+				05FB1000000000000000B008 /* WhiteBalanceControlViewTests.swift in Sources */,
+				05FB1000000000000000B009 /* DebayerControlViewTests.swift in Sources */,
+				05FB1000000000000000B00A /* HistogramViewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

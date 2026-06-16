@@ -126,6 +126,12 @@ enum FITSCorpus
             .appendingPathComponent( "Submodules/SwiftFITS/Test Files" )
     }
 
+    /// Resolves a corpus file by its path relative to the `Test Files` directory.
+    static func url( _ relativePath: String ) -> URL
+    {
+        self.directory.appendingPathComponent( relativePath )
+    }
+
     /// The 12-file corpus and the outcome each file is expected to produce.
     static let files: [ File ] =
     [
