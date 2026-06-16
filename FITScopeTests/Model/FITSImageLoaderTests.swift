@@ -54,6 +54,28 @@ struct FITSImageLoaderTests
         #expect( first === second, "a successful load must not be repeated" )
     }
 
+    /// The loader produces a usable `FITSImage` — parsed header info plus a
+    /// renderer that renders — built entirely from Sendable values, without the
+    /// image retaining the non-Sendable `FITSFile`.
+    @Test
+    @MainActor
+    func loadProducesRenderableImageWithValidInfo() async throws
+    {
+        let url    = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let data   = try Data( contentsOf: url )
+        let loader = FITSImageLoader( url: url, document: FITSDocument( data: data ) )
+
+        await loader.load()
+
+        let image = try #require( loader.image )
+
+        #expect( image.info.sections.isEmpty == false, "the loaded image must carry parsed header info" )
+
+        await image.renderer.render()
+
+        #expect( image.renderer.result != nil, "the loaded image's renderer must render" )
+    }
+
     /// A failed load leaves no image, so the idempotency guard never
     /// short-circuits a failed loader: a subsequent `load()` retries rather than
     /// being blocked by the failure state.

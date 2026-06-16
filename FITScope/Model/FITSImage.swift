@@ -23,22 +23,19 @@
  ******************************************************************************/
 
 import Combine
-import SwiftFITS
 import SwiftUI
 import SwiftUtilities
 
 @MainActor
 public class FITSImage: ObservableObject
 {
-    @Published public private( set ) var file:     FITSFile
     @Published public private( set ) var info:     FITSImageInfo
     @Published public private( set ) var renderer: FITSImageRenderer
 
     private var rendererObserver: AnyCancellable?
 
-    public init( file: FITSFile, info: FITSImageInfo, renderer: FITSImageRenderer )
+    public init( info: FITSImageInfo, renderer: FITSImageRenderer )
     {
-        self.file             = file
         self.info             = info
         self.renderer         = renderer
         self.rendererObserver = self.renderer.objectWillChange.sink

@@ -63,11 +63,15 @@ public class FITSImageLoader: ObservableObject
                 {
                     do
                     {
+                        // Build and consume the FITSFile entirely here: only the
+                        // Sendable info and render input cross back to the main
+                        // actor, so the non-Sendable file is released when this
+                        // closure returns rather than living for the window.
                         let file        = try FITSFile( data: self.document.data, options: .lenient )
                         let info        = FITSImageInfo( url: self.url, file: file )
                         let renderInput = Swift.Result { try FITSImageRenderer.renderInput( from: file.sections ) }
 
-                        continuation.resume( returning: ( file: file, info: info, renderInput: renderInput ) )
+                        continuation.resume( returning: ( info: info, renderInput: renderInput ) )
                     }
                     catch
                     {
@@ -79,7 +83,7 @@ public class FITSImageLoader: ObservableObject
             await MainActor.run
             {
                 let renderer       = FITSImageRenderer( input: result.renderInput )
-                let image          = FITSImage( file: result.file, info: result.info, renderer: renderer )
+                let image          = FITSImage( info: result.info, renderer: renderer )
                 self.image         = image
                 self.error         = nil
                 self.imageObserver = image.objectWillChange.sink
