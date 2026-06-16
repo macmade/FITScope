@@ -27,8 +27,8 @@ import UniformTypeIdentifiers
 
 /// The application entry point.
 ///
-/// Declares the app's scenes: a `DocumentGroup` that opens FITS files into a
-/// ``DocumentView``, an auxiliary window that shows a file's header properties
+/// Declares the app's scenes: a `WindowGroup` whose windows host a
+/// ``MainWindowView``, an auxiliary window that shows a file's header properties
 /// in an ``InfoView``, and a custom About window. The standard *About* menu item
 /// is replaced with one that opens the app's own ``AboutView``.
 @main

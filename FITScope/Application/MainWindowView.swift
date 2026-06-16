@@ -78,9 +78,19 @@ public struct MainWindowView: View
             }
             detail:
             {
-                Color.clear
-                    .frame( maxWidth: .infinity, maxHeight: .infinity )
-                    .navigationSplitViewColumnWidth( min: 240, ideal: 255, max: 360 )
+                Group
+                {
+                    if let image = self.model.selectedFile?.image
+                    {
+                        InspectorView( image: image )
+                    }
+                    else
+                    {
+                        Color.clear
+                    }
+                }
+                .frame( maxWidth: .infinity, maxHeight: .infinity )
+                .navigationSplitViewColumnWidth( min: 240, ideal: 255, max: 360 )
             }
             .navigationSplitViewStyle( .balanced )
 
