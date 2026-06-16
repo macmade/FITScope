@@ -26,16 +26,13 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// The root view of a window: a three-column layout (files + image info |
-/// image canvas | inspector). The status bar sits at the bottom of the center
-/// column only, so the leading and trailing sidebars extend the full height of
-/// the window. Owns the window's ``WindowModel``.
+/// image canvas | inspector). The image canvas hosts its own floating toolbar
+/// and status pill, so the leading and trailing sidebars extend the full
+/// height of the window. Owns the window's ``WindowModel``.
 public struct MainWindowView: View
 {
     /// The window's open files and selection.
     @StateObject private var model = WindowModel()
-
-    /// The current cursor readout shown in the status bar.
-    @State private var readout = CursorReadout.empty
 
     /// Whether the trailing inspector is shown.
     @State private var showInspector = true
@@ -90,17 +87,6 @@ public struct MainWindowView: View
                 else if let file = self.model.selectedFile
                 {
                     ImageCanvasView( file: file )
-                    {
-                        readout in self.readout = readout
-                    }
-                }
-            }
-            .overlay( alignment: .bottom )
-            {
-                if self.model.selectedFile != nil
-                {
-                    StatusBarView( status: "Ready", readout: self.readout, dimensions: self.dimensionsSummary )
-                        .padding( .bottom, 16 )
                 }
             }
         }
@@ -145,10 +131,6 @@ public struct MainWindowView: View
         {
             providers in self.handleDrop( providers: providers )
         }
-        .onChange( of: self.model.selectedFileID )
-        {
-            _, _ in self.readout = .empty
-        }
         .onAppear
         {
             if self.model.files.isEmpty, self.initialURLs.isEmpty == false
@@ -160,20 +142,6 @@ public struct MainWindowView: View
         {
             _, active in if active { self.appModel.activeModel = self.model }
         }
-    }
-
-    /// The trailing dimensions / bit-depth summary for the selected file, or
-    /// `nil` when no image is loaded.
-    private var dimensionsSummary: String?
-    {
-        guard let info = self.model.selectedFile?.image?.info,
-              let summary = ImageInformation( info: info )
-        else
-        {
-            return nil
-        }
-
-        return "\( summary.dimensions ) • \( summary.bitDepth )"
     }
 
     /// Loads dropped file URLs into the window.

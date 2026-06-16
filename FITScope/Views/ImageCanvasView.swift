@@ -24,15 +24,16 @@
 
 import SwiftUI
 
-/// The center pane: triggers the file's load + render, hosts the zoomable
-/// canvas with its floating toolbar, and reports the cursor readout upward.
+/// The center pane: triggers the file's load + render, and hosts the zoomable
+/// canvas with its floating zoom toolbar (top) and status pill (bottom). Both
+/// bars auto-hide after a delay of cursor inactivity and reappear on movement.
 public struct ImageCanvasView: View
 {
+    /// How long the floating bars stay visible after the last cursor movement.
+    private static let autoHideDelay = Duration.seconds( 2 )
+
     /// The file to display.
     @ObservedObject private var file: OpenFile
-
-    /// Reports the current cursor readout (or `.empty` off-image).
-    public let onReadout: ( CursorReadout ) -> Void
 
     /// The current magnification.
     @State private var zoom:    CGFloat = 1.0
@@ -43,11 +44,24 @@ public struct ImageCanvasView: View
     /// A monotonically increasing token source for commands.
     @State private var tokens   = 0
 
+    /// The latest cursor readout, shown in the status pill.
+    @State private var readout  = CursorReadout.empty
+
+    /// Whether the floating bars are currently shown.
+    @State private var barsVisible = true
+
+    /// Whether the cursor is currently resting over one of the floating bars,
+    /// which suppresses the auto-hide so a bar never vanishes under the pointer.
+    @State private var isHoveringBar = false
+
+    /// The pending auto-hide work, cancelled whenever the bars are revealed or
+    /// the cursor rests over a bar.
+    @State private var hideTask: Task<Void, Never>?
+
     /// Creates the canvas view.
-    public init( file: OpenFile, onReadout: @escaping ( CursorReadout ) -> Void )
+    public init( file: OpenFile )
     {
-        self.file      = file
-        self.onReadout = onReadout
+        self.file = file
     }
 
     /// The view's content.
@@ -67,14 +81,25 @@ public struct ImageCanvasView: View
                     }
                     .overlay( alignment: .top )
                     {
-                        ImageToolbarView(
-                            zoom:       self.zoom,
-                            onFit:      { self.send( .fit ) },
-                            onRecenter: { self.send( .recenter ) },
-                            onZoomIn:   { self.send( .zoomIn ) },
-                            onZoomOut:  { self.send( .zoomOut ) }
-                        )
-                        .padding( .top, 16 )
+                        self.floatingBar
+                        {
+                            ImageToolbarView(
+                                zoom:       self.zoom,
+                                onFit:      { self.send( .fit ) },
+                                onRecenter: { self.send( .recenter ) },
+                                onZoomIn:   { self.send( .zoomIn ) },
+                                onZoomOut:  { self.send( .zoomOut ) }
+                            )
+                            .padding( .top, 16 )
+                        }
+                    }
+                    .overlay( alignment: .bottom )
+                    {
+                        self.floatingBar
+                        {
+                            StatusBarView( status: "Ready", readout: self.readout, dimensions: self.dimensionsSummary )
+                                .padding( .bottom, 16 )
+                        }
                     }
                 }
                 else if let error = image.renderer.error
@@ -96,12 +121,115 @@ public struct ImageCanvasView: View
             }
         }
         .frame( maxWidth: .infinity, maxHeight: .infinity )
+        .onContinuousHover
+        {
+            phase in
+
+            switch phase
+            {
+                case .active: self.revealBars()
+                case .ended:  break
+                @unknown default: break
+            }
+        }
         .task( id: self.file.id )
         {
+            self.readout = .empty
+
             await self.file.load()
             await self.file.image?.renderer.render()
             await self.file.makeThumbnail( maxDimension: 64 )
+
+            self.revealBars()
         }
+    }
+
+    /// Wraps a floating bar with the shared show / hide behavior: it fades with
+    /// ``barsVisible``, stays out of hit-testing while hidden, and keeps itself
+    /// visible while the cursor rests directly over it.
+    @ViewBuilder
+    private func floatingBar( @ViewBuilder _ content: () -> some View ) -> some View
+    {
+        content()
+            .opacity( self.barsVisible ? 1 : 0 )
+            .allowsHitTesting( self.barsVisible )
+            .onHover
+            {
+                hovering in
+
+                self.isHoveringBar = hovering
+
+                if hovering
+                {
+                    self.cancelHide()
+                }
+                else
+                {
+                    self.scheduleHide()
+                }
+            }
+    }
+
+    /// Reveals the floating bars and restarts the auto-hide countdown.
+    private func revealBars()
+    {
+        withAnimation( .easeInOut( duration: 0.2 ) )
+        {
+            self.barsVisible = true
+        }
+
+        self.scheduleHide()
+    }
+
+    /// Starts (or restarts) the auto-hide countdown, unless the cursor is
+    /// resting over a bar, in which case the bars stay visible.
+    private func scheduleHide()
+    {
+        self.hideTask?.cancel()
+        self.hideTask = nil
+
+        guard self.isHoveringBar == false
+        else
+        {
+            return
+        }
+
+        self.hideTask = Task
+        {
+            try? await Task.sleep( for: Self.autoHideDelay )
+
+            guard Task.isCancelled == false
+            else
+            {
+                return
+            }
+
+            withAnimation( .easeInOut( duration: 0.2 ) )
+            {
+                self.barsVisible = false
+            }
+        }
+    }
+
+    /// Cancels the auto-hide countdown, keeping the bars visible.
+    private func cancelHide()
+    {
+        self.hideTask?.cancel()
+        self.hideTask = nil
+    }
+
+    /// The dimensions / bit-depth summary for the file, or `nil` when no image
+    /// is loaded.
+    private var dimensionsSummary: String?
+    {
+        guard let info = self.file.image?.info,
+              let summary = ImageInformation( info: info )
+        else
+        {
+            return nil
+        }
+
+        return "\( summary.dimensions ) • \( summary.bitDepth )"
     }
 
     /// Issues a one-shot canvas command with a fresh token.
@@ -118,13 +246,13 @@ public struct ImageCanvasView: View
               let input = try? self.file.image?.renderer.renderInputSnapshot()
         else
         {
-            self.onReadout( .empty )
+            self.readout = .empty
 
             return
         }
 
         let pixel = ImageProcessor.rawPixelValue( data: input.data, properties: input.properties, x: coordinate.x, y: coordinate.y )
 
-        self.onReadout( CursorReadout( x: coordinate.x, y: coordinate.y, value: pixel?.value, fraction: pixel?.fraction ) )
+        self.readout = CursorReadout( x: coordinate.x, y: coordinate.y, value: pixel?.value, fraction: pixel?.fraction )
     }
 }
