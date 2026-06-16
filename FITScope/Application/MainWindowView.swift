@@ -170,7 +170,7 @@ public struct MainWindowView: View
             {
                 url, _ in
 
-                guard let url, url.pathExtension.lowercased() == "fits"
+                guard let url, DropAcceptance.acceptable( url )
                 else
                 {
                     return
