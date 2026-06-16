@@ -70,30 +70,31 @@ public struct HistogramStatisticsView: View
     /// The ordered statistic rows displayed in the grid.
     private let descriptors =
         [
-            Descriptor( label: "Mean",   provideValue: { String( format: "%.1f", $0.mean ) } ),
-            Descriptor( label: "StdDev", provideValue: { String( format: "%.1f", $0.stdDev ) } ),
-            Descriptor( label: "Median", provideValue: { "\( $0.median )" } ),
-            Descriptor( label: "Min",    provideValue: { "\( $0.min )" } ),
-            Descriptor( label: "Max",    provideValue: { "\( $0.max )" } ),
-            Descriptor( label: "P1",     provideValue: { "\( $0.percentile1 )" } ),
-            Descriptor( label: "P99",    provideValue: { "\( $0.percentile99 )" } ),
-            Descriptor( label: "Count",  provideValue: { "\( $0.count )" } ),
+            Descriptor( label: "Mean",    provideValue: { StatisticsFormat.decimal( $0.mean ) } ),
+            Descriptor( label: "Std Dev", provideValue: { StatisticsFormat.decimal( $0.stdDev ) } ),
+            Descriptor( label: "Median",  provideValue: { StatisticsFormat.integerGrouped( $0.median ) } ),
+            Descriptor( label: "Min",     provideValue: { StatisticsFormat.integerGrouped( $0.min ) } ),
+            Descriptor( label: "Max",     provideValue: { StatisticsFormat.integerGrouped( $0.max ) } ),
+            Descriptor( label: "P1",      provideValue: { StatisticsFormat.integerGrouped( $0.percentile1 ) } ),
+            Descriptor( label: "P99",     provideValue: { StatisticsFormat.integerGrouped( $0.percentile99 ) } ),
+            Descriptor( label: "Count",   provideValue: { StatisticsFormat.integerGrouped( $0.count ) } ),
         ]
 
     /// The view's content.
     public var body: some View
     {
-        Grid( alignment: .leading )
+        Grid( alignment: .leading, horizontalSpacing: 16, verticalSpacing: 5 )
         {
             ForEach( self.descriptors, id: \.self )
             {
                 descriptor in
 
-                GridRow
+                GridRow( alignment: .firstTextBaseline )
                 {
-                    Text( descriptor.label + ":" )
+                    Text( descriptor.label )
                         .font( .caption )
-                        .gridColumnAlignment( .trailing )
+                        .foregroundStyle( .secondary )
+                        .gridColumnAlignment( .leading )
 
                     let statistics =
                     {
@@ -109,11 +110,12 @@ public struct HistogramStatisticsView: View
                         index in
 
                         let value        = descriptor.provideValue( statistics[ index ] )
-                        let color: Color = mode == .luminance ? .gray : [ Color.red, .green, .blue ][ index ]
+                        let color: Color = mode == .luminance ? .primary : [ Color.red, .green, .blue ][ index ]
 
                         Text( value )
-                            .font( .caption2 )
-                            .foregroundColor( color )
+                            .font( .system( .caption2, design: .monospaced ) )
+                            .foregroundStyle( color )
+                            .gridColumnAlignment( .trailing )
                     }
                 }
             }

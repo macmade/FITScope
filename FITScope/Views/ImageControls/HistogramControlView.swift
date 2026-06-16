@@ -71,24 +71,18 @@ public struct HistogramControlView: View
     {
         VStack( alignment: .leading )
         {
-            Picker( "Mode", selection: $mode )
-            {
-                ForEach( Mode.allCases, id: \.self )
-                {
-                    Text( $0.description ).tag( $0 )
-                }
-            }
-            .labelsHidden()
-            .pickerStyle( SegmentedPickerStyle() )
+            SegmentedControlView( selection: self.$mode, values: Mode.allCases, title: { $0.description } )
 
             HistogramView(
                 histogram:        self.histogram,
                 separateChannels: self.separateChannels && self.mode == .rgb,
                 mode:             self.mode
             )
-            .frame( height: 100 )
-            .background( Color( .textBackgroundColor ) )
-            .cornerRadius( 10 )
+            .frame( height: 110 )
+            .padding( 6 )
+            .background( Color.black.opacity( 0.35 ) )
+            .clipShape( RoundedRectangle( cornerRadius: 10 ) )
+            .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
 
             Toggle( "Separate Channels", isOn: $separateChannels )
                 .disabled( self.mode == .luminance )
@@ -100,11 +94,12 @@ public struct HistogramControlView: View
                 HStack
                 {
                     HistogramStatisticsView( statistics: self.statistics, mode: self.mode )
-                        .padding()
+                        .padding( 12 )
                 }
                 .frame( maxWidth: .infinity, alignment: .leading )
-                .background( Color( .textBackgroundColor ) )
-                .cornerRadius( 10 )
+                .background( Color.black.opacity( 0.35 ) )
+                .clipShape( RoundedRectangle( cornerRadius: 10 ) )
+                .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
             }
         }
     }
