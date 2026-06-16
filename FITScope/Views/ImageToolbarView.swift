@@ -67,6 +67,8 @@ public struct ImageToolbarView: View
             Button( action: self.onRecenter )
             {
                 Image( systemName: "scope" )
+                    .frame( width: 26, height: 24 )
+                    .contentShape( Rectangle() )
             }
 
             Divider().frame( height: 16 )
@@ -74,6 +76,8 @@ public struct ImageToolbarView: View
             Button( action: self.onZoomOut )
             {
                 Image( systemName: "minus" )
+                    .frame( width: 26, height: 24 )
+                    .contentShape( Rectangle() )
             }
 
             Text( "\( Int( ( self.zoom * 100 ).rounded() ) )%" )
@@ -83,6 +87,8 @@ public struct ImageToolbarView: View
             Button( action: self.onZoomIn )
             {
                 Image( systemName: "plus" )
+                    .frame( width: 26, height: 24 )
+                    .contentShape( Rectangle() )
             }
 
             Divider().frame( height: 16 )
@@ -90,6 +96,8 @@ public struct ImageToolbarView: View
             Button( action: self.onFit )
             {
                 Image( systemName: "arrow.up.left.and.arrow.down.right" )
+                    .frame( width: 26, height: 24 )
+                    .contentShape( Rectangle() )
             }
         }
         .buttonStyle( .borderless )

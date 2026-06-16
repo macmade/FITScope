@@ -181,6 +181,10 @@ public struct ZoomableImageView: NSViewRepresentable
                 return
             }
 
+            // A live pinch continuously rescales the clip view's bounds, so its
+            // bounds-change notification tracks the magnification throughout the
+            // gesture; the end notification provides a final sync.
+            NotificationCenter.default.addObserver( self, selector: #selector( self.magnificationChanged ), name: NSView.boundsDidChangeNotification, object: scrollView.contentView )
             NotificationCenter.default.addObserver( self, selector: #selector( self.magnificationChanged ), name: NSScrollView.didEndLiveMagnifyNotification, object: scrollView )
         }
 
@@ -289,7 +293,8 @@ public struct ZoomableImageView: NSViewRepresentable
             imageView.scroll( origin )
         }
 
-        /// Multiplies the current magnification by `factor`, around the center.
+        /// Multiplies the current magnification by `factor`, keeping the centre
+        /// of the viewport fixed, and reports the actually-applied value.
         private func zoom( by factor: CGFloat )
         {
             guard let scrollView = self.scrollView
@@ -298,10 +303,12 @@ public struct ZoomableImageView: NSViewRepresentable
                 return
             }
 
-            let target = max( scrollView.minMagnification, min( scrollView.maxMagnification, scrollView.magnification * factor ) )
+            let target = CanvasGeometry.clamp( scrollView.magnification * factor, min: scrollView.minMagnification, max: scrollView.maxMagnification )
+            let clip   = scrollView.contentView.bounds
+            let center = CGPoint( x: clip.midX, y: clip.midY )
 
-            scrollView.animator().magnification = target
-            self.parent.zoom = target
+            scrollView.setMagnification( target, centeredAt: center )
+            self.parent.zoom = scrollView.magnification
         }
     }
 }

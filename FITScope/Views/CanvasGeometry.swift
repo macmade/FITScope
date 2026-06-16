@@ -52,4 +52,10 @@ public enum CanvasGeometry
             y: ( content.height - visibleInDocumentSpace.height ) / 2
         )
     }
+
+    /// `value` clamped to `min...max`.
+    public static func clamp( _ value: CGFloat, min lower: CGFloat, max upper: CGFloat ) -> CGFloat
+    {
+        Swift.max( lower, Swift.min( upper, value ) )
+    }
 }

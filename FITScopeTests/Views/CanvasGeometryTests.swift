@@ -53,4 +53,12 @@ struct CanvasGeometryTests
 
         #expect( origin == CGPoint( x: 150, y: 150 ) )
     }
+
+    @Test
+    func clampBoundsMagnification() throws
+    {
+        #expect( CanvasGeometry.clamp( 100, min: 0.05, max: 40 ) == 40 )
+        #expect( CanvasGeometry.clamp( 0.001, min: 0.05, max: 40 ) == 0.05 )
+        #expect( CanvasGeometry.clamp( 1.5, min: 0.05, max: 40 ) == 1.5 )
+    }
 }
