@@ -69,13 +69,18 @@ public struct MainWindowView: View
                 {
                     if self.model.selectedFile == nil
                     {
-                        ContentUnavailableView
+                        VStack( spacing: 12 )
                         {
-                            Label( "No File Open", systemImage: "photo.on.rectangle.angled" )
-                        }
-                        description:
-                        {
+                            Image( nsImage: NSImage( named: NSImage.applicationIconName ) ?? NSImage() )
+                                .resizable()
+                                .aspectRatio( contentMode: .fit )
+                                .frame( width: 160, height: 160 )
+
+                            Text( "No File Open" )
+                                .font( .title2 ).bold()
+
                             Text( "Open a FITS file, or drag one here." )
+                                .foregroundStyle( .secondary )
                         }
                         .frame( maxWidth: .infinity, maxHeight: .infinity )
                         .background( .black )
