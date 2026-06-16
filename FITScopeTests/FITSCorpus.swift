@@ -66,18 +66,13 @@ enum FITSCorpus
         /// A non-2-D geometry (3-D cube / multi-plane) is not supported.
         case unsupportedGeometry
 
-        /// The image lives in an extension HDU but the primary header
-        /// (`NAXIS=0`) is consulted instead, so it is never reached.
-        case extensionImageUnreached
-
         /// The substring the thrown error message currently contains.
         var currentMessageSubstring: String
         {
             switch self
             {
-                case .sizeMismatch:            return "does not match expected size"
-                case .unsupportedGeometry:     return "only 2-dimensional images are supported"
-                case .extensionImageUnreached: return "Unsupported NAXIS value"
+                case .sizeMismatch:        return "does not match expected size"
+                case .unsupportedGeometry: return "only 2-dimensional images are supported"
             }
         }
 
@@ -85,9 +80,8 @@ enum FITSCorpus
         {
             switch self
             {
-                case .sizeMismatch:            return "sizeMismatch"
-                case .unsupportedGeometry:     return "unsupportedGeometry"
-                case .extensionImageUnreached: return "extensionImageUnreached"
+                case .sizeMismatch:        return "sizeMismatch"
+                case .unsupportedGeometry: return "unsupportedGeometry"
             }
         }
     }

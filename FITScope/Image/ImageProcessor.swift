@@ -110,7 +110,7 @@ public enum ImageProcessor
         }
     }
 
-    public static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> ( image: CGImage, bytes: [ UInt8 ] )
+    public static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> ( image: CGImage, bytes: [ UInt8 ], channels: Int )
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.integer
         else
@@ -142,7 +142,7 @@ public enum ImageProcessor
             throw RuntimeError( message: "Missing NAXIS1 property" )
         }
 
-        guard let width = Int( exactly: nAxis1 )
+        guard let width = Int( exactly: nAxis1 ), width > 0
         else
         {
             throw RuntimeError( message: "Invalid NAXIS1 value \( nAxis1 )" )
@@ -154,10 +154,10 @@ public enum ImageProcessor
             throw RuntimeError( message: "Missing NAXIS2 property" )
         }
 
-        guard let height = Int( exactly: nAxis2 )
+        guard let height = Int( exactly: nAxis2 ), height > 0
         else
         {
-            throw RuntimeError( message: "Invalid NAXIS1 value \( nAxis1 )" )
+            throw RuntimeError( message: "Invalid NAXIS2 value \( nAxis2 )" )
         }
 
         let size      = bitsPerPixel.size( numberOfPixels: width * height )
@@ -196,7 +196,7 @@ public enum ImageProcessor
             let bytes  = try buffer.convertTo8Bits()
             let image  = try PixelBuffer.createCGImage( bytes: bytes, width: buffer.width, height: buffer.height, channels: buffer.channels )
 
-            return ( image, bytes )
+            return ( image, bytes, buffer.channels )
         }
     }
 

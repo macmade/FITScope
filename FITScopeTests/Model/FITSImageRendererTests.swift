@@ -255,5 +255,22 @@ struct FITSImageRendererTests
         #expect( renderer.error == nil,                 "a stale failure must not resurrect an error" )
     }
 
+    /// The histogram is built with the rendered buffer's real channel count, so
+    /// the per-channel stride can never silently mis-read a non-3-channel image.
+    @Test
+    @MainActor
+    func histogramChannelCountMatchesRenderedBuffer() async throws
+    {
+        let ( data, properties ) = FITSTestData.gradient()
+        let renderer             = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: data, properties: properties ) )
+
+        await renderer.render()
+
+        let result = try #require( renderer.result )
+        let direct = try ImageProcessor.render( data: data, properties: properties )
+
+        #expect( result.histogram.rgb.data.count == direct.channels, "the histogram must use the rendered buffer's channel count" )
+    }
+
     private struct StaleError: Error {}
 }

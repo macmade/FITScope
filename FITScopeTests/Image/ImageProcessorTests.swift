@@ -59,4 +59,28 @@ struct ImageProcessorTests
 
         #expect( scaling.offset == 32768 )
     }
+
+    /// A non-positive `NAXIS2` is rejected with a diagnostic that names the
+    /// offending axis and value — NAXIS2, not NAXIS1.
+    @Test
+    func nonPositiveNAXIS2IsRejectedNamingTheAxis() throws
+    {
+        let properties: [ FITSPropertySnapshot ] =
+        [
+            FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+            FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+            FITSPropertySnapshot( name: "NAXIS1", value: .integer( 1 ) ),
+            FITSPropertySnapshot( name: "NAXIS2", value: .integer( 0 ) ),
+        ]
+
+        let error = try #require( throws: ( any Error ).self )
+        {
+            _ = try ImageProcessor.render( data: Data(), properties: properties )
+        }
+
+        let message = "\( error )"
+
+        #expect( message.contains( "NAXIS2" ), "the error must name NAXIS2, got: \"\( message )\"" )
+        #expect( message.contains( "0" ),      "the error must report the offending value, got: \"\( message )\"" )
+    }
 }
