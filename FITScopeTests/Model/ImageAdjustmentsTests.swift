@@ -48,11 +48,17 @@ struct ImageAdjustmentsTests
         #expect( config.scale?.offset == 3 )
 
         // The defaults render the file as captured: linear normalization only,
-        // with no stretch, gamma or white balance.
+        // with no stretch, gamma, white balance or inversion.
         #expect( config.stretch      == nil )
         #expect( config.correctGamma == nil )
         #expect( config.whiteBalance == nil )
         #expect( config.normalize    == .minMax )
+        #expect( config.invert       == false )
+
+        // Enabling inversion flows into a freshly built config.
+        adjustments.invert = true
+
+        #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).invert )
 
         // The default .auto debayer selection uses the header pattern.
         let debayer = try #require( config.debayer )

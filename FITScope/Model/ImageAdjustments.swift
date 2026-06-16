@@ -53,6 +53,9 @@ public final class ImageAdjustments: ObservableObject
     /// untouched. Off by default.
     @Published public var whiteBalance: Processors.WhiteBalance.Mode? = nil
 
+    /// Whether to invert the image (photographic negative). Off by default.
+    @Published public var invert: Bool = false
+
     /// How to debayer a colour-filter-array image into RGB.
     @Published public var debayer: ImageProcessor.DebayerSelection = .auto
 
@@ -72,6 +75,7 @@ public final class ImageAdjustments: ObservableObject
             stretch:      self.stretch,
             gamma:        self.gamma,
             whiteBalance: self.whiteBalance,
+            invert:       self.invert,
             debayer:      self.debayer,
             debayerMode:  self.debayerAlgorithm
         )

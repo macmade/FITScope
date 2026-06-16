@@ -92,6 +92,9 @@ public enum ImageProcessor
         /// How to white-balance the channels, or `nil` to leave them untouched.
         public var whiteBalance: Processors.WhiteBalance.Mode?
 
+        /// Whether to invert the image (photographic negative).
+        public var invert: Bool
+
         /// How to debayer a colour-filter-array image.
         public var debayer: DebayerSelection
 
@@ -107,14 +110,16 @@ public enum ImageProcessor
         ///   - stretch:      The non-linear stretch.
         ///   - gamma:        The gamma-correction exponent.
         ///   - whiteBalance: How to white-balance the channels.
+        ///   - invert:       Whether to invert the image.
         ///   - debayer:      How to debayer the image.
         ///   - debayerMode:  The demosaic algorithm used when debayering.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear )
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear )
         {
             self.normalize    = normalize
             self.stretch      = stretch
             self.gamma        = gamma
             self.whiteBalance = whiteBalance
+            self.invert       = invert
             self.debayer      = debayer
             self.debayerMode  = debayerMode
         }
@@ -143,7 +148,8 @@ public enum ImageProcessor
                 normalize:    self.normalize,
                 stretch:      self.stretch,
                 correctGamma: self.gamma,
-                whiteBalance: self.whiteBalance
+                whiteBalance: self.whiteBalance,
+                invert:       self.invert
             )
         }
     }

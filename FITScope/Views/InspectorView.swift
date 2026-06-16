@@ -93,12 +93,7 @@ public struct InspectorView: View
 
                     InspectorSectionView( "Color" )
                     {
-                        Text( "Color map, invert and high contrast are not yet available." )
-                            .font( .system( size: 10 ) )
-                            .foregroundStyle( .tertiary )
-                            .frame( maxWidth: .infinity, alignment: .leading )
-                            .padding( 10 )
-                            .background( RoundedRectangle( cornerRadius: 8 ).strokeBorder( .quaternary, style: StrokeStyle( lineWidth: 1, dash: [ 3 ] ) ) )
+                        ColorControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()
@@ -136,6 +131,7 @@ public struct InspectorView: View
         current.stretch      = defaults.stretch
         current.gamma        = defaults.gamma
         current.whiteBalance = defaults.whiteBalance
+        current.invert       = defaults.invert
         current.debayer      = defaults.debayer
 
         self.reRender()
