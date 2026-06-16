@@ -25,13 +25,20 @@
 import SwiftFITS
 import SwiftUI
 
+/// The properties window: a header-keyword table with a section picker and a
+/// search field that filters the visible keywords.
 public struct InfoView: View
 {
+    /// The file metadata being browsed.
     public let info: FITSImageInfo
 
+    /// The index of the section currently shown in the table.
     @State private var selectedSection = 0
+
+    /// The current search query used to filter keywords.
     @State private var searchText      = ""
 
+    /// The view's content.
     public var body: some View
     {
         VStack( spacing: 0 )
@@ -74,6 +81,13 @@ public struct InfoView: View
         }
     }
 
+    /// Filters properties to those whose name, kind, value or comment contains
+    /// the query, case- and diacritic-insensitively.
+    ///
+    /// - Parameters:
+    ///   - properties: The properties to filter.
+    ///   - text:       The search query; an empty query returns all properties.
+    /// - Returns: The matching properties.
     public static func filter( properties: [ FITSImageProperty ], text: String ) -> [ FITSImageProperty ]
     {
         if text.isEmpty

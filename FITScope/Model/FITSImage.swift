@@ -26,14 +26,31 @@ import Combine
 import SwiftUI
 import SwiftUtilities
 
+/// A loaded FITS image, pairing its header metadata with the renderer that
+/// produces displayable pixels.
+///
+/// Acts as a façade: it re-publishes the renderer's `objectWillChange` so a view
+/// observing the image refreshes when the rendered result changes, without
+/// observing the renderer directly.
 @MainActor
 public class FITSImage: ObservableObject
 {
+    /// The file's header metadata, grouped into sections.
     @Published public private( set ) var info:     FITSImageInfo
+
+    /// The renderer that turns the image HDU into displayable pixels and
+    /// histograms.
     @Published public private( set ) var renderer: FITSImageRenderer
 
+    /// Forwards the renderer's change notifications to this object's observers.
     private var rendererObserver: AnyCancellable?
 
+    /// Creates an image from its metadata and renderer, wiring up change
+    /// forwarding.
+    ///
+    /// - Parameters:
+    ///   - info:     The file's header metadata.
+    ///   - renderer: The renderer for the image HDU.
     public init( info: FITSImageInfo, renderer: FITSImageRenderer )
     {
         self.info             = info

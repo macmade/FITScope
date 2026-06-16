@@ -24,17 +24,32 @@
 
 import SwiftUI
 
+/// The debayer section of the controls panel: a picker choosing how a
+/// colour-filter-array image is reconstructed into RGB.
 public struct DebayerControlView: View
 {
+    /// The debayer choices offered by the picker.
     public enum Mode: CaseIterable, CustomStringConvertible
     {
+        /// Do not debayer; treat the image as monochrome.
         case none
+
+        /// Use the Bayer pattern declared in the file header, if any.
         case auto
+
+        /// Force the BGGR pattern.
         case bggr
+
+        /// Force the RGBG pattern.
         case rgbg
+
+        /// Force the GRBG pattern.
         case grbg
+
+        /// Force the RGGB pattern.
         case rggb
 
+        /// The picker label for the mode.
         public var description: String
         {
             switch self
@@ -49,12 +64,21 @@ public struct DebayerControlView: View
         }
     }
 
+    /// The shared adjustment values this control writes to.
     private let adjustments: ImageAdjustments
+
+    /// Requests a debounced re-render after the selection changes.
     private let reRender:    () -> Void
 
-    // Seeded to mirror the pipeline's default debayer selection ( .auto ).
+    /// The selected mode. Seeded to mirror the pipeline's default debayer
+    /// selection (`.auto`).
     @State private var mode = Mode.auto
 
+    /// Creates the debayer control.
+    ///
+    /// - Parameters:
+    ///   - adjustments: The shared adjustment values to write to.
+    ///   - reRender:    The closure to call after the selection changes.
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {
         self.adjustments = adjustments
@@ -62,6 +86,9 @@ public struct DebayerControlView: View
     }
 
     /// Maps the control's selection to a debayer selection.
+    ///
+    /// - Parameter mode: The selected mode.
+    /// - Returns: The corresponding ``ImageProcessor/DebayerSelection``.
     static func selection( _ mode: Mode ) -> ImageProcessor.DebayerSelection
     {
         switch mode
@@ -75,6 +102,7 @@ public struct DebayerControlView: View
         }
     }
 
+    /// The view's content.
     public var body: some View
     {
         Grid( alignment: .leading )

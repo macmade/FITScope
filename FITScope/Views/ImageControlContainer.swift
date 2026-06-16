@@ -25,12 +25,19 @@
 import SwiftFITS
 import SwiftUI
 
+/// A labelled container that stacks a headline above arbitrary control content,
+/// giving each image-adjustment section a consistent heading.
+///
+/// - Parameter Content: The wrapped control view, supplied via a view builder.
 public struct ImageControlContainer< Content: View >: View
 {
+    /// The headline shown above the content.
     public let label: String
 
+    /// The control content displayed beneath the headline.
     @ViewBuilder public let content: Content
 
+    /// The view's content.
     public var body: some View
     {
         VStack( alignment: .leading )

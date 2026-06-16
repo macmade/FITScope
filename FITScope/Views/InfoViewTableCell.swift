@@ -25,12 +25,20 @@
 import SwiftFITS
 import SwiftUI
 
+/// A single text cell used inside ``InfoViewTable``, rendering a string at a
+/// fixed point size in a caller-chosen shape style.
 public struct InfoViewTableCell: View
 {
+    /// The text to display.
     public let value: String
+
+    /// The font point size.
     public let size:  Double
+
+    /// The foreground shape style (e.g. `.primary`, `.secondary`).
     public let style: any ShapeStyle
 
+    /// The view's content.
     public var body: some View
     {
         Text( self.value )

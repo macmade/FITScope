@@ -25,13 +25,21 @@
 import SwiftPixel
 import SwiftUI
 
+/// The histogram section of the controls panel: a mode picker (RGB vs
+/// luminance), the ``HistogramView`` itself, and toggles for separating the
+/// colour channels and showing summary statistics.
 public struct HistogramControlView: View
 {
+    /// Which histogram is displayed.
     public enum Mode: CaseIterable, CustomStringConvertible
     {
+        /// The per-channel red/green/blue histogram.
         case rgb
+
+        /// The single-channel luminance histogram.
         case luminance
 
+        /// The picker label for the mode.
         public var description: String
         {
             switch self
@@ -42,13 +50,23 @@ public struct HistogramControlView: View
         }
     }
 
+    /// Whether the RGB channels are drawn stacked separately rather than
+    /// overlaid. Has no effect in luminance mode.
     @State private var separateChannels = false
+
+    /// Whether the summary statistics panel is shown.
     @State private var showStatistics   = false
+
+    /// The currently displayed histogram mode.
     @State private var mode             = Mode.rgb
 
+    /// The histograms to display.
     public let histogram:  FITSImageRenderer.Histogram
+
+    /// The per-channel statistics shown when statistics are enabled.
     public let statistics: FITSImageRenderer.HistogramStatistics
 
+    /// The view's content.
     public var body: some View
     {
         VStack( alignment: .leading )

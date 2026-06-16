@@ -25,13 +25,31 @@
 import Foundation
 import SwiftFITS
 
+/// A `Codable`, `Hashable` snapshot of one header section of a FITS file —
+/// either the primary header or an extension — with a display title and its
+/// keywords.
 public struct FITSImageSection: Codable, Hashable, Identifiable
 {
+    /// A stable identity combining the index and title.
     public let id:         String
+
+    /// The section's position within the file.
     public let index:      Int
+
+    /// A human-readable title for the section (e.g. `"Primary Header"`).
     public let title:      String
+
+    /// The section's header keywords, as display properties.
     public let properties: [ FITSImageProperty ]
 
+    /// Builds a section snapshot, succeeding only for header and extension
+    /// sections.
+    ///
+    /// - Parameters:
+    ///   - index:   The section's position within the file.
+    ///   - section: The parsed FITS section.
+    /// - Returns: `nil` when the section is neither a header nor an extension
+    ///   (e.g. a pure data section), which carries no displayable keywords.
     public init?( index: Int, section: FITSSection )
     {
         guard section.kind == .header || section.kind == .xtension
@@ -50,6 +68,12 @@ public struct FITSImageSection: Codable, Hashable, Identifiable
         }
     }
 
+    /// Derives a human-readable title for a section from its kind, using the
+    /// `XTENSION` keyword to name extensions when present.
+    ///
+    /// - Parameter section: The section to title.
+    /// - Returns: A display title such as `"Primary Header"`, `"Extension: …"`,
+    ///   `"Data"` or `"Unknown"`.
     public static func title( for section: FITSSection ) -> String
     {
         switch section.kind

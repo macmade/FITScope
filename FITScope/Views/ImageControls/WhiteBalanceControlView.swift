@@ -25,14 +25,23 @@
 import SwiftPixel
 import SwiftUI
 
+/// The white-balance section of the controls panel: a mode picker plus, in
+/// manual mode, per-channel gain sliders.
 public struct WhiteBalanceControlView: View
 {
+    /// The white-balance choices offered by the picker.
     public enum Mode: CaseIterable, CustomStringConvertible
     {
+        /// No white balancing.
         case none
+
+        /// Automatic, channel-equalizing white balance.
         case auto
+
+        /// Manual per-channel gains.
         case manual
 
+        /// The picker label for the mode.
         public var description: String
         {
             switch self
@@ -49,15 +58,30 @@ public struct WhiteBalanceControlView: View
     /// every channel to black.
     static let defaultManualGain = 1.0
 
+    /// The shared adjustment values this control writes to.
     private let adjustments: ImageAdjustments
+
+    /// Requests a debounced re-render after a change.
     private let reRender:    () -> Void
 
-    // Seeded to mirror the pipeline's default white balance ( .auto ).
+    /// The selected white-balance mode. Seeded to mirror the pipeline's default
+    /// (`.auto`).
     @State private var mode  = Mode.auto
+
+    /// The manual red-channel gain.
     @State private var red   = WhiteBalanceControlView.defaultManualGain
+
+    /// The manual green-channel gain.
     @State private var green = WhiteBalanceControlView.defaultManualGain
+
+    /// The manual blue-channel gain.
     @State private var blue  = WhiteBalanceControlView.defaultManualGain
 
+    /// Creates the white-balance control.
+    ///
+    /// - Parameters:
+    ///   - adjustments: The shared adjustment values to write to.
+    ///   - reRender:    The closure to call after a change.
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {
         self.adjustments = adjustments
@@ -65,6 +89,13 @@ public struct WhiteBalanceControlView: View
     }
 
     /// Maps the control's selection and slider values to a white-balance mode.
+    ///
+    /// - Parameters:
+    ///   - mode:  The selected white-balance mode.
+    ///   - red:   The manual red gain.
+    ///   - green: The manual green gain.
+    ///   - blue:  The manual blue gain.
+    /// - Returns: The corresponding mode, or `nil` for `.none`.
     static func mode( _ mode: Mode, red: Double, green: Double, blue: Double ) -> Processors.WhiteBalance.Mode?
     {
         switch mode
@@ -75,6 +106,7 @@ public struct WhiteBalanceControlView: View
         }
     }
 
+    /// The view's content.
     public var body: some View
     {
         Grid( alignment: .leading )
@@ -107,6 +139,7 @@ public struct WhiteBalanceControlView: View
         }
     }
 
+    /// The white-balance mode derived from the current selection and gains.
     private var whiteBalanceMode: Processors.WhiteBalance.Mode?
     {
         Self.mode( self.mode, red: self.red, green: self.green, blue: self.blue )

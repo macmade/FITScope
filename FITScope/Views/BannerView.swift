@@ -33,12 +33,29 @@ import SwiftUI
 /// than replacing it.
 public struct BannerView: View
 {
+    /// The banner's bold headline.
     public let title:       String
+
+    /// The secondary descriptive text below the title.
     public let message:     String
+
+    /// The SF Symbol name shown as the leading icon.
     public let systemImage: String
+
+    /// The tint applied to the leading icon.
     public let tint:        Color
+
+    /// Invoked when the user taps the close button.
     public let onDismiss:   () -> Void
 
+    /// Creates a banner.
+    ///
+    /// - Parameters:
+    ///   - title:       The bold headline.
+    ///   - message:     The secondary descriptive text.
+    ///   - systemImage: The SF Symbol name for the leading icon.
+    ///   - tint:        The icon tint; defaults to the accent colour.
+    ///   - onDismiss:   The action run when the close button is tapped.
     public init( title: String, message: String, systemImage: String, tint: Color = .accentColor, onDismiss: @escaping () -> Void )
     {
         self.title       = title
@@ -48,6 +65,7 @@ public struct BannerView: View
         self.onDismiss   = onDismiss
     }
 
+    /// The view's content.
     public var body: some View
     {
         HStack( alignment: .top, spacing: 8 )

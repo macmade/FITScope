@@ -26,15 +26,26 @@ import SwiftFITS
 import SwiftPixel
 import SwiftUI
 
+/// The stretch section of the controls panel: a mode picker plus the sliders
+/// each stretch algorithm needs to bring out faint detail.
 public struct StretchControlView: View
 {
+    /// The stretch algorithms offered by the picker.
     public enum Mode: CaseIterable, CustomStringConvertible
     {
+        /// No stretch; the image stays linear.
         case none
+
+        /// Logarithmic stretch.
         case log
+
+        /// Inverse hyperbolic sine (arcsinh) stretch.
         case arcsinh
+
+        /// Sigmoid (S-curve) stretch.
         case sigmoid
 
+        /// The picker label for the mode.
         public var description: String
         {
             switch self
@@ -47,25 +58,52 @@ public struct StretchControlView: View
         }
     }
 
-    /// Seed values for the stretch sliders, chosen so each mode's first
+    /// The seed for the logarithmic intensity slider, mirroring the pipeline's
+    /// default stretch of `.log( 50 )`.
+    ///
+    /// The seeds for all stretch sliders are chosen so each mode's first
     /// interaction yields a valid, non-degenerate render: the arcsinh factor is
     /// non-zero (zero throws), and the sigmoid constants produce a centred
     /// S-curve on normalized data rather than a flat 50% grey.
     static let defaultLogIntensity  = 50.0
+
+    /// The seed for the arcsinh factor slider. Non-zero, since a factor of zero
+    /// makes the algorithm throw.
     static let defaultArcsinhFactor = 50.0
+
+    /// The seed for the sigmoid midpoint slider.
     static let defaultSigmoidN1     = 10.0
+
+    /// The seed for the sigmoid contrast slider.
     static let defaultSigmoidN2     = 0.5
 
+    /// The shared adjustment values this control writes to.
     private let adjustments: ImageAdjustments
+
+    /// Requests a debounced re-render after a change.
     private let reRender:    () -> Void
 
-    // Seeded to mirror the pipeline's default stretch ( .log( 50 ) ).
+    /// The selected stretch mode. Seeded to mirror the pipeline's default
+    /// (`.log( 50 )`).
     @State private var mode      = Mode.log
+
+    /// The logarithmic intensity slider value.
     @State private var logN1     = StretchControlView.defaultLogIntensity
+
+    /// The arcsinh factor slider value.
     @State private var arcsinhN1 = StretchControlView.defaultArcsinhFactor
+
+    /// The sigmoid midpoint slider value.
     @State private var sigmoidN1 = StretchControlView.defaultSigmoidN1
+
+    /// The sigmoid contrast slider value.
     @State private var sigmoidN2 = StretchControlView.defaultSigmoidN2
 
+    /// Creates the stretch control.
+    ///
+    /// - Parameters:
+    ///   - adjustments: The shared adjustment values to write to.
+    ///   - reRender:    The closure to call after a change.
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {
         self.adjustments = adjustments
@@ -73,6 +111,14 @@ public struct StretchControlView: View
     }
 
     /// Maps the control's selection and slider values to a stretch algorithm.
+    ///
+    /// - Parameters:
+    ///   - mode:            The selected stretch mode.
+    ///   - logIntensity:    The logarithmic intensity value.
+    ///   - arcsinhFactor:   The arcsinh factor value.
+    ///   - sigmoidMidpoint: The sigmoid midpoint value.
+    ///   - sigmoidContrast: The sigmoid contrast value.
+    /// - Returns: The corresponding algorithm, or `nil` for `.none`.
     static func algorithm( mode: Mode, logIntensity: Double, arcsinhFactor: Double, sigmoidMidpoint: Double, sigmoidContrast: Double ) -> Processors.Stretch.Algorithm?
     {
         switch mode
@@ -84,6 +130,7 @@ public struct StretchControlView: View
         }
     }
 
+    /// The view's content.
     public var body: some View
     {
         Grid( alignment: .leading )
@@ -125,6 +172,7 @@ public struct StretchControlView: View
         }
     }
 
+    /// The stretch algorithm derived from the current mode and slider values.
     private var stretchAlgorithm: Processors.Stretch.Algorithm?
     {
         Self.algorithm(

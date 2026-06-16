@@ -27,27 +27,53 @@ import SwiftPixel
 import SwiftUI
 import SwiftUtilities
 
+/// Renders a FITS image HDU into a displayable image with histograms, applying
+/// the user's ``ImageAdjustments`` and re-rendering on demand.
+///
+/// Rendering runs off the main actor and is generation-guarded so that rapid
+/// re-renders (e.g. during a slider drag) cannot commit stale results. A failed
+/// render keeps the last good image so controls stay usable while the user
+/// adjusts away from a bad parameter.
 @MainActor
 public class FITSImageRenderer: ObservableObject
 {
+    /// The output of a successful render: the image plus its histograms and
+    /// statistics.
     public struct Result
     {
+        /// The rendered, display-ready image.
         public let image:      CGImage
+
+        /// The RGB and luminance histograms of the rendered pixels.
         public let histogram:  Histogram
+
+        /// Per-channel statistics derived from the histograms.
         public let statistics: HistogramStatistics
     }
 
+    /// The histograms computed from a rendered image.
     public struct Histogram
     {
+        /// The per-channel (red, green, blue) histogram.
         public let rgb:       SwiftPixel.Histogram
+
+        /// The single-channel luminance histogram.
         public let luminance: SwiftPixel.Histogram
     }
 
+    /// Summary statistics for each histogram channel.
     public struct HistogramStatistics
     {
+        /// Statistics for the red channel.
         public let red:       SwiftPixel.HistogramStatistics
+
+        /// Statistics for the green channel.
         public let green:     SwiftPixel.HistogramStatistics
+
+        /// Statistics for the blue channel.
         public let blue:      SwiftPixel.HistogramStatistics
+
+        /// Statistics for the luminance channel.
         public let luminance: SwiftPixel.HistogramStatistics
     }
 
@@ -57,9 +83,17 @@ public class FITSImageRenderer: ObservableObject
     /// without sharing the non-`Sendable` `FITSFile`.
     public struct RenderInput: Sendable
     {
+        /// The image HDU's raw pixel bytes.
         public let data:       Data
+
+        /// The owning header's property snapshots, used to interpret the bytes.
         public let properties: [ FITSPropertySnapshot ]
 
+        /// Creates a render input.
+        ///
+        /// - Parameters:
+        ///   - data:       The image HDU's raw pixel bytes.
+        ///   - properties: The owning header's property snapshots.
         public init( data: Data, properties: [ FITSPropertySnapshot ] )
         {
             self.data       = data
@@ -67,7 +101,11 @@ public class FITSImageRenderer: ObservableObject
         }
     }
 
+    /// The most recent successful render, or `nil` before the first render.
+    /// Retained across a subsequent failure.
     @Published public private( set ) var result: Result?
+
+    /// The error from the most recent failed render, or `nil` on success.
     @Published public private( set ) var error:  Error?
 
     /// The user-tunable adjustments driving the render. Bind controls to these
@@ -77,24 +115,41 @@ public class FITSImageRenderer: ObservableObject
     /// How long to coalesce rapid re-render requests before rendering.
     private static let reRenderDebounce = Duration.milliseconds( 150 )
 
+    /// The render input, or the error captured while extracting it from the
+    /// file. Stored as a `Result` so an extraction failure surfaces at render
+    /// time rather than at construction.
     private let input: Swift.Result< RenderInput, any Error >
 
+    /// The in-flight debounced re-render, cancelled when a newer one is
+    /// scheduled.
     private( set ) var pendingRender: Task< Void, Never >?
 
     /// Monotonic render counter. Each ``render()`` claims the next value at
     /// start; only the most recently claimed render may commit its outcome.
     private var currentRenderGeneration = 0
 
+    /// Creates a renderer from a render input or the error captured while
+    /// extracting it.
+    ///
+    /// - Parameter input: The render input, or the extraction failure.
     public init( input: Swift.Result< RenderInput, any Error > )
     {
         self.input = input
     }
 
+    /// Creates a renderer from an already-extracted render input.
+    ///
+    /// - Parameter input: The image HDU's bytes and header properties.
     public convenience init( input: RenderInput )
     {
         self.init( input: .success( input ) )
     }
 
+    /// Creates a renderer from a parsed file, extracting the first renderable
+    /// image HDU. Any extraction failure is captured and surfaces at render
+    /// time.
+    ///
+    /// - Parameter file: The parsed FITS file.
     public convenience init( file: FITSFile )
     {
         self.init( input: Swift.Result { try FITSImageRenderer.renderInput( from: file.sections ) } )
@@ -126,6 +181,11 @@ public class FITSImageRenderer: ObservableObject
         return RenderInput( data: sections[ dataIndex ].data, properties: properties )
     }
 
+    /// Renders the image with the current adjustments and commits the result.
+    ///
+    /// The pixel work and histogram/statistics computation run on a background
+    /// queue; the outcome is committed through ``commit(_:generation:)`` so a
+    /// render superseded by a newer one cannot overwrite it.
     public func render() async
     {
         let generation = self.nextRenderGeneration()

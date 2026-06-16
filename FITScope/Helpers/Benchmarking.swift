@@ -31,6 +31,11 @@ import Foundation
 /// timings.
 enum Benchmarking
 {
+    /// Prints a benchmark message in debug builds; does nothing in release.
+    ///
+    /// Passed as the output sink to `Benchmark.run`.
+    ///
+    /// - Parameter message: The measurement line to print.
     static func log( _ message: String )
     {
         #if DEBUG

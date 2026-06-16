@@ -26,14 +26,27 @@ import Foundation
 import SwiftFITS
 import SwiftPixel
 
+/// Loads bundled sample FITS files and builds derived model objects for use in
+/// SwiftUI previews and tests.
+///
+/// Every accessor is failable or returns synthetic data so that a preview keeps
+/// rendering even when a sample file is missing from the bundle.
 public enum PreviewHelper
 {
+    /// A sample FITS file bundled with the app for previews.
     public enum TestFile
     {
+        /// A one-shot-colour (Bayer) deep-sky capture of the Orion Nebula.
         case M42
+
+        /// A monochrome Hubble Faint Object Spectrograph frame.
         case HST_FOS
     }
 
+    /// The bundle URL of the given sample file, or `nil` when it is not present.
+    ///
+    /// - Parameter file: The sample file to locate.
+    /// - Returns: The file's URL, or `nil` if it is missing from the bundle.
     public static func url( file: TestFile ) -> URL?
     {
         switch file
@@ -43,6 +56,10 @@ public enum PreviewHelper
         }
     }
 
+    /// The raw bytes of the given sample file.
+    ///
+    /// - Parameter file: The sample file to read.
+    /// - Returns: The file's contents, or `nil` if it is missing or unreadable.
     public static func data( file: TestFile ) -> Data?
     {
         guard let url = PreviewHelper.url( file: file )
@@ -61,6 +78,10 @@ public enum PreviewHelper
         }
     }
 
+    /// Parses the given sample file into a `FITSFile`.
+    ///
+    /// - Parameter file: The sample file to parse.
+    /// - Returns: The parsed file, or `nil` if it is missing or fails to parse.
     public static func file( file: TestFile ) -> FITSFile?
     {
         guard let url = PreviewHelper.url( file: file )
@@ -79,6 +100,10 @@ public enum PreviewHelper
         }
     }
 
+    /// Builds the ``FITSImageInfo`` (header metadata) for the given sample file.
+    ///
+    /// - Parameter file: The sample file to describe.
+    /// - Returns: The header info, or `nil` if the file is missing or unparsable.
     public static func info( file: TestFile ) -> FITSImageInfo?
     {
         guard let url  = self.url( file: file ),
@@ -91,21 +116,37 @@ public enum PreviewHelper
         return FITSImageInfo( url: url, file: file )
     }
 
+    /// The first metadata section of the given sample file.
+    ///
+    /// - Parameter file: The sample file to inspect.
+    /// - Returns: The first section, or `nil` if unavailable.
     public static func section( file: TestFile ) -> FITSImageSection?
     {
         self.info( file: file )?.sections.first
     }
 
+    /// The header properties of the given sample file's first section.
+    ///
+    /// - Parameter file: The sample file to inspect.
+    /// - Returns: The properties, or `nil` if unavailable.
     public static func properties( file: TestFile ) -> [ FITSImageProperty ]?
     {
         self.section( file: file )?.properties
     }
 
+    /// The first header property of the given sample file's first section.
+    ///
+    /// - Parameter file: The sample file to inspect.
+    /// - Returns: The first property, or `nil` if unavailable.
     public static func property( file: TestFile ) -> FITSImageProperty?
     {
         self.properties( file: file )?.first
     }
 
+    /// Builds a synthetic histogram from random Gaussian-distributed RGB data,
+    /// for previewing histogram views without rendering a real image.
+    ///
+    /// - Returns: A histogram with both RGB and luminance channels populated.
     public static func histogram() -> FITSImageRenderer.Histogram
     {
         let bytes     = self.generateRandomRGBData( count: 1000 )
@@ -115,6 +156,10 @@ public enum PreviewHelper
         return FITSImageRenderer.Histogram( rgb: rgb, luminance: luminance )
     }
 
+    /// Builds synthetic per-channel histogram statistics from the same random
+    /// data as ``histogram()``, for previewing statistics views.
+    ///
+    /// - Returns: Statistics for the red, green, blue and luminance channels.
     public static func statistics() -> FITSImageRenderer.HistogramStatistics
     {
         let histogram = self.histogram()
@@ -131,6 +176,12 @@ public enum PreviewHelper
         )
     }
 
+    /// Generates random interleaved RGB bytes whose per-channel distributions
+    /// follow distinct Gaussian curves, producing a plausible-looking colour
+    /// histogram.
+    ///
+    /// - Parameter count: The number of pixels to generate (three bytes each).
+    /// - Returns: `count * 3` interleaved red, green and blue bytes.
     public static func generateRandomRGBData( count: Int ) -> [ UInt8 ]
     {
         let bins  = 256
@@ -157,6 +208,14 @@ public enum PreviewHelper
         return data
     }
 
+    /// Builds a discrete Gaussian weight curve used to bias the random sampler
+    /// toward a target brightness.
+    ///
+    /// - Parameters:
+    ///   - bins:   The number of bins (typically 256, one per 8-bit level).
+    ///   - mean:   The bin index at which the curve peaks.
+    ///   - stdDev: The spread of the curve, in bins.
+    /// - Returns: A per-bin weight, scaled to integers for sampling.
     private static func gaussianCurve( bins: Int, mean: Double, stdDev: Double ) -> [ Int ]
     {
         ( 0 ..< bins ).map
@@ -168,6 +227,11 @@ public enum PreviewHelper
         }
     }
 
+    /// Picks a bin index at random, weighted by the given per-bin weights.
+    ///
+    /// - Parameter weights: The relative weight of each bin.
+    /// - Returns: The chosen bin index. Returns `0` when the weights are empty
+    ///   or all zero, rather than trapping on an empty random range.
     static func weightedRandom( from weights: [ Int ] ) -> Int
     {
         let total = weights.reduce( 0, + )

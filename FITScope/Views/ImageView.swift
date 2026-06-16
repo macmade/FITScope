@@ -25,17 +25,30 @@
 import SwiftFITS
 import SwiftUI
 
+/// Displays a rendered FITS image beside its adjustment controls.
+///
+/// Shows a loading indicator until the first render, then the image with the
+/// ``ImageControlsView`` sidebar. A render error after a good image is surfaced
+/// as a dismissible ``BannerView`` overlay (so the last good image stays
+/// visible); an error before any image fills the pane with an ``ErrorView``.
 public struct ImageView: View
 {
+    /// The renderer whose result and error this view observes.
     @ObservedObject private var renderer: FITSImageRenderer
 
+    /// Whether the user dismissed the current render-error banner. Reset
+    /// whenever a new error arrives.
     @State private var errorBannerDismissed = false
 
+    /// Creates the image view.
+    ///
+    /// - Parameter renderer: The renderer to observe and trigger.
     public init( renderer: FITSImageRenderer )
     {
         self.renderer = renderer
     }
 
+    /// The view's content.
     public var body: some View
     {
         VStack

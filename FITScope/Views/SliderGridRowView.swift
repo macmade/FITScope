@@ -24,23 +24,56 @@
 
 import SwiftUI
 
+/// A `GridRow` laying out an optional leading label, a ``Slider`` and a
+/// trailing value readout, for use inside a `Grid` of adjustment sliders.
 public struct SliderGridRowView: View
 {
+    /// The bound value passed through to the slider.
     @Binding public var value: Double
 
+    /// The lower bound of the value range.
     public let minimumValue: Double
+
+    /// The upper bound of the value range.
     public let maximumValue: Double
+
+    /// The leading label, or `nil` to omit the label column.
     public let label:        String?
+
+    /// An optional SF Symbol drawn inside the knob.
     public let image:        String?
+
+    /// The height of the embedded slider.
     public let sliderHeight: Double
+
+    /// Whether the row is disabled.
     public let disabled:     Bool
+
+    /// The number of tick marks, or `nil` for none.
     public let tickCount:    Int?
+
+    /// The snapping radius around ticks, or `nil` for no snapping.
     public let friction:     Double?
 
+    /// Called with the new value and drag state on every change.
     public let onChange: ( ( Double, Bool ) -> Void )?
 
+    /// Whether a drag is currently in progress.
     @State public private( set ) var isDragging = false
 
+    /// Creates a slider row.
+    ///
+    /// - Parameters:
+    ///   - value:        A binding to the value.
+    ///   - minimumValue: The lower bound.
+    ///   - maximumValue: The upper bound.
+    ///   - label:        The leading label, or `nil` to omit it.
+    ///   - image:        An optional SF Symbol for the knob.
+    ///   - sliderHeight: The slider's height; defaults to `20`.
+    ///   - disabled:     Whether the row is disabled.
+    ///   - tickCount:    The number of tick marks, or `nil`.
+    ///   - friction:     The snapping radius around ticks, or `nil`.
+    ///   - onChange:     A closure run with the value and drag state on change.
     public init( value: Binding< Double >, minimumValue: Double, maximumValue: Double, label: String?, image: String? = nil, sliderHeight: Double = 20, disabled: Bool = false, tickCount: Int? = nil, friction: Double? = nil, onChange: (( Double, Bool ) -> Void )? = nil )
     {
         self._value       = value
@@ -55,6 +88,7 @@ public struct SliderGridRowView: View
         self.onChange     = onChange
     }
 
+    /// The view's content.
     public var body: some View
     {
         GridRow

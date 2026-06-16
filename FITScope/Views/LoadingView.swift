@@ -24,10 +24,14 @@
 
 import SwiftUI
 
+/// A full-pane loading placeholder showing the app icon above a titled progress
+/// indicator.
 public struct LoadingView: View
 {
+    /// The text shown beside the progress indicator.
     public let title: String
 
+    /// The view's content.
     public var body: some View
     {
         VStack( alignment: .center )

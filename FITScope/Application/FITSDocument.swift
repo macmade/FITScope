@@ -26,10 +26,21 @@ import SwiftUI
 import SwiftUtilities
 import UniformTypeIdentifiers
 
+/// A read-only document wrapper exposing a FITS file's raw bytes to SwiftUI's
+/// document architecture.
+///
+/// The document holds only the unparsed file contents; parsing into a
+/// ``FITSImage`` happens later in ``FITSImageLoader``. Writing is not supported.
 public struct FITSDocument: FileDocument
 {
+    /// The raw, unparsed bytes of the FITS file.
     public let data: Data
 
+    /// Reads a document from the framework-supplied file contents.
+    ///
+    /// - Parameter configuration: The read configuration provided by SwiftUI.
+    /// - Throws: `CocoaError(.fileReadCorruptFile)` when the file has no regular
+    ///   file contents to read.
     public init( configuration: ReadConfiguration ) throws
     {
         if let data = configuration.file.regularFileContents
@@ -42,16 +53,25 @@ public struct FITSDocument: FileDocument
         }
     }
 
+    /// Creates a document directly from raw bytes, used for previews and tests.
+    ///
+    /// - Parameter data: The raw FITS file bytes.
     public init( data: Data )
     {
         self.data = data
     }
 
+    /// The content types this document can open — the FITS uniform type.
     public static var readableContentTypes: [ UTType ]
     {
         [ .fits ]
     }
 
+    /// Writing FITS files is not supported.
+    ///
+    /// - Parameter configuration: The write configuration provided by SwiftUI.
+    /// - Returns: Never returns normally.
+    /// - Throws: Always throws ``RuntimeError`` because saving is unimplemented.
     public func fileWrapper( configuration: WriteConfiguration ) throws -> FileWrapper
     {
         throw RuntimeError( message: "Writing FITS files is not supported yet" )

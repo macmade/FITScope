@@ -24,20 +24,38 @@
 
 import SwiftUI
 
+/// A rounded search field with a leading magnifying-glass icon and a trailing
+/// clear button that appears once text is entered.
 struct SearchField: View
 {
+    /// The bound search text.
     @Binding public var text: String
 
+    /// The leading icon.
     public let icon             = Image( systemName: "magnifyingglass" )
+
+    /// The colour of the leading and clear icons.
     public let iconColor        = Color( .gray )
+
+    /// The placeholder shown when the field is empty.
     public let placeholder      = "Search"
+
+    /// The placeholder text colour.
     public let placeholderColor = Color( .gray )
+
+    /// The field's background fill.
     public let background       = Color( .controlBackgroundColor )
+
+    /// The corner radius of the background.
     public let cornerRadius     = 10.0
+
+    /// The fixed height of the field.
     public let height           = 30.0
 
+    /// Called with the new text whenever it changes.
     public var onTextChange: ( ( String ) -> Void )?
 
+    /// The view's content.
     var body: some View
     {
         ZStack

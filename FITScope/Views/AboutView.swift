@@ -24,8 +24,11 @@
 
 import SwiftUI
 
+/// The contents of the custom About window: the app icon beside its name,
+/// version and copyright, all read from the bundle's Info dictionary.
 public struct AboutView: View
 {
+    /// The view's content.
     public var body: some View
     {
         HStack

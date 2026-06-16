@@ -24,11 +24,17 @@
 
 import SwiftUI
 
+/// A full-pane error placeholder showing the app icon above an optional title
+/// and message. Empty or `nil` text is omitted.
 public struct ErrorView: View
 {
+    /// The bold error title, or `nil`/empty to omit it.
     public let title:   String?
+
+    /// The descriptive message, or `nil`/empty to omit it.
     public let message: String?
 
+    /// The view's content.
     public var body: some View
     {
         VStack( alignment: .center )

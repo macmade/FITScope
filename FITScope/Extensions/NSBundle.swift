@@ -24,18 +24,24 @@
 
 import Foundation
 
+/// Convenience accessors for the values displayed in the About window.
 public extension Bundle
 {
+    /// The bundle's display name (`CFBundleName`), or `"--"` when unset.
     var title: String
     {
         Bundle.main.object( forInfoDictionaryKey: "CFBundleName" ) as? String ?? "--"
     }
 
+    /// The human-readable copyright string (`NSHumanReadableCopyright`), or
+    /// `"--"` when unset.
     var copyright: String
     {
         Bundle.main.object( forInfoDictionaryKey: "NSHumanReadableCopyright" ) as? String ?? "--"
     }
 
+    /// The marketing version, with the build number appended in parentheses when
+    /// available (e.g. `"1.2 (45)"`), or `"--"` when no version is set.
     var version: String
     {
         guard let version = Bundle.main.object( forInfoDictionaryKey: "CFBundleShortVersionString" ) as? String

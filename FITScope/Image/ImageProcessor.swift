@@ -35,9 +35,17 @@ import SwiftUtilities
 /// and its (already `Sendable`) value, which is all the renderer needs.
 public struct FITSPropertySnapshot: Sendable
 {
+    /// The keyword name (e.g. `NAXIS1`).
     public let name:  String
+
+    /// The keyword's value.
     public let value: FITSValue
 
+    /// Creates a snapshot.
+    ///
+    /// - Parameters:
+    ///   - name:  The keyword name.
+    ///   - value: The keyword's value.
     public init( name: String, value: FITSValue )
     {
         self.name  = name
@@ -45,6 +53,11 @@ public struct FITSPropertySnapshot: Sendable
     }
 }
 
+/// Turns a FITS image HDU's raw bytes and header keywords into a displayable
+/// `CGImage`, driving the `SwiftPixel` pipeline.
+///
+/// A namespace of static functions and the value types describing the user's
+/// render choices; it holds no state.
 public enum ImageProcessor
 {
     /// The user's debayering choice, independent of the file's `BAYERPAT`.
@@ -66,12 +79,30 @@ public enum ImageProcessor
     /// hard-coded, so a render with default settings is unchanged.
     public struct Settings: Sendable, Equatable
     {
+        /// How to normalize pixel values, or `nil` to skip normalization.
         public var normalize:    Processors.Normalize.Mode?
+
+        /// The non-linear stretch, or `nil` for a linear image.
         public var stretch:      Processors.Stretch.Algorithm?
+
+        /// The gamma-correction exponent, or `nil` to leave gamma uncorrected.
         public var gamma:        Double?
+
+        /// How to white-balance the channels, or `nil` to leave them untouched.
         public var whiteBalance: Processors.WhiteBalance.Mode?
+
+        /// How to debayer a colour-filter-array image.
         public var debayer:      DebayerSelection
 
+        /// Creates a settings snapshot. Defaults reproduce the pipeline's
+        /// formerly hard-coded values.
+        ///
+        /// - Parameters:
+        ///   - normalize:    How to normalize pixel values.
+        ///   - stretch:      The non-linear stretch.
+        ///   - gamma:        The gamma-correction exponent.
+        ///   - whiteBalance: How to white-balance the channels.
+        ///   - debayer:      How to debayer the image.
         public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = .log( 50 ), gamma: Double? = 1.8, whiteBalance: Processors.WhiteBalance.Mode? = .auto, debayer: DebayerSelection = .auto )
         {
             self.normalize    = normalize
@@ -110,6 +141,22 @@ public enum ImageProcessor
         }
     }
 
+    /// Renders an image HDU into a `CGImage`, validating the geometry keywords
+    /// and running the configured pixel pipeline.
+    ///
+    /// Reads `BITPIX`, `NAXIS`/`NAXIS1`/`NAXIS2`, the optional `BAYERPAT` and the
+    /// `BSCALE`/`BZERO` scaling from the header, then debayers (if applicable),
+    /// normalizes, stretches, gamma-corrects and white-balances the pixels.
+    ///
+    /// - Parameters:
+    ///   - data:       The image HDU's raw pixel bytes.
+    ///   - properties: The owning header's property snapshots.
+    ///   - settings:   The user-tunable render settings.
+    /// - Returns: The rendered image, its 8-bit bytes and its channel count
+    ///   (the bytes and channel count feed histogram computation).
+    /// - Throws: ``RuntimeError`` for a missing or unsupported `BITPIX`, a
+    ///   non-2-D image, invalid dimensions, truncated data, or an unsupported
+    ///   `BAYERPAT`.
     public static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> ( image: CGImage, bytes: [ UInt8 ], channels: Int )
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.integer

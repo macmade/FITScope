@@ -25,7 +25,10 @@
 import Cocoa
 import UniformTypeIdentifiers
 
+/// The FITS uniform type, used to declare which documents the app can open.
 public extension UTType
 {
+    /// The Flexible Image Transport System (FITS) file type, imported by its
+    /// public identifier `gov.nasa.gsfc.fits`.
     static let fits = UTType( importedAs: "gov.nasa.gsfc.fits" )
 }

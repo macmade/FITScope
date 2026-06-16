@@ -27,16 +27,37 @@ import SwiftFITS
 import SwiftUI
 import SwiftUtilities
 
+/// Asynchronously parses a ``FITSDocument`` into a ``FITSImage``, publishing the
+/// result or the failure for a view to observe.
+///
+/// Parsing happens off the main actor; only the `Sendable` metadata and render
+/// input cross back, so the non-`Sendable` `FITSFile` never escapes the
+/// background work.
 @MainActor
 public class FITSImageLoader: ObservableObject
 {
+    /// The successfully loaded image, or `nil` before loading or after a
+    /// failure.
     @Published public private( set ) var image: FITSImage?
+
+    /// The error from the most recent failed load, or `nil` on success.
     @Published public private( set ) var error: Error?
 
+    /// The URL the document was loaded from, retained for metadata.
     private let url:           URL
+
+    /// The document whose bytes are parsed.
     private let document:      FITSDocument
+
+    /// Forwards the loaded image's change notifications to this object's
+    /// observers.
     private var imageObserver: AnyCancellable?
 
+    /// Creates a loader for the given document.
+    ///
+    /// - Parameters:
+    ///   - url:      The URL the document was loaded from.
+    ///   - document: The document holding the raw FITS bytes.
     public init( url: URL, document: FITSDocument )
     {
         self.url      = url
@@ -44,6 +65,12 @@ public class FITSImageLoader: ObservableObject
         self.image    = nil
     }
 
+    /// Parses the document and publishes the resulting image, or the error on
+    /// failure.
+    ///
+    /// Successful loads are cached: a repeated call (e.g. a re-triggered
+    /// `.task`) once an image exists is a no-op, while a prior failure still
+    /// retries.
     public func load() async
     {
         // Parsing the file is expensive and its result is immutable, so once an

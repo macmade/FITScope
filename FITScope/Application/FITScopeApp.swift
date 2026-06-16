@@ -25,14 +25,24 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// The application entry point.
+///
+/// Declares the app's scenes: a `DocumentGroup` that opens FITS files into a
+/// ``DocumentView``, an auxiliary window that shows a file's header properties
+/// in an ``InfoView``, and a custom About window. The standard *About* menu item
+/// is replaced with one that opens the app's own ``AboutView``.
 @main
 public struct FITScopeApp: App
 {
+    /// Opens an auxiliary window by identifier, used to present the custom About
+    /// window.
     @Environment( \.openWindow ) private var openWindow
 
+    /// Creates the application.
     public init()
     {}
 
+    /// The app's scene graph.
     public var body: some Scene
     {
         DocumentGroup( viewing: FITSDocument.self )

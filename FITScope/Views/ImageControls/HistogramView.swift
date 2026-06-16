@@ -25,12 +25,21 @@
 import SwiftPixel
 import SwiftUI
 
+/// Draws a histogram as filled area curves, either overlaying the RGB channels
+/// (semi-transparent) or stacking them in three separate strips.
 public struct HistogramView: View
 {
+    /// The histograms to draw.
     public let histogram:        FITSImageRenderer.Histogram
+
+    /// Whether to draw the RGB channels in separate stacked strips rather than
+    /// overlaid. Only honoured in RGB mode.
     public let separateChannels: Bool
+
+    /// Which histogram (RGB or luminance) to draw.
     public let mode:             HistogramControlView.Mode
 
+    /// The view's content.
     public var body: some View
     {
         GeometryReader
@@ -76,6 +85,11 @@ public struct HistogramView: View
         }
     }
 
+    /// The fill colour for a channel by index.
+    ///
+    /// - Parameter index: The channel index (0…2 for red/green/blue).
+    /// - Returns: Grey in luminance mode, the matching RGB colour otherwise, or
+    ///   `.clear` for an out-of-range index.
     private func color( index: Int ) -> Color
     {
         guard index <= 2
@@ -91,6 +105,8 @@ public struct HistogramView: View
         }
     }
 
+    /// The fill opacity for the curves: fully opaque except for overlaid RGB
+    /// channels, which are made translucent so overlaps stay visible.
     private var opacity: Double
     {
         switch self.mode
@@ -100,6 +116,7 @@ public struct HistogramView: View
         }
     }
 
+    /// The per-channel bin counts for the current mode.
     private var data: [ [ Int ] ]
     {
         switch self.mode
@@ -109,6 +126,15 @@ public struct HistogramView: View
         }
     }
 
+    /// Builds a closed area path tracing one channel's bin counts across the
+    /// given size, with the baseline along the bottom edge.
+    ///
+    /// - Parameters:
+    ///   - data:     The bin counts for one channel.
+    ///   - size:     The drawing area.
+    ///   - maxCount: The largest bin count across all channels, used to scale
+    ///               the heights consistently.
+    /// - Returns: The filled histogram path.
     static func path( data: [ Int ], size: CGSize, maxCount: Int ) -> Path
     {
         let binWidth = size.width / CGFloat( data.count )

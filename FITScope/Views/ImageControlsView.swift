@@ -25,13 +25,29 @@
 import SwiftFITS
 import SwiftUI
 
+/// The scrollable sidebar gathering every image-adjustment control — histogram,
+/// debayer, stretch, gamma and white balance — into one panel.
 public struct ImageControlsView: View
 {
+    /// The shared adjustment values the controls bind to.
     private let adjustments: ImageAdjustments
+
+    /// Requests a debounced re-render after an adjustment changes.
     private let reRender:    () -> Void
+
+    /// The histograms shown at the top of the panel.
     private let histogram:   FITSImageRenderer.Histogram
+
+    /// The per-channel statistics shown alongside the histograms.
     private let statistics:  FITSImageRenderer.HistogramStatistics
 
+    /// Creates the controls panel.
+    ///
+    /// - Parameters:
+    ///   - adjustments: The shared adjustment values to bind to.
+    ///   - reRender:    The closure to call after an adjustment changes.
+    ///   - histogram:   The histograms to display.
+    ///   - statistics:  The per-channel statistics to display.
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void, histogram: FITSImageRenderer.Histogram, statistics: FITSImageRenderer.HistogramStatistics )
     {
         self.adjustments = adjustments
@@ -40,6 +56,7 @@ public struct ImageControlsView: View
         self.statistics  = statistics
     }
 
+    /// The view's content.
     public var body: some View
     {
         ScrollView

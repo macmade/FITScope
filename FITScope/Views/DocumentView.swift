@@ -25,19 +25,34 @@
 import SwiftFITS
 import SwiftUI
 
+/// The root view for an open FITS document.
+///
+/// Drives a ``FITSImageLoader`` and shows, in turn, a loading indicator, the
+/// rendered ``ImageView`` with a *Properties* button, or an ``ErrorView`` if
+/// loading fails. Loading is kicked off from the view's `.task`.
 public struct DocumentView: View
 {
+    /// The bound document whose bytes are loaded.
     @Binding     private var document: FITSDocument
+
+    /// The loader that parses the document into a ``FITSImage``.
     @StateObject private var loader:   FITSImageLoader
 
+    /// Opens the auxiliary properties window.
     @Environment( \.openWindow ) private var openWindow
 
+    /// Creates the document view and its loader.
+    ///
+    /// - Parameters:
+    ///   - url:      The URL the document was loaded from.
+    ///   - document: A binding to the document holding the raw FITS bytes.
     public init( url: URL, document: Binding< FITSDocument > )
     {
         self._document = document
         self._loader   = StateObject( wrappedValue: FITSImageLoader( url: url, document: document.wrappedValue ) )
     }
 
+    /// The view's content.
     public var body: some View
     {
         VStack

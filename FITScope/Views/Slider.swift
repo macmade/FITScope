@@ -24,20 +24,53 @@
 
 import SwiftUI
 
+/// A custom horizontal slider with an optional knob glyph, tick marks and
+/// magnetic snapping.
+///
+/// Dragging reports both the value and whether a drag is in progress through
+/// ``onChange``, letting callers distinguish a live drag from its end. When
+/// ticks and a friction radius are supplied, values near a tick snap to it.
 public struct Slider: View
 {
+    /// The bound value, kept within ``minimumValue``…``maximumValue``.
     @Binding public var value: Double
 
+    /// The lower bound of the value range.
     public let minimumValue: Double
+
+    /// The upper bound of the value range.
     public let maximumValue: Double
+
+    /// An optional SF Symbol drawn inside the knob.
     public let image:        String?
+
+    /// Whether the slider is disabled (dimmed and non-interactive).
     public let disabled:     Bool
+
+    /// The number of evenly spaced tick marks, or `nil` for none.
     public let tickCount:    Int?
+
+    /// The snapping radius around each tick, or `nil` for no snapping.
     public let friction:     Double?
+
+    /// Called with the new value and the drag state on every change.
     public let onChange:     ( ( Double, Bool ) -> Void )?
 
+    /// Whether a drag is currently in progress, used for the knob's press
+    /// styling.
     @State private var isDragging = false
 
+    /// Creates a slider.
+    ///
+    /// - Parameters:
+    ///   - value:        A binding to the value.
+    ///   - minimumValue: The lower bound.
+    ///   - maximumValue: The upper bound.
+    ///   - image:        An optional SF Symbol for the knob.
+    ///   - disabled:     Whether the slider is disabled.
+    ///   - tickCount:    The number of tick marks, or `nil`.
+    ///   - friction:     The snapping radius around ticks, or `nil`.
+    ///   - onChange:     A closure run with the value and drag state on change.
     public init( value: Binding< Double >, minimumValue: Double, maximumValue: Double, image: String? = nil, disabled: Bool = false, tickCount: Int? = nil, friction: Double? = nil, onChange: ( ( Double, Bool ) -> Void )? = nil )
     {
         self._value       = value
@@ -69,6 +102,7 @@ public struct Slider: View
         return ( clamped - minimumValue ) / range
     }
 
+    /// The view's content.
     public var body: some View
     {
         GeometryReader

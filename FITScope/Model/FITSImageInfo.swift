@@ -25,11 +25,25 @@
 import Foundation
 import SwiftFITS
 
+/// A `Codable`, `Hashable` snapshot of a FITS file's header metadata, suitable
+/// for passing to an auxiliary window via SwiftUI's value-based scenes.
 public struct FITSImageInfo: Codable, Hashable
 {
+    /// The URL of the source file.
     public let url:      URL
+
+    /// The file's metadata sections (primary header and any extensions), in file
+    /// order. Data-only sections are excluded.
     public let sections: [ FITSImageSection ]
 
+    /// Builds the metadata snapshot from a parsed file.
+    ///
+    /// Only header and extension sections are kept; sections that
+    /// ``FITSImageSection`` cannot represent (e.g. pure data) are dropped.
+    ///
+    /// - Parameters:
+    ///   - url:  The URL the file was loaded from.
+    ///   - file: The parsed FITS file.
     public init( url: URL, file: FITSFile )
     {
         self.url      = url

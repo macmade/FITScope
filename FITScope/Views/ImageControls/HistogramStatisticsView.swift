@@ -25,27 +25,49 @@
 import SwiftPixel
 import SwiftUI
 
+/// A grid of histogram statistics — mean, standard deviation, median, min, max,
+/// percentiles and pixel count — with one column per channel for the current
+/// mode (three for RGB, one for luminance).
 public struct HistogramStatisticsView: View
 {
+    /// One labelled statistic row, pairing a display label with a closure that
+    /// extracts and formats the value from a channel's statistics.
     private struct Descriptor: Hashable
     {
+        /// The label shown for the statistic (e.g. `"Mean"`).
         public let label:        String
+
+        /// Extracts and formats the statistic from a channel's statistics.
         public let provideValue: ( HistogramStatistics ) -> String
 
+        /// Hashes the descriptor by its label, since the closure is not
+        /// hashable.
+        ///
+        /// - Parameter hasher: The hasher to feed.
         func hash( into hasher: inout Hasher )
         {
             hasher.combine( self.label )
         }
 
+        /// Compares descriptors by label, since the closure is not equatable.
+        ///
+        /// - Parameters:
+        ///   - lhs: The first descriptor.
+        ///   - rhs: The second descriptor.
+        /// - Returns: `true` when the labels are equal.
         static func == ( lhs: Descriptor, rhs: Descriptor ) -> Bool
         {
             lhs.label == rhs.label
         }
     }
 
+    /// The per-channel statistics to display.
     public let statistics: FITSImageRenderer.HistogramStatistics
+
+    /// Whether to show RGB channels or a single luminance channel.
     public let mode:       HistogramControlView.Mode
 
+    /// The ordered statistic rows displayed in the grid.
     private let descriptors =
         [
             Descriptor( label: "Mean",   provideValue: { String( format: "%.1f", $0.mean ) } ),
@@ -58,6 +80,7 @@ public struct HistogramStatisticsView: View
             Descriptor( label: "Count",  provideValue: { "\( $0.count )" } ),
         ]
 
+    /// The view's content.
     public var body: some View
     {
         Grid( alignment: .leading )

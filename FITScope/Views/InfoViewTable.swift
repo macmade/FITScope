@@ -25,14 +25,27 @@
 import SwiftFITS
 import SwiftUI
 
+/// A sortable, selectable table of FITS header keywords, with columns for
+/// index, name, kind, value and comment.
+///
+/// Keeps a locally sorted copy of the input that re-sorts when the sort order or
+/// the input changes, so the displayed order tracks both the user's column
+/// sorting and any change of section.
 public struct InfoViewTable: View
 {
+    /// The keywords to display, in their natural (unsorted) order.
     public let properties: [ FITSImageProperty ]
 
+    /// The locally sorted copy actually rendered by the table.
     @State private var sortedProperties   = [ FITSImageProperty ]()
+
+    /// The active column sort order, defaulting to ascending index.
     @State private var sortOrder          = [ KeyPathComparator( \FITSImageProperty.index ) ]
+
+    /// The identifiers of the currently selected rows.
     @State private var selectedProperties = Set< FITSImageProperty.ID >()
 
+    /// The view's content.
     public var body: some View
     {
         Table( self.sortedProperties, selection: $selectedProperties, sortOrder: $sortOrder )
