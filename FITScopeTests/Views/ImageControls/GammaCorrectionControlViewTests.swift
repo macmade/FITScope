@@ -37,4 +37,20 @@ struct GammaCorrectionControlViewTests
         #expect( GammaCorrectionControlView.gamma( enabled: false, value: 2.2 ) == nil )
         #expect( GammaCorrectionControlView.gamma( enabled: true,  value: 2.2 ) == 2.2 )
     }
+
+    /// The gamma slider minimum stays above zero so the control can never emit
+    /// a gamma the pipeline rejects, and even that minimum renders without
+    /// throwing.
+    @Test
+    @MainActor
+    func gammaMinimumIsPositiveAndRenders() throws
+    {
+        #expect( GammaCorrectionControlView.minimumGamma > 0, "a gamma of zero or less throws" )
+
+        let ( data, properties ) = FITSTestData.gradient()
+        let settings             = ImageProcessor.Settings( gamma: GammaCorrectionControlView.minimumGamma )
+        let bytes                = try ImageProcessor.render( data: data, properties: properties, settings: settings ).bytes
+
+        #expect( bytes.contains { $0 != 0 }, "the minimum gamma should still render" )
+    }
 }

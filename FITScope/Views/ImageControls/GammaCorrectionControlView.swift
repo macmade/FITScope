@@ -26,12 +26,19 @@ import SwiftUI
 
 public struct GammaCorrectionControlView: View
 {
+    /// Gamma slider bounds and seed. The minimum stays above zero because a
+    /// gamma of zero (or less) is a degenerate exponent the pipeline rejects by
+    /// throwing, so the control can never emit such a value.
+    static let minimumGamma = 0.1
+    static let maximumGamma = 5.0
+    static let defaultGamma = 1.8
+
     private let adjustments: ImageAdjustments
     private let reRender:    () -> Void
 
     // Seeded to mirror the pipeline's default gamma ( 1.8, enabled ).
     @State private var enabled = true
-    @State private var gamma   = 1.8
+    @State private var gamma   = GammaCorrectionControlView.defaultGamma
 
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {
@@ -59,7 +66,7 @@ public struct GammaCorrectionControlView: View
 
             if self.enabled
             {
-                SliderGridRowView( value: $gamma, minimumValue: 0, maximumValue: 5, label: "Gamma", image: "eye.fill" )
+                SliderGridRowView( value: $gamma, minimumValue: Self.minimumGamma, maximumValue: Self.maximumGamma, label: "Gamma", image: "eye.fill" )
             }
         }
         .onChange( of: self.gammaValue )

@@ -24,11 +24,34 @@
 
 import Foundation
 import SwiftFITS
+@testable import FITScope
 
 /// Synthesised, minimal FITS payloads for tests that need a precisely shaped
 /// file rather than a bundled corpus sample.
 enum FITSTestData
 {
+    /// A monochrome 8-bit pixel ramp and its header properties, ready to feed
+    /// straight into `ImageProcessor.render`.
+    ///
+    /// The values span the full `0...255` range so that, after min/max
+    /// normalisation, any monotonic stretch produces a varied (non-flat,
+    /// non-black) result.
+    static func gradient( width: Int = 16, height: Int = 16 ) -> ( data: Data, properties: [ FITSPropertySnapshot ] )
+    {
+        let count = max( width * height, 1 )
+        let bytes = ( 0 ..< count ).map { UInt8( ( $0 * 255 ) / max( count - 1, 1 ) ) }
+
+        let properties =
+        [
+            FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+            FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+            FITSPropertySnapshot( name: "NAXIS1", value: .integer( Int64( width ) ) ),
+            FITSPropertySnapshot( name: "NAXIS2", value: .integer( Int64( height ) ) ),
+        ]
+
+        return ( Data( bytes ), properties )
+    }
+
     /// A minimal, valid header-only FITS file
     /// (`SIMPLE=T / BITPIX=8 / NAXIS=0 / END`) as a single space-padded block.
     static func headerOnly() -> Data

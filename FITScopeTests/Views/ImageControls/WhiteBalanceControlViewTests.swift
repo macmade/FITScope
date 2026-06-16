@@ -38,4 +38,24 @@ struct WhiteBalanceControlViewTests
         #expect( WhiteBalanceControlView.mode( .auto,   red: 1, green: 2, blue: 3 ) == .auto )
         #expect( WhiteBalanceControlView.mode( .manual, red: 1, green: 2, blue: 3 ) == .manual( red: 1, green: 2, blue: 3 ) )
     }
+
+    /// The seeded manual gains are identity (1.0): switching to Manual leaves
+    /// the image unchanged rather than blanking every channel to black.
+    @Test
+    @MainActor
+    func seededManualGainsAreIdentityAndRender() throws
+    {
+        #expect( WhiteBalanceControlView.defaultManualGain == 1.0, "manual gains must default to identity, not zero" )
+
+        let gain = WhiteBalanceControlView.defaultManualGain
+        let mode = WhiteBalanceControlView.mode( .manual, red: gain, green: gain, blue: gain )
+
+        #expect( mode == .manual( red: 1, green: 1, blue: 1 ) )
+
+        let ( data, properties ) = FITSTestData.gradient()
+        let settings             = ImageProcessor.Settings( whiteBalance: mode )
+        let bytes                = try ImageProcessor.render( data: data, properties: properties, settings: settings ).bytes
+
+        #expect( bytes.contains { $0 != 0 }, "manual white balance must not blank the image to black" )
+    }
 }

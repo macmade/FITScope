@@ -47,15 +47,24 @@ public struct StretchControlView: View
         }
     }
 
+    /// Seed values for the stretch sliders, chosen so each mode's first
+    /// interaction yields a valid, non-degenerate render: the arcsinh factor is
+    /// non-zero (zero throws), and the sigmoid constants produce a centred
+    /// S-curve on normalized data rather than a flat 50% grey.
+    static let defaultLogIntensity  = 50.0
+    static let defaultArcsinhFactor = 50.0
+    static let defaultSigmoidN1     = 10.0
+    static let defaultSigmoidN2     = 0.5
+
     private let adjustments: ImageAdjustments
     private let reRender:    () -> Void
 
     // Seeded to mirror the pipeline's default stretch ( .log( 50 ) ).
     @State private var mode      = Mode.log
-    @State private var logN1     = 50.0
-    @State private var arcsinhN1 = 0.0
-    @State private var sigmoidN1 = 0.0
-    @State private var sigmoidN2 = 0.0
+    @State private var logN1     = StretchControlView.defaultLogIntensity
+    @State private var arcsinhN1 = StretchControlView.defaultArcsinhFactor
+    @State private var sigmoidN1 = StretchControlView.defaultSigmoidN1
+    @State private var sigmoidN2 = StretchControlView.defaultSigmoidN2
 
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {

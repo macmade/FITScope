@@ -40,4 +40,40 @@ struct StretchControlViewTests
         #expect( StretchControlView.algorithm( mode: .arcsinh, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == .arcsinh( 10 ) )
         #expect( StretchControlView.algorithm( mode: .sigmoid, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == .sigmoid( 1, 2 ) )
     }
+
+    /// The seeded stretch defaults are non-degenerate: the arcsinh factor is
+    /// non-zero (zero throws) and the sigmoid slope is non-zero (a zero slope
+    /// flattens the image to 50% grey).
+    @Test
+    @MainActor
+    func seededDefaultsAreNonDegenerate() throws
+    {
+        #expect( StretchControlView.defaultArcsinhFactor != 0, "a zero arcsinh factor throws" )
+        #expect( StretchControlView.defaultSigmoidN1     != 0, "a zero sigmoid slope flattens the image" )
+    }
+
+    /// Every seeded stretch default renders to a varied (non-flat, non-black)
+    /// image rather than throwing or blanking.
+    @Test
+    @MainActor
+    func seededStretchDefaultsRenderNonDegenerate() throws
+    {
+        let ( data, properties ) = FITSTestData.gradient()
+
+        for mode in [ StretchControlView.Mode.log, .arcsinh, .sigmoid ]
+        {
+            let algorithm = StretchControlView.algorithm(
+                mode:            mode,
+                logIntensity:    StretchControlView.defaultLogIntensity,
+                arcsinhFactor:   StretchControlView.defaultArcsinhFactor,
+                sigmoidMidpoint: StretchControlView.defaultSigmoidN1,
+                sigmoidContrast: StretchControlView.defaultSigmoidN2
+            )
+            let settings = ImageProcessor.Settings( stretch: algorithm )
+            let bytes    = try ImageProcessor.render( data: data, properties: properties, settings: settings ).bytes
+
+            #expect( bytes.contains { $0 != 0 },          "\( mode ) should not render all black" )
+            #expect( bytes.contains { $0 != bytes[ 0 ] }, "\( mode ) should not render flat" )
+        }
+    }
 }

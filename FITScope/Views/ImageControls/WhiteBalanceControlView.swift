@@ -44,14 +44,19 @@ public struct WhiteBalanceControlView: View
         }
     }
 
+    /// Seed for the manual white-balance gains. Identity gains leave the image
+    /// unchanged when the user first switches to Manual; zero gains would blank
+    /// every channel to black.
+    static let defaultManualGain = 1.0
+
     private let adjustments: ImageAdjustments
     private let reRender:    () -> Void
 
     // Seeded to mirror the pipeline's default white balance ( .auto ).
     @State private var mode  = Mode.auto
-    @State private var red   = 0.0
-    @State private var green = 0.0
-    @State private var blue  = 0.0
+    @State private var red   = WhiteBalanceControlView.defaultManualGain
+    @State private var green = WhiteBalanceControlView.defaultManualGain
+    @State private var blue  = WhiteBalanceControlView.defaultManualGain
 
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {
