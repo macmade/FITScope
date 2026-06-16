@@ -241,6 +241,71 @@ struct FITScopeTests
         #expect( updated != original )
     }
 
+    /// A render failure must not strand the user: the thrown error surfaces but
+    /// the last good render is retained, so the image and its controls survive.
+    @Test
+    @MainActor
+    func failedRenderRetainsLastGoodResult() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: Self.corpusURL( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        let good = try #require( renderer.result )
+
+        #expect( renderer.error == nil )
+
+        // An arcsinh factor of zero is a mathematically invalid parameter the
+        // pipeline rejects by throwing.
+        renderer.adjustments.stretch = .arcsinh( 0 )
+
+        await renderer.render()
+
+        #expect( renderer.error  != nil )
+        #expect( renderer.result != nil )
+        #expect( renderer.result?.image === good.image, "the last good render must be retained on failure" )
+    }
+
+    /// A valid render after a failure clears the error and commits the new
+    /// result, proving the failure state is recoverable.
+    @Test
+    @MainActor
+    func validRenderAfterFailureRecovers() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: Self.corpusURL( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        renderer.adjustments.stretch = .arcsinh( 0 )
+
+        await renderer.render()
+
+        #expect( renderer.error != nil )
+
+        renderer.adjustments.stretch = .log( 50 )
+
+        await renderer.render()
+
+        #expect( renderer.error  == nil )
+        #expect( renderer.result != nil )
+    }
+
+    /// A first-load failure with no prior result keeps `result` nil so the
+    /// full-screen error path is preserved for the genuine no-image case.
+    @Test
+    @MainActor
+    func firstLoadFailureHasNoResult() async throws
+    {
+        let renderer = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: Data(), properties: [] ) )
+
+        await renderer.render()
+
+        #expect( renderer.result == nil )
+        #expect( renderer.error  != nil )
+    }
+
     /// The stretch control maps its selection and slider values to the matching
     /// algorithm, including the `.sigmoid` case.
     @Test

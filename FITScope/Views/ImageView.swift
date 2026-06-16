@@ -29,6 +29,8 @@ public struct ImageView: View
 {
     @ObservedObject private var renderer: FITSImageRenderer
 
+    @State private var errorBannerDismissed = false
+
     public init( renderer: FITSImageRenderer )
     {
         self.renderer = renderer
@@ -50,6 +52,17 @@ public struct ImageView: View
                     }
                     .frame( maxWidth: .infinity, maxHeight: .infinity )
                     .background( .black )
+                    .overlay( alignment: .top )
+                    {
+                        if let error = self.renderer.error, self.errorBannerDismissed == false
+                        {
+                            BannerView( title: "Error Rendering Image", message: error.localizedDescription, systemImage: "exclamationmark.triangle.fill", tint: .yellow )
+                            {
+                                self.errorBannerDismissed = true
+                            }
+                            .padding( 12 )
+                        }
+                    }
 
                     Divider()
 
@@ -72,6 +85,15 @@ public struct ImageView: View
         .task
         {
             await self.renderer.render()
+        }
+        .onChange( of: self.renderer.error != nil )
+        {
+            _, hasError in
+
+            if hasError
+            {
+                self.errorBannerDismissed = false
+            }
         }
     }
 }

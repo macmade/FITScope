@@ -174,8 +174,11 @@ public class FITSImageRenderer: ObservableObject
         }
         catch
         {
-            self.result = nil
-            self.error  = error
+            // Surface the failure without discarding the last good render: the
+            // image and its controls must survive a bad parameter so the user
+            // can adjust away from it. `result` and `error` are independent
+            // states — "there is an image" and "the last render failed".
+            self.error = error
         }
     }
 
