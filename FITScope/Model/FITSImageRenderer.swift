@@ -77,6 +77,17 @@ public class FITSImageRenderer: ObservableObject
         public let luminance: SwiftPixel.HistogramStatistics
     }
 
+    /// A histogram paired with its statistics, used to retain the original,
+    /// unprocessed image's distribution alongside the live processed result.
+    public struct HistogramSet
+    {
+        /// The RGB and luminance histograms.
+        public let histogram:  Histogram
+
+        /// Per-channel statistics derived from the histograms.
+        public let statistics: HistogramStatistics
+    }
+
     /// The image HDU's bytes and header properties to render.
     ///
     /// A `Sendable` value type so it can cross the render concurrency boundary
@@ -104,6 +115,11 @@ public class FITSImageRenderer: ObservableObject
     /// The most recent successful render, or `nil` before the first render.
     /// Retained across a subsequent failure.
     @Published public private( set ) var result: Result?
+
+    /// The histogram of the original image — the file as captured, debayered if
+    /// necessary, with no stretch, gamma or white balance — computed once on the
+    /// first render and cached for the file's lifetime, or `nil` before then.
+    @Published public private( set ) var original: HistogramSet?
 
     /// The error from the most recent failed render, or `nil` on success.
     @Published public private( set ) var error:  Error?
@@ -192,36 +208,26 @@ public class FITSImageRenderer: ObservableObject
 
         do
         {
-            let input    = try self.input.get()
-            let settings = self.adjustments.settings
-            let result   = try await withCheckedThrowingContinuation
+            let input         = try self.input.get()
+            let settings      = self.adjustments.settings
+            let needsOriginal = self.original == nil
+
+            let outcome = try await withCheckedThrowingContinuation
             {
-                continuation in DispatchQueue.global( qos: .userInitiated ).async
+                ( continuation: CheckedContinuation< ( result: Result, original: Result? ), any Error > ) in
+
+                DispatchQueue.global( qos: .userInitiated ).async
                 {
                     do
                     {
-                        let render              = try ImageProcessor.render( data: input.data, properties: input.properties, settings: settings )
-                        let rgbHistogram        = Benchmark.run( label: "Histogram (RGB)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .rgb ) }
-                        let luminanceHistogram  = Benchmark.run( label: "Histogram (L)",   output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .luminance ) }
-                        let redStatistics       = Benchmark.run( label: "Statistics (R)",  output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 0 ] ) }
-                        let greenStatistics     = Benchmark.run( label: "Statistics (G)",  output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 1 ] ) }
-                        let blueStatistics      = Benchmark.run( label: "Statistics (B)",  output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 2 ] ) }
-                        let luminanceStatistics = Benchmark.run( label: "Statistics (L)",  output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: luminanceHistogram.data[ 0 ] ) }
-                        let histogram           = Histogram( rgb: rgbHistogram, luminance: luminanceHistogram )
-                        let statistics          = HistogramStatistics(
-                            red:       redStatistics,
-                            green:     greenStatistics,
-                            blue:      blueStatistics,
-                            luminance: luminanceStatistics
-                        )
+                        // The original is the file as captured: a render with the
+                        // default settings (linear normalization and debayer
+                        // only). It does not depend on the user's adjustments, so
+                        // it is computed once and reused thereafter.
+                        let result   = try Self.makeResult( input: input, settings: settings )
+                        let original = needsOriginal ? try Self.makeResult( input: input, settings: ImageProcessor.Settings() ) : nil
 
-                        let result = Result(
-                            image: render.image,
-                            histogram: histogram,
-                            statistics: statistics
-                        )
-
-                        continuation.resume( returning: result )
+                        continuation.resume( returning: ( result, original ) )
                     }
                     catch
                     {
@@ -230,12 +236,41 @@ public class FITSImageRenderer: ObservableObject
                 }
             }
 
-            self.commit( .success( result ), generation: generation )
+            if let original = outcome.original
+            {
+                self.original = HistogramSet( histogram: original.histogram, statistics: original.statistics )
+            }
+
+            self.commit( .success( outcome.result ), generation: generation )
         }
         catch
         {
             self.commit( .failure( error ), generation: generation )
         }
+    }
+
+    /// Renders the image with the given settings and computes its histograms and
+    /// statistics. Pure and `nonisolated` so it can run off the main actor.
+    ///
+    /// - Parameters:
+    ///   - input:    The image HDU bytes and header properties.
+    ///   - settings: The render settings to apply.
+    /// - Returns: The rendered image with its histograms and statistics.
+    /// - Throws: Any error thrown by the pixel pipeline.
+    nonisolated private static func makeResult( input: RenderInput, settings: ImageProcessor.Settings ) throws -> Result
+    {
+        let render             = try ImageProcessor.render( data: input.data, properties: input.properties, settings: settings )
+        let rgbHistogram       = Benchmark.run( label: "Histogram (RGB)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .rgb ) }
+        let luminanceHistogram = Benchmark.run( label: "Histogram (L)",   output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .luminance ) }
+        let histogram          = Histogram( rgb: rgbHistogram, luminance: luminanceHistogram )
+        let statistics         = HistogramStatistics(
+            red:       Benchmark.run( label: "Statistics (R)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 0 ] ) },
+            green:     Benchmark.run( label: "Statistics (G)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 1 ] ) },
+            blue:      Benchmark.run( label: "Statistics (B)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 2 ] ) },
+            luminance: Benchmark.run( label: "Statistics (L)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: luminanceHistogram.data[ 0 ] ) }
+        )
+
+        return Result( image: render.image, histogram: histogram, statistics: statistics )
     }
 
     /// Claims and returns the next render generation. Only the most recently

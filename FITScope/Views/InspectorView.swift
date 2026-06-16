@@ -57,7 +57,7 @@ public struct InspectorView: View
                     {
                         InspectorSectionView( "Histogram" )
                         {
-                            HistogramControlView( histogram: result.histogram, statistics: result.statistics )
+                            HistogramControlView( histogram: result.histogram, statistics: result.statistics, original: self.image.renderer.original )
                         }
 
                         Divider()

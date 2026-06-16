@@ -57,14 +57,22 @@ public struct HistogramControlView: View
     /// Whether the summary statistics panel is shown.
     @State private var showStatistics   = false
 
+    /// Whether the original (unprocessed) histogram is shown instead of the
+    /// current processed one.
+    @State private var showOriginal     = false
+
     /// The currently displayed histogram mode.
     @State private var mode             = Mode.rgb
 
-    /// The histograms to display.
+    /// The processed histograms to display.
     public let histogram:  FITSImageRenderer.Histogram
 
-    /// The per-channel statistics shown when statistics are enabled.
+    /// The per-channel statistics for the processed image.
     public let statistics: FITSImageRenderer.HistogramStatistics
+
+    /// The original (unprocessed) histogram and statistics, or `nil` if not yet
+    /// computed. When present, the user can switch the display to it.
+    public let original:   FITSImageRenderer.HistogramSet?
 
     /// The view's content.
     public var body: some View
@@ -74,7 +82,7 @@ public struct HistogramControlView: View
             SegmentedControlView( selection: self.$mode, values: Mode.allCases, title: { $0.description } )
 
             HistogramView(
-                histogram:        self.histogram,
+                histogram:        self.displayedHistogram,
                 separateChannels: self.separateChannels && self.mode == .rgb,
                 mode:             self.mode
             )
@@ -83,6 +91,10 @@ public struct HistogramControlView: View
             .background( Color.black.opacity( 0.35 ) )
             .clipShape( RoundedRectangle( cornerRadius: 10 ) )
             .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+
+            Toggle( "Show Original", isOn: $showOriginal )
+                .disabled( self.original == nil )
+                .help( "Show the histogram of the original image, before stretch, gamma and white balance." )
 
             Toggle( "Separate Channels", isOn: $separateChannels )
                 .disabled( self.mode == .luminance )
@@ -93,7 +105,7 @@ public struct HistogramControlView: View
             {
                 HStack
                 {
-                    HistogramStatisticsView( statistics: self.statistics, mode: self.mode )
+                    HistogramStatisticsView( statistics: self.displayedStatistics, mode: self.mode )
                         .padding( 12 )
                 }
                 .frame( maxWidth: .infinity, alignment: .leading )
@@ -103,12 +115,39 @@ public struct HistogramControlView: View
             }
         }
     }
+
+    /// The histograms to draw: the original when "Show Original" is on and the
+    /// original is available, otherwise the processed ones.
+    private var displayedHistogram: FITSImageRenderer.Histogram
+    {
+        if self.showOriginal, let original = self.original
+        {
+            return original.histogram
+        }
+
+        return self.histogram
+    }
+
+    /// The statistics to show, matching ``displayedHistogram``.
+    private var displayedStatistics: FITSImageRenderer.HistogramStatistics
+    {
+        if self.showOriginal, let original = self.original
+        {
+            return original.statistics
+        }
+
+        return self.statistics
+    }
 }
 
 #Preview
 {
-    HistogramControlView( histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() )
-        .frame( maxWidth: .infinity, alignment: .leading )
-        .frame( maxHeight: .infinity, alignment: .top )
-        .padding()
+    HistogramControlView(
+        histogram:  PreviewHelper.histogram(),
+        statistics: PreviewHelper.statistics(),
+        original:   FITSImageRenderer.HistogramSet( histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() )
+    )
+    .frame( maxWidth: .infinity, alignment: .leading )
+    .frame( maxHeight: .infinity, alignment: .top )
+    .padding()
 }
