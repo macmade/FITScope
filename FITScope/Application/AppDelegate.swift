@@ -37,10 +37,28 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
     /// is not presented on top of a window that is opening.
     private var didOpenFilesAtLaunch = false
 
+    /// Whether the app is hosting a test bundle. When tests run, the app must
+    /// not present the modal Open panel at launch: it would block the main
+    /// thread before the test runner can begin executing tests.
+    private var isRunningTests: Bool
+    {
+        let environment = ProcessInfo.processInfo.environment
+
+        return environment[ "XCTestConfigurationFilePath" ] != nil
+            || environment[ "XCTestBundlePath" ]            != nil
+            || NSClassFromString( "XCTestCase" )            != nil
+    }
+
     /// On launch with no file arguments, present the Open panel; chosen files
     /// open in a new window, Cancel leaves no window.
     public func applicationDidFinishLaunching( _ notification: Notification )
     {
+        guard self.isRunningTests == false
+        else
+        {
+            return
+        }
+
         DispatchQueue.main.async
         {
             guard self.didOpenFilesAtLaunch == false
