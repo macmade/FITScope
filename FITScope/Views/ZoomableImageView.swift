@@ -355,6 +355,10 @@ final class HoverImageNSView: NSView
     /// Called with the pixel coordinate under the cursor, or `nil` when outside.
     var onHover: ( ( ( x: Int, y: Int )? ) -> Void )?
 
+    /// The cursor location, in window coordinates, at the previous drag step,
+    /// used to pan by exact 1:1 increments while a drag is in progress.
+    private var panAnchor: NSPoint?
+
     /// A flipped coordinate system so image row 0 is at the top.
     override var isFlipped: Bool
     {
@@ -415,5 +419,52 @@ final class HoverImageNSView: NSView
     override func mouseExited( with event: NSEvent )
     {
         self.onHover?( nil )
+    }
+
+    override func mouseDown( with event: NSEvent )
+    {
+        self.panAnchor = event.locationInWindow
+
+        NSCursor.closedHand.set()
+    }
+
+    override func mouseDragged( with event: NSEvent )
+    {
+        guard let scrollView = self.enclosingScrollView,
+              let anchor     = self.panAnchor
+        else
+        {
+            return
+        }
+
+        let location      = event.locationInWindow
+        let magnification  = max( scrollView.magnification, 0.0001 )
+        let clip           = scrollView.contentView
+
+        // `locationInWindow` is in window points: it neither scales with the
+        // magnification nor moves as the document scrolls, so its delta is a
+        // clean, acceleration-free measure of cursor travel. Convert it to
+        // document units, and note that the clip view is flipped (y grows
+        // downward) while window coordinates grow upward.
+        var origin = clip.bounds.origin
+        origin.x  -= ( location.x - anchor.x ) / magnification
+        origin.y  += ( location.y - anchor.y ) / magnification
+
+        clip.scroll( to: origin )
+        scrollView.reflectScrolledClipView( clip )
+
+        self.panAnchor = location
+    }
+
+    override func mouseUp( with event: NSEvent )
+    {
+        self.panAnchor = nil
+
+        NSCursor.arrow.set()
+    }
+
+    override func resetCursorRects()
+    {
+        self.addCursorRect( self.bounds, cursor: .openHand )
     }
 }
