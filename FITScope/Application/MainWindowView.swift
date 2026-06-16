@@ -36,6 +36,9 @@ public struct MainWindowView: View
     /// The current cursor readout shown in the status bar.
     @State private var readout = CursorReadout.empty
 
+    /// Whether the trailing inspector is shown.
+    @State private var showInspector = true
+
     /// The shared app model used to route global open actions.
     @EnvironmentObject private var appModel: AppModel
 
@@ -63,7 +66,7 @@ public struct MainWindowView: View
                 FilesSidebarView( model: self.model )
                     .navigationSplitViewColumnWidth( min: 200, ideal: 215, max: 320 )
             }
-            content:
+            detail:
             {
                 Group
                 {
@@ -94,7 +97,8 @@ public struct MainWindowView: View
                     }
                 }
             }
-            detail:
+            .navigationSplitViewStyle( .balanced )
+            .inspector( isPresented: self.$showInspector )
             {
                 Group
                 {
@@ -107,10 +111,23 @@ public struct MainWindowView: View
                         Color.clear
                     }
                 }
-                .frame( maxWidth: .infinity, maxHeight: .infinity )
-                .navigationSplitViewColumnWidth( min: 240, ideal: 255, max: 360 )
+                .inspectorColumnWidth( min: 240, ideal: 255, max: 360 )
             }
-            .navigationSplitViewStyle( .balanced )
+            .toolbar
+            {
+                ToolbarItem( placement: .primaryAction )
+                {
+                    Button
+                    {
+                        self.showInspector.toggle()
+                    }
+                    label:
+                    {
+                        Image( systemName: "sidebar.trailing" )
+                    }
+                    .help( "Toggle the inspector" )
+                }
+            }
 
             StatusBarView( status: "Ready", readout: self.readout, dimensions: self.dimensionsSummary )
         }
