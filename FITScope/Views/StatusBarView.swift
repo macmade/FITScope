@@ -24,8 +24,9 @@
 
 import SwiftUI
 
-/// The full-width status bar below the panes: a status message, the cursor
-/// readout, and the image dimensions / bit depth on the trailing edge.
+/// A floating status pill over the bottom of the image canvas: a status
+/// message, the cursor readout, and the image dimensions / bit depth. Styled to
+/// match the floating zoom toolbar.
 public struct StatusBarView: View
 {
     /// The leading status message (e.g. "Ready").
@@ -48,32 +49,35 @@ public struct StatusBarView: View
     /// The view's content.
     public var body: some View
     {
-        HStack( spacing: 0 )
+        HStack( spacing: 8 )
         {
             self.segment( self.status )
+
+            Divider().frame( height: 16 )
+
             self.segment( self.readout.xText )
             self.segment( self.readout.yText )
             self.segment( self.readout.valueText )
 
-            Spacer()
-
             if let dimensions = self.dimensions
             {
-                self.segment( dimensions, trailing: true )
+                Divider().frame( height: 16 )
+
+                self.segment( dimensions )
             }
         }
-        .font( .system( size: 10, design: .monospaced ) )
+        .font( .system( size: 11, design: .monospaced ) )
         .foregroundStyle( .secondary )
-        .frame( height: 24 )
-        .background( .bar )
-        .overlay( alignment: .top ) { Divider() }
+        .padding( .horizontal, 10 )
+        .padding( .vertical, 6 )
+        .background( .ultraThinMaterial, in: RoundedRectangle( cornerRadius: 12 ) )
+        .overlay( RoundedRectangle( cornerRadius: 12 ).stroke( .white.opacity( 0.1 ) ) )
     }
 
-    /// A status-bar segment with consistent padding.
-    private func segment( _ text: String, trailing: Bool = false ) -> some View
+    /// A status-pill segment.
+    private func segment( _ text: String ) -> some View
     {
         Text( text )
-            .padding( .horizontal, 10 )
             .lineLimit( 1 )
     }
 }
@@ -81,4 +85,6 @@ public struct StatusBarView: View
 #Preview
 {
     StatusBarView( status: "Ready", readout: CursorReadout( x: 3120, y: 2080, value: 1823, fraction: 1823.0 / 65535.0 ), dimensions: "6240 × 4160 • 16-bit" )
+        .padding()
+        .background( .black )
 }

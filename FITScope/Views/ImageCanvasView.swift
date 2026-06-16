@@ -65,7 +65,7 @@ public struct ImageCanvasView: View
                     {
                         coordinate in self.report( coordinate: coordinate )
                     }
-                    .overlay( alignment: .bottom )
+                    .overlay( alignment: .top )
                     {
                         ImageToolbarView(
                             zoom:       self.zoom,
@@ -74,7 +74,7 @@ public struct ImageCanvasView: View
                             onZoomIn:   { self.send( .zoomIn ) },
                             onZoomOut:  { self.send( .zoomOut ) }
                         )
-                        .padding( .bottom, 16 )
+                        .padding( .top, 16 )
                     }
                 }
                 else if let error = image.renderer.error

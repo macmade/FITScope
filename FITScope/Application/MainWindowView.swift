@@ -26,8 +26,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// The root view of a window: a three-column layout (files + image info |
-/// image canvas | inspector) above a full-width status bar. Owns the window's
-/// ``WindowModel``.
+/// image canvas | inspector). The status bar sits at the bottom of the center
+/// column only, so the leading and trailing sidebars extend the full height of
+/// the window. Owns the window's ``WindowModel``.
 public struct MainWindowView: View
 {
     /// The window's open files and selection.
@@ -59,77 +60,80 @@ public struct MainWindowView: View
     /// The view's content.
     public var body: some View
     {
-        VStack( spacing: 0 )
+        NavigationSplitView
         {
-            NavigationSplitView
+            FilesSidebarView( model: self.model )
+                .navigationSplitViewColumnWidth( min: 200, ideal: 215, max: 320 )
+        }
+        detail:
+        {
+            Group
             {
-                FilesSidebarView( model: self.model )
-                    .navigationSplitViewColumnWidth( min: 200, ideal: 215, max: 320 )
-            }
-            detail:
-            {
-                Group
+                if self.model.selectedFile == nil
                 {
-                    if self.model.selectedFile == nil
+                    VStack( spacing: 12 )
                     {
-                        VStack( spacing: 12 )
-                        {
-                            Image( nsImage: NSImage( named: NSImage.applicationIconName ) ?? NSImage() )
-                                .resizable()
-                                .aspectRatio( contentMode: .fit )
-                                .frame( width: 160, height: 160 )
+                        Image( nsImage: NSImage( named: NSImage.applicationIconName ) ?? NSImage() )
+                            .resizable()
+                            .aspectRatio( contentMode: .fit )
+                            .frame( width: 160, height: 160 )
 
-                            Text( "No File Open" )
-                                .font( .title2 ).bold()
+                        Text( "No File Open" )
+                            .font( .title2 ).bold()
 
-                            Text( "Open a FITS file, or drag one here." )
-                                .foregroundStyle( .secondary )
-                        }
-                        .frame( maxWidth: .infinity, maxHeight: .infinity )
-                        .background( .black )
+                        Text( "Open a FITS file, or drag one here." )
+                            .foregroundStyle( .secondary )
                     }
-                    else if let file = self.model.selectedFile
+                    .frame( maxWidth: .infinity, maxHeight: .infinity )
+                    .background( .black )
+                }
+                else if let file = self.model.selectedFile
+                {
+                    ImageCanvasView( file: file )
                     {
-                        ImageCanvasView( file: file )
-                        {
-                            readout in self.readout = readout
-                        }
+                        readout in self.readout = readout
                     }
                 }
             }
-            .navigationSplitViewStyle( .balanced )
-            .inspector( isPresented: self.$showInspector )
+            .overlay( alignment: .bottom )
             {
-                Group
+                if self.model.selectedFile != nil
                 {
-                    if let file = self.model.selectedFile
-                    {
-                        InspectorColumnView( file: file )
-                    }
-                    else
-                    {
-                        Color.clear
-                    }
-                }
-                .inspectorColumnWidth( min: 240, ideal: 255, max: 360 )
-            }
-            .toolbar
-            {
-                ToolbarItem( placement: .primaryAction )
-                {
-                    Button
-                    {
-                        self.showInspector.toggle()
-                    }
-                    label:
-                    {
-                        Image( systemName: "sidebar.trailing" )
-                    }
-                    .help( "Toggle the inspector" )
+                    StatusBarView( status: "Ready", readout: self.readout, dimensions: self.dimensionsSummary )
+                        .padding( .bottom, 16 )
                 }
             }
-
-            StatusBarView( status: "Ready", readout: self.readout, dimensions: self.dimensionsSummary )
+        }
+        .navigationSplitViewStyle( .balanced )
+        .inspector( isPresented: self.$showInspector )
+        {
+            Group
+            {
+                if let file = self.model.selectedFile
+                {
+                    InspectorColumnView( file: file )
+                }
+                else
+                {
+                    Color.clear
+                }
+            }
+            .inspectorColumnWidth( min: 240, ideal: 255, max: 360 )
+        }
+        .toolbar
+        {
+            ToolbarItem( placement: .primaryAction )
+            {
+                Button
+                {
+                    self.showInspector.toggle()
+                }
+                label:
+                {
+                    Image( systemName: "sidebar.trailing" )
+                }
+                .help( "Toggle the inspector" )
+            }
         }
         .frame( minWidth: 900, minHeight: 600 )
         .navigationTitle( self.model.selectedFile?.displayName ?? Bundle.main.title )
