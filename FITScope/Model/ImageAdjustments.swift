@@ -37,21 +37,24 @@ public final class ImageAdjustments: ObservableObject
 {
     /// How to normalize pixel values to the display range, or `nil` to skip
     /// normalization.
-    @Published public var normalize:    Processors.Normalize.Mode?      = .minMax
+    @Published public var normalize: Processors.Normalize.Mode? = .minMax
 
     /// The non-linear stretch applied to bring out faint detail, or `nil` for a
     /// linear image.
-    @Published public var stretch:      Processors.Stretch.Algorithm?   = .log( 50 )
+    @Published public var stretch: Processors.Stretch.Algorithm? = .log( 50 )
 
     /// The gamma-correction exponent, or `nil` to leave gamma uncorrected.
-    @Published public var gamma:        Double?                         = 1.8
+    @Published public var gamma: Double? = 1.8
 
     /// How to white-balance the colour channels, or `nil` to leave them
     /// untouched.
-    @Published public var whiteBalance: Processors.WhiteBalance.Mode?   = .auto
+    @Published public var whiteBalance: Processors.WhiteBalance.Mode? = .auto
 
     /// How to debayer a colour-filter-array image into RGB.
-    @Published public var debayer:      ImageProcessor.DebayerSelection = .auto
+    @Published public var debayer: ImageProcessor.DebayerSelection = .auto
+
+    /// The demosaic algorithm used when debayering.
+    @Published public var debayerAlgorithm: Processors.Debayer.Mode = .bilinear
 
     /// Creates an adjustment set seeded with the pipeline's default values.
     public init()
@@ -66,7 +69,8 @@ public final class ImageAdjustments: ObservableObject
             stretch:      self.stretch,
             gamma:        self.gamma,
             whiteBalance: self.whiteBalance,
-            debayer:      self.debayer
+            debayer:      self.debayer,
+            debayerMode:  self.debayerAlgorithm
         )
     }
 }

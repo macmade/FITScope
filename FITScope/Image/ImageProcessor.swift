@@ -94,6 +94,9 @@ public enum ImageProcessor
         /// How to debayer a colour-filter-array image.
         public var debayer:      DebayerSelection
 
+        /// The demosaic algorithm used when debayering.
+        public var debayerMode:  Processors.Debayer.Mode
+
         /// Creates a settings snapshot. Defaults reproduce the pipeline's
         /// formerly hard-coded values.
         ///
@@ -103,13 +106,15 @@ public enum ImageProcessor
         ///   - gamma:        The gamma-correction exponent.
         ///   - whiteBalance: How to white-balance the channels.
         ///   - debayer:      How to debayer the image.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = .log( 50 ), gamma: Double? = 1.8, whiteBalance: Processors.WhiteBalance.Mode? = .auto, debayer: DebayerSelection = .auto )
+        ///   - debayerMode:  The demosaic algorithm used when debayering.
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = .log( 50 ), gamma: Double? = 1.8, whiteBalance: Processors.WhiteBalance.Mode? = .auto, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear )
         {
             self.normalize    = normalize
             self.stretch      = stretch
             self.gamma        = gamma
             self.whiteBalance = whiteBalance
             self.debayer      = debayer
+            self.debayerMode  = debayerMode
         }
 
         /// Builds the pipeline configuration, combining these tunables with the
@@ -132,7 +137,7 @@ public enum ImageProcessor
 
             return PixelPipeline.Config(
                 scale:        ( scale, offset ),
-                debayer:      pattern.map { ( pattern: $0, mode: .bilinear ) },
+                debayer:      pattern.map { ( pattern: $0, mode: self.debayerMode ) },
                 normalize:    self.normalize,
                 stretch:      self.stretch,
                 correctGamma: self.gamma,

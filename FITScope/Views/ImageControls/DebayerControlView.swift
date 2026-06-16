@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import SwiftPixel
 import SwiftUI
 
 /// The debayer section of the controls panel: a picker choosing how a
@@ -118,6 +119,21 @@ public struct DebayerControlView: View
                     }
                 }
                 .labelsHidden()
+            }
+
+            GridRow
+            {
+                Text( "Algorithm" )
+                Picker( "Algorithm", selection: Binding(
+                    get: { self.adjustments.debayerAlgorithm },
+                    set: { self.adjustments.debayerAlgorithm = $0; self.reRender() }
+                ) )
+                {
+                    Text( "Bilinear" ).tag( Processors.Debayer.Mode.bilinear )
+                    Text( "VNG" ).tag( Processors.Debayer.Mode.vng )
+                }
+                .labelsHidden()
+                .disabled( self.mode == .none )
             }
         }
         .onChange( of: self.mode )
