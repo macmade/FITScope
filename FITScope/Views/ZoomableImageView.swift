@@ -92,6 +92,7 @@ public struct ZoomableImageView: NSViewRepresentable
 
         imageView.onHover = self.onHover
 
+        scrollView.contentView          = CenteringClipView()
         scrollView.documentView         = imageView
         scrollView.allowsMagnification  = true
         scrollView.minMagnification     = 0.05
@@ -103,7 +104,17 @@ public struct ZoomableImageView: NSViewRepresentable
 
         context.coordinator.scrollView = scrollView
         context.coordinator.observeMagnification()
-        context.coordinator.fit()
+
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector( Coordinator.clipBoundsChanged ),
+            name:     NSView.frameDidChangeNotification,
+            object:   scrollView.contentView
+        )
+
+        scrollView.contentView.postsFrameChangedNotifications = true
+
+        context.coordinator.fitWhenReady()
 
         return scrollView
     }
@@ -116,10 +127,16 @@ public struct ZoomableImageView: NSViewRepresentable
 
             if imageView.cgImage !== self.image
             {
-                imageView.cgImage = self.image
-                imageView.setFrameSize( NSSize( width: self.image.width, height: self.image.height ) )
+                let sizeChanged = imageView.cgImage.width != self.image.width || imageView.cgImage.height != self.image.height
+
+                imageView.cgImage      = self.image
                 imageView.needsDisplay = true
-                context.coordinator.fit()
+
+                if sizeChanged
+                {
+                    imageView.setFrameSize( NSSize( width: self.image.width, height: self.image.height ) )
+                    context.coordinator.refit()
+                }
             }
         }
 
@@ -138,9 +155,21 @@ public struct ZoomableImageView: NSViewRepresentable
         /// The token of the last command applied, to ignore repeats.
         private var lastCommandToken: Int?
 
+        /// Whether the image has been fitted to the viewport at least once.
+        private var hasFitted = false
+
+        /// The pixel dimensions last fitted to, used to detect a genuinely new
+        /// image so the view is only re-fitted then.
+        private var contentSize = CGSize.zero
+
         init( _ parent: ZoomableImageView )
         {
             self.parent = parent
+        }
+
+        deinit
+        {
+            NotificationCenter.default.removeObserver( self )
         }
 
         /// Subscribes to magnification changes to keep `zoom` in sync.
@@ -186,6 +215,34 @@ public struct ZoomableImageView: NSViewRepresentable
             }
         }
 
+        /// Fits now if the clip view already has a real size; otherwise the
+        /// first frame-change notification will trigger it.
+        func fitWhenReady()
+        {
+            if let clip = self.scrollView?.contentView, clip.bounds.width > 0, clip.bounds.height > 0
+            {
+                self.fit()
+            }
+        }
+
+        /// Re-fits when the clip view first gains a non-zero size, avoiding the
+        /// zero bounds seen during `makeNSView`.
+        @objc func clipBoundsChanged()
+        {
+            if self.hasFitted == false
+            {
+                self.fit()
+            }
+        }
+
+        /// Forces a fresh fit, used when a genuinely new image is displayed.
+        func refit()
+        {
+            self.hasFitted = false
+
+            self.fitWhenReady()
+        }
+
         /// Scales the image to fit the visible area and recenters.
         func fit()
         {
@@ -196,19 +253,23 @@ public struct ZoomableImageView: NSViewRepresentable
                 return
             }
 
-            let visible = scrollView.contentView.bounds.size
+            let visible = scrollView.contentView.frame.size
             let content = imageView.frame.size
+            let factor  = CanvasGeometry.fitFactor( content: content, visible: visible )
 
-            guard content.width > 0, content.height > 0, visible.width > 0, visible.height > 0
+            guard factor > 0
             else
             {
                 return
             }
 
-            let factor = min( visible.width / content.width, visible.height / content.height )
+            let clamped = max( scrollView.minMagnification, min( scrollView.maxMagnification, factor ) )
 
-            scrollView.magnification = factor
-            self.parent.zoom         = factor
+            scrollView.magnification = clamped
+            self.parent.zoom         = clamped
+            self.hasFitted           = true
+            self.contentSize         = content
+
             self.recenter()
         }
 
@@ -222,10 +283,10 @@ public struct ZoomableImageView: NSViewRepresentable
                 return
             }
 
-            let bounds = imageView.frame
-            let centerPoint = NSPoint( x: bounds.midX, y: bounds.midY )
+            let visibleDoc = scrollView.contentView.bounds.size
+            let origin     = CanvasGeometry.centeredOrigin( content: imageView.frame.size, visibleInDocumentSpace: visibleDoc )
 
-            imageView.scroll( NSPoint( x: centerPoint.x - scrollView.contentView.bounds.width / 2, y: centerPoint.y - scrollView.contentView.bounds.height / 2 ) )
+            imageView.scroll( origin )
         }
 
         /// Multiplies the current magnification by `factor`, around the center.
@@ -242,6 +303,38 @@ public struct ZoomableImageView: NSViewRepresentable
             scrollView.animator().magnification = target
             self.parent.zoom = target
         }
+    }
+}
+
+/// A clip view that centres the document view when it is smaller than the clip
+/// bounds, so a fitted image that does not fill the viewport sits in the middle
+/// rather than in a corner. When the document is larger than the clip, normal
+/// scrolling applies.
+final class CenteringClipView: NSClipView
+{
+    override func constrainBoundsRect( _ proposedBounds: NSRect ) -> NSRect
+    {
+        var rect = super.constrainBoundsRect( proposedBounds )
+
+        guard let documentView = self.documentView
+        else
+        {
+            return rect
+        }
+
+        let document = documentView.frame.size
+
+        if rect.size.width > document.width
+        {
+            rect.origin.x = ( document.width - rect.size.width ) / 2
+        }
+
+        if rect.size.height > document.height
+        {
+            rect.origin.y = ( document.height - rect.size.height ) / 2
+        }
+
+        return rect
     }
 }
 
