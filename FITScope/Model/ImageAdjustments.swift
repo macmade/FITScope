@@ -30,25 +30,28 @@ import SwiftPixel
 ///
 /// The controls bind to these values; the renderer reads a `Sendable`
 /// `ImageProcessor.Settings` snapshot from ``settings`` to build its pipeline
-/// configuration. The defaults reproduce the pipeline's previously hard-coded
-/// values, so the initial render is unchanged.
+/// configuration. The defaults render the file as captured: a linear min/max
+/// normalization so the data is visible, with no stretch, gamma or white
+/// balance, and debayering applied only when the file is a colour-filter array.
 @MainActor
 public final class ImageAdjustments: ObservableObject
 {
     /// How to normalize pixel values to the display range, or `nil` to skip
-    /// normalization.
+    /// normalization. Defaults to a linear min/max mapping, which the 8-bit
+    /// conversion requires to make the data visible.
     @Published public var normalize: Processors.Normalize.Mode? = .minMax
 
     /// The non-linear stretch applied to bring out faint detail, or `nil` for a
-    /// linear image.
-    @Published public var stretch: Processors.Stretch.Algorithm? = .log( 50 )
+    /// linear image. Off by default, so the image opens linear.
+    @Published public var stretch: Processors.Stretch.Algorithm? = nil
 
-    /// The gamma-correction exponent, or `nil` to leave gamma uncorrected.
-    @Published public var gamma: Double? = 1.8
+    /// The gamma-correction exponent, or `nil` to leave gamma uncorrected. Off
+    /// by default.
+    @Published public var gamma: Double? = nil
 
     /// How to white-balance the colour channels, or `nil` to leave them
-    /// untouched.
-    @Published public var whiteBalance: Processors.WhiteBalance.Mode? = .auto
+    /// untouched. Off by default.
+    @Published public var whiteBalance: Processors.WhiteBalance.Mode? = nil
 
     /// How to debayer a colour-filter-array image into RGB.
     @Published public var debayer: ImageProcessor.DebayerSelection = .auto

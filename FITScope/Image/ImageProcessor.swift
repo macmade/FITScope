@@ -75,30 +75,32 @@ public enum ImageProcessor
 
     /// The user-tunable pipeline parameters, as a `Sendable` snapshot.
     ///
-    /// The defaults reproduce the values the pipeline used when they were
-    /// hard-coded, so a render with default settings is unchanged.
+    /// The defaults render the file as captured: a linear min/max normalization
+    /// so the data is visible, with no stretch, gamma or white balance. Only
+    /// debayering (when the file is a colour-filter array) is applied.
     public struct Settings: Sendable, Equatable
     {
         /// How to normalize pixel values, or `nil` to skip normalization.
-        public var normalize:    Processors.Normalize.Mode?
+        public var normalize: Processors.Normalize.Mode?
 
         /// The non-linear stretch, or `nil` for a linear image.
-        public var stretch:      Processors.Stretch.Algorithm?
+        public var stretch: Processors.Stretch.Algorithm?
 
         /// The gamma-correction exponent, or `nil` to leave gamma uncorrected.
-        public var gamma:        Double?
+        public var gamma: Double?
 
         /// How to white-balance the channels, or `nil` to leave them untouched.
         public var whiteBalance: Processors.WhiteBalance.Mode?
 
         /// How to debayer a colour-filter-array image.
-        public var debayer:      DebayerSelection
+        public var debayer: DebayerSelection
 
         /// The demosaic algorithm used when debayering.
-        public var debayerMode:  Processors.Debayer.Mode
+        public var debayerMode: Processors.Debayer.Mode
 
-        /// Creates a settings snapshot. Defaults reproduce the pipeline's
-        /// formerly hard-coded values.
+        /// Creates a settings snapshot. The defaults render the file as
+        /// captured: linear normalization only, with no stretch, gamma or white
+        /// balance.
         ///
         /// - Parameters:
         ///   - normalize:    How to normalize pixel values.
@@ -107,7 +109,7 @@ public enum ImageProcessor
         ///   - whiteBalance: How to white-balance the channels.
         ///   - debayer:      How to debayer the image.
         ///   - debayerMode:  The demosaic algorithm used when debayering.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = .log( 50 ), gamma: Double? = 1.8, whiteBalance: Processors.WhiteBalance.Mode? = .auto, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear )
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear )
         {
             self.normalize    = normalize
             self.stretch      = stretch

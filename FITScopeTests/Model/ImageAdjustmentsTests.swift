@@ -38,7 +38,7 @@ struct ImageAdjustmentsTests
     {
         let adjustments = ImageAdjustments()
 
-        // The model's defaults equal the pipeline's previously hard-coded values.
+        // The model's defaults equal the settings' defaults.
         #expect( adjustments.settings == ImageProcessor.Settings() )
 
         let config = adjustments.settings.config( scale: 2, offset: 3, headerPattern: .rggb )
@@ -47,10 +47,11 @@ struct ImageAdjustmentsTests
         #expect( config.scale?.scale  == 2 )
         #expect( config.scale?.offset == 3 )
 
-        // The defaults reproduce the previously hard-coded pipeline values.
-        #expect( config.stretch      == .log( 50 ) )
-        #expect( config.correctGamma == 1.8 )
-        #expect( config.whiteBalance == .auto )
+        // The defaults render the file as captured: linear normalization only,
+        // with no stretch, gamma or white balance.
+        #expect( config.stretch      == nil )
+        #expect( config.correctGamma == nil )
+        #expect( config.whiteBalance == nil )
         #expect( config.normalize    == .minMax )
 
         // The default .auto debayer selection uses the header pattern.

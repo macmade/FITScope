@@ -64,9 +64,9 @@ public struct WhiteBalanceControlView: View
     /// Requests a debounced re-render after a change.
     private let reRender:    () -> Void
 
-    /// The selected white-balance mode. Seeded to mirror the pipeline's default
-    /// (`.auto`).
-    @State private var mode  = Mode.auto
+    /// The selected white-balance mode. `.none` by default, so the channels
+    /// open untouched.
+    @State private var mode  = Mode.none
 
     /// The manual red-channel gain.
     @State private var red   = WhiteBalanceControlView.defaultManualGain

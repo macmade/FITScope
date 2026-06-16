@@ -58,8 +58,8 @@ public struct StretchControlView: View
         }
     }
 
-    /// The seed for the logarithmic intensity slider, mirroring the pipeline's
-    /// default stretch of `.log( 50 )`.
+    /// The seed for the logarithmic intensity slider, applied the first time the
+    /// user switches to the logarithmic stretch.
     ///
     /// The seeds for all stretch sliders are chosen so each mode's first
     /// interaction yields a valid, non-degenerate render: the arcsinh factor is
@@ -83,9 +83,9 @@ public struct StretchControlView: View
     /// Requests a debounced re-render after a change.
     private let reRender:    () -> Void
 
-    /// The selected stretch mode. Seeded to mirror the pipeline's default
-    /// (`.log( 50 )`).
-    @State private var mode      = Mode.log
+    /// The selected stretch mode. `.none` by default, so the image opens
+    /// linear.
+    @State private var mode      = Mode.none
 
     /// The logarithmic intensity slider value.
     @State private var logN1     = StretchControlView.defaultLogIntensity

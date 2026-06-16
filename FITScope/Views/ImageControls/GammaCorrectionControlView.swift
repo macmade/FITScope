@@ -45,9 +45,9 @@ public struct GammaCorrectionControlView: View
     /// Requests a debounced re-render after a change.
     private let reRender:    () -> Void
 
-    /// Whether gamma correction is enabled. Seeded to mirror the pipeline's
-    /// default (enabled).
-    @State private var enabled = true
+    /// Whether gamma correction is enabled. Off by default, so the image opens
+    /// without gamma correction.
+    @State private var enabled = false
 
     /// The current gamma exponent. Seeded to the pipeline's default of `1.8`.
     @State private var gamma   = GammaCorrectionControlView.defaultGamma
