@@ -33,7 +33,6 @@ public class FITSImageRenderer: ObservableObject
     public struct Result
     {
         public let image:      CGImage
-        public let bytes:      [ UInt8 ]
         public let histogram:  Histogram
         public let statistics: HistogramStatistics
     }
@@ -152,7 +151,6 @@ public class FITSImageRenderer: ObservableObject
 
                         let result = Result(
                             image: render.image,
-                            bytes: render.bytes,
                             histogram: histogram,
                             statistics: statistics
                         )

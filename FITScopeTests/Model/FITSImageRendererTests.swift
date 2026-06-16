@@ -24,6 +24,7 @@
 
 import Foundation
 import SwiftFITS
+import SwiftPixel
 import Testing
 @testable import FITScope
 
@@ -77,7 +78,7 @@ struct FITSImageRendererTests
     }
 
     /// The render boundary accepts only Sendable values: a `RenderInput` built
-    /// off the main actor renders to the same bytes as a direct render of the
+    /// off the main actor renders the same histogram as a direct render of the
     /// same input. Pins behaviour across the Sendable-boundary refactor.
     @Test
     @MainActor
@@ -99,10 +100,13 @@ struct FITSImageRendererTests
 
         await renderer.render()
 
-        let rendered = try #require( renderer.result?.bytes )
-        let direct   = try ImageProcessor.render( data: input.data, properties: input.properties )
+        let result = try #require( renderer.result )
+        let direct = try ImageProcessor.render( data: input.data, properties: input.properties )
 
-        #expect( rendered == direct.bytes )
+        // The histogram is the observable product of the rendered bytes: equal
+        // histograms confirm the off-actor input rendered identically.
+        #expect( result.histogram.rgb       == SwiftPixel.Histogram( bytes: direct.bytes, channels: 3, mode: .rgb ) )
+        #expect( result.histogram.luminance == SwiftPixel.Histogram( bytes: direct.bytes, channels: 3, mode: .luminance ) )
     }
 
     /// Changing an adjustment and triggering the debounced re-render entry point
@@ -117,13 +121,13 @@ struct FITSImageRendererTests
 
         await renderer.render()
 
-        let original = try #require( renderer.result?.bytes )
+        let original = try #require( renderer.result?.histogram.rgb )
 
         renderer.adjustments.stretch = .log( 10 )
         renderer.scheduleReRender()
         await renderer.pendingRender?.value
 
-        let updated = try #require( renderer.result?.bytes )
+        let updated = try #require( renderer.result?.histogram.rgb )
 
         #expect( updated != original )
     }
