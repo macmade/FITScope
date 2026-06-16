@@ -1,0 +1,75 @@
+/*******************************************************************************
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2025, Jean-David Gadina - www.xs-labs.com
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the Software), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ ******************************************************************************/
+
+import AppKit
+
+/// Drives launch and system file-open behaviour: presents the Open panel at
+/// launch and opens files delivered by Finder or the Dock, routing them through
+/// the shared ``AppModel``.
+@MainActor
+public final class AppDelegate: NSObject, NSApplicationDelegate
+{
+    /// The shared app model, also injected into the SwiftUI environment.
+    public let appModel = AppModel()
+
+    /// Whether a Finder/Dock open already delivered files, so the launch panel
+    /// is not presented on top of a window that is opening.
+    private var didOpenFilesAtLaunch = false
+
+    /// On launch with no file arguments, present the Open panel; chosen files
+    /// open in a new window, Cancel leaves no window.
+    public func applicationDidFinishLaunching( _ notification: Notification )
+    {
+        DispatchQueue.main.async
+        {
+            guard self.didOpenFilesAtLaunch == false
+            else
+            {
+                return
+            }
+
+            let urls = self.appModel.runOpenPanel()
+
+            if urls.isEmpty == false
+            {
+                self.appModel.openWindowWithURLs?( urls )
+            }
+        }
+    }
+
+    /// Finder double-click / drop-on-Dock: open the files in the active window
+    /// or a new one.
+    public func application( _ application: NSApplication, open urls: [ URL ] )
+    {
+        self.didOpenFilesAtLaunch = true
+
+        self.appModel.openIntoActiveWindowOrNew( urls: urls )
+    }
+
+    /// Do not auto-create an untitled window when reopened with no windows.
+    public func applicationShouldHandleReopen( _ sender: NSApplication, hasVisibleWindows flag: Bool ) -> Bool
+    {
+        flag
+    }
+}

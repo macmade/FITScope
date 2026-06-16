@@ -36,9 +36,22 @@ public struct MainWindowView: View
     /// The current cursor readout shown in the status bar.
     @State private var readout = CursorReadout.empty
 
+    /// The shared app model used to route global open actions.
+    @EnvironmentObject private var appModel: AppModel
+
+    /// Whether the window is currently the key window.
+    @Environment( \.appearsActive ) private var appearsActive
+
+    /// The file URLs to load when the window first appears.
+    private let initialURLs: [ URL ]
+
     /// Creates the window view.
-    public init()
-    {}
+    ///
+    /// - Parameter initialURLs: The file URLs to load when the window appears.
+    public init( initialURLs: [ URL ] = [] )
+    {
+        self.initialURLs = initialURLs
+    }
 
     /// The view's content.
     public var body: some View
@@ -109,6 +122,17 @@ public struct MainWindowView: View
         .onChange( of: self.model.selectedFileID )
         {
             _, _ in self.readout = .empty
+        }
+        .onAppear
+        {
+            if self.model.files.isEmpty, self.initialURLs.isEmpty == false
+            {
+                self.model.open( urls: self.initialURLs )
+            }
+        }
+        .onChange( of: self.appearsActive, initial: true )
+        {
+            _, active in if active { self.appModel.activeModel = self.model }
         }
     }
 

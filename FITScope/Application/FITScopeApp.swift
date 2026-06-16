@@ -34,6 +34,9 @@ import UniformTypeIdentifiers
 @main
 public struct FITScopeApp: App
 {
+    /// Drives launch and system file-open behaviour.
+    @NSApplicationDelegateAdaptor( AppDelegate.self ) private var appDelegate
+
     /// Opens an auxiliary window by identifier, used to present the custom About
     /// window.
     @Environment( \.openWindow ) private var openWindow
@@ -45,13 +48,37 @@ public struct FITScopeApp: App
     /// The app's scene graph.
     public var body: some Scene
     {
-        WindowGroup
+        let _ = self.seedOpenWindowAction()
+
+        WindowGroup( for: [ URL ].self )
         {
-            MainWindowView()
+            $urls in MainWindowView( initialURLs: $urls.wrappedValue ?? [] )
+                .environmentObject( self.appDelegate.appModel )
         }
         .windowStyle( .titleBar )
+        .defaultLaunchBehavior( .suppressed )
         .commands
         {
+            CommandGroup( replacing: CommandGroupPlacement.newItem )
+            {
+                Button( "New Window" )
+                {
+                    openWindow( value: [ URL ]() )
+                }
+                .keyboardShortcut( "n", modifiers: .command )
+
+                Button( "Open\u{2026}" )
+                {
+                    let urls = self.appDelegate.appModel.runOpenPanel()
+
+                    if urls.isEmpty == false
+                    {
+                        self.appDelegate.appModel.openIntoActiveWindowOrNew( urls: urls )
+                    }
+                }
+                .keyboardShortcut( "o", modifiers: .command )
+            }
+
             CommandGroup( replacing: CommandGroupPlacement.appInfo )
             {
                 Button( action: { openWindow( id: "AboutWindow" ) } )
@@ -84,5 +111,19 @@ public struct FITScopeApp: App
         }
         .windowStyle( .hiddenTitleBar )
         .windowResizability( .contentSize )
+    }
+
+    /// Seeds the app model's new-window callback with the SwiftUI `openWindow`
+    /// action. This runs during `body` evaluation — at App scope, before the
+    /// delegate presents the launch Open panel — so opening files at launch can
+    /// create a window. A view's `onAppear` cannot bootstrap this, since no
+    /// window (and therefore no view) exists while the launch window is
+    /// suppressed.
+    private func seedOpenWindowAction()
+    {
+        if self.appDelegate.appModel.openWindowWithURLs == nil
+        {
+            self.appDelegate.appModel.openWindowWithURLs = { urls in self.openWindow( value: urls ) }
+        }
     }
 }
