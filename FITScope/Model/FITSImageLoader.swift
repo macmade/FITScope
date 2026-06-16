@@ -46,6 +46,15 @@ public class FITSImageLoader: ObservableObject
 
     public func load() async
     {
+        // Parsing the file is expensive and its result is immutable, so once an
+        // image has loaded successfully a repeated call (e.g. a re-triggered
+        // `.task`) is a no-op. A prior failure leaves `image` nil and still
+        // retries.
+        if self.image != nil, self.error == nil
+        {
+            return
+        }
+
         do
         {
             let result = try await withCheckedThrowingContinuation

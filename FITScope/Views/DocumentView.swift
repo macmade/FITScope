@@ -27,15 +27,15 @@ import SwiftUI
 
 public struct DocumentView: View
 {
-    @Binding        private var document: FITSDocument
-    @ObservedObject private var loader:   FITSImageLoader
+    @Binding     private var document: FITSDocument
+    @StateObject private var loader:   FITSImageLoader
 
     @Environment( \.openWindow ) private var openWindow
 
     public init( url: URL, document: Binding< FITSDocument > )
     {
         self._document = document
-        self.loader    = FITSImageLoader( url: url, document: document.wrappedValue )
+        self._loader   = StateObject( wrappedValue: FITSImageLoader( url: url, document: document.wrappedValue ) )
     }
 
     public var body: some View
