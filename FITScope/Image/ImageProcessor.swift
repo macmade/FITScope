@@ -262,4 +262,130 @@ public enum ImageProcessor
 
         return ( scale: scale, offset: offset )
     }
+
+    /// A decoded pixel sample: the scaled raw value and its fraction of the
+    /// sample format's full scale.
+    public struct PixelValue: Equatable
+    {
+        /// The raw value after `BSCALE`/`BZERO` scaling.
+        public let value:    Double
+
+        /// The value as a fraction (`0...1`) of the integer format's full scale,
+        /// or `nil` for floating-point formats which have no fixed full scale.
+        public let fraction: Double?
+    }
+
+    /// Decodes the raw sample at image coordinates `(x, y)` from the HDU bytes,
+    /// applying `BSCALE`/`BZERO`. Coordinates use a top-left origin matching the
+    /// displayed image (the pipeline does not flip rows).
+    ///
+    /// - Parameters:
+    ///   - data:       The image HDU's raw pixel bytes.
+    ///   - properties: The owning header's property snapshots.
+    ///   - x:          The zero-based column, left to right.
+    ///   - y:          The zero-based row, top to bottom.
+    /// - Returns: The decoded value, or `nil` for missing/unsupported geometry,
+    ///   out-of-bounds coordinates, or truncated data.
+    public static func rawPixelValue( data: Data, properties: [ FITSPropertySnapshot ], x: Int, y: Int ) -> PixelValue?
+    {
+        guard let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
+              let bitsPerPixel = BitsPerPixel.from( value: bitPix ),
+              let nAxis1       = properties.first( where: { $0.name == "NAXIS1" } )?.value.integer,
+              let nAxis2       = properties.first( where: { $0.name == "NAXIS2" } )?.value.integer,
+              let width        = Int( exactly: nAxis1 ), width > 0,
+              let height       = Int( exactly: nAxis2 ), height > 0,
+              x >= 0, x < width, y >= 0, y < height
+        else
+        {
+            return nil
+        }
+
+        let bytesPerSample = bitsPerPixel.size( numberOfPixels: 1 )
+        let sampleIndex    = y * width + x
+        let byteOffset     = sampleIndex * bytesPerSample
+
+        guard byteOffset + bytesPerSample <= data.count
+        else
+        {
+            return nil
+        }
+
+        // `data` may have a non-zero startIndex; index relative to it.
+        let start = data.startIndex + byteOffset
+        let raw   = Self.decodeSample( data: data, at: start, bitsPerPixel: bitsPerPixel )
+
+        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
+        let scaled            = raw * scale + offset
+        let fraction          = Self.fullScale( for: bitsPerPixel ).map { scaled / $0 }
+
+        return PixelValue( value: scaled, fraction: fraction )
+    }
+
+    /// Decodes a single big-endian sample at the given absolute data index.
+    private static func decodeSample( data: Data, at index: Data.Index, bitsPerPixel: BitsPerPixel ) -> Double
+    {
+        switch bitsPerPixel
+        {
+            case .uint8:
+
+                return Double( data[ index ] )
+
+            case .int16:
+
+                let raw = ( UInt16( data[ index ] ) << 8 ) | UInt16( data[ index + 1 ] )
+
+                return Double( Int16( bitPattern: raw ) )
+
+            case .int32:
+
+                var raw: UInt32 = 0
+
+                for offset in 0 ..< 4
+                {
+                    raw = ( raw << 8 ) | UInt32( data[ index + offset ] )
+                }
+
+                return Double( Int32( bitPattern: raw ) )
+
+            case .float32:
+
+                var raw: UInt32 = 0
+
+                for offset in 0 ..< 4
+                {
+                    raw = ( raw << 8 ) | UInt32( data[ index + offset ] )
+                }
+
+                return Double( Float32( bitPattern: raw ) )
+
+            case .float64:
+
+                var raw: UInt64 = 0
+
+                for offset in 0 ..< 8
+                {
+                    raw = ( raw << 8 ) | UInt64( data[ index + offset ] )
+                }
+
+                return Double( bitPattern: raw )
+
+            @unknown default:
+
+                return 0
+        }
+    }
+
+    /// The full-scale maximum used for the displayed fraction, or `nil` for
+    /// floating-point formats.
+    private static func fullScale( for bitsPerPixel: BitsPerPixel ) -> Double?
+    {
+        switch bitsPerPixel
+        {
+            case .uint8:             return 255
+            case .int16:             return 65535
+            case .int32:             return 4294967295
+            case .float32, .float64: return nil
+            @unknown default:        return nil
+        }
+    }
 }

@@ -33,6 +33,9 @@ public struct MainWindowView: View
     /// The window's open files and selection.
     @StateObject private var model = WindowModel()
 
+    /// The current cursor readout shown in the status bar.
+    @State private var readout = CursorReadout.empty
+
     /// Creates the window view.
     public init()
     {}
@@ -66,7 +69,10 @@ public struct MainWindowView: View
                     }
                     else if let file = self.model.selectedFile
                     {
-                        SelectedImagePane( file: file )
+                        ImageCanvasView( file: file )
+                        {
+                            readout in self.readout = readout
+                        }
                     }
                 }
             }
@@ -77,6 +83,8 @@ public struct MainWindowView: View
                     .navigationSplitViewColumnWidth( min: 240, ideal: 255, max: 360 )
             }
             .navigationSplitViewStyle( .balanced )
+
+            StatusBarView( status: "Ready", readout: self.readout, dimensions: self.dimensionsSummary )
         }
         .frame( minWidth: 900, minHeight: 600 )
         .navigationTitle( self.model.selectedFile?.displayName ?? Bundle.main.title )
@@ -88,6 +96,17 @@ public struct MainWindowView: View
         {
             providers in self.handleDrop( providers: providers )
         }
+        .onChange( of: self.model.selectedFileID )
+        {
+            _, _ in self.readout = .empty
+        }
+    }
+
+    /// The trailing dimensions / bit-depth summary for the selected file, or
+    /// `nil` when no image is loaded.
+    private var dimensionsSummary: String?
+    {
+        self.model.selectedFile?.image == nil ? nil : ""
     }
 
     /// Loads dropped file URLs into the window.

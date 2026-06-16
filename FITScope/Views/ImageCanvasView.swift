@@ -24,19 +24,30 @@
 
 import SwiftUI
 
-/// The center pane for one open file: triggers its load + render and shows the
-/// rendered image fit-to-pane, a loading indicator, or an error.
-public struct SelectedImagePane: View
+/// The center pane: triggers the file's load + render, hosts the zoomable
+/// canvas with its floating toolbar, and reports the cursor readout upward.
+public struct ImageCanvasView: View
 {
     /// The file to display.
     @ObservedObject private var file: OpenFile
 
-    /// Creates the pane.
-    ///
-    /// - Parameter file: The open file to display.
-    public init( file: OpenFile )
+    /// Reports the current cursor readout (or `.empty` off-image).
+    public let onReadout: ( CursorReadout ) -> Void
+
+    /// The current magnification.
+    @State private var zoom:    CGFloat = 1.0
+
+    /// The latest one-shot canvas command.
+    @State private var command  = CanvasCommand( kind: .fit, token: 0 )
+
+    /// A monotonically increasing token source for commands.
+    @State private var tokens   = 0
+
+    /// Creates the canvas view.
+    public init( file: OpenFile, onReadout: @escaping ( CursorReadout ) -> Void )
     {
-        self.file = file
+        self.file      = file
+        self.onReadout = onReadout
     }
 
     /// The view's content.
@@ -50,9 +61,21 @@ public struct SelectedImagePane: View
             {
                 if let result = image.renderer.result
                 {
-                    Image( result.image, scale: 1.0, label: Text( self.file.displayName ) )
-                        .resizable()
-                        .aspectRatio( contentMode: .fit )
+                    ZoomableImageView( image: result.image, zoom: self.$zoom, command: self.command )
+                    {
+                        coordinate in self.report( coordinate: coordinate )
+                    }
+                    .overlay( alignment: .bottom )
+                    {
+                        ImageToolbarView(
+                            zoom:       self.zoom,
+                            onFit:      { self.send( .fit ) },
+                            onRecenter: { self.send( .recenter ) },
+                            onZoomIn:   { self.send( .zoomIn ) },
+                            onZoomOut:  { self.send( .zoomOut ) }
+                        )
+                        .padding( .bottom, 16 )
+                    }
                 }
                 else if let error = image.renderer.error
                 {
@@ -78,5 +101,29 @@ public struct SelectedImagePane: View
             await self.file.load()
             await self.file.image?.renderer.render()
         }
+    }
+
+    /// Issues a one-shot canvas command with a fresh token.
+    private func send( _ kind: CanvasCommand.Kind )
+    {
+        self.tokens  += 1
+        self.command  = CanvasCommand( kind: kind, token: self.tokens )
+    }
+
+    /// Decodes the value under the cursor and reports a formatted readout.
+    private func report( coordinate: ( x: Int, y: Int )? )
+    {
+        guard let coordinate,
+              let input = try? self.file.image?.renderer.renderInputSnapshot()
+        else
+        {
+            self.onReadout( .empty )
+
+            return
+        }
+
+        let pixel = ImageProcessor.rawPixelValue( data: input.data, properties: input.properties, x: coordinate.x, y: coordinate.y )
+
+        self.onReadout( CursorReadout( x: coordinate.x, y: coordinate.y, value: pixel?.value, fraction: pixel?.fraction ) )
     }
 }

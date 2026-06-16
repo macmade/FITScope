@@ -295,4 +295,14 @@ public class FITSImageRenderer: ObservableObject
             await self?.render()
         }
     }
+
+    /// Returns the render input (HDU bytes and header snapshots) for read-only
+    /// uses such as decoding the raw value under the cursor.
+    ///
+    /// - Returns: The render input.
+    /// - Throws: The extraction error captured at construction, if any.
+    public func renderInputSnapshot() throws -> RenderInput
+    {
+        try self.input.get()
+    }
 }
