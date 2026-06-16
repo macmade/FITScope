@@ -490,11 +490,18 @@
 				0579B61F2DF249A9002FDD47 /* FITSImageProperty.swift */,
 				0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */,
 				05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */,
-				05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */,
 				0579B61D2DF24998002FDD47 /* FITSImageSection.swift */,
-				05C4BD752DF2E62200326B69 /* PreviewHelper.swift */,
 			);
 			path = Model;
+			sourceTree = "<group>";
+		};
+		05FB1000000000000000D001 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */,
+				05C4BD752DF2E62200326B69 /* PreviewHelper.swift */,
+			);
+			path = Helpers;
 			sourceTree = "<group>";
 		};
 		0579B6242DF2C120002FDD47 /* Preview Content */ = {
@@ -510,11 +517,12 @@
 		0587FF0D2DDE64DF005DECEF /* FITScope */ = {
 			isa = PBXGroup;
 			children = (
-				0579B6132DF23D79002FDD47 /* Model */,
-				05D710C82DF200E300CE32E3 /* Views */,
 				05D710C52DF2007D00CE32E3 /* Application */,
 				05206B8A2DE0A0D900550A87 /* Extensions */,
+				05FB1000000000000000D001 /* Helpers */,
 				05206B8D2DE0C41000550A87 /* Image */,
+				0579B6132DF23D79002FDD47 /* Model */,
+				05D710C82DF200E300CE32E3 /* Views */,
 				056E5C492DDF1180003254C7 /* Supporting Files */,
 				0579B6242DF2C120002FDD47 /* Preview Content */,
 			);
