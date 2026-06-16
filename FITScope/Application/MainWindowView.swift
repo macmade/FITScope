@@ -93,9 +93,9 @@ public struct MainWindowView: View
             {
                 Group
                 {
-                    if let image = self.model.selectedFile?.image
+                    if let file = self.model.selectedFile
                     {
-                        InspectorView( image: image )
+                        InspectorColumnView( file: file )
                     }
                     else
                     {

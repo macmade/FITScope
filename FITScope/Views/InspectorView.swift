@@ -47,65 +47,77 @@ public struct InspectorView: View
         {
             VStack( spacing: 0 )
             {
-                if let result = self.image.renderer.result
+                if self.image.renderer.error != nil
                 {
-                    InspectorSectionView( "Histogram" )
+                    self.errorPlaceholder
+                }
+                else
+                {
+                    if let result = self.image.renderer.result
                     {
-                        HistogramControlView( histogram: result.histogram, statistics: result.statistics )
+                        InspectorSectionView( "Histogram" )
+                        {
+                            HistogramControlView( histogram: result.histogram, statistics: result.statistics )
+                        }
+
+                        Divider()
+                    }
+
+                    InspectorSectionView( "Stretch" )
+                    {
+                        StretchControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()
 
-                    InspectorSectionView( "Statistics" )
+                    InspectorSectionView( "Gamma" )
                     {
-                        StatisticsView( statistics: result.statistics )
+                        GammaCorrectionControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()
+
+                    InspectorSectionView( "White Balance" )
+                    {
+                        WhiteBalanceControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                    }
+
+                    Divider()
+
+                    InspectorSectionView( "Debayer" )
+                    {
+                        DebayerControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                    }
+
+                    Divider()
+
+                    InspectorSectionView( "Color" )
+                    {
+                        Text( "Color map, invert and high contrast are not yet available." )
+                            .font( .system( size: 10 ) )
+                            .foregroundStyle( .tertiary )
+                            .frame( maxWidth: .infinity, alignment: .leading )
+                            .padding( 10 )
+                            .background( RoundedRectangle( cornerRadius: 8 ).strokeBorder( .quaternary, style: StrokeStyle( lineWidth: 1, dash: [ 3 ] ) ) )
+                    }
+
+                    Divider()
+
+                    Button( action: self.reset )
+                    {
+                        Label( "Reset View", systemImage: "arrow.counterclockwise" )
+                            .frame( maxWidth: .infinity )
+                    }
+                    .padding( 14 )
                 }
-
-                InspectorSectionView( "Display Settings" )
-                {
-                    StretchControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
-                    GammaCorrectionControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
-                }
-
-                Divider()
-
-                InspectorSectionView( "White Balance" )
-                {
-                    WhiteBalanceControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
-                }
-
-                Divider()
-
-                InspectorSectionView( "Debayer" )
-                {
-                    DebayerControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
-                }
-
-                Divider()
-
-                InspectorSectionView( "Color" )
-                {
-                    Text( "Color map, invert and high contrast are not yet available." )
-                        .font( .system( size: 10 ) )
-                        .foregroundStyle( .tertiary )
-                        .frame( maxWidth: .infinity, alignment: .leading )
-                        .padding( 10 )
-                        .background( RoundedRectangle( cornerRadius: 8 ).strokeBorder( .quaternary, style: StrokeStyle( lineWidth: 1, dash: [ 3 ] ) ) )
-                }
-
-                Divider()
-
-                Button( action: self.reset )
-                {
-                    Label( "Reset View", systemImage: "arrow.counterclockwise" )
-                        .frame( maxWidth: .infinity )
-                }
-                .padding( 14 )
             }
         }
+    }
+
+    /// Shown when the image failed to render: no controls, just a note.
+    private var errorPlaceholder: some View
+    {
+        InspectorPlaceholderView()
     }
 
     /// Requests a debounced re-render after an adjustment change.
@@ -127,5 +139,22 @@ public struct InspectorView: View
         current.debayer      = defaults.debayer
 
         self.reRender()
+    }
+}
+
+#Preview
+{
+    if let image = PreviewHelper.image( file: .M42 )
+    {
+        InspectorView( image: image )
+            .frame( width: 255 )
+            .task
+            {
+                await image.renderer.render()
+            }
+    }
+    else
+    {
+        Text( "Sample image unavailable." )
     }
 }

@@ -22,32 +22,32 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Foundation
-import Testing
-@testable import FITScope
+import SwiftUI
 
-/// Tests for statistics value formatting used by `StatisticsView`.
-@Suite( "StatisticsView" )
-struct StatisticsViewTests
+/// The inspector content shown when a file has no adjustable image — because it
+/// failed to load or to render.
+public struct InspectorPlaceholderView: View
 {
-    @Test
-    func formatsMeanWithTwoDecimals() throws
+    /// Creates the placeholder.
+    public init()
+    {}
+
+    /// The view's content.
+    public var body: some View
     {
-        #expect( StatisticsFormat.decimal( 567.321 ) == "567.32" )
+        InspectorSectionView( "Adjustments" )
+        {
+            Text( "No adjustments — this file couldn't be loaded or rendered." )
+                .font( .system( size: 11 ) )
+                .foregroundStyle( .secondary )
+                .frame( maxWidth: .infinity, alignment: .leading )
+        }
     }
+}
 
-    @Test
-    func formatsPixelCountWithGrouping() throws
-    {
-        // The grouping separator is locale-dependent ("," on en_US, "'" on
-        // de_CH, etc.), so assert the digits are grouped in threes using the
-        // current locale's separator rather than hard-coding one.
-        let formatter = NumberFormatter()
-
-        formatter.numberStyle = .decimal
-
-        let separator = formatter.groupingSeparator ?? ","
-
-        #expect( StatisticsFormat.integerGrouped( 25958400 ) == "25\( separator )958\( separator )400" )
-    }
+#Preview
+{
+    InspectorPlaceholderView()
+        .frame( width: 255 )
+        .padding()
 }

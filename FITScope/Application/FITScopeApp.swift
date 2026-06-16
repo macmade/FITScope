@@ -50,9 +50,9 @@ public struct FITScopeApp: App
     {
         let _ = self.seedOpenWindowAction()
 
-        WindowGroup( for: [ URL ].self )
+        WindowGroup( for: WindowContent.self )
         {
-            $urls in MainWindowView( initialURLs: $urls.wrappedValue ?? [] )
+            $content in MainWindowView( initialURLs: $content.wrappedValue?.urls ?? [] )
                 .environmentObject( self.appDelegate.appModel )
         }
         .windowStyle( .titleBar )
@@ -63,7 +63,7 @@ public struct FITScopeApp: App
             {
                 Button( "New Window" )
                 {
-                    openWindow( value: [ URL ]() )
+                    openWindow( value: WindowContent() )
                 }
                 .keyboardShortcut( "n", modifiers: .command )
 
@@ -123,7 +123,7 @@ public struct FITScopeApp: App
     {
         if self.appDelegate.appModel.openWindowWithURLs == nil
         {
-            self.appDelegate.appModel.openWindowWithURLs = { urls in self.openWindow( value: urls ) }
+            self.appDelegate.appModel.openWindowWithURLs = { urls in self.openWindow( value: WindowContent( urls: urls ) ) }
         }
     }
 }

@@ -116,6 +116,47 @@ public enum PreviewHelper
         return FITSImageInfo( url: url, file: file )
     }
 
+    /// Builds a ``FITSImage`` (header info plus a renderer) for the given sample
+    /// file, for previewing views that take a loaded image. The renderer has not
+    /// rendered yet; call `render()` from the preview's `task` to populate its
+    /// histogram and statistics.
+    ///
+    /// - Parameter file: The sample file to build an image for.
+    /// - Returns: The image, or `nil` if the file is missing or unparsable.
+    @MainActor
+    public static func image( file: TestFile ) -> FITSImage?
+    {
+        guard let url      = self.url( file: file ),
+              let fitsFile = self.file( file: file )
+        else
+        {
+            return nil
+        }
+
+        let info     = FITSImageInfo( url: url, file: fitsFile )
+        let renderer = FITSImageRenderer( file: fitsFile )
+
+        return FITSImage( info: info, renderer: renderer )
+    }
+
+    /// Builds an ``OpenFile`` for the given sample file, for previewing views
+    /// that observe a file as it loads. Call `load()` from the preview's `task`
+    /// to populate its image.
+    ///
+    /// - Parameter file: The sample file to open.
+    /// - Returns: The open file, or `nil` if the sample is missing.
+    @MainActor
+    public static func openFile( file: TestFile ) -> OpenFile?
+    {
+        guard let url = self.url( file: file )
+        else
+        {
+            return nil
+        }
+
+        return OpenFile( url: url )
+    }
+
     /// The first metadata section of the given sample file.
     ///
     /// - Parameter file: The sample file to inspect.

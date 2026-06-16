@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftPixel
-import SwiftUI
+import Foundation
 
 /// Pure formatting helpers for statistics values.
 public enum StatisticsFormat
@@ -43,59 +42,4 @@ public enum StatisticsFormat
 
         return formatter.string( from: NSNumber( value: value ) ) ?? String( value )
     }
-}
-
-/// The statistics section: mean, median, standard deviation, min, max and pixel
-/// count for the luminance channel of the rendered image.
-public struct StatisticsView: View
-{
-    /// The per-channel statistics; the luminance channel is shown.
-    public let statistics: FITSImageRenderer.HistogramStatistics
-
-    /// Creates the statistics view.
-    ///
-    /// - Parameter statistics: The statistics to display.
-    public init( statistics: FITSImageRenderer.HistogramStatistics )
-    {
-        self.statistics = statistics
-    }
-
-    /// The view's content.
-    public var body: some View
-    {
-        let stats = self.statistics.luminance
-
-        VStack( spacing: 5 )
-        {
-            self.row( "Mean",    StatisticsFormat.decimal( stats.mean ) )
-            self.row( "Median",  String( stats.median ) )
-            self.row( "Std Dev", StatisticsFormat.decimal( stats.stdDev ) )
-            self.row( "Min",     String( stats.min ) )
-            self.row( "Max",     String( stats.max ) )
-            self.row( "Pixels",  StatisticsFormat.integerGrouped( stats.count ) )
-        }
-    }
-
-    /// A label/value row.
-    private func row( _ label: String, _ value: String ) -> some View
-    {
-        HStack
-        {
-            Text( label )
-                .foregroundStyle( .secondary )
-
-            Spacer()
-
-            Text( value )
-                .font( .system( .body, design: .monospaced ) )
-        }
-        .font( .system( size: 11 ) )
-    }
-}
-
-#Preview
-{
-    StatisticsView( statistics: PreviewHelper.statistics() )
-        .frame( width: 255 )
-        .padding()
 }
