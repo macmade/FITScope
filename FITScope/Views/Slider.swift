@@ -50,17 +50,35 @@ public struct Slider: View
         self.onChange     = onChange
     }
 
+    /// The knob's normalized position in `0...1` for `value` within the bounds.
+    ///
+    /// Equal bounds give a zero range; the position pins to `0` rather than
+    /// dividing into `NaN`, which would leave the knob unplaceable.
+    static func normalizedPosition( value: Double, minimumValue: Double, maximumValue: Double ) -> Double
+    {
+        let range = maximumValue - minimumValue
+
+        guard range > 0
+        else
+        {
+            return 0
+        }
+
+        let clamped = min( max( value, minimumValue ), maximumValue )
+
+        return ( clamped - minimumValue ) / range
+    }
+
     public var body: some View
     {
         GeometryReader
         {
             geometry in
 
-            let clampedValue = min( max( self.value, self.minimumValue ), self.maximumValue )
             let totalWidth   = geometry.size.width
             let knobSize     = geometry.size.height
             let range        = self.maximumValue - self.minimumValue
-            let normalized   = ( clampedValue - self.minimumValue ) / range
+            let normalized   = Self.normalizedPosition( value: self.value, minimumValue: self.minimumValue, maximumValue: self.maximumValue )
             let offset       = normalized * ( totalWidth - knobSize )
             let fillWidth    = offset + knobSize
             let fillColor    = self.disabled ? Color.gray.opacity( 0.3 ) : Color.white

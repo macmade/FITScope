@@ -168,9 +168,18 @@ public enum PreviewHelper
         }
     }
 
-    private static func weightedRandom( from weights: [ Int ] ) -> Int
+    static func weightedRandom( from weights: [ Int ] ) -> Int
     {
-        let total     = weights.reduce( 0, + )
+        let total = weights.reduce( 0, + )
+
+        // An all-zero (or empty) weight set has no bin to pick; return the first
+        // index rather than trapping on an empty `Int.random` range.
+        guard total > 0
+        else
+        {
+            return 0
+        }
+
         let threshold = Int.random( in: 0 ..< total )
         var sum       = 0
 

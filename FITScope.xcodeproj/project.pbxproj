@@ -36,6 +36,8 @@
 		05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A003 /* ImageProcessorTests.swift */; };
 		05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A004 /* FITSImageRendererTests.swift */; };
 		05FB1000000000000000B00B /* FITSImageLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A00B /* FITSImageLoaderTests.swift */; };
+		05FB1000000000000000B00C /* SliderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A00C /* SliderTests.swift */; };
+		05FB1000000000000000B00D /* PreviewHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A00D /* PreviewHelperTests.swift */; };
 		05FB1000000000000000B005 /* ImageAdjustmentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */; };
 		05FB1000000000000000B006 /* StretchControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A006 /* StretchControlViewTests.swift */; };
 		05FB1000000000000000B007 /* GammaCorrectionControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A007 /* GammaCorrectionControlViewTests.swift */; };
@@ -198,6 +200,8 @@
 		05FB1000000000000000A003 /* ImageProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessorTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A004 /* FITSImageRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageRendererTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A00B /* FITSImageLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageLoaderTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A00C /* SliderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A00D /* PreviewHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewHelperTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageAdjustmentsTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A006 /* StretchControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchControlViewTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A007 /* GammaCorrectionControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GammaCorrectionControlViewTests.swift; sourceTree = "<group>"; };
@@ -548,6 +552,7 @@
 			isa = PBXGroup;
 			children = (
 				05FB1000000000000000A002 /* FITSTestData.swift */,
+				05FB1000000000000000A00D /* PreviewHelperTests.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -574,6 +579,7 @@
 			isa = PBXGroup;
 			children = (
 				05FB1000000000000000C005 /* ImageControls */,
+				05FB1000000000000000A00C /* SliderTests.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -860,6 +866,8 @@
 				05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */,
 				05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */,
 				05FB1000000000000000B00B /* FITSImageLoaderTests.swift in Sources */,
+				05FB1000000000000000B00C /* SliderTests.swift in Sources */,
+				05FB1000000000000000B00D /* PreviewHelperTests.swift in Sources */,
 				05FB1000000000000000B005 /* ImageAdjustmentsTests.swift in Sources */,
 				05FB1000000000000000B006 /* StretchControlViewTests.swift in Sources */,
 				05FB1000000000000000B007 /* GammaCorrectionControlViewTests.swift in Sources */,
