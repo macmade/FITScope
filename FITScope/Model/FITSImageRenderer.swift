@@ -81,6 +81,10 @@ public class FITSImageRenderer: ObservableObject
 
     private( set ) var pendingRender: Task< Void, Never >?
 
+    /// Monotonic render counter. Each ``render()`` claims the next value at
+    /// start; only the most recently claimed render may commit its outcome.
+    private var currentRenderGeneration = 0
+
     public init( input: Swift.Result< RenderInput, any Error > )
     {
         self.input = input
@@ -124,6 +128,8 @@ public class FITSImageRenderer: ObservableObject
 
     public func render() async
     {
+        let generation = self.nextRenderGeneration()
+
         do
         {
             let input    = try self.input.get()
@@ -164,19 +170,47 @@ public class FITSImageRenderer: ObservableObject
                 }
             }
 
-            await MainActor.run
-            {
-                self.result = result
-                self.error  = nil
-            }
+            self.commit( .success( result ), generation: generation )
         }
         catch
         {
-            // Surface the failure without discarding the last good render: the
-            // image and its controls must survive a bad parameter so the user
-            // can adjust away from it. `result` and `error` are independent
-            // states — "there is an image" and "the last render failed".
-            self.error = error
+            self.commit( .failure( error ), generation: generation )
+        }
+    }
+
+    /// Claims and returns the next render generation. Only the most recently
+    /// claimed generation may ``commit(_:generation:)`` its outcome; earlier
+    /// in-flight renders are superseded.
+    func nextRenderGeneration() -> Int
+    {
+        self.currentRenderGeneration += 1
+
+        return self.currentRenderGeneration
+    }
+
+    /// Commits a render outcome, but only while its generation is still the
+    /// latest, so a superseded render — success or failure — cannot overwrite a
+    /// newer result or resurrect a cleared error.
+    ///
+    /// On success the result is set and the error cleared; on failure the error
+    /// is set and the last good result retained, so the image and its controls
+    /// survive a bad parameter while the user adjusts away from it.
+    func commit( _ outcome: Swift.Result< Result, any Error >, generation: Int )
+    {
+        guard generation == self.currentRenderGeneration
+        else
+        {
+            return
+        }
+
+        switch outcome
+        {
+            case .success( let result ):
+                self.result = result
+                self.error  = nil
+
+            case .failure( let error ):
+                self.error = error
         }
     }
 

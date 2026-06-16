@@ -196,4 +196,64 @@ struct FITSImageRendererTests
         #expect( renderer.result == nil )
         #expect( renderer.error  != nil )
     }
+
+    /// When two renders are in flight, the later-started one wins regardless of
+    /// which commits last: a stale (superseded) success must not overwrite the
+    /// newer result.
+    @Test
+    @MainActor
+    func laterStartedRenderWinsRegardlessOfCommitOrder() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        let older = try #require( renderer.result )
+
+        renderer.adjustments.stretch = .log( 10 )
+
+        await renderer.render()
+
+        let newer = try #require( renderer.result )
+
+        // Replay two in-flight renders finishing out of order: the newer
+        // generation commits first, then the older (now stale) one commits.
+        let olderGeneration = renderer.nextRenderGeneration()
+        let newerGeneration = renderer.nextRenderGeneration()
+
+        renderer.commit( .success( newer ), generation: newerGeneration )
+        renderer.commit( .success( older ), generation: olderGeneration )
+
+        #expect( renderer.result?.image === newer.image, "the later-started render must win" )
+    }
+
+    /// A stale render completing after a newer one has started must neither
+    /// overwrite the newer result nor resurrect a cleared error.
+    @Test
+    @MainActor
+    func staleRenderDoesNotClobberNewerResult() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        let good = try #require( renderer.result )
+
+        #expect( renderer.error == nil )
+
+        // A newer render starts, superseding the one that produced `good` ...
+        let newerGeneration = renderer.nextRenderGeneration()
+
+        // ... so that earlier render failing late must be dropped.
+        renderer.commit( .failure( StaleError() ), generation: newerGeneration - 1 )
+
+        #expect( renderer.result?.image === good.image, "a stale failure must not drop the result" )
+        #expect( renderer.error == nil,                 "a stale failure must not resurrect an error" )
+    }
+
+    private struct StaleError: Error {}
 }
