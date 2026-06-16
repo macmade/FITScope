@@ -1,0 +1,128 @@
+/*******************************************************************************
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2025, Jean-David Gadina - www.xs-labs.com
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the Software), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ ******************************************************************************/
+
+import SwiftUI
+import UniformTypeIdentifiers
+
+/// The root view of a window: a three-column layout (files + image info |
+/// image canvas | inspector) above a full-width status bar. Owns the window's
+/// ``WindowModel``.
+public struct MainWindowView: View
+{
+    /// The window's open files and selection.
+    @StateObject private var model = WindowModel()
+
+    /// Creates the window view.
+    public init()
+    {}
+
+    /// The view's content.
+    public var body: some View
+    {
+        VStack( spacing: 0 )
+        {
+            NavigationSplitView
+            {
+                FilesSidebarView( model: self.model )
+                    .navigationSplitViewColumnWidth( min: 200, ideal: 215, max: 320 )
+            }
+            content:
+            {
+                Group
+                {
+                    if self.model.selectedFile == nil
+                    {
+                        ContentUnavailableView
+                        {
+                            Label( "No File Open", systemImage: "photo.on.rectangle.angled" )
+                        }
+                        description:
+                        {
+                            Text( "Open a FITS file, or drag one here." )
+                        }
+                        .frame( maxWidth: .infinity, maxHeight: .infinity )
+                        .background( .black )
+                    }
+                    else if let file = self.model.selectedFile
+                    {
+                        SelectedImagePane( file: file )
+                    }
+                }
+            }
+            detail:
+            {
+                Color.clear
+                    .frame( maxWidth: .infinity, maxHeight: .infinity )
+                    .navigationSplitViewColumnWidth( min: 240, ideal: 255, max: 360 )
+            }
+            .navigationSplitViewStyle( .balanced )
+        }
+        .frame( minWidth: 900, minHeight: 600 )
+        .navigationTitle( self.model.selectedFile?.displayName ?? Bundle.main.title )
+        .onOpenURL
+        {
+            url in self.model.open( urls: [ url ] )
+        }
+        .onDrop( of: [ .fileURL ], isTargeted: nil )
+        {
+            providers in self.handleDrop( providers: providers )
+        }
+    }
+
+    /// Loads dropped file URLs into the window.
+    ///
+    /// - Parameter providers: The dropped item providers.
+    /// - Returns: `true` when at least one file URL was accepted.
+    private func handleDrop( providers: [ NSItemProvider ] ) -> Bool
+    {
+        let fitsProviders = providers.filter { $0.hasItemConformingToTypeIdentifier( UTType.fileURL.identifier ) }
+
+        guard fitsProviders.isEmpty == false
+        else
+        {
+            return false
+        }
+
+        for provider in fitsProviders
+        {
+            _ = provider.loadObject( ofClass: URL.self )
+            {
+                url, _ in
+
+                guard let url, url.pathExtension.lowercased() == "fits"
+                else
+                {
+                    return
+                }
+
+                Task
+                {
+                    @MainActor in self.model.open( urls: [ url ] )
+                }
+            }
+        }
+
+        return true
+    }
+}

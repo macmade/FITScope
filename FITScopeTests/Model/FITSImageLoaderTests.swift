@@ -76,6 +76,22 @@ struct FITSImageLoaderTests
         #expect( image.renderer.result != nil, "the loaded image's renderer must render" )
     }
 
+    /// A loader created from a URL alone reads the file's bytes itself and
+    /// produces a renderable image, without a pre-read document.
+    @Test
+    @MainActor
+    func loadFromURLProducesRenderableImage() async throws
+    {
+        let url    = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let loader = FITSImageLoader( url: url )
+
+        await loader.load()
+
+        let image = try #require( loader.image )
+
+        #expect( image.info.sections.isEmpty == false, "the loaded image must carry parsed header info" )
+    }
+
     /// A failed load leaves no image, so the idempotency guard never
     /// short-circuits a failed loader: a subsequent `load()` retries rather than
     /// being blocked by the failure state.

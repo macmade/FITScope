@@ -46,8 +46,9 @@ public class FITSImageLoader: ObservableObject
     /// The URL the document was loaded from, retained for metadata.
     private let url:           URL
 
-    /// The document whose bytes are parsed.
-    private let document:      FITSDocument
+    /// The document whose bytes are parsed, when the loader was created from a
+    /// pre-read document. `nil` when the loader reads the URL itself.
+    private let document:      FITSDocument?
 
     /// Forwards the loaded image's change notifications to this object's
     /// observers.
@@ -62,6 +63,16 @@ public class FITSImageLoader: ObservableObject
     {
         self.url      = url
         self.document = document
+        self.image    = nil
+    }
+
+    /// Creates a loader that reads its own bytes from the given URL when loaded.
+    ///
+    /// - Parameter url: The URL to read and parse.
+    public init( url: URL )
+    {
+        self.url      = url
+        self.document = nil
         self.image    = nil
     }
 
@@ -94,7 +105,28 @@ public class FITSImageLoader: ObservableObject
                         // Sendable info and render input cross back to the main
                         // actor, so the non-Sendable file is released when this
                         // closure returns rather than living for the window.
-                        let file        = try FITSFile( data: self.document.data, options: .lenient )
+                        let data: Data
+
+                        if let document = self.document
+                        {
+                            data = document.data
+                        }
+                        else
+                        {
+                            let didAccess = self.url.startAccessingSecurityScopedResource()
+
+                            defer
+                            {
+                                if didAccess
+                                {
+                                    self.url.stopAccessingSecurityScopedResource()
+                                }
+                            }
+
+                            data = try Data( contentsOf: self.url )
+                        }
+
+                        let file        = try FITSFile( data: data, options: .lenient )
                         let info        = FITSImageInfo( url: self.url, file: file )
                         let renderInput = Swift.Result { try FITSImageRenderer.renderInput( from: file.sections ) }
 

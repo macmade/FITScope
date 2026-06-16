@@ -45,17 +45,9 @@ public struct FITScopeApp: App
     /// The app's scene graph.
     public var body: some Scene
     {
-        DocumentGroup( viewing: FITSDocument.self )
+        WindowGroup
         {
-            if let url = $0.fileURL
-            {
-                DocumentView( url: url, document: $0.$document )
-            }
-            else
-            {
-                ErrorView( title: "No document loaded", message: nil )
-                    .padding()
-            }
+            MainWindowView()
         }
         .windowStyle( .titleBar )
         .commands
