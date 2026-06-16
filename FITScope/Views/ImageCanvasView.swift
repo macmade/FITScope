@@ -84,11 +84,12 @@ public struct ImageCanvasView: View
                         self.floatingBar
                         {
                             ImageToolbarView(
-                                zoom:       self.zoom,
-                                onFit:      { self.send( .fit ) },
-                                onRecenter: { self.send( .recenter ) },
-                                onZoomIn:   { self.send( .zoomIn ) },
-                                onZoomOut:  { self.send( .zoomOut ) }
+                                zoom:         self.zoom,
+                                onFit:        { self.send( .fit ) },
+                                onActualSize: { self.send( .actualSize ) },
+                                onRecenter:   { self.send( .recenter ) },
+                                onZoomIn:     { self.send( .zoomIn ) },
+                                onZoomOut:    { self.send( .zoomOut ) }
                             )
                             .padding( .top, 16 )
                         }

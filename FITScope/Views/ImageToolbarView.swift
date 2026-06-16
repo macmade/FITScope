@@ -24,34 +24,37 @@
 
 import SwiftUI
 
-/// The floating toolbar over the image canvas: pan (always-on placeholder),
-/// recenter, zoom out / percent / zoom in, and fit. Region-select and measure
-/// tools are intentionally omitted in this iteration.
+/// The floating toolbar over the image canvas: recenter, zoom out / percent /
+/// zoom in, fit to window, and actual size (100%).
 public struct ImageToolbarView: View
 {
     /// The current magnification (1.0 == 100%), shown as a percentage.
-    public let zoom:       CGFloat
+    public let zoom:         CGFloat
 
     /// Called to request a fit.
-    public let onFit:      () -> Void
+    public let onFit:        () -> Void
+
+    /// Called to request showing the image at actual size (100%).
+    public let onActualSize: () -> Void
 
     /// Called to request a recenter.
-    public let onRecenter: () -> Void
+    public let onRecenter:   () -> Void
 
     /// Called to request a zoom-in step.
-    public let onZoomIn:   () -> Void
+    public let onZoomIn:     () -> Void
 
     /// Called to request a zoom-out step.
-    public let onZoomOut:  () -> Void
+    public let onZoomOut:    () -> Void
 
     /// Creates the toolbar.
-    public init( zoom: CGFloat, onFit: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void )
+    public init( zoom: CGFloat, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void )
     {
-        self.zoom       = zoom
-        self.onFit      = onFit
-        self.onRecenter = onRecenter
-        self.onZoomIn   = onZoomIn
-        self.onZoomOut  = onZoomOut
+        self.zoom         = zoom
+        self.onFit        = onFit
+        self.onActualSize = onActualSize
+        self.onRecenter   = onRecenter
+        self.onZoomIn     = onZoomIn
+        self.onZoomOut    = onZoomOut
     }
 
     /// The view's content.
@@ -59,46 +62,22 @@ public struct ImageToolbarView: View
     {
         HStack( spacing: 4 )
         {
-            Image( systemName: "hand.raised.fill" )
-                .frame( width: 26, height: 24 )
-                .background( Color.accentColor, in: RoundedRectangle( cornerRadius: 7 ) )
-                .foregroundStyle( .white )
-
-            Button( action: self.onRecenter )
-            {
-                Image( systemName: "scope" )
-                    .frame( width: 26, height: 24 )
-                    .contentShape( Rectangle() )
-            }
+            self.button( image: "scope", help: "Center the image", action: self.onRecenter )
 
             Divider().frame( height: 16 )
 
-            Button( action: self.onZoomOut )
-            {
-                Image( systemName: "minus" )
-                    .frame( width: 26, height: 24 )
-                    .contentShape( Rectangle() )
-            }
+            self.button( image: "minus", help: "Zoom out", action: self.onZoomOut )
 
             Text( "\( Int( ( self.zoom * 100 ).rounded() ) )%" )
                 .font( .system( size: 11, design: .monospaced ) )
                 .frame( minWidth: 42 )
 
-            Button( action: self.onZoomIn )
-            {
-                Image( systemName: "plus" )
-                    .frame( width: 26, height: 24 )
-                    .contentShape( Rectangle() )
-            }
+            self.button( image: "plus", help: "Zoom in", action: self.onZoomIn )
 
             Divider().frame( height: 16 )
 
-            Button( action: self.onFit )
-            {
-                Image( systemName: "arrow.up.left.and.arrow.down.right" )
-                    .frame( width: 26, height: 24 )
-                    .contentShape( Rectangle() )
-            }
+            self.button( image: "arrow.up.left.and.arrow.down.right", help: "Fit the image to the window", action: self.onFit )
+            self.button( image: "1.magnifyingglass", help: "Show the image at actual size (100%)", action: self.onActualSize )
         }
         .buttonStyle( .borderless )
         .padding( .horizontal, 8 )
@@ -106,11 +85,23 @@ public struct ImageToolbarView: View
         .background( .ultraThinMaterial, in: RoundedRectangle( cornerRadius: 12 ) )
         .overlay( RoundedRectangle( cornerRadius: 12 ).stroke( .white.opacity( 0.1 ) ) )
     }
+
+    /// A toolbar button: an SF Symbol with a consistent hit area and a tooltip.
+    private func button( image: String, help: String, action: @escaping () -> Void ) -> some View
+    {
+        Button( action: action )
+        {
+            Image( systemName: image )
+                .frame( width: 26, height: 24 )
+                .contentShape( Rectangle() )
+        }
+        .help( help )
+    }
 }
 
 #Preview
 {
-    ImageToolbarView( zoom: 1.0, onFit: {}, onRecenter: {}, onZoomIn: {}, onZoomOut: {} )
+    ImageToolbarView( zoom: 1.0, onFit: {}, onActualSize: {}, onRecenter: {}, onZoomIn: {}, onZoomOut: {} )
         .padding()
         .background( .black )
 }

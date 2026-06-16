@@ -33,6 +33,7 @@ public struct CanvasCommand: Equatable
     public enum Kind: Equatable
     {
         case fit
+        case actualSize
         case recenter
         case zoomIn
         case zoomOut
@@ -212,10 +213,11 @@ public struct ZoomableImageView: NSViewRepresentable
 
             switch command.kind
             {
-                case .fit:      self.fit()
-                case .recenter: self.recenter()
-                case .zoomIn:   self.zoom( by: 1.25 )
-                case .zoomOut:  self.zoom( by: 0.8 )
+                case .fit:        self.fit()
+                case .actualSize: self.zoom( to: 1.0 )
+                case .recenter:   self.recenter()
+                case .zoomIn:     self.zoom( by: 1.25 )
+                case .zoomOut:    self.zoom( by: 0.8 )
             }
         }
 
@@ -304,6 +306,24 @@ public struct ZoomableImageView: NSViewRepresentable
             }
 
             let target = CanvasGeometry.clamp( scrollView.magnification * factor, min: scrollView.minMagnification, max: scrollView.maxMagnification )
+            let clip   = scrollView.contentView.bounds
+            let center = CGPoint( x: clip.midX, y: clip.midY )
+
+            scrollView.setMagnification( target, centeredAt: center )
+            self.parent.zoom = scrollView.magnification
+        }
+
+        /// Sets the magnification to an absolute value, keeping the centre of the
+        /// viewport fixed, and reports the actually-applied value.
+        private func zoom( to magnification: CGFloat )
+        {
+            guard let scrollView = self.scrollView
+            else
+            {
+                return
+            }
+
+            let target = CanvasGeometry.clamp( magnification, min: scrollView.minMagnification, max: scrollView.maxMagnification )
             let clip   = scrollView.contentView.bounds
             let center = CGPoint( x: clip.midX, y: clip.midY )
 
