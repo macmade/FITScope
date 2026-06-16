@@ -53,4 +53,19 @@ struct ImageInformationTests
 
         #expect( ImageInformation( info: info ) == nil )
     }
+
+    @Test
+    func absentFieldsAreOmittedFromRows() throws
+    {
+        let url  = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let file = try FITSFile( url: url, options: .lenient )
+        let info = FITSImageInfo( url: url, file: file )
+
+        let summary = try #require( ImageInformation( info: info ) )
+
+        // Every emitted row must have a non-empty value (no "—" placeholders).
+        #expect( summary.rows.allSatisfy { $0.value.isEmpty == false } )
+        // Core geometry is always present.
+        #expect( summary.rows.contains { $0.label == "Dimensions" } )
+    }
 }

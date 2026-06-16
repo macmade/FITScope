@@ -56,15 +56,10 @@ public struct ImageInfoPanelView: View
             {
                 Grid( alignment: .leading, horizontalSpacing: 12, verticalSpacing: 3 )
                 {
-                    self.row( "Dimensions", summary.dimensions )
-                    self.row( "Bit Depth",  summary.bitDepth )
-                    self.row( "Channels",   summary.channels )
-                    self.row( "Bayer",      summary.bayer )
-                    self.row( "Date",       summary.date )
-                    self.row( "Exposure",   summary.exposure )
-                    self.row( "Filter",     summary.filter )
-                    self.row( "Telescope",  summary.telescope )
-                    self.row( "Instrument", summary.instrument )
+                    ForEach( summary.rows, id: \.label )
+                    {
+                        row in self.row( row.label, row.value )
+                    }
                 }
 
                 Button( "View Full FITS Headers" )
