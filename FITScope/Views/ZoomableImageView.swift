@@ -87,7 +87,7 @@ public struct ZoomableImageView: NSViewRepresentable
 
     public func makeNSView( context: Context ) -> NSScrollView
     {
-        let scrollView = NSScrollView()
+        let scrollView = ZoomingScrollView()
         let imageView  = HoverImageNSView( cgImage: self.image )
 
         imageView.onHover = self.onHover
@@ -310,6 +310,34 @@ public struct ZoomableImageView: NSViewRepresentable
             scrollView.setMagnification( target, centeredAt: center )
             self.parent.zoom = scrollView.magnification
         }
+    }
+}
+
+/// An `NSScrollView` that zooms on scroll-wheel input — centred on the cursor —
+/// instead of scrolling the document. Panning stays available by click-drag and
+/// pinch-to-zoom keeps working through the standard magnify gesture.
+final class ZoomingScrollView: NSScrollView
+{
+    /// The magnification multiplier applied per discrete wheel notch.
+    private static let zoomStep = 1.2
+
+    override func scrollWheel( with event: NSEvent )
+    {
+        guard event.scrollingDeltaY != 0
+        else
+        {
+            return
+        }
+
+        // Scroll up zooms in, scroll down zooms out. A precise device (trackpad
+        // or Magic Mouse) streams many small deltas for a smooth zoom; a classic
+        // wheel sends one discrete notch per event.
+        let steps  = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY / 30.0 : ( event.scrollingDeltaY > 0 ? 1.0 : -1.0 )
+        let factor = CGFloat( pow( Self.zoomStep, Double( steps ) ) )
+        let target = CanvasGeometry.clamp( self.magnification * factor, min: self.minMagnification, max: self.maxMagnification )
+        let point  = self.contentView.convert( event.locationInWindow, from: nil )
+
+        self.setMagnification( target, centeredAt: point )
     }
 }
 
