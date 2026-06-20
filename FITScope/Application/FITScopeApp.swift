@@ -57,6 +57,7 @@ public struct FITScopeApp: App
         }
         .windowStyle( .titleBar )
         .defaultLaunchBehavior( .suppressed )
+        .restorationBehavior( .disabled )
         .commands
         {
             CommandGroup( replacing: CommandGroupPlacement.newItem )
@@ -107,6 +108,7 @@ public struct FITScopeApp: App
             }
         }
         .windowStyle( .titleBar )
+        .restorationBehavior( .disabled )
 
         Window( "About \( Bundle.main.title )", id: "AboutWindow" )
         {
@@ -116,6 +118,7 @@ public struct FITScopeApp: App
         }
         .windowStyle( .hiddenTitleBar )
         .windowResizability( .contentSize )
+        .restorationBehavior( .disabled )
     }
 
     /// Seeds the app model's new-window callback with the SwiftUI `openWindow`
