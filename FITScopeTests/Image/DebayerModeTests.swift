@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import SwiftPixel
 import Testing
-@testable import FITScope
 
 /// Tests that the chosen debayer algorithm is threaded into the pipeline
 /// configuration, defaulting to bilinear.

@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Testing
 @testable import FITScope
+import Testing
 
 /// Tests for `GammaCorrectionControlView`'s pure toggle/slider-to-gamma mapping.
 @Suite( "GammaCorrectionControlView" )

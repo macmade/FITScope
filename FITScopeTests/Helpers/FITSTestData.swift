@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import SwiftFITS
-@testable import FITScope
 
 /// Synthesised, minimal FITS payloads for tests that need a precisely shaped
 /// file rather than a bundled corpus sample.
@@ -42,12 +42,12 @@ enum FITSTestData
         let bytes = ( 0 ..< count ).map { UInt8( ( $0 * 255 ) / max( count - 1, 1 ) ) }
 
         let properties =
-        [
-            FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
-            FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
-            FITSPropertySnapshot( name: "NAXIS1", value: .integer( Int64( width ) ) ),
-            FITSPropertySnapshot( name: "NAXIS2", value: .integer( Int64( height ) ) ),
-        ]
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( Int64( width ) ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( Int64( height ) ) ),
+            ]
 
         return ( Data( bytes ), properties )
     }
@@ -57,12 +57,12 @@ enum FITSTestData
     static func headerOnly() -> Data
     {
         let records =
-        [
-            "SIMPLE  = T",
-            "BITPIX  = 8",
-            "NAXIS   = 0",
-            "END",
-        ]
+            [
+                "SIMPLE  = T",
+                "BITPIX  = 8",
+                "NAXIS   = 0",
+                "END",
+            ]
         let header = records.map { $0.padding( toLength: 80, withPad: " ", startingAt: 0 ) }.joined()
 
         return Data( header.padding( toLength: FITSFile.blockSize, withPad: " ", startingAt: 0 ).utf8 )
@@ -74,14 +74,14 @@ enum FITSTestData
     static func bitpix64() -> Data
     {
         let records =
-        [
-            "SIMPLE  = T",
-            "BITPIX  = 64",
-            "NAXIS   = 2",
-            "NAXIS1  = 1",
-            "NAXIS2  = 1",
-            "END",
-        ]
+            [
+                "SIMPLE  = T",
+                "BITPIX  = 64",
+                "NAXIS   = 2",
+                "NAXIS1  = 1",
+                "NAXIS2  = 1",
+                "END",
+            ]
         let header = records.map { $0.padding( toLength: 80, withPad: " ", startingAt: 0 ) }.joined()
 
         var data = Data( header.padding( toLength: FITSFile.blockSize, withPad: " ", startingAt: 0 ).utf8 )

@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Testing
 @testable import FITScope
+import Testing
 
 /// Tests for `DebayerControlView`'s pure selection mapping.
 @Suite( "DebayerControlView" )

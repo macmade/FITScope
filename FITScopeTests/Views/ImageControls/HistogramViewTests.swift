@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Testing
 @testable import FITScope
+import Testing
 
 /// Tests for `HistogramView`'s pure bar-geometry helper.
 @Suite( "HistogramView" )

@@ -128,18 +128,18 @@ enum FITSCorpus
 
     /// The 12-file corpus and the outcome each file is expected to produce.
     static let files: [ File ] =
-    [
-        File( relativePath: "2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits", label: "M42 (G252)",           expectation: .renders ),
-        File( relativePath: "NASA/FOSy19g0309t_c2f.fits",                                       label: "HST FOS preview",      expectation: .renders ),
-        File( relativePath: "NASA/FOCx38i0101t_c0f.fits",                                       label: "HST FOC",              expectation: .renders ),
-        File( relativePath: "NASA/FGSf64y0106m_a1f.fits",                                       label: "HST FGS",              expectation: .renders ),
-        File( relativePath: "NASA/HRSz0yd020fm_c2f.fits",                                       label: "HST HRS",              expectation: .renders ),
-        File( relativePath: "NASA/UITfuv2582gc.fits",                                           label: "UIT",                  expectation: .renders ),
-        File( relativePath: "NASA/WFPC2ASSNu5780205bx.fits",                                    label: "WFPC2 ASSN",           expectation: .renders ),
-        File( relativePath: "NASA/WFPC2u5780205r_c0fx.fits",                                    label: "WFPC2 (NAXIS=3)",      expectation: .fails( .unsupportedGeometry ) ),
-        File( relativePath: "NASA/DDTSUVDATA.fits",                                             label: "DDTSUVDATA (NAXIS=6)", expectation: .fails( .unsupportedGeometry ) ),
-        File( relativePath: "NASA/EUVEngc4151imgx.fits",                                        label: "EUVE (ext image)",     expectation: .renders ),
-        File( relativePath: "NASA/IUElwp25637mxlo.fits",                                        label: "IUE (ext image)",      expectation: .renders ),
-        File( relativePath: "NASA/NICMOSn4hk12010_mos.fits",                                    label: "NICMOS (ext image)",   expectation: .renders ),
-    ]
+        [
+            File( relativePath: "2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits", label: "M42 (G252)",           expectation: .renders ),
+            File( relativePath: "NASA/FOSy19g0309t_c2f.fits",                                       label: "HST FOS preview",      expectation: .renders ),
+            File( relativePath: "NASA/FOCx38i0101t_c0f.fits",                                       label: "HST FOC",              expectation: .renders ),
+            File( relativePath: "NASA/FGSf64y0106m_a1f.fits",                                       label: "HST FGS",              expectation: .renders ),
+            File( relativePath: "NASA/HRSz0yd020fm_c2f.fits",                                       label: "HST HRS",              expectation: .renders ),
+            File( relativePath: "NASA/UITfuv2582gc.fits",                                           label: "UIT",                  expectation: .renders ),
+            File( relativePath: "NASA/WFPC2ASSNu5780205bx.fits",                                    label: "WFPC2 ASSN",           expectation: .renders ),
+            File( relativePath: "NASA/WFPC2u5780205r_c0fx.fits",                                    label: "WFPC2 (NAXIS=3)",      expectation: .fails( .unsupportedGeometry ) ),
+            File( relativePath: "NASA/DDTSUVDATA.fits",                                             label: "DDTSUVDATA (NAXIS=6)", expectation: .fails( .unsupportedGeometry ) ),
+            File( relativePath: "NASA/EUVEngc4151imgx.fits",                                        label: "EUVE (ext image)",     expectation: .renders ),
+            File( relativePath: "NASA/IUElwp25637mxlo.fits",                                        label: "IUE (ext image)",      expectation: .renders ),
+            File( relativePath: "NASA/NICMOSn4hk12010_mos.fits",                                    label: "NICMOS (ext image)",   expectation: .renders ),
+        ]
 }

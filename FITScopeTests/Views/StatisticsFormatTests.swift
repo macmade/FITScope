@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import Testing
-@testable import FITScope
 
 /// Tests for the pure statistics value formatting in `StatisticsFormat`.
 @Suite( "StatisticsFormat" )

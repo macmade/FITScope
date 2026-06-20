@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Testing
 @testable import FITScope
+import Testing
 
 /// Tests for `WhiteBalanceControlView`'s pure selection-to-mode mapping.
 @Suite( "WhiteBalanceControlView" )

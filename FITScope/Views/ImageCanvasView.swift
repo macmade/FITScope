@@ -56,7 +56,7 @@ public struct ImageCanvasView: View
 
     /// The pending auto-hide work, cancelled whenever the bars are revealed or
     /// the cursor rests over a bar.
-    @State private var hideTask: Task<Void, Never>?
+    @State private var hideTask: Task< Void, Never >?
 
     /// Creates the canvas view.
     public init( file: OpenFile )

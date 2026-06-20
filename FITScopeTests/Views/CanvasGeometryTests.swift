@@ -23,8 +23,8 @@
  ******************************************************************************/
 
 import CoreGraphics
-import Testing
 @testable import FITScope
+import Testing
 
 /// Tests for `CanvasGeometry`: fit factor is the limiting ratio; centered
 /// origin places the content's centre at the viewport's centre.

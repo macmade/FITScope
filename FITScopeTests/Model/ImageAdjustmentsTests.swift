@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Testing
 @testable import FITScope
+import Testing
 
 /// Tests for `ImageAdjustments`: the observable model that drives the pipeline
 /// configuration the renderer consumes.

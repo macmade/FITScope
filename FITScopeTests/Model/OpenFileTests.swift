@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import Testing
-@testable import FITScope
 
 /// Tests for `OpenFile`: identity, URL exposure and load delegation.
 @Suite( "OpenFile" )

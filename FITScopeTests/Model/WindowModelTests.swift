@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import Testing
-@testable import FITScope
 
 /// Tests for `WindowModel`: open appends and auto-selects, close removes and
 /// keeps a valid selection.

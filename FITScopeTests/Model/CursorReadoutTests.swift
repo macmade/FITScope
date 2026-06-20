@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import Testing
-@testable import FITScope
 
 /// Tests for `CursorReadout` value formatting.
 @Suite( "CursorReadout" )

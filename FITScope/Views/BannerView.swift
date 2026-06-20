@@ -106,8 +106,7 @@ public struct BannerView: View
     VStack
     {
         BannerView( title: "Error Rendering Image", message: "Hyperbolic stretch requires n != 0: 0.0", systemImage: "exclamationmark.triangle.fill", tint: .yellow )
-        {
-        }
+        {}
     }
     .padding()
     .frame( width: 500 )

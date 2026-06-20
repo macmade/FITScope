@@ -257,7 +257,7 @@ public class FITSImageRenderer: ObservableObject
     ///   - settings: The render settings to apply.
     /// - Returns: The rendered image with its histograms and statistics.
     /// - Throws: Any error thrown by the pixel pipeline.
-    nonisolated private static func makeResult( input: RenderInput, settings: ImageProcessor.Settings ) throws -> Result
+    private nonisolated static func makeResult( input: RenderInput, settings: ImageProcessor.Settings ) throws -> Result
     {
         let render             = try ImageProcessor.render( data: input.data, properties: input.properties, settings: settings )
         let rgbHistogram       = Benchmark.run( label: "Histogram (RGB)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .rgb ) }

@@ -22,10 +22,10 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import SwiftFITS
 import Testing
-@testable import FITScope
 
 /// Tests for `ImageInformation` keyword extraction.
 @Suite( "ImageInformation" )

@@ -22,10 +22,10 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import SwiftFITS
 import Testing
-@testable import FITScope
 
 /// Tests for `ImageProcessor`'s header interpretation, in particular the linear
 /// pixel-scaling keywords `BSCALE` / `BZERO`.
@@ -66,12 +66,12 @@ struct ImageProcessorTests
     func nonPositiveNAXIS2IsRejectedNamingTheAxis() throws
     {
         let properties: [ FITSPropertySnapshot ] =
-        [
-            FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
-            FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
-            FITSPropertySnapshot( name: "NAXIS1", value: .integer( 1 ) ),
-            FITSPropertySnapshot( name: "NAXIS2", value: .integer( 0 ) ),
-        ]
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 1 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 0 ) ),
+            ]
 
         let error = try #require( throws: ( any Error ).self )
         {

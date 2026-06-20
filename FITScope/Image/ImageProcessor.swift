@@ -397,7 +397,8 @@ public enum ImageProcessor
             case .uint8:             return 255
             case .int16:             return 65535
             case .int32:             return 4294967295
-            case .float32, .float64: return nil
+            case .float32,
+                 .float64: return nil
             @unknown default:        return nil
         }
     }

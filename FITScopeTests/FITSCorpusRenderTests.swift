@@ -22,10 +22,10 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import SwiftFITS
 import Testing
-@testable import FITScope
 
 /// End-to-end render test over the bundled FITS corpus.
 ///

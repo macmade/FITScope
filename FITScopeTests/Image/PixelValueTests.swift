@@ -22,11 +22,11 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import SwiftFITS
 import SwiftPixel
 import Testing
-@testable import FITScope
 
 /// Tests for `ImageProcessor.rawPixelValue`: byte-offset math, big-endian
 /// decoding, BSCALE/BZERO application and full-scale fraction.

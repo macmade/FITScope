@@ -22,11 +22,11 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import SwiftFITS
 import SwiftPixel
 import Testing
-@testable import FITScope
 
 /// Behavioural tests for `FITSImageRenderer`: HDU selection error paths, the
 /// Sendable render boundary, debounced re-rendering, and the non-destructive

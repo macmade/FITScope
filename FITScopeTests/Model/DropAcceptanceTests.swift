@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import Testing
-@testable import FITScope
 
 /// Tests for `DropAcceptance.acceptable(_:)`: regular files are accepted
 /// regardless of extension; directories are rejected.

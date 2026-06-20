@@ -126,7 +126,9 @@ public struct DebayerControlView: View
                 Text( "Algorithm" )
                 Picker( "Algorithm", selection: Binding(
                     get: { self.adjustments.debayerAlgorithm },
-                    set: { self.adjustments.debayerAlgorithm = $0; self.reRender() }
+                    set: { self.adjustments.debayerAlgorithm = $0
+                        self.reRender()
+                    }
                 ) )
                 {
                     Text( "Bilinear" ).tag( Processors.Debayer.Mode.bilinear )

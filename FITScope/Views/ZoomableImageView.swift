@@ -189,7 +189,8 @@ public struct ZoomableImageView: NSViewRepresentable
             NotificationCenter.default.addObserver( self, selector: #selector( self.magnificationChanged ), name: NSScrollView.didEndLiveMagnifyNotification, object: scrollView )
         }
 
-        @objc private func magnificationChanged()
+        @objc
+        private func magnificationChanged()
         {
             guard let scrollView = self.scrollView
             else
@@ -233,7 +234,8 @@ public struct ZoomableImageView: NSViewRepresentable
 
         /// Re-fits when the clip view first gains a non-zero size, avoiding the
         /// zero bounds seen during `makeNSView`.
-        @objc func clipBoundsChanged()
+        @objc
+        func clipBoundsChanged()
         {
             if self.hasFitted == false
             {

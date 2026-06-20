@@ -22,10 +22,10 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+@testable import FITScope
 import Foundation
 import SwiftFITS
 import Testing
-@testable import FITScope
 
 /// Tests for `FITSImageLoader`'s load lifecycle: a successful load is not
 /// repeated, while a failed load remains retriable.
