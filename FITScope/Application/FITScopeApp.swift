@@ -86,6 +86,11 @@ public struct FITScopeApp: App
                     Text( "About \( Bundle.main.title )..." )
                 }
             }
+
+            CommandGroup( after: CommandGroupPlacement.sidebar )
+            {
+                ViewCommands()
+            }
         }
 
         WindowGroup( id: "InfoWindow", for: FITSImageInfo.self )

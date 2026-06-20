@@ -74,6 +74,7 @@
 		1B8A22E86CD946413A1C30D9 /* OpenFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */; };
 		1ED9E2EDDC7585655A55E63C /* PixelValueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD699731BC20D77496B1C9AA /* PixelValueTests.swift */; };
 		2D8702C0C4F8BCD0EB3272DA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BEAE300CD214042135F55D9 /* AppDelegate.swift */; };
+		FB5814672B1E4C298DB21E2A /* ViewCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1805AA8818E2418AA78360ED /* ViewCommands.swift */; };
 		382F7DF73F52BD55C45092C9 /* DropAcceptance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 017FF3966AE1E425A510642E /* DropAcceptance.swift */; };
 		42B9BD4E43A2D02914FDDE09 /* StatisticsFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C686F7A99DA48AB69336E13 /* StatisticsFormat.swift */; };
 		476A7C202B58B30B3BC47D0A /* WindowContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D6641B378926115E450672 /* WindowContent.swift */; };
@@ -274,6 +275,7 @@
 		428EA4C0C0663914C3C8F4C4 /* OpenFileRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFileRowView.swift; sourceTree = "<group>"; };
 		641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CursorReadoutTests.swift; sourceTree = "<group>"; };
 		77051EA6E847507556D8B2B0 /* AppModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		1805AA8818E2418AA78360ED /* ViewCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewCommands.swift; sourceTree = "<group>"; };
 		7C686F7A99DA48AB69336E13 /* StatisticsFormat.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatisticsFormat.swift; sourceTree = "<group>"; };
 		8993FF77DBD5F754CAB41153 /* InspectorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
 		92EEE3EEA80B1B8809982F35 /* WindowModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowModel.swift; sourceTree = "<group>"; };
@@ -636,6 +638,7 @@
 				DF3765F1937F36620A92317F /* MainWindowView.swift */,
 				77051EA6E847507556D8B2B0 /* AppModel.swift */,
 				3BEAE300CD214042135F55D9 /* AppDelegate.swift */,
+				1805AA8818E2418AA78360ED /* ViewCommands.swift */,
 				22D6641B378926115E450672 /* WindowContent.swift */,
 			);
 			path = Application;
@@ -951,6 +954,7 @@
 				B3478104EBCB8EB1B9C44998 /* ImageInfoPanelView.swift in Sources */,
 				0DCE0490AEA79DFE7A0171AE /* AppModel.swift in Sources */,
 				2D8702C0C4F8BCD0EB3272DA /* AppDelegate.swift in Sources */,
+				FB5814672B1E4C298DB21E2A /* ViewCommands.swift in Sources */,
 				382F7DF73F52BD55C45092C9 /* DropAcceptance.swift in Sources */,
 				6A1572CF23B612DB37F852EC /* CanvasGeometry.swift in Sources */,
 				42B9BD4E43A2D02914FDDE09 /* StatisticsFormat.swift in Sources */,
