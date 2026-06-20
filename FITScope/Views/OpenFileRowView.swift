@@ -31,12 +31,27 @@ public struct OpenFileRowView: View
     /// The file this row represents.
     @ObservedObject private var file: OpenFile
 
+    /// Opens the auxiliary headers window.
+    @Environment( \.openWindow ) private var openWindow
+
+    /// Closes this row's file. Supplied by the sidebar.
+    private let onClose: () -> Void
+
     /// Creates a file row.
     ///
-    /// - Parameter file: The open file to display.
-    public init( file: OpenFile )
+    /// The context menu lives here, rather than on the row in the sidebar's list,
+    /// so it observes ``file``: its "View FITS Headers" item is enabled as soon as
+    /// the image's header info becomes available. Placed on the non-observing
+    /// sidebar, the item's disabled state would be evaluated once (while the image
+    /// is still loading) and never refresh.
+    ///
+    /// - Parameters:
+    ///   - file:    The open file to display.
+    ///   - onClose: Called when the user chooses "Close" from the context menu.
+    public init( file: OpenFile, onClose: @escaping () -> Void = {} )
     {
-        self.file = file
+        self.file    = file
+        self.onClose = onClose
     }
 
     /// The view's content.
@@ -85,6 +100,22 @@ public struct OpenFileRowView: View
         .padding( .vertical, 2 )
         .accessibilityElement( children: .contain )
         .accessibilityIdentifier( AccessibilityIdentifier.OpenFileRowView.row )
+        .contextMenu
+        {
+            Button( "View FITS Headers" )
+            {
+                if let info = self.file.image?.info
+                {
+                    self.openWindow( id: "InfoWindow", value: info )
+                }
+            }
+            .disabled( self.file.image?.info == nil )
+
+            Button( "Close", role: .destructive )
+            {
+                self.onClose()
+            }
+        }
     }
 
     /// A one-line summary derived from the loaded image's header, or a neutral

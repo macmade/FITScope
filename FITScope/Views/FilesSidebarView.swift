@@ -33,9 +33,6 @@ public struct FilesSidebarView: View
     /// The window's open files and selection.
     @ObservedObject private var model: WindowModel
 
-    /// Opens the auxiliary headers window.
-    @Environment( \.openWindow ) private var openWindow
-
     /// Creates the files sidebar.
     ///
     /// - Parameter model: The window model to drive.
@@ -77,23 +74,10 @@ public struct FilesSidebarView: View
                     file in
 
                     OpenFileRowView( file: file )
-                        .tag( file.id )
-                        .contextMenu
-                        {
-                            Button( "View FITS Headers" )
-                            {
-                                if let info = file.image?.info
-                                {
-                                    self.openWindow( id: "InfoWindow", value: info )
-                                }
-                            }
-                            .disabled( file.image?.info == nil )
-
-                            Button( "Close", role: .destructive )
-                            {
-                                self.model.close( file )
-                            }
-                        }
+                    {
+                        self.model.close( file )
+                    }
+                    .tag( file.id )
                 }
             }
             .listStyle( .sidebar )
