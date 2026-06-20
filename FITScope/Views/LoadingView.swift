@@ -45,6 +45,8 @@ public struct LoadingView: View
                 .padding()
         }
         .frame( minWidth: 400, maxWidth: .infinity, minHeight: 300, maxHeight: .infinity )
+        .accessibilityElement( children: .contain )
+        .accessibilityIdentifier( AccessibilityIdentifier.LoadingView.view )
     }
 }
 

@@ -79,6 +79,7 @@ public struct ImageCanvasView: View
                     {
                         coordinate in self.report( coordinate: coordinate )
                     }
+                    .accessibilityIdentifier( AccessibilityIdentifier.ImageCanvasView.canvas )
                     .overlay( alignment: .top )
                     {
                         self.floatingBar

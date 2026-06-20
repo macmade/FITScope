@@ -55,7 +55,7 @@ public struct InspectorView: View
                 {
                     if let result = self.image.renderer.result
                     {
-                        InspectorSectionView( "Histogram" )
+                        InspectorSectionView( "Histogram", identifier: AccessibilityIdentifier.InspectorView.Section.histogram )
                         {
                             HistogramControlView( histogram: result.histogram, statistics: result.statistics, original: self.image.renderer.original )
                         }
@@ -63,35 +63,35 @@ public struct InspectorView: View
                         Divider()
                     }
 
-                    InspectorSectionView( "Stretch" )
+                    InspectorSectionView( "Stretch", identifier: AccessibilityIdentifier.InspectorView.Section.stretch )
                     {
                         StretchControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()
 
-                    InspectorSectionView( "Gamma" )
+                    InspectorSectionView( "Gamma", identifier: AccessibilityIdentifier.InspectorView.Section.gamma )
                     {
                         GammaCorrectionControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()
 
-                    InspectorSectionView( "White Balance" )
+                    InspectorSectionView( "White Balance", identifier: AccessibilityIdentifier.InspectorView.Section.whiteBalance )
                     {
                         WhiteBalanceControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()
 
-                    InspectorSectionView( "Debayer" )
+                    InspectorSectionView( "Debayer", identifier: AccessibilityIdentifier.InspectorView.Section.debayer )
                     {
                         DebayerControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()
 
-                    InspectorSectionView( "Color" )
+                    InspectorSectionView( "Color", identifier: AccessibilityIdentifier.InspectorView.Section.color )
                     {
                         ColorControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
@@ -104,9 +104,11 @@ public struct InspectorView: View
                             .frame( maxWidth: .infinity )
                     }
                     .padding( 14 )
+                    .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.resetButton )
                 }
             }
         }
+        .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.container )
     }
 
     /// Shown when the image failed to render: no controls, just a note.

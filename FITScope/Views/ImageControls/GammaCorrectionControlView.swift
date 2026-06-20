@@ -85,6 +85,7 @@ public struct GammaCorrectionControlView: View
                 Toggle( "Enable", isOn: $enabled )
                     .toggleStyle( SwitchToggleStyle() )
                     .labelsHidden()
+                    .accessibilityIdentifier( AccessibilityIdentifier.GammaCorrectionControlView.toggle )
             }
 
             if self.enabled

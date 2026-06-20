@@ -119,6 +119,7 @@ public struct MainWindowView: View
                     Image( systemName: "sidebar.trailing" )
                 }
                 .help( "Toggle the inspector" )
+                .accessibilityIdentifier( AccessibilityIdentifier.MainWindowView.inspectorToggle )
             }
         }
         .frame( minWidth: 900, minHeight: 600 )

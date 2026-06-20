@@ -72,6 +72,8 @@ public struct StatusBarView: View
         .padding( .vertical, 6 )
         .background( .ultraThinMaterial, in: RoundedRectangle( cornerRadius: 12 ) )
         .overlay( RoundedRectangle( cornerRadius: 12 ).stroke( .white.opacity( 0.1 ) ) )
+        .accessibilityElement( children: .contain )
+        .accessibilityIdentifier( AccessibilityIdentifier.StatusBarView.bar )
     }
 
     /// A status-pill segment.

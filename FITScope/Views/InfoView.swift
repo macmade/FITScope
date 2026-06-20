@@ -46,6 +46,7 @@ public struct InfoView: View
             if let section = self.info.sections.first( where: { $0.index == self.selectedSection } )
             {
                 InfoViewTable( properties: Self.filter( properties: section.properties, text: self.searchText ) )
+                    .accessibilityIdentifier( AccessibilityIdentifier.InfoView.table )
             }
             else
             {
@@ -66,11 +67,13 @@ public struct InfoView: View
                 }
                 .labelsHidden()
                 .fixedSize()
+                .accessibilityIdentifier( AccessibilityIdentifier.InfoView.sectionPicker )
 
                 SearchField( text: $searchText )
                 {
                     _ in
                 }
+                .accessibilityIdentifier( AccessibilityIdentifier.InfoView.searchField )
             }
             .padding()
         }

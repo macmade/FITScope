@@ -21,6 +21,13 @@
     },
     {
       "target" : {
+        "containerPath" : "container:FITScope.xcodeproj",
+        "identifier" : "053BEABA2DDDDDA900EF0C79",
+        "name" : "FITScopeUITests"
+      }
+    },
+    {
+      "target" : {
         "containerPath" : "container:Submodules\/SwiftFITS\/SwiftFITS.xcodeproj",
         "identifier" : "05F175A12DD8E36300843626",
         "name" : "SwiftFITSTests"

@@ -64,6 +64,7 @@ public struct FilesSidebarView: View
                 }
                 .buttonStyle( .borderless )
                 .help( "Open FITS files…" )
+                .accessibilityIdentifier( AccessibilityIdentifier.FilesSidebarView.addButton )
             }
             .padding( .horizontal, 14 )
             .padding( .top, 12 )
@@ -96,6 +97,7 @@ public struct FilesSidebarView: View
                 }
             }
             .listStyle( .sidebar )
+            .accessibilityIdentifier( AccessibilityIdentifier.FilesSidebarView.list )
 
             if let selected = self.model.selectedFile
             {

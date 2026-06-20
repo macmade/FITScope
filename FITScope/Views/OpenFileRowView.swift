@@ -83,6 +83,8 @@ public struct OpenFileRowView: View
             Spacer( minLength: 0 )
         }
         .padding( .vertical, 2 )
+        .accessibilityElement( children: .contain )
+        .accessibilityIdentifier( AccessibilityIdentifier.OpenFileRowView.row )
     }
 
     /// A one-line summary derived from the loaded image's header, or a neutral

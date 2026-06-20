@@ -31,22 +31,45 @@ public struct InspectorSectionView< Content: View >: View
     /// The section's uppercase title.
     public let title: String
 
+    /// A stable accessibility identifier for the section, or `nil` to leave it
+    /// unidentified. Passed explicitly by the call site rather than derived from
+    /// ``title``, so the identifier never changes when the heading does.
+    public let identifier: String?
+
     /// The section's content.
     @ViewBuilder public let content: Content
 
     /// Creates a section.
     ///
     /// - Parameters:
-    ///   - title:   The uppercase header text.
-    ///   - content: The section body.
-    public init( _ title: String, @ViewBuilder content: () -> Content )
+    ///   - title:      The uppercase header text.
+    ///   - identifier: A stable accessibility identifier for the section, or
+    ///                 `nil` to leave it unidentified.
+    ///   - content:    The section body.
+    public init( _ title: String, identifier: String? = nil, @ViewBuilder content: () -> Content )
     {
-        self.title   = title
-        self.content = content()
+        self.title      = title
+        self.identifier = identifier
+        self.content    = content()
     }
 
     /// The view's content.
     public var body: some View
+    {
+        if let identifier = self.identifier
+        {
+            self.sectionContent
+                .accessibilityElement( children: .contain )
+                .accessibilityIdentifier( identifier )
+        }
+        else
+        {
+            self.sectionContent
+        }
+    }
+
+    /// The styled section, before any accessibility grouping is applied.
+    private var sectionContent: some View
     {
         VStack( alignment: .leading, spacing: 8 )
         {

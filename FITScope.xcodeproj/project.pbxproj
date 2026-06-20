@@ -29,7 +29,9 @@
 		0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF092DDE64DF005DECEF /* Assets.xcassets */; };
 		0587FF0F2DDE64DF005DECEF /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF0C2DDE64DF005DECEF /* MainMenu.xib */; };
 		0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */; };
-		0587FF182DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */; };
+		0AC10000000000000000F002 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */; };
+		0AC10000000000000000F003 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */; };
+		0AC10000000000000000F005 /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F004 /* UITestSupport.swift */; };
 		05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05986B472DF892D300A55E77 /* SliderGridRowView.swift */; };
 		05BD7A942DF311F700F4AAFC /* DebayerControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */; };
 		0AB10000000000000000F002 /* ColorControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000F001 /* ColorControlView.swift */; };
@@ -227,7 +229,8 @@
 		0587FF0A2DDE64DF005DECEF /* FITScope.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScope.entitlements; sourceTree = "<group>"; };
 		0587FF0B2DDE64DF005DECEF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITests.swift; sourceTree = "<group>"; };
-		0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityIdentifiers.swift; sourceTree = "<group>"; };
+		0AC10000000000000000F004 /* UITestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSupport.swift; sourceTree = "<group>"; };
 		05986B472DF892D300A55E77 /* SliderGridRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderGridRowView.swift; sourceTree = "<group>"; };
 		05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebayerControlView.swift; sourceTree = "<group>"; };
 		0AB10000000000000000F001 /* ColorControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorControlView.swift; sourceTree = "<group>"; };
@@ -610,7 +613,7 @@
 			isa = PBXGroup;
 			children = (
 				0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */,
-				0587FF152DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift */,
+				0AC10000000000000000F004 /* UITestSupport.swift */,
 			);
 			path = FITScopeUITests;
 			sourceTree = "<group>";
@@ -638,6 +641,7 @@
 				DF3765F1937F36620A92317F /* MainWindowView.swift */,
 				77051EA6E847507556D8B2B0 /* AppModel.swift */,
 				3BEAE300CD214042135F55D9 /* AppDelegate.swift */,
+				0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */,
 				1805AA8818E2418AA78360ED /* ViewCommands.swift */,
 				22D6641B378926115E450672 /* WindowContent.swift */,
 			);
@@ -954,6 +958,7 @@
 				B3478104EBCB8EB1B9C44998 /* ImageInfoPanelView.swift in Sources */,
 				0DCE0490AEA79DFE7A0171AE /* AppModel.swift in Sources */,
 				2D8702C0C4F8BCD0EB3272DA /* AppDelegate.swift in Sources */,
+				0AC10000000000000000F002 /* AccessibilityIdentifiers.swift in Sources */,
 				FB5814672B1E4C298DB21E2A /* ViewCommands.swift in Sources */,
 				382F7DF73F52BD55C45092C9 /* DropAcceptance.swift in Sources */,
 				6A1572CF23B612DB37F852EC /* CanvasGeometry.swift in Sources */,
@@ -1000,7 +1005,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */,
-				0587FF182DDE64E3005DECEF /* FITScopeUITestsLaunchTests.swift in Sources */,
+				0AC10000000000000000F003 /* AccessibilityIdentifiers.swift in Sources */,
+				0AC10000000000000000F005 /* UITestSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

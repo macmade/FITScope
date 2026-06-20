@@ -62,22 +62,22 @@ public struct ImageToolbarView: View
     {
         HStack( spacing: 4 )
         {
-            self.button( image: "scope", help: "Center the image", action: self.onRecenter )
+            self.button( image: "scope", help: "Center the image", identifier: AccessibilityIdentifier.ImageToolbarView.recenter, action: self.onRecenter )
 
             Divider().frame( height: 16 )
 
-            self.button( image: "minus", help: "Zoom out", action: self.onZoomOut )
+            self.button( image: "minus", help: "Zoom out", identifier: AccessibilityIdentifier.ImageToolbarView.zoomOut, action: self.onZoomOut )
 
             Text( "\( Int( ( self.zoom * 100 ).rounded() ) )%" )
                 .font( .system( size: 11, design: .monospaced ) )
                 .frame( minWidth: 42 )
 
-            self.button( image: "plus", help: "Zoom in", action: self.onZoomIn )
+            self.button( image: "plus", help: "Zoom in", identifier: AccessibilityIdentifier.ImageToolbarView.zoomIn, action: self.onZoomIn )
 
             Divider().frame( height: 16 )
 
-            self.button( image: "arrow.up.left.and.arrow.down.right", help: "Fit the image to the window", action: self.onFit )
-            self.button( image: "1.magnifyingglass", help: "Show the image at actual size (100%)", action: self.onActualSize )
+            self.button( image: "arrow.up.left.and.arrow.down.right", help: "Fit the image to the window", identifier: AccessibilityIdentifier.ImageToolbarView.fit, action: self.onFit )
+            self.button( image: "1.magnifyingglass", help: "Show the image at actual size (100%)", identifier: AccessibilityIdentifier.ImageToolbarView.actualSize, action: self.onActualSize )
         }
         .buttonStyle( .borderless )
         .padding( .horizontal, 8 )
@@ -86,8 +86,9 @@ public struct ImageToolbarView: View
         .overlay( RoundedRectangle( cornerRadius: 12 ).stroke( .white.opacity( 0.1 ) ) )
     }
 
-    /// A toolbar button: an SF Symbol with a consistent hit area and a tooltip.
-    private func button( image: String, help: String, action: @escaping () -> Void ) -> some View
+    /// A toolbar button: an SF Symbol with a consistent hit area, a tooltip and
+    /// a stable accessibility identifier.
+    private func button( image: String, help: String, identifier: String, action: @escaping () -> Void ) -> some View
     {
         Button( action: action )
         {
@@ -96,6 +97,7 @@ public struct ImageToolbarView: View
                 .contentShape( Rectangle() )
         }
         .help( help )
+        .accessibilityIdentifier( identifier )
     }
 }
 

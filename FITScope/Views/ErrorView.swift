@@ -59,6 +59,8 @@ public struct ErrorView: View
             }
         }
         .frame( minWidth: 400, maxWidth: .infinity, minHeight: 300, maxHeight: .infinity )
+        .accessibilityElement( children: .contain )
+        .accessibilityIdentifier( AccessibilityIdentifier.ErrorView.view )
     }
 }
 
