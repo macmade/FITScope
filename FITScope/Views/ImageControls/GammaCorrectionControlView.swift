@@ -91,6 +91,7 @@ public struct GammaCorrectionControlView: View
             if self.enabled
             {
                 SliderGridRowView( value: $gamma, minimumValue: Self.minimumGamma, maximumValue: Self.maximumGamma, label: "Gamma", image: "eye.fill" )
+                    .accessibilityIdentifier( AccessibilityIdentifier.GammaCorrectionControlView.slider )
             }
         }
         .onChange( of: self.gammaValue )

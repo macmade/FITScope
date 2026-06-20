@@ -139,6 +139,80 @@ public enum AccessibilityIdentifier
 
         /// The actual-size (100%) button.
         public static let actualSize = "ImageToolbarView.actualSize"
+
+        /// The zoom-percentage readout between the zoom-out and zoom-in buttons.
+        public static let zoomReadout = "ImageToolbarView.zoomReadout"
+    }
+
+    /// Identifiers applied by ``FITScope/HistogramControlView``.
+    public enum HistogramControlView
+    {
+        /// The RGB / Luminance mode segmented control.
+        public static let mode = "HistogramControlView.mode"
+
+        /// The "Show Original" toggle (disabled when no original is available).
+        public static let showOriginal = "HistogramControlView.showOriginal"
+
+        /// The "Separate Channels" toggle (disabled in luminance mode).
+        public static let separateChannels = "HistogramControlView.separateChannels"
+
+        /// The "Statistics" toggle.
+        public static let statistics = "HistogramControlView.statistics"
+
+        /// The statistics panel, shown only while the Statistics toggle is on.
+        public static let statisticsPanel = "HistogramControlView.statisticsPanel"
+    }
+
+    /// Identifiers applied by ``FITScope/StretchControlView``.
+    public enum StretchControlView
+    {
+        /// The stretch-mode picker.
+        public static let modePicker = "StretchControlView.modePicker"
+
+        /// The logarithmic-intensity slider (shown only in logarithmic mode).
+        public static let intensitySlider = "StretchControlView.intensitySlider"
+
+        /// The arcsinh-factor slider (shown only in arcsinh mode).
+        public static let factorSlider = "StretchControlView.factorSlider"
+
+        /// The sigmoid-midpoint slider (shown only in sigmoid mode).
+        public static let midpointSlider = "StretchControlView.midpointSlider"
+
+        /// The sigmoid-contrast slider (shown only in sigmoid mode).
+        public static let contrastSlider = "StretchControlView.contrastSlider"
+    }
+
+    /// Identifiers applied by ``FITScope/WhiteBalanceControlView``.
+    public enum WhiteBalanceControlView
+    {
+        /// The white-balance mode picker.
+        public static let modePicker = "WhiteBalanceControlView.modePicker"
+
+        /// The manual red-gain slider (shown only in manual mode).
+        public static let redSlider = "WhiteBalanceControlView.redSlider"
+
+        /// The manual green-gain slider (shown only in manual mode).
+        public static let greenSlider = "WhiteBalanceControlView.greenSlider"
+
+        /// The manual blue-gain slider (shown only in manual mode).
+        public static let blueSlider = "WhiteBalanceControlView.blueSlider"
+    }
+
+    /// Identifiers applied by ``FITScope/DebayerControlView``.
+    public enum DebayerControlView
+    {
+        /// The Bayer-pattern mode picker.
+        public static let modePicker = "DebayerControlView.modePicker"
+
+        /// The reconstruction-algorithm picker (disabled when mode is None).
+        public static let algorithmPicker = "DebayerControlView.algorithmPicker"
+    }
+
+    /// Identifiers applied by ``FITScope/ColorControlView``.
+    public enum ColorControlView
+    {
+        /// The invert (photographic-negative) toggle.
+        public static let invertToggle = "ColorControlView.invertToggle"
     }
 
     /// Identifiers applied by ``FITScope/GammaCorrectionControlView``.
@@ -146,6 +220,16 @@ public enum AccessibilityIdentifier
     {
         /// The gamma-correction enable toggle.
         public static let toggle = "GammaCorrectionControlView.toggle"
+
+        /// The gamma-exponent slider, shown only while correction is enabled.
+        public static let slider = "GammaCorrectionControlView.slider"
+    }
+
+    /// Identifiers applied by ``FITScope/ImageInfoPanelView``.
+    public enum ImageInfoPanelView
+    {
+        /// The button that opens the full FITS headers window.
+        public static let viewHeadersButton = "ImageInfoPanelView.viewHeadersButton"
     }
 
     /// Identifiers applied by ``FITScope/InfoView`` (the FITS headers window).
@@ -166,5 +250,20 @@ public enum AccessibilityIdentifier
     {
         /// The window-toolbar button that toggles the inspector.
         public static let inspectorToggle = "MainWindowView.inspectorToggle"
+    }
+
+    /// Identifiers applied by ``FITScope/InspectorPlaceholderView``.
+    public enum InspectorPlaceholderView
+    {
+        /// The placeholder shown in the inspector when a file failed to load or
+        /// render.
+        public static let view = "InspectorPlaceholderView.view"
+    }
+
+    /// Identifiers applied by ``FITScope/AboutView``.
+    public enum AboutView
+    {
+        /// The About window's root content.
+        public static let view = "AboutView.view"
     }
 }

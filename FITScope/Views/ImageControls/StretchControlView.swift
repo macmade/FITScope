@@ -146,22 +146,27 @@ public struct StretchControlView: View
                     }
                 }
                 .labelsHidden()
+                .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.modePicker )
             }
 
             if self.mode == .log
             {
                 SliderGridRowView( value: $logN1, minimumValue: 0, maximumValue: 255, label: "Intensity", image: "n.circle.fill" )
+                    .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.intensitySlider )
             }
 
             if self.mode == .arcsinh
             {
                 SliderGridRowView( value: $arcsinhN1, minimumValue: 0, maximumValue: 255, label: "Factor", image: "n.circle.fill" )
+                    .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.factorSlider )
             }
 
             if self.mode == .sigmoid
             {
                 SliderGridRowView( value: $sigmoidN1, minimumValue: 0, maximumValue: 255, label: "Midpoint", image: "n.circle.fill" )
+                    .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.midpointSlider )
                 SliderGridRowView( value: $sigmoidN2, minimumValue: 0, maximumValue: 255, label: "Contrast", image: "n.circle.fill" )
+                    .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.contrastSlider )
             }
         }
         .onChange( of: self.stretchAlgorithm )

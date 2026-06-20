@@ -58,6 +58,7 @@ public struct AboutView: View
             .padding( .trailing )
         }
         .frame( maxHeight: 200 )
+        .accessibilityIdentifier( AccessibilityIdentifier.AboutView.view )
     }
 }
 

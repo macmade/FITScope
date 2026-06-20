@@ -56,6 +56,7 @@ public struct ColorControlView: View
         {
             Toggle( "Invert", isOn: $invert )
                 .help( "Invert the image (photographic negative)." )
+                .accessibilityIdentifier( AccessibilityIdentifier.ColorControlView.invertToggle )
 
             Text( "Color map and high contrast are not yet available." )
                 .font( .system( size: 10 ) )

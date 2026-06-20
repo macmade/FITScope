@@ -42,6 +42,7 @@ public struct InspectorPlaceholderView: View
                 .foregroundStyle( .secondary )
                 .frame( maxWidth: .infinity, alignment: .leading )
         }
+        .accessibilityIdentifier( AccessibilityIdentifier.InspectorPlaceholderView.view )
     }
 }
 

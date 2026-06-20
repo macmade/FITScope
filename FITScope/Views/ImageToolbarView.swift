@@ -71,6 +71,7 @@ public struct ImageToolbarView: View
             Text( "\( Int( ( self.zoom * 100 ).rounded() ) )%" )
                 .font( .system( size: 11, design: .monospaced ) )
                 .frame( minWidth: 42 )
+                .accessibilityIdentifier( AccessibilityIdentifier.ImageToolbarView.zoomReadout )
 
             self.button( image: "plus", help: "Zoom in", identifier: AccessibilityIdentifier.ImageToolbarView.zoomIn, action: self.onZoomIn )
 

@@ -80,6 +80,7 @@ public struct HistogramControlView: View
         VStack( alignment: .leading )
         {
             SegmentedControlView( selection: self.$mode, values: Mode.allCases, title: { $0.description } )
+                .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.mode )
 
             HistogramView(
                 histogram:        self.displayedHistogram,
@@ -95,11 +96,14 @@ public struct HistogramControlView: View
             Toggle( "Show Original", isOn: $showOriginal )
                 .disabled( self.original == nil )
                 .help( "Show the histogram of the original image, before stretch, gamma and white balance." )
+                .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.showOriginal )
 
             Toggle( "Separate Channels", isOn: $separateChannels )
                 .disabled( self.mode == .luminance )
+                .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.separateChannels )
 
             Toggle( "Statistics", isOn: $showStatistics )
+                .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.statistics )
 
             if self.showStatistics
             {
@@ -112,6 +116,7 @@ public struct HistogramControlView: View
                 .background( Color.black.opacity( 0.35 ) )
                 .clipShape( RoundedRectangle( cornerRadius: 10 ) )
                 .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+                .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.statisticsPanel )
             }
         }
     }

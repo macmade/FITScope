@@ -119,6 +119,7 @@ public struct DebayerControlView: View
                     }
                 }
                 .labelsHidden()
+                .accessibilityIdentifier( AccessibilityIdentifier.DebayerControlView.modePicker )
             }
 
             GridRow
@@ -136,6 +137,7 @@ public struct DebayerControlView: View
                 }
                 .labelsHidden()
                 .disabled( self.mode == .none )
+                .accessibilityIdentifier( AccessibilityIdentifier.DebayerControlView.algorithmPicker )
             }
         }
         .onChange( of: self.mode )

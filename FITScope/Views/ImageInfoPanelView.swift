@@ -67,6 +67,7 @@ public struct ImageInfoPanelView: View
                     self.openWindow( id: "InfoWindow", value: info )
                 }
                 .frame( maxWidth: .infinity )
+                .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoPanelView.viewHeadersButton )
             }
             else
             {
