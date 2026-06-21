@@ -70,6 +70,21 @@ struct ImageAdjustmentsTests
 
         #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).orient == .init( rotation: .clockwise90, mirroredHorizontally: false ) )
 
+        // Brightness and contrast default to neutral and are omitted from the
+        // config (the image renders unadjusted).
+        #expect( adjustments.brightness == 0 )
+        #expect( adjustments.contrast   == 1 )
+        #expect( config.brightnessContrast == nil )
+
+        // Changes flow into a freshly built config.
+        adjustments.brightness = 0.2
+        adjustments.contrast   = 1.5
+
+        let brightnessContrast = try #require( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).brightnessContrast )
+
+        #expect( brightnessContrast.brightness == 0.2 )
+        #expect( brightnessContrast.contrast   == 1.5 )
+
         // The default .auto debayer selection uses the header pattern.
         let debayer = try #require( config.debayer )
 

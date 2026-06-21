@@ -103,6 +103,13 @@ public struct InspectorView: View
                         Divider()
                     }
 
+                    InspectorSectionView( "Brightness & Contrast", identifier: AccessibilityIdentifier.InspectorView.Section.brightnessContrast )
+                    {
+                        BrightnessContrastControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                    }
+
+                    Divider()
+
                     InspectorSectionView( "Color", identifier: AccessibilityIdentifier.InspectorView.Section.color )
                     {
                         ColorControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
@@ -161,6 +168,8 @@ public struct InspectorView: View
         current.gamma        = defaults.gamma
         current.whiteBalance = defaults.whiteBalance
         current.invert       = defaults.invert
+        current.brightness   = defaults.brightness
+        current.contrast     = defaults.contrast
         current.debayer      = defaults.debayer
         current.orientation  = defaults.orientation
 

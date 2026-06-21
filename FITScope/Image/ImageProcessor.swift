@@ -95,6 +95,13 @@ public enum ImageProcessor
         /// Whether to invert the image (photographic negative).
         public var invert: Bool
 
+        /// The additive brightness offset (`0` is neutral).
+        public var brightness: Double
+
+        /// The multiplicative contrast factor about the midpoint (`1` is
+        /// neutral).
+        public var contrast: Double
+
         /// How to debayer a colour-filter-array image.
         public var debayer: DebayerSelection
 
@@ -115,16 +122,20 @@ public enum ImageProcessor
         ///   - gamma:        The gamma-correction exponent.
         ///   - whiteBalance: How to white-balance the channels.
         ///   - invert:       Whether to invert the image.
+        ///   - brightness:   The additive brightness offset (`0` is neutral).
+        ///   - contrast:     The contrast factor about the midpoint (`1` is neutral).
         ///   - debayer:      How to debayer the image.
         ///   - debayerMode:  The demosaic algorithm used when debayering.
         ///   - orientation:  The net orientation applied to the rendered image.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
         {
             self.normalize    = normalize
             self.stretch      = stretch
             self.gamma        = gamma
             self.whiteBalance = whiteBalance
             self.invert       = invert
+            self.brightness   = brightness
+            self.contrast     = contrast
             self.debayer      = debayer
             self.debayerMode  = debayerMode
             self.orientation  = orientation
@@ -154,9 +165,10 @@ public enum ImageProcessor
                 normalize:    self.normalize,
                 stretch:      self.stretch,
                 correctGamma: self.gamma,
-                whiteBalance: self.whiteBalance,
-                invert:       self.invert,
-                orient:       self.orientation.isIdentity ? nil : self.orientation
+                whiteBalance:       self.whiteBalance,
+                invert:             self.invert,
+                brightnessContrast: ( self.brightness == 0 && self.contrast == 1 ) ? nil : ( brightness: self.brightness, contrast: self.contrast ),
+                orient:             self.orientation.isIdentity ? nil : self.orientation
             )
         }
     }

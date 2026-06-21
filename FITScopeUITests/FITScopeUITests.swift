@@ -304,6 +304,35 @@ final class FITScopeUITests: XCTestCase
         XCTAssertTrue( canvas.waitForExistence( timeout: 10 ), "The canvas disappeared after a rotation." )
     }
 
+    /// The brightness/contrast section exposes both sliders. Their pixel effect
+    /// is covered by unit tests (the SwiftPixel `BrightnessContrast` processor
+    /// and the adjustments-to-config mapping); per the suite's depth, slider
+    /// values are not dragged here — only reachability is asserted.
+    @MainActor
+    func testBrightnessContrastSlidersAreReachable() throws
+    {
+        self.continueAfterFailure = true
+
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
+            "The image canvas did not appear after opening a fixture."
+        )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.BrightnessContrastControlView.brightnessSlider ).waitForExistence( timeout: 5 ),
+            "The brightness slider did not appear in the inspector."
+        )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.BrightnessContrastControlView.contrastSlider ).exists,
+            "The contrast slider did not appear in the inspector."
+        )
+    }
+
     /// Opening the FITS headers window from the sidebar's information panel brings
     /// up the headers view (its search field and keyword table), in a window
     /// distinct from the main one.
@@ -744,6 +773,7 @@ final class FITScopeUITests: XCTestCase
                 ( "stretch section",     AccessibilityIdentifier.InspectorView.Section.stretch ),
                 ( "gamma section",       AccessibilityIdentifier.InspectorView.Section.gamma ),
                 ( "white-balance section", AccessibilityIdentifier.InspectorView.Section.whiteBalance ),
+                ( "brightness & contrast section", AccessibilityIdentifier.InspectorView.Section.brightnessContrast ),
                 ( "color section",       AccessibilityIdentifier.InspectorView.Section.color ),
                 ( "orientation section", AccessibilityIdentifier.InspectorView.Section.orientation ),
                 ( "reset button",        AccessibilityIdentifier.InspectorView.resetButton ),

@@ -120,6 +120,9 @@ public enum AccessibilityIdentifier
             /// The color section.
             public static let color = "InspectorView.Section.color"
 
+            /// The brightness & contrast section.
+            public static let brightnessContrast = "InspectorView.Section.brightnessContrast"
+
             /// The orientation (rotate / flip) section.
             public static let orientation = "InspectorView.Section.orientation"
         }
@@ -157,6 +160,16 @@ public enum AccessibilityIdentifier
 
         /// The flip-vertical button.
         public static let flipVertical = "ImageToolbarView.flipVertical"
+    }
+
+    /// Identifiers applied by ``FITScope/BrightnessContrastControlView``.
+    public enum BrightnessContrastControlView
+    {
+        /// The brightness slider.
+        public static let brightnessSlider = "BrightnessContrastControlView.brightnessSlider"
+
+        /// The contrast slider.
+        public static let contrastSlider = "BrightnessContrastControlView.contrastSlider"
     }
 
     /// Identifiers applied by ``FITScope/OrientationControlView``.

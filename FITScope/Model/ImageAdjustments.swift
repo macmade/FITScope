@@ -56,6 +56,13 @@ public final class ImageAdjustments: ObservableObject
     /// Whether to invert the image (photographic negative). Off by default.
     @Published public var invert: Bool = false
 
+    /// The additive brightness offset. Neutral (`0`) by default.
+    @Published public var brightness: Double = 0
+
+    /// The multiplicative contrast factor about the midpoint. Neutral (`1`) by
+    /// default.
+    @Published public var contrast: Double = 1
+
     /// How to debayer a colour-filter-array image into RGB.
     @Published public var debayer: ImageProcessor.DebayerSelection = .auto
 
@@ -80,6 +87,8 @@ public final class ImageAdjustments: ObservableObject
             gamma:        self.gamma,
             whiteBalance: self.whiteBalance,
             invert:       self.invert,
+            brightness:   self.brightness,
+            contrast:     self.contrast,
             debayer:      self.debayer,
             debayerMode:  self.debayerAlgorithm,
             orientation:  self.orientation
