@@ -52,13 +52,30 @@ public class FITSImageRenderer: ObservableObject
     }
 
     /// The histograms computed from a rendered image.
-    public struct Histogram
+    ///
+    /// Equality is by a per-instance identity, **not** by the bin contents. The
+    /// bin arrays are large, and a value-based `==` makes SwiftUI's view-graph
+    /// diffing deep-compare them on the main thread on every update — the cause
+    /// of a beachball when switching between already-rendered images. Because the
+    /// wrapper itself is `Equatable`, SwiftUI uses this cheap `==` and never
+    /// recurses into the `SwiftPixel.Histogram` bins. Each render produces a new
+    /// histogram with a new identity, so a genuinely new result still compares
+    /// unequal and refreshes the views.
+    public struct Histogram: Equatable
     {
+        /// A per-instance identity used for cheap equality.
+        public let id = UUID()
+
         /// The per-channel (red, green, blue) histogram.
         public let rgb:       SwiftPixel.Histogram
 
         /// The single-channel luminance histogram.
         public let luminance: SwiftPixel.Histogram
+
+        public static func == ( lhs: Histogram, rhs: Histogram ) -> Bool
+        {
+            lhs.id == rhs.id
+        }
     }
 
     /// Summary statistics for each histogram channel.

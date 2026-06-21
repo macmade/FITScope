@@ -272,5 +272,26 @@ struct FITSImageRendererTests
         #expect( result.histogram.rgb.data.count == direct.channels, "the histogram must use the rendered buffer's channel count" )
     }
 
+    /// The rendered histogram is compared by identity, not by its (large) bin
+    /// arrays, so SwiftUI's view-graph diffing never deep-compares the bins on
+    /// the main thread — the cause of a beachball when switching between
+    /// already-rendered images.
+    @Test
+    @MainActor
+    func histogramComparesByIdentityNotContents() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        let histogram = try #require( renderer.result?.histogram )
+        let sameData  = FITSImageRenderer.Histogram( rgb: histogram.rgb, luminance: histogram.luminance )
+
+        #expect( histogram == histogram, "the same histogram instance is equal to itself" )
+        #expect( histogram != sameData,  "a distinct histogram with identical bins is not equal — compared by identity, so SwiftUI never deep-compares the bins" )
+    }
+
     private struct StaleError: Error {}
 }
