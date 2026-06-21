@@ -71,16 +71,23 @@ public struct OpenFileRowView: View
                 {
                     RoundedRectangle( cornerRadius: 5 )
                         .fill( Color( .windowBackgroundColor ) )
-                        .overlay
-                        {
-                            if self.file.renderPhase.isInProgress
-                            {
-                                ProgressView().controlSize( .small )
-                            }
-                        }
                 }
             }
             .frame( width: 42, height: 30 )
+            .overlay
+            {
+                // Shown while loading and on every re-render. During a re-render
+                // the file already has a thumbnail, so this dims it and spins
+                // over the top rather than only filling an empty placeholder.
+                if self.file.renderPhase.isInProgress
+                {
+                    ZStack
+                    {
+                        Color.black.opacity( 0.35 )
+                        ProgressView().controlSize( .small )
+                    }
+                }
+            }
             .clipShape( RoundedRectangle( cornerRadius: 5 ) )
 
             VStack( alignment: .leading, spacing: 2 )

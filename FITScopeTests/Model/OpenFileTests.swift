@@ -84,18 +84,31 @@ struct OpenFileTests
     func renderPhaseMapsPipelineState() throws
     {
         // Not yet parsed → loading.
-        #expect( OpenFile.renderPhase( hasImage: false, hasResult: false, hasError: false ) == .loading )
+        #expect( OpenFile.renderPhase( hasImage: false, hasResult: false, hasError: false, isRendering: false ) == .loading )
 
         // Parsed, no committed result yet → still rendering (the bug: this read
         // as "done" because it keyed off the parsed image, not the result).
-        #expect( OpenFile.renderPhase( hasImage: true, hasResult: false, hasError: false ) == .rendering )
+        #expect( OpenFile.renderPhase( hasImage: true, hasResult: false, hasError: false, isRendering: false ) == .rendering )
 
         // Parsed and rendered → ready.
-        #expect( OpenFile.renderPhase( hasImage: true, hasResult: true, hasError: false ) == .ready )
+        #expect( OpenFile.renderPhase( hasImage: true, hasResult: true, hasError: false, isRendering: false ) == .ready )
 
         // A failure wins, whether it came from loading (no image) or rendering.
-        #expect( OpenFile.renderPhase( hasImage: false, hasResult: false, hasError: true ) == .failed )
-        #expect( OpenFile.renderPhase( hasImage: true,  hasResult: false, hasError: true ) == .failed )
+        #expect( OpenFile.renderPhase( hasImage: false, hasResult: false, hasError: true, isRendering: false ) == .failed )
+        #expect( OpenFile.renderPhase( hasImage: true,  hasResult: false, hasError: true, isRendering: false ) == .failed )
+    }
+
+    @Test
+    func renderPhaseReportsRenderingWhileAReRenderIsInFlight() throws
+    {
+        // A re-render keeps the last good result committed, so without the
+        // in-flight signal this would read as `.ready` and the sidebar spinner /
+        // processing affordances would never show during a re-render.
+        #expect( OpenFile.renderPhase( hasImage: true, hasResult: true, hasError: false, isRendering: true ) == .rendering )
+
+        // Re-rendering away from a prior failed parameter is work in progress,
+        // not a failure — the retained error must not win over the live render.
+        #expect( OpenFile.renderPhase( hasImage: true, hasResult: true, hasError: true, isRendering: true ) == .rendering )
     }
 
     @Test

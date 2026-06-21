@@ -125,31 +125,43 @@ public final class OpenFile: ObservableObject, Identifiable
     public var renderPhase: RenderPhase
     {
         Self.renderPhase(
-            hasImage:  self.image != nil,
-            hasResult: self.image?.renderer.result != nil,
-            hasError:  self.error != nil || self.image?.renderer.error != nil
+            hasImage:    self.image != nil,
+            hasResult:   self.image?.renderer.result != nil,
+            hasError:    self.error != nil || self.image?.renderer.error != nil,
+            isRendering: self.image?.renderer.isRendering ?? false
         )
     }
 
-    /// Maps the pipeline's observable state to a ``RenderPhase``. A failure wins;
-    /// then an unparsed file is loading; a parsed file with a committed result is
-    /// ready; otherwise it is still rendering.
+    /// Maps the pipeline's observable state to a ``RenderPhase``.
+    ///
+    /// An unparsed file is loading (or failed, if its load failed). Once parsed,
+    /// an in-flight render reports `rendering` — including a re-render that keeps
+    /// the previous result committed, so the processing affordances show for
+    /// every render. With no render in flight, a retained error reports `failed`,
+    /// a committed result is `ready`, and the brief window before the first
+    /// render starts is still `rendering`.
     ///
     /// - Parameters:
-    ///   - hasImage:  Whether the file has parsed into an image.
-    ///   - hasResult: Whether the renderer has committed a result.
-    ///   - hasError:  Whether loading or rendering failed.
+    ///   - hasImage:    Whether the file has parsed into an image.
+    ///   - hasResult:   Whether the renderer has committed a result.
+    ///   - hasError:    Whether loading or rendering failed.
+    ///   - isRendering: Whether a render is currently in flight.
     /// - Returns: The corresponding phase.
-    nonisolated static func renderPhase( hasImage: Bool, hasResult: Bool, hasError: Bool ) -> RenderPhase
+    nonisolated static func renderPhase( hasImage: Bool, hasResult: Bool, hasError: Bool, isRendering: Bool ) -> RenderPhase
     {
+        if hasImage == false
+        {
+            return hasError ? .failed : .loading
+        }
+
+        if isRendering
+        {
+            return .rendering
+        }
+
         if hasError
         {
             return .failed
-        }
-
-        if hasImage == false
-        {
-            return .loading
         }
 
         return hasResult ? .ready : .rendering

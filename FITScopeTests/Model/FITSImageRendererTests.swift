@@ -293,5 +293,74 @@ struct FITSImageRendererTests
         #expect( histogram != sameData,  "a distinct histogram with identical bins is not equal — compared by identity, so SwiftUI never deep-compares the bins" )
     }
 
+    /// A freshly created renderer is not rendering until one is started.
+    @Test
+    @MainActor
+    func isRenderingStartsFalse() throws
+    {
+        let renderer = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: Data(), properties: [] ) )
+
+        #expect( renderer.isRendering == false )
+    }
+
+    /// A completed render leaves the in-flight flag clear, whichever way it
+    /// finished, so the processing affordances return to the ready state.
+    @Test
+    @MainActor
+    func renderClearsIsRenderingWhenComplete() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        #expect( renderer.isRendering == false, "a finished render must clear the in-flight flag" )
+    }
+
+    /// Claiming a render generation marks the renderer as in flight; committing
+    /// that latest generation clears it. This is the signal the sidebar spinner,
+    /// status pill, disabled controls and canvas overlay all bind to.
+    @Test
+    @MainActor
+    func committingTheLatestGenerationClearsIsRendering() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        let good       = try #require( renderer.result )
+        let generation = renderer.nextRenderGeneration()
+
+        #expect( renderer.isRendering, "claiming a generation marks a render in flight" )
+
+        renderer.commit( .success( good ), generation: generation )
+
+        #expect( renderer.isRendering == false, "committing the latest render clears the flag" )
+    }
+
+    /// A stale render finishing after a newer one has started must not clear the
+    /// in-flight flag — the newer render is still running, so the processing
+    /// affordances must stay shown until it commits.
+    @Test
+    @MainActor
+    func staleCommitLeavesIsRenderingForTheInFlightRender() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        let good       = try #require( renderer.result )
+        let generation = renderer.nextRenderGeneration()
+
+        renderer.commit( .success( good ), generation: generation - 1 )
+
+        #expect( renderer.isRendering, "a stale commit must not clear the flag while a newer render is in flight" )
+    }
+
     private struct StaleError: Error {}
 }

@@ -141,6 +141,13 @@ public class FITSImageRenderer: ObservableObject
     /// The error from the most recent failed render, or `nil` on success.
     @Published public private( set ) var error:  Error?
 
+    /// Whether a render is currently in flight — set when a render claims its
+    /// generation and cleared when the latest generation commits. Stays set
+    /// across a re-render even though the previous result is retained, so the UI
+    /// can show a processing state (sidebar spinner, status pill, disabled
+    /// controls, canvas overlay) for every render, not just the first.
+    @Published public private( set ) var isRendering = false
+
     /// The user-tunable adjustments driving the render. Bind controls to these
     /// and call ``scheduleReRender()`` to apply changes.
     public let adjustments = ImageAdjustments()
@@ -293,9 +300,13 @@ public class FITSImageRenderer: ObservableObject
     /// Claims and returns the next render generation. Only the most recently
     /// claimed generation may ``commit(_:generation:)`` its outcome; earlier
     /// in-flight renders are superseded.
+    ///
+    /// Claiming a generation marks the renderer as in flight (``isRendering``);
+    /// the matching ``commit(_:generation:)`` clears it.
     func nextRenderGeneration() -> Int
     {
         self.currentRenderGeneration += 1
+        self.isRendering              = true
 
         return self.currentRenderGeneration
     }
@@ -324,6 +335,11 @@ public class FITSImageRenderer: ObservableObject
             case .failure( let error ):
                 self.error = error
         }
+
+        // The latest render has committed, so nothing is in flight. A superseded
+        // generation returns above without clearing the flag, so a newer render
+        // still in progress keeps the processing state shown.
+        self.isRendering = false
     }
 
     /// Re-renders the image with the current adjustments, debounced to coalesce

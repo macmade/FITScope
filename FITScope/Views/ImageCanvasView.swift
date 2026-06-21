@@ -126,6 +126,22 @@ public struct ImageCanvasView: View
                     onCanZoomOutChange: { self.canZoomOut = $0 }
                 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageCanvasView.canvas )
+                .overlay
+                {
+                    // Dim the retained image and spin while a re-render is in
+                    // flight. Layered beneath the floating bars (added after) and
+                    // non-interactive, so hovering still reveals the bars and the
+                    // status pill — which reads "Processing…" — stays legible.
+                    if image.renderer.isRendering
+                    {
+                        ZStack
+                        {
+                            Color.black.opacity( 0.3 )
+                            ProgressView().controlSize( .large )
+                        }
+                        .allowsHitTesting( false )
+                    }
+                }
                 .overlay( alignment: .top )
                 {
                     self.floatingBar
@@ -146,7 +162,7 @@ public struct ImageCanvasView: View
                 {
                     self.floatingBar
                     {
-                        StatusBarView( status: "Ready", readout: self.readout, dimensions: self.dimensionsSummary )
+                        StatusBarView( status: image.renderer.isRendering ? "Processing…" : "Ready", readout: self.readout, dimensions: self.dimensionsSummary )
                             .padding( .bottom, 16 )
                     }
                 }

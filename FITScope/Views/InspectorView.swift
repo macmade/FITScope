@@ -107,6 +107,10 @@ public struct InspectorView: View
                     .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.resetButton )
                 }
             }
+            // The controls drive the render, so lock them while one is in flight;
+            // they re-enable as soon as the render commits. Applied to the content
+            // stack rather than the scroll view, so it still scrolls meanwhile.
+            .disabled( self.image.renderer.isRendering )
         }
         .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.container )
     }
