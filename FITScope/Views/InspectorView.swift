@@ -117,6 +117,7 @@ public struct InspectorView: View
                     }
                     .padding( 14 )
                     .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.resetButton )
+                    .help( "Reset All Adjustments to Their Defaults" )
                 }
             }
             // The controls drive the render, so lock them while one is in flight;

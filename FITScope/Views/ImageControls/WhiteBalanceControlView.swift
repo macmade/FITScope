@@ -163,16 +163,20 @@ public struct WhiteBalanceControlView: View
                 }
                 .labelsHidden()
                 .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.modePicker )
+                .help( "Choose How to White-Balance the Channels" )
             }
 
             if self.mode == .manual
             {
                 SliderGridRowView( value: $red,   minimumValue: 0, maximumValue: 255, label: "Red",   image: "r.circle.fill" )
                     .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.redSlider )
+                    .help( "Red Gain" )
                 SliderGridRowView( value: $green, minimumValue: 0, maximumValue: 255, label: "Green", image: "g.circle.fill" )
                     .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.greenSlider )
+                    .help( "Green Gain" )
                 SliderGridRowView( value: $blue,  minimumValue: 0, maximumValue: 255, label: "Blue",  image: "b.circle.fill" )
                     .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.blueSlider )
+                    .help( "Blue Gain" )
             }
         }
         .onChange( of: self.whiteBalanceMode )

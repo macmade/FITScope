@@ -60,7 +60,7 @@ public struct FilesSidebarView: View
                     Image( systemName: "plus" )
                 }
                 .buttonStyle( .borderless )
-                .help( "Open FITS files…" )
+                .help( "Open FITS Files…" )
                 .accessibilityIdentifier( AccessibilityIdentifier.FilesSidebarView.addButton )
             }
             .padding( .horizontal, 14 )

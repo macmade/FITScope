@@ -67,11 +67,11 @@ public struct ImageToolbarView: View
     {
         HStack( spacing: 4 )
         {
-            self.button( image: "scope", help: "Center the image", identifier: AccessibilityIdentifier.ImageToolbarView.recenter, action: self.onRecenter )
+            self.button( image: "scope", help: "Center the Image", identifier: AccessibilityIdentifier.ImageToolbarView.recenter, action: self.onRecenter )
 
             Divider().frame( height: 16 )
 
-            self.button( image: "minus", help: "Zoom out", identifier: AccessibilityIdentifier.ImageToolbarView.zoomOut, action: self.onZoomOut )
+            self.button( image: "minus", help: "Zoom Out", identifier: AccessibilityIdentifier.ImageToolbarView.zoomOut, action: self.onZoomOut )
                 .disabled( self.canZoomOut == false )
 
             Text( "\( Int( ( self.zoom * 100 ).rounded() ) )%" )
@@ -79,12 +79,12 @@ public struct ImageToolbarView: View
                 .frame( minWidth: 42 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageToolbarView.zoomReadout )
 
-            self.button( image: "plus", help: "Zoom in", identifier: AccessibilityIdentifier.ImageToolbarView.zoomIn, action: self.onZoomIn )
+            self.button( image: "plus", help: "Zoom In", identifier: AccessibilityIdentifier.ImageToolbarView.zoomIn, action: self.onZoomIn )
 
             Divider().frame( height: 16 )
 
-            self.button( image: "arrow.up.left.and.arrow.down.right", help: "Fit the image to the window", identifier: AccessibilityIdentifier.ImageToolbarView.fit, action: self.onFit )
-            self.button( image: "1.magnifyingglass", help: "Show the image at actual size (100%)", identifier: AccessibilityIdentifier.ImageToolbarView.actualSize, action: self.onActualSize )
+            self.button( image: "arrow.up.left.and.arrow.down.right", help: "Fit the Image to the Window", identifier: AccessibilityIdentifier.ImageToolbarView.fit, action: self.onFit )
+            self.button( image: "1.magnifyingglass", help: "Show the Image at Actual Size (100%)", identifier: AccessibilityIdentifier.ImageToolbarView.actualSize, action: self.onActualSize )
         }
         .buttonStyle( .borderless )
         .padding( .horizontal, 8 )

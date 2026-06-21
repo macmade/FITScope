@@ -118,7 +118,7 @@ public struct MainWindowView: View
                 {
                     Image( systemName: "sidebar.trailing" )
                 }
-                .help( "Toggle the inspector" )
+                .help( self.inspectorToggleHelp )
                 .accessibilityIdentifier( AccessibilityIdentifier.MainWindowView.inspectorToggle )
             }
         }
@@ -156,6 +156,14 @@ public struct MainWindowView: View
         {
             self.appModel.windowDidClose( self.model )
         }
+    }
+
+    /// The inspector toggle's tooltip, matching the system sidebar toggle's
+    /// wording exactly ("Show Sidebar" / "Hide Sidebar") so the two
+    /// window-chrome toggles read consistently.
+    private var inspectorToggleHelp: String
+    {
+        self.showInspector ? "Hide Inspector" : "Show Inspector"
     }
 
     /// Loads dropped file URLs into the window.

@@ -145,6 +145,7 @@ public struct DebayerControlView: View
                 }
                 .labelsHidden()
                 .accessibilityIdentifier( AccessibilityIdentifier.DebayerControlView.modePicker )
+                .help( "Choose How to Reconstruct Color from the Bayer Pattern" )
             }
 
             GridRow
@@ -163,6 +164,7 @@ public struct DebayerControlView: View
                 .labelsHidden()
                 .disabled( self.mode == .none )
                 .accessibilityIdentifier( AccessibilityIdentifier.DebayerControlView.algorithmPicker )
+                .help( "Choose the Demosaic Algorithm" )
             }
         }
         .onChange( of: self.mode )

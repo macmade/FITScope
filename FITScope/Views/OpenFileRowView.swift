@@ -113,6 +113,7 @@ public struct OpenFileRowView: View
         .padding( .vertical, 2 )
         .accessibilityElement( children: .contain )
         .accessibilityIdentifier( AccessibilityIdentifier.OpenFileRowView.row )
+        .help( self.file.url.path )
         .contextMenu
         {
             Button( "View FITS Headers" )

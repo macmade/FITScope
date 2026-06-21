@@ -89,12 +89,14 @@ public struct GammaCorrectionControlView: View
                     .toggleStyle( SwitchToggleStyle() )
                     .labelsHidden()
                     .accessibilityIdentifier( AccessibilityIdentifier.GammaCorrectionControlView.toggle )
+                    .help( "Apply Gamma Correction" )
             }
 
             if self.enabled
             {
                 SliderGridRowView( value: $gamma, minimumValue: Self.minimumGamma, maximumValue: Self.maximumGamma, label: "Gamma", image: "eye.fill" )
                     .accessibilityIdentifier( AccessibilityIdentifier.GammaCorrectionControlView.slider )
+                    .help( "Gamma Exponent" )
             }
         }
         .onChange( of: self.gammaValue )

@@ -118,6 +118,7 @@ public struct HistogramControlView: View
                 SegmentedControlView( selection: self.modeBinding, values: self.availableModes, title: { $0.description } )
                     .frame( maxWidth: .infinity )
                     .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.mode )
+                    .help( "Choose Which Channels the Histogram Shows" )
 
                 self.optionsButton
             }
@@ -192,7 +193,7 @@ public struct HistogramControlView: View
         .buttonStyle( .plain )
         .menuIndicator( .hidden )
         .foregroundStyle( .secondary )
-        .help( "Histogram view options" )
+        .help( "Histogram View Options" )
         .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.viewOptions )
     }
 
