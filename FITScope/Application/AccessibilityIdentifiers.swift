@@ -280,5 +280,16 @@ public enum AccessibilityIdentifier
 
         /// The OpenWeatherMap API-key secure field in the API Keys tab.
         public static let openWeatherMapKeyField = "PreferencesView.openWeatherMapKeyField"
+
+        /// The Information Panel tab's content.
+        public static let informationPanelTab = "PreferencesView.informationPanelTab"
+
+        /// The reorderable list of information-panel fields in the Information
+        /// Panel tab.
+        public static let informationPanelFieldList = "PreferencesView.informationPanelFieldList"
+
+        /// The button that restores the information-panel fields to their
+        /// defaults in the Information Panel tab.
+        public static let informationPanelResetButton = "PreferencesView.informationPanelResetButton"
     }
 }

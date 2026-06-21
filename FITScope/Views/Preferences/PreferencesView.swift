@@ -67,7 +67,7 @@ public struct PreferencesView: View
                 .tabItem { Label( "API Keys", systemImage: "key" ) }
                 .tag( Tab.apiKeys )
 
-            PreferencesPlaceholderView( "Information Panel", systemImage: "list.bullet.rectangle" )
+            InformationPanelPreferencesView( preferences: self.preferences )
                 .tabItem { Label( "Information Panel", systemImage: "list.bullet.rectangle" ) }
                 .tag( Tab.informationPanel )
 
@@ -75,6 +75,6 @@ public struct PreferencesView: View
                 .tabItem { Label( "Astro", systemImage: "sparkles" ) }
                 .tag( Tab.astro )
         }
-        .frame( width: 480, height: 260 )
+        .frame( width: 480, height: 360 )
     }
 }

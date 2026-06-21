@@ -40,9 +40,20 @@ public struct ImageInformation
         public let value: String
     }
 
-    /// The ordered, present-only fields. Absent keywords are omitted entirely
-    /// rather than shown as placeholders.
-    public let rows: [ Row ]
+    /// The present value for each field that has one, keyed by ``InfoField``.
+    /// Absent keywords have no entry, so they are never shown as placeholders.
+    /// ``rows(for:)`` reads from this to honour the user's selection and order.
+    private let values: [ InfoField: String ]
+
+    /// The ordered, present-only fields in the canonical default order — every
+    /// available field, geometry first.
+    ///
+    /// The configurable panel uses ``rows(for:)`` instead; this convenience
+    /// covers callers that want the full default layout.
+    public var rows: [ Row ]
+    {
+        self.rows( for: InfoField.allCases )
+    }
 
     /// The image dimensions, e.g. `"6240 × 4160"`. Used by the file row and
     /// status bar.
@@ -53,6 +64,23 @@ public struct ImageInformation
 
     /// The channel description, e.g. `"1 (Grayscale)"`.
     public let channels:   String
+
+    /// The present-only rows for the given fields, in the given order.
+    ///
+    /// A field with no value in this image — its keyword is absent — is omitted
+    /// entirely, so the panel never shows empty placeholders. The result order
+    /// follows `fields`, letting the caller drive both selection and order from
+    /// the user's configuration.
+    ///
+    /// - Parameter fields: The fields to show, in display order.
+    /// - Returns: One row per present field, in `fields` order.
+    public func rows( for fields: [ InfoField ] ) -> [ Row ]
+    {
+        fields.compactMap
+        {
+            field in self.values[ field ].map { Row( label: field.label, value: $0 ) }
+        }
+    }
 
     /// Builds the summary from header info, returning `nil` when the required
     /// geometry keywords (`NAXIS1`/`NAXIS2`/`BITPIX`) are absent.
@@ -88,39 +116,39 @@ public struct ImageInformation
         self.bitDepth   = "\( bitPix.replacingOccurrences( of: "-", with: "" ) )-bit"
         self.channels   = bayer == nil ? "1 (Grayscale)" : "1 (CFA)"
 
-        var rows: [ Row ] =
+        var values: [ InfoField: String ] =
             [
-                Row( label: "Dimensions", value: self.dimensions ),
-                Row( label: "Bit Depth",  value: self.bitDepth ),
-                Row( label: "Channels",   value: self.channels ),
+                .dimensions: self.dimensions,
+                .bitDepth:   self.bitDepth,
+                .channels:   self.channels,
             ]
 
-        func add( _ label: String, _ names: [ String ], suffix: String = "" )
+        func add( _ field: InfoField, _ names: [ String ], suffix: String = "" )
         {
             if let value = value( names )
             {
-                rows.append( Row( label: label, value: suffix.isEmpty ? value : "\( value )\( suffix )" ) )
+                values[ field ] = suffix.isEmpty ? value : "\( value )\( suffix )"
             }
         }
 
         if let bayer = bayer
         {
-            rows.append( Row( label: "Bayer", value: bayer ) )
+            values[ .bayer ] = bayer
         }
 
-        add( "Object",       [ "OBJECT" ] )
-        add( "RA",           [ "OBJCTRA", "RA", "CRVAL1" ] )
-        add( "Dec",          [ "OBJCTDEC", "DEC", "CRVAL2" ] )
-        add( "Date",         [ "DATE-OBS" ] )
-        add( "Exposure",     [ "EXPTIME", "EXPOSURE" ], suffix: " s" )
-        add( "Filter",       [ "FILTER" ] )
-        add( "Telescope",    [ "TELESCOP" ] )
-        add( "Instrument",   [ "INSTRUME" ] )
-        add( "Focal Length", [ "FOCALLEN" ] )
-        add( "Gain",         [ "GAIN", "EGAIN" ] )
-        add( "Offset",       [ "OFFSET", "BLKLEVEL" ] )
-        add( "Sensor Temp",  [ "CCD-TEMP" ] )
+        add( .object,            [ "OBJECT" ] )
+        add( .rightAscension,    [ "OBJCTRA", "RA", "CRVAL1" ] )
+        add( .declination,       [ "OBJCTDEC", "DEC", "CRVAL2" ] )
+        add( .date,              [ "DATE-OBS" ] )
+        add( .exposure,          [ "EXPTIME", "EXPOSURE" ], suffix: " s" )
+        add( .filter,            [ "FILTER" ] )
+        add( .telescope,         [ "TELESCOP" ] )
+        add( .instrument,        [ "INSTRUME" ] )
+        add( .focalLength,       [ "FOCALLEN" ] )
+        add( .gain,              [ "GAIN", "EGAIN" ] )
+        add( .offset,            [ "OFFSET", "BLKLEVEL" ] )
+        add( .sensorTemperature, [ "CCD-TEMP" ] )
 
-        self.rows = rows
+        self.values = values
     }
 }

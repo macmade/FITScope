@@ -74,4 +74,124 @@ struct PreferencesTests
 
         #expect( reloaded.autoHideFloatingBars == false )
     }
+
+    /// With nothing stored, every information-panel field is present and visible,
+    /// in the canonical order — so the panel looks exactly as it did before the
+    /// field configuration existed.
+    @Test
+    @MainActor
+    func defaultsToAllInfoFieldsVisibleInCanonicalOrder()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.infoPanelFields.map { $0.field } == InfoField.allCases )
+        #expect( preferences.infoPanelFields.allSatisfy { $0.isVisible } )
+    }
+
+    /// Reordering the fields and hiding one survives across launches.
+    @Test
+    @MainActor
+    func persistsInfoPanelFieldChangesAcrossInstances()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        // Reverse the order and hide the first field.
+        var fields = preferences.infoPanelFields.reversed().map { $0 }
+
+        fields[ 0 ].isVisible = false
+        preferences.infoPanelFields = fields
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.infoPanelFields == fields )
+    }
+
+    /// A stored configuration that predates a newly-added field still works: the
+    /// missing field is appended (visible) so it is never silently lost, while
+    /// the stored order and visibility of the known fields are preserved.
+    @Test
+    @MainActor
+    func appendsFieldsMissingFromTheStoredConfiguration()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        // Only one field stored, hidden — every other field is "new".
+        self.storeInfoPanelFields( [ ( "object", false ) ], in: defaults )
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.infoPanelFields.first == .init( field: .object, isVisible: false ) )
+        #expect( Set( preferences.infoPanelFields.map { $0.field } ) == Set( InfoField.allCases ) )
+        #expect( preferences.infoPanelFields.count == InfoField.allCases.count )
+        // The appended (previously-unknown) fields default to visible.
+        #expect( preferences.infoPanelFields.dropFirst().allSatisfy { $0.isVisible } )
+    }
+
+    /// A stored field that no longer maps to a known field (e.g. removed in a
+    /// later version) is dropped, leaving exactly the current field set.
+    @Test
+    @MainActor
+    func dropsUnknownStoredFields()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        self.storeInfoPanelFields( [ ( "object", true ), ( "noSuchField", true ) ], in: defaults )
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.infoPanelFields.contains { $0.field.rawValue == "noSuchField" } == false )
+        #expect( preferences.infoPanelFields.map { $0.field }.sorted { $0.rawValue < $1.rawValue }
+            == InfoField.allCases.sorted { $0.rawValue < $1.rawValue } )
+    }
+
+    /// Resetting restores every field to visible, in canonical order, and that
+    /// restored default persists across launches.
+    @Test
+    @MainActor
+    func resetInfoPanelFieldsRestoresDefaults()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        // Diverge from the default: reverse the order and hide a field.
+        var fields = preferences.infoPanelFields.reversed().map { $0 }
+
+        fields[ 0 ].isVisible = false
+        preferences.infoPanelFields = fields
+
+        preferences.resetInfoPanelFields()
+
+        #expect( preferences.infoPanelFields.map { $0.field } == InfoField.allCases )
+        #expect( preferences.infoPanelFields.allSatisfy { $0.isVisible } )
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.infoPanelFields == preferences.infoPanelFields )
+    }
+
+    /// Writes a raw `infoPanelFields` payload — `(fieldRawValue, visible)` pairs,
+    /// JSON-encoded under the persisted key — directly into the store, to seed
+    /// the reconciliation tests with partial or stale configurations.
+    private func storeInfoPanelFields( _ pairs: [ ( String, Bool ) ], in defaults: UserDefaults )
+    {
+        let payload = pairs.map { [ "field": $0.0, "visible": $0.1 ] as [ String: Any ] }
+        let data    = try! JSONSerialization.data( withJSONObject: payload )
+
+        defaults.set( data, forKey: "infoPanelFields" )
+    }
 }

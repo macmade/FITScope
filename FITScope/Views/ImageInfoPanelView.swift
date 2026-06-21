@@ -31,6 +31,10 @@ public struct ImageInfoPanelView: View
     /// The file whose information is shown.
     @ObservedObject private var file: OpenFile
 
+    /// The shared preferences, whose ``Preferences/infoPanelFields`` selects and
+    /// orders the fields shown here.
+    @EnvironmentObject private var preferences: Preferences
+
     /// Opens the auxiliary headers window.
     @Environment( \.openWindow ) private var openWindow
 
@@ -56,7 +60,7 @@ public struct ImageInfoPanelView: View
             {
                 Grid( alignment: .leading, horizontalSpacing: 12, verticalSpacing: 3 )
                 {
-                    ForEach( summary.rows, id: \.label )
+                    ForEach( summary.rows( for: self.visibleFields ), id: \.label )
                     {
                         row in self.row( row.label, row.value )
                     }
@@ -78,6 +82,12 @@ public struct ImageInfoPanelView: View
         }
         .padding( 14 )
         .frame( maxWidth: .infinity, alignment: .leading )
+    }
+
+    /// The fields the user wants shown, in their chosen order.
+    private var visibleFields: [ InfoField ]
+    {
+        self.preferences.infoPanelFields.filter { $0.isVisible }.map { $0.field }
     }
 
     /// A label/value grid row.

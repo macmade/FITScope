@@ -88,4 +88,84 @@ struct ImageInformationTests
         // Core geometry is always present.
         #expect( summary.rows.contains { $0.label == "Dimensions" } )
     }
+
+    /// `rows(for:)` returns rows in exactly the requested field order, not the
+    /// canonical one.
+    @Test
+    func rowsFollowTheRequestedFieldOrder() throws
+    {
+        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+
+        let rows = summary.rows( for: [ .channels, .dimensions, .bitDepth ] )
+
+        #expect( rows.map { $0.label } == [ "Channels", "Dimensions", "Bit Depth" ] )
+    }
+
+    /// `rows(for:)` includes only the requested fields — a field absent from the
+    /// list is not emitted even though its value is available.
+    @Test
+    func rowsOmitFieldsNotRequested() throws
+    {
+        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+
+        let rows = summary.rows( for: [ .dimensions ] )
+
+        #expect( rows.map { $0.label } == [ "Dimensions" ] )
+    }
+
+    /// A requested field whose keyword is absent from the file is still omitted:
+    /// the panel never shows empty placeholders.
+    @Test
+    func rowsOmitRequestedButAbsentFields() throws
+    {
+        // Geometry only — no OBJECT or FILTER keyword.
+        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+
+        let rows = summary.rows( for: [ .object, .dimensions, .filter ] )
+
+        #expect( rows.map { $0.label } == [ "Dimensions" ] )
+    }
+
+    /// A requested field whose keyword is present is emitted with its value.
+    @Test
+    func rowsIncludeRequestedPresentFields() throws
+    {
+        let info    = try Self.makeInfo( keywords: [ ( "OBJECT", "'M31'" ), ( "EXPTIME", "30" ) ] )
+        let summary = try #require( ImageInformation( info: info ) )
+
+        let rows = summary.rows( for: [ .object, .exposure ] )
+
+        #expect( rows == [ .init( label: "Object", value: "M31" ), .init( label: "Exposure", value: "30 s" ) ] )
+    }
+
+    /// Builds a controlled, in-memory `FITSImageInfo` with a valid 4×4 geometry
+    /// and any extra header keywords, so row tests don't depend on the contents
+    /// of a bundled fixture.
+    ///
+    /// - Parameter keywords: Extra `(name, FITS-formatted value)` records to add
+    ///   after the mandatory geometry keywords. String values must be quoted,
+    ///   e.g. `( "OBJECT", "'M31'" )`.
+    private static func makeInfo( keywords: [ ( String, String ) ] = [] ) throws -> FITSImageInfo
+    {
+        var records =
+            [
+                "SIMPLE  = T",
+                "BITPIX  = 8",
+                "NAXIS   = 2",
+                "NAXIS1  = 4",
+                "NAXIS2  = 4",
+            ]
+
+        records += keywords.map { "\( $0.0.padding( toLength: 8, withPad: " ", startingAt: 0 ) )= \( $0.1 )" }
+        records.append( "END" )
+
+        let header = records.map { $0.padding( toLength: 80, withPad: " ", startingAt: 0 ) }.joined()
+        var data   = Data( header.padding( toLength: FITSFile.blockSize, withPad: " ", startingAt: 0 ).utf8 )
+
+        data.append( Data( count: FITSFile.blockSize ) ) // 4×4 bytes fit in one data block.
+
+        let file = try FITSFile( data: data, options: .lenient )
+
+        return FITSImageInfo( url: URL( fileURLWithPath: "/tmp/test.fits" ), file: file )
+    }
 }
