@@ -103,6 +103,12 @@ public struct OpenFileRowView: View
             }
 
             Spacer( minLength: 0 )
+
+            if let warning = self.file.warning
+            {
+                Image( systemName: "exclamationmark.triangle.fill" )
+                    .help( warning )
+            }
         }
         .padding( .vertical, 2 )
         .accessibilityElement( children: .contain )

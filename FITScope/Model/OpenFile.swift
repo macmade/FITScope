@@ -117,6 +117,30 @@ public final class OpenFile: ObservableObject, Identifiable
         self.loader.error
     }
 
+    /// A human-readable description of why the file cannot be displayed — a load
+    /// failure, or a render failure with no previously good result — or `nil`
+    /// when there is nothing to flag. Drives the attention icon and its tooltip
+    /// in the sidebar row.
+    ///
+    /// A render failure that still has a retained good result (e.g. a transient
+    /// bad adjustment the user can back out of) is deliberately *not* flagged:
+    /// the image is still shown, so the row should not raise an alarm.
+    public var warning: String?
+    {
+        guard let image = self.image
+        else
+        {
+            return self.error?.localizedDescription
+        }
+
+        if image.renderer.result == nil
+        {
+            return image.renderer.error?.localizedDescription
+        }
+
+        return nil
+    }
+
     /// The file's current stage in the load → render pipeline.
     ///
     /// `rendering` covers the window after parsing finishes but before the first

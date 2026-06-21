@@ -169,4 +169,61 @@ struct OpenFileTests
 
         #expect( file.renderPhase == .ready )
     }
+
+    @Test
+    @MainActor
+    func warningFlagsAFileThatCannotBeDisplayed() async throws
+    {
+        let file = OpenFile( url: TestFixtures.invalidStructure )
+
+        await file.load()
+        await file.image?.renderer.render()
+
+        #expect( file.warning != nil, "a file that fails to load must surface a warning for the attention icon" )
+    }
+
+    @Test
+    @MainActor
+    func noWarningForAHealthyFile() async throws
+    {
+        let file = OpenFile( url: TestFixtures.renderableImage )
+
+        await file.load()
+        await file.image?.renderer.render()
+
+        #expect( file.warning == nil, "a file that loads and renders has nothing to flag" )
+    }
+
+    @Test
+    @MainActor
+    func noWarningWhileStillLoading() throws
+    {
+        let file = OpenFile( url: TestFixtures.renderableImage )
+
+        #expect( file.warning == nil, "a file still loading has no failure to flag yet" )
+    }
+
+    @Test
+    @MainActor
+    func noWarningWhenABadAdjustmentRetainsTheLastGoodResult() async throws
+    {
+        let file = OpenFile( url: TestFixtures.renderableImage )
+
+        await file.load()
+        await file.image?.renderer.render()
+
+        let renderer = try #require( file.image?.renderer )
+
+        #expect( file.warning == nil )
+
+        // A mathematically invalid parameter fails the re-render, but the last
+        // good result is retained and still displayed — so the row, which still
+        // shows a usable image, must not be flagged.
+        renderer.adjustments.stretch = .arcsinh( 0 )
+
+        await renderer.render()
+
+        #expect( renderer.error != nil, "the bad adjustment must have failed the render" )
+        #expect( file.warning == nil, "a retained good result must not raise a warning" )
+    }
 }
