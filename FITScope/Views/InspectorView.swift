@@ -110,6 +110,13 @@ public struct InspectorView: View
 
                     Divider()
 
+                    InspectorSectionView( "Orientation", identifier: AccessibilityIdentifier.InspectorView.Section.orientation )
+                    {
+                        OrientationControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                    }
+
+                    Divider()
+
                     Button( action: self.reset )
                     {
                         Label( "Reset View", systemImage: "arrow.counterclockwise" )
@@ -155,6 +162,7 @@ public struct InspectorView: View
         current.whiteBalance = defaults.whiteBalance
         current.invert       = defaults.invert
         current.debayer      = defaults.debayer
+        current.orientation  = defaults.orientation
 
         // Recreate the controls so they reseed from the now-default adjustments;
         // they cache their displayed state in @State, which the in-place mutation

@@ -208,6 +208,10 @@ final class FITScopeUITests: XCTestCase
                 ( "toolbar zoom out",    AccessibilityIdentifier.ImageToolbarView.zoomOut ),
                 ( "toolbar zoom in",     AccessibilityIdentifier.ImageToolbarView.zoomIn ),
                 ( "toolbar actual size", AccessibilityIdentifier.ImageToolbarView.actualSize ),
+                ( "toolbar rotate left",     AccessibilityIdentifier.ImageToolbarView.rotateLeft ),
+                ( "toolbar rotate right",    AccessibilityIdentifier.ImageToolbarView.rotateRight ),
+                ( "toolbar flip horizontal", AccessibilityIdentifier.ImageToolbarView.flipHorizontal ),
+                ( "toolbar flip vertical",   AccessibilityIdentifier.ImageToolbarView.flipVertical ),
             ]
 
         for entry in floating
@@ -258,6 +262,46 @@ final class FITScopeUITests: XCTestCase
         // Enabling gamma reveals the slider and re-renders; the canvas stays put.
         XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "Enabling gamma did not reveal its slider." )
         XCTAssertTrue( canvas.exists, "The canvas disappeared after a gamma adjustment." )
+    }
+
+    /// The inspector's orientation section exposes its four reorient buttons, and
+    /// rotating re-renders the image without losing the canvas. The reorientation
+    /// is a geometry transform whose correctness is covered by unit tests (the
+    /// SwiftPixel `Orient` processor and the source-coordinate mapping); here we
+    /// only confirm the controls are reachable and keep the image rendered.
+    @MainActor
+    func testOrientationControlsReorientAndKeepRendering() throws
+    {
+        self.continueAfterFailure = true
+
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
+
+        let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
+
+        XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The image canvas did not appear after opening a fixture." )
+
+        let buttons: [ ( name: String, identifier: String ) ] =
+            [
+                ( "rotate left",     AccessibilityIdentifier.OrientationControlView.rotateLeft ),
+                ( "rotate right",    AccessibilityIdentifier.OrientationControlView.rotateRight ),
+                ( "flip horizontal", AccessibilityIdentifier.OrientationControlView.flipHorizontal ),
+                ( "flip vertical",   AccessibilityIdentifier.OrientationControlView.flipVertical ),
+            ]
+
+        for entry in buttons
+        {
+            XCTAssertTrue(
+                UITestSupport.element( app, entry.identifier ).waitForExistence( timeout: 5 ),
+                "Orientation control missing: \( entry.name ) (\( entry.identifier ))"
+            )
+        }
+
+        // Rotating triggers a re-render; the canvas must remain rendered.
+        UITestSupport.element( app, AccessibilityIdentifier.OrientationControlView.rotateRight ).click()
+
+        XCTAssertTrue( canvas.waitForExistence( timeout: 10 ), "The canvas disappeared after a rotation." )
     }
 
     /// Opening the FITS headers window from the sidebar's information panel brings
@@ -701,6 +745,7 @@ final class FITScopeUITests: XCTestCase
                 ( "gamma section",       AccessibilityIdentifier.InspectorView.Section.gamma ),
                 ( "white-balance section", AccessibilityIdentifier.InspectorView.Section.whiteBalance ),
                 ( "color section",       AccessibilityIdentifier.InspectorView.Section.color ),
+                ( "orientation section", AccessibilityIdentifier.InspectorView.Section.orientation ),
                 ( "reset button",        AccessibilityIdentifier.InspectorView.resetButton ),
             ]
 

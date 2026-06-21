@@ -101,6 +101,10 @@ public enum ImageProcessor
         /// The demosaic algorithm used when debayering.
         public var debayerMode: Processors.Debayer.Mode
 
+        /// The net orientation (rotation + optional mirror) applied to the
+        /// rendered image. Defaults to the captured orientation.
+        public var orientation: Processors.Orient.Orientation
+
         /// Creates a settings snapshot. The defaults render the file as
         /// captured: linear normalization only, with no stretch, gamma or white
         /// balance.
@@ -113,7 +117,8 @@ public enum ImageProcessor
         ///   - invert:       Whether to invert the image.
         ///   - debayer:      How to debayer the image.
         ///   - debayerMode:  The demosaic algorithm used when debayering.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear )
+        ///   - orientation:  The net orientation applied to the rendered image.
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
         {
             self.normalize    = normalize
             self.stretch      = stretch
@@ -122,6 +127,7 @@ public enum ImageProcessor
             self.invert       = invert
             self.debayer      = debayer
             self.debayerMode  = debayerMode
+            self.orientation  = orientation
         }
 
         /// Builds the pipeline configuration, combining these tunables with the
@@ -149,7 +155,8 @@ public enum ImageProcessor
                 stretch:      self.stretch,
                 correctGamma: self.gamma,
                 whiteBalance: self.whiteBalance,
-                invert:       self.invert
+                invert:       self.invert,
+                orient:       self.orientation.isIdentity ? nil : self.orientation
             )
         }
     }
@@ -264,6 +271,26 @@ public enum ImageProcessor
 
             return ( image, bytes, buffer.channels, isMonochrome )
         }
+    }
+
+    /// Reads the image dimensions from the header's `NAXIS1` / `NAXIS2`
+    /// keywords.
+    ///
+    /// - Parameter properties: The image HDU's header properties.
+    /// - Returns: The source `width` and `height`, or `nil` if either keyword is
+    ///   missing or non-positive.
+    public static func imageDimensions( from properties: [ FITSPropertySnapshot ] ) -> ( width: Int, height: Int )?
+    {
+        guard let nAxis1 = properties.first( where: { $0.name == "NAXIS1" } )?.value.integer,
+              let nAxis2 = properties.first( where: { $0.name == "NAXIS2" } )?.value.integer,
+              let width  = Int( exactly: nAxis1 ), width  > 0,
+              let height = Int( exactly: nAxis2 ), height > 0
+        else
+        {
+            return nil
+        }
+
+        return ( width, height )
     }
 
     /// Reads the linear pixel-scaling keywords `BSCALE` and `BZERO`.

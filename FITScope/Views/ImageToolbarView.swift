@@ -50,16 +50,32 @@ public struct ImageToolbarView: View
     /// Called to request a zoom-out step.
     public let onZoomOut:    () -> Void
 
+    /// Called to rotate the image 90° counter-clockwise.
+    public let onRotateLeft:     () -> Void
+
+    /// Called to rotate the image 90° clockwise.
+    public let onRotateRight:    () -> Void
+
+    /// Called to flip the image horizontally.
+    public let onFlipHorizontal: () -> Void
+
+    /// Called to flip the image vertically.
+    public let onFlipVertical:   () -> Void
+
     /// Creates the toolbar.
-    public init( zoom: CGFloat, canZoomOut: Bool, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void )
+    public init( zoom: CGFloat, canZoomOut: Bool, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void, onRotateLeft: @escaping () -> Void, onRotateRight: @escaping () -> Void, onFlipHorizontal: @escaping () -> Void, onFlipVertical: @escaping () -> Void )
     {
-        self.zoom         = zoom
-        self.canZoomOut   = canZoomOut
-        self.onFit        = onFit
-        self.onActualSize = onActualSize
-        self.onRecenter   = onRecenter
-        self.onZoomIn     = onZoomIn
-        self.onZoomOut    = onZoomOut
+        self.zoom             = zoom
+        self.canZoomOut       = canZoomOut
+        self.onFit            = onFit
+        self.onActualSize     = onActualSize
+        self.onRecenter       = onRecenter
+        self.onZoomIn         = onZoomIn
+        self.onZoomOut        = onZoomOut
+        self.onRotateLeft     = onRotateLeft
+        self.onRotateRight    = onRotateRight
+        self.onFlipHorizontal = onFlipHorizontal
+        self.onFlipVertical   = onFlipVertical
     }
 
     /// The view's content.
@@ -85,6 +101,13 @@ public struct ImageToolbarView: View
 
             self.button( image: "arrow.up.left.and.arrow.down.right", help: "Fit the Image to the Window", identifier: AccessibilityIdentifier.ImageToolbarView.fit, action: self.onFit )
             self.button( image: "1.magnifyingglass", help: "Show the Image at Actual Size (100%)", identifier: AccessibilityIdentifier.ImageToolbarView.actualSize, action: self.onActualSize )
+
+            Divider().frame( height: 16 )
+
+            self.button( image: "rotate.left",  help: "Rotate Left (90° Counter-Clockwise)", identifier: AccessibilityIdentifier.ImageToolbarView.rotateLeft,  action: self.onRotateLeft )
+            self.button( image: "rotate.right", help: "Rotate Right (90° Clockwise)",        identifier: AccessibilityIdentifier.ImageToolbarView.rotateRight, action: self.onRotateRight )
+            self.button( image: "arrow.left.and.right.righttriangle.left.righttriangle.right", help: "Flip Horizontally", identifier: AccessibilityIdentifier.ImageToolbarView.flipHorizontal, action: self.onFlipHorizontal )
+            self.button( image: "arrow.up.and.down.righttriangle.up.righttriangle.down",       help: "Flip Vertically",   identifier: AccessibilityIdentifier.ImageToolbarView.flipVertical,   action: self.onFlipVertical )
         }
         .buttonStyle( .borderless )
         .padding( .horizontal, 8 )
@@ -110,7 +133,7 @@ public struct ImageToolbarView: View
 
 #Preview
 {
-    ImageToolbarView( zoom: 1.0, canZoomOut: true, onFit: {}, onActualSize: {}, onRecenter: {}, onZoomIn: {}, onZoomOut: {} )
+    ImageToolbarView( zoom: 1.0, canZoomOut: true, onFit: {}, onActualSize: {}, onRecenter: {}, onZoomIn: {}, onZoomOut: {}, onRotateLeft: {}, onRotateRight: {}, onFlipHorizontal: {}, onFlipVertical: {} )
         .padding()
         .background( .black )
 }

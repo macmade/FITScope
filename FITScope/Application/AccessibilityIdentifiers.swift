@@ -119,6 +119,9 @@ public enum AccessibilityIdentifier
 
             /// The color section.
             public static let color = "InspectorView.Section.color"
+
+            /// The orientation (rotate / flip) section.
+            public static let orientation = "InspectorView.Section.orientation"
         }
     }
 
@@ -142,6 +145,34 @@ public enum AccessibilityIdentifier
 
         /// The zoom-percentage readout between the zoom-out and zoom-in buttons.
         public static let zoomReadout = "ImageToolbarView.zoomReadout"
+
+        /// The rotate-left (counter-clockwise) button.
+        public static let rotateLeft = "ImageToolbarView.rotateLeft"
+
+        /// The rotate-right (clockwise) button.
+        public static let rotateRight = "ImageToolbarView.rotateRight"
+
+        /// The flip-horizontal button.
+        public static let flipHorizontal = "ImageToolbarView.flipHorizontal"
+
+        /// The flip-vertical button.
+        public static let flipVertical = "ImageToolbarView.flipVertical"
+    }
+
+    /// Identifiers applied by ``FITScope/OrientationControlView``.
+    public enum OrientationControlView
+    {
+        /// The rotate-left (counter-clockwise) button.
+        public static let rotateLeft = "OrientationControlView.rotateLeft"
+
+        /// The rotate-right (clockwise) button.
+        public static let rotateRight = "OrientationControlView.rotateRight"
+
+        /// The flip-horizontal button.
+        public static let flipHorizontal = "OrientationControlView.flipHorizontal"
+
+        /// The flip-vertical button.
+        public static let flipVertical = "OrientationControlView.flipVertical"
     }
 
     /// Identifiers applied by ``FITScope/HistogramControlView``.

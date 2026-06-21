@@ -35,6 +35,7 @@
 		05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05986B472DF892D300A55E77 /* SliderGridRowView.swift */; };
 		05BD7A942DF311F700F4AAFC /* DebayerControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */; };
 		0AB10000000000000000F002 /* ColorControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000F001 /* ColorControlView.swift */; };
+		0AB10000000000000000FA02 /* OrientationControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000FA01 /* OrientationControlView.swift */; };
 		05BD7A962DF3120400F4AAFC /* GammaCorrectionControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A952DF3120100F4AAFC /* GammaCorrectionControlView.swift */; };
 		05BD7A982DF3120E00F4AAFC /* StretchControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A972DF3120600F4AAFC /* StretchControlView.swift */; };
 		05BD7A9A2DF3121600F4AAFC /* WhiteBalanceControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A992DF3121100F4AAFC /* WhiteBalanceControlView.swift */; };
@@ -247,6 +248,7 @@
 		05986B472DF892D300A55E77 /* SliderGridRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderGridRowView.swift; sourceTree = "<group>"; };
 		05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebayerControlView.swift; sourceTree = "<group>"; };
 		0AB10000000000000000F001 /* ColorControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorControlView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000FA01 /* OrientationControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationControlView.swift; sourceTree = "<group>"; };
 		05BD7A952DF3120100F4AAFC /* GammaCorrectionControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GammaCorrectionControlView.swift; sourceTree = "<group>"; };
 		05BD7A972DF3120600F4AAFC /* StretchControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchControlView.swift; sourceTree = "<group>"; };
 		05BD7A992DF3121100F4AAFC /* WhiteBalanceControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteBalanceControlView.swift; sourceTree = "<group>"; };
@@ -664,6 +666,7 @@
 			isa = PBXGroup;
 			children = (
 				0AB10000000000000000F001 /* ColorControlView.swift */,
+				0AB10000000000000000FA01 /* OrientationControlView.swift */,
 				05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */,
 				05BD7A952DF3120100F4AAFC /* GammaCorrectionControlView.swift */,
 				05BD7A9B2DF3121800F4AAFC /* HistogramControlView.swift */,
@@ -980,6 +983,7 @@
 				05D710D02DF201C300CE32E3 /* NSBundle.swift in Sources */,
 				05BD7A942DF311F700F4AAFC /* DebayerControlView.swift in Sources */,
 				0AB10000000000000000F002 /* ColorControlView.swift in Sources */,
+				0AB10000000000000000FA02 /* OrientationControlView.swift in Sources */,
 				05C4BD762DF2E62500326B69 /* PreviewHelper.swift in Sources */,
 				0524AD812DF3457D00180358 /* HistogramView.swift in Sources */,
 				05BD7A982DF3120E00F4AAFC /* StretchControlView.swift in Sources */,

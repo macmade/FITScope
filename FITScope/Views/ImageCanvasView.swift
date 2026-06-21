@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import SwiftPixel
 import SwiftUI
 
 /// The center pane: triggers the file's load + render, and hosts the zoomable
@@ -176,7 +177,11 @@ public struct ImageCanvasView: View
                             onActualSize: { self.send( .actualSize ) },
                             onRecenter:   { self.send( .recenter ) },
                             onZoomIn:     { self.send( .zoomIn ) },
-                            onZoomOut:    { self.send( .zoomOut ) }
+                            onZoomOut:    { self.send( .zoomOut ) },
+                            onRotateLeft:     { self.reorient { $0.rotatedCounterClockwise() } },
+                            onRotateRight:    { self.reorient { $0.rotatedClockwise() } },
+                            onFlipHorizontal: { self.reorient { $0.flippedHorizontally() } },
+                            onFlipVertical:   { self.reorient { $0.flippedVertically() } }
                         )
                         .padding( .top, 16 )
                     }
@@ -305,11 +310,32 @@ public struct ImageCanvasView: View
         self.command  = CanvasCommand( kind: kind, token: self.tokens )
     }
 
+    /// Composes a screen-relative rotate/flip onto the current orientation and
+    /// re-renders. Shared by the floating toolbar and the inspector control.
+    private func reorient( _ transform: ( Processors.Orient.Orientation ) -> Processors.Orient.Orientation )
+    {
+        guard let renderer = self.file.image?.renderer
+        else
+        {
+            return
+        }
+
+        renderer.adjustments.orientation = transform( renderer.adjustments.orientation )
+
+        renderer.scheduleReRender()
+    }
+
     /// Decodes the value under the cursor and reports a formatted readout.
+    ///
+    /// The cursor coordinate comes from the *displayed* image, which a rotation
+    /// or flip may have reoriented relative to the source data. It is mapped
+    /// back to the source pixel so both the reported coordinate and its value
+    /// refer to the same sample in the FITS file.
     private func report( coordinate: ( x: Int, y: Int )? )
     {
         guard let coordinate,
-              let input = try? self.file.image?.renderer.renderInputSnapshot()
+              let renderer = self.file.image?.renderer,
+              let input    = try? renderer.renderInputSnapshot()
         else
         {
             self.readout = .empty
@@ -317,8 +343,20 @@ public struct ImageCanvasView: View
             return
         }
 
-        let pixel = ImageProcessor.rawPixelValue( data: input.data, properties: input.properties, x: coordinate.x, y: coordinate.y )
+        let orientation = renderer.adjustments.orientation
+        let source:        ( x: Int, y: Int )
 
-        self.readout = CursorReadout( x: coordinate.x, y: coordinate.y, value: pixel?.value, fraction: pixel?.fraction )
+        if orientation.isIdentity == false, let size = ImageProcessor.imageDimensions( from: input.properties )
+        {
+            source = orientation.sourceCoordinate( displayX: coordinate.x, displayY: coordinate.y, sourceWidth: size.width, sourceHeight: size.height )
+        }
+        else
+        {
+            source = coordinate
+        }
+
+        let pixel = ImageProcessor.rawPixelValue( data: input.data, properties: input.properties, x: source.x, y: source.y )
+
+        self.readout = CursorReadout( x: source.x, y: source.y, value: pixel?.value, fraction: pixel?.fraction )
     }
 }

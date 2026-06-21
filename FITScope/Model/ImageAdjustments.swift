@@ -62,6 +62,10 @@ public final class ImageAdjustments: ObservableObject
     /// The demosaic algorithm used when debayering.
     @Published public var debayerAlgorithm: Processors.Debayer.Mode = .bilinear
 
+    /// The net orientation (rotation + optional mirror) applied to the image.
+    /// Identity by default, so the image opens as captured.
+    @Published public var orientation: Processors.Orient.Orientation = .identity
+
     /// Creates an adjustment set seeded with the pipeline's default values.
     public init()
     {}
@@ -77,7 +81,8 @@ public final class ImageAdjustments: ObservableObject
             whiteBalance: self.whiteBalance,
             invert:       self.invert,
             debayer:      self.debayer,
-            debayerMode:  self.debayerAlgorithm
+            debayerMode:  self.debayerAlgorithm,
+            orientation:  self.orientation
         )
     }
 }

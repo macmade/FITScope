@@ -60,6 +60,16 @@ struct ImageAdjustmentsTests
 
         #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).invert )
 
+        // Orientation defaults to identity and is omitted from the config (the
+        // image renders as captured).
+        #expect( adjustments.orientation.isIdentity )
+        #expect( config.orient == nil )
+
+        // A rotation flows into a freshly built config.
+        adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
+
+        #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).orient == .init( rotation: .clockwise90, mirroredHorizontally: false ) )
+
         // The default .auto debayer selection uses the header pattern.
         let debayer = try #require( config.debayer )
 

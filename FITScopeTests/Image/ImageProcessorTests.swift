@@ -90,6 +90,36 @@ struct ImageProcessorTests
         #expect( message.contains( "NAXIS = 3" ), "the error must report the offending NAXIS value, got: \"\( message )\"" )
     }
 
+    /// A 90° rotation swaps the rendered image's width and height; without an
+    /// orientation the dimensions are unchanged.
+    @Test
+    func rotationSwapsRenderedDimensions() throws
+    {
+        let properties: [ FITSPropertySnapshot ] =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 1 ) ),
+            ]
+
+        let data = Data( [ 10, 200 ] )
+
+        let unrotated = try ImageProcessor.render( data: data, properties: properties )
+
+        #expect( unrotated.image.width  == 2 )
+        #expect( unrotated.image.height == 1 )
+
+        var settings = ImageProcessor.Settings()
+
+        settings.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
+
+        let rotated = try ImageProcessor.render( data: data, properties: properties, settings: settings )
+
+        #expect( rotated.image.width  == 1 )
+        #expect( rotated.image.height == 2 )
+    }
+
     /// A non-positive `NAXIS2` is rejected with a diagnostic that names the
     /// offending axis and value — NAXIS2, not NAXIS1.
     @Test
