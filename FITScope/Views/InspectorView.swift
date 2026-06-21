@@ -84,12 +84,18 @@ public struct InspectorView: View
 
                     Divider()
 
-                    InspectorSectionView( "Debayer", identifier: AccessibilityIdentifier.InspectorView.Section.debayer )
+                    // The debayer controls only apply to a colour-filter-array
+                    // image; a monochrome file has no Bayer pattern to act on, so
+                    // the section is hidden entirely for it.
+                    if self.image.info.isColorFilterArray
                     {
-                        DebayerControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
-                    }
+                        InspectorSectionView( "Debayer", identifier: AccessibilityIdentifier.InspectorView.Section.debayer )
+                        {
+                            DebayerControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                        }
 
-                    Divider()
+                        Divider()
+                    }
 
                     InspectorSectionView( "Color", identifier: AccessibilityIdentifier.InspectorView.Section.color )
                     {

@@ -46,6 +46,26 @@ struct ImageInformationTests
     }
 
     @Test
+    func colorFilterArrayImageIsDetected() throws
+    {
+        let url  = TestFixtures.colorImage
+        let file = try FITSFile( url: url, options: .lenient )
+        let info = FITSImageInfo( url: url, file: file )
+
+        #expect( info.isColorFilterArray, "a file with a BAYERPAT keyword is a colour-filter-array image" )
+    }
+
+    @Test
+    func monochromeImageIsNotColorFilterArray() throws
+    {
+        let url  = TestFixtures.monoImage
+        let file = try FITSFile( url: url, options: .lenient )
+        let info = FITSImageInfo( url: url, file: file )
+
+        #expect( info.isColorFilterArray == false, "a file with no BAYERPAT keyword is not a colour-filter-array image" )
+    }
+
+    @Test
     func returnsNilWhenGeometryKeywordsMissing() throws
     {
         let url  = URL( fileURLWithPath: "/tmp/none.fits" )

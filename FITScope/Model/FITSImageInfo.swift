@@ -63,4 +63,19 @@ public struct FITSImageInfo: Codable, Hashable
         self.url      = url
         self.sections = sections
     }
+
+    /// Whether the image is a colour-filter-array (CFA) image — one that declares
+    /// a Bayer pattern via a non-empty `BAYERPAT` keyword. Only such an image is
+    /// debayered into colour; a file without it is treated as monochrome, so the
+    /// debayer controls have nothing to act on.
+    public var isColorFilterArray: Bool
+    {
+        self.sections.contains
+        {
+            $0.properties.contains
+            {
+                $0.name == "BAYERPAT" && $0.value.trimmingCharacters( in: .whitespaces ).isEmpty == false
+            }
+        }
+    }
 }

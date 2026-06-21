@@ -568,7 +568,6 @@ final class FITScopeUITests: XCTestCase
                 ( "stretch section",     AccessibilityIdentifier.InspectorView.Section.stretch ),
                 ( "gamma section",       AccessibilityIdentifier.InspectorView.Section.gamma ),
                 ( "white-balance section", AccessibilityIdentifier.InspectorView.Section.whiteBalance ),
-                ( "debayer section",     AccessibilityIdentifier.InspectorView.Section.debayer ),
                 ( "color section",       AccessibilityIdentifier.InspectorView.Section.color ),
                 ( "reset button",        AccessibilityIdentifier.InspectorView.resetButton ),
             ]
@@ -580,6 +579,14 @@ final class FITScopeUITests: XCTestCase
                 "Inspector element missing: \( entry.name ) (\( entry.identifier ))"
             )
         }
+
+        // The debayer section is omitted for a monochrome file (no Bayer pattern
+        // to act on); it is covered for a colour image by
+        // testDebayerAlgorithmEnablementFollowsMode.
+        XCTAssertFalse(
+            UITestSupport.element( app, AccessibilityIdentifier.InspectorView.Section.debayer ).exists,
+            "The debayer section should be hidden for a monochrome image."
+        )
     }
 
     /// A file that fails to render shows the inspector's placeholder instead of the
@@ -750,13 +757,15 @@ final class FITScopeUITests: XCTestCase
     }
 
     /// The debayer algorithm picker is disabled when the Bayer mode is None and
-    /// enabled once a pattern (or Auto) is selected.
+    /// enabled once a pattern (or Auto) is selected. The debayer section only
+    /// appears for a colour-filter-array image, so this uses the colour fixture;
+    /// the mode picker existing also confirms the section is shown for a CFA file.
     @MainActor
     func testDebayerAlgorithmEnablementFollowsMode() throws
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "MonoImage.fits", in: app )
+        try UITestSupport.openFixture( "ColorImage.fits", in: app )
 
         let mode      = UITestSupport.element( app, AccessibilityIdentifier.DebayerControlView.modePicker )
         let algorithm = UITestSupport.element( app, AccessibilityIdentifier.DebayerControlView.algorithmPicker )
