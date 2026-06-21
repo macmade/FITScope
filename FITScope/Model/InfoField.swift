@@ -81,4 +81,30 @@ public enum InfoField: String, CaseIterable, Identifiable, Sendable
             case .sensorTemperature: return "Sensor Temp"
         }
     }
+
+    /// The name of the SF Symbol shown beside the field in the panel and the
+    /// Preferences editor. Every name is checked to resolve to a real symbol by
+    /// `InfoFieldTests.everyFieldHasAResolvableSystemImage`.
+    public var systemImageName: String
+    {
+        switch self
+        {
+            case .dimensions:        return "aspectratio"
+            case .bitDepth:          return "circle.lefthalf.filled"
+            case .channels:          return "camera.filters"
+            case .bayer:             return "square.grid.2x2"
+            case .object:            return "scope"
+            case .rightAscension:    return "arrow.left.arrow.right"
+            case .declination:       return "arrow.up.arrow.down"
+            case .date:              return "calendar"
+            case .exposure:          return "timer"
+            case .filter:            return "line.3.horizontal.decrease.circle"
+            case .telescope:         return "binoculars.fill"
+            case .instrument:        return "camera"
+            case .focalLength:       return "ruler"
+            case .gain:              return "dial.medium"
+            case .offset:            return "slider.horizontal.3"
+            case .sensorTemperature: return "thermometer.medium"
+        }
+    }
 }

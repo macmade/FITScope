@@ -135,7 +135,7 @@ struct ImageInformationTests
 
         let rows = summary.rows( for: [ .object, .exposure ] )
 
-        #expect( rows == [ .init( label: "Object", value: "M31" ), .init( label: "Exposure", value: "30 s" ) ] )
+        #expect( rows == [ .init( field: .object, value: "M31" ), .init( field: .exposure, value: "30 s" ) ] )
     }
 
     /// Builds a controlled, in-memory `FITSImageInfo` with a valid 4×4 geometry

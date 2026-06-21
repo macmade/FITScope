@@ -33,11 +33,17 @@ public struct ImageInformation
     /// A single labelled field shown in the Image Information panel.
     public struct Row: Equatable
     {
-        /// The field label, e.g. `"Exposure"`.
-        public let label: String
+        /// The field this row presents.
+        public let field: InfoField
 
         /// The field value, always non-empty.
         public let value: String
+
+        /// The field's display label, e.g. `"Exposure"`.
+        public var label: String { self.field.label }
+
+        /// The name of the SF Symbol shown beside the field.
+        public var systemImageName: String { self.field.systemImageName }
     }
 
     /// The present value for each field that has one, keyed by ``InfoField``.
@@ -78,7 +84,7 @@ public struct ImageInformation
     {
         fields.compactMap
         {
-            field in self.values[ field ].map { Row( label: field.label, value: $0 ) }
+            field in self.values[ field ].map { Row( field: field, value: $0 ) }
         }
     }
 

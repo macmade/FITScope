@@ -60,9 +60,9 @@ public struct ImageInfoPanelView: View
             {
                 Grid( alignment: .leading, horizontalSpacing: 12, verticalSpacing: 3 )
                 {
-                    ForEach( summary.rows( for: self.visibleFields ), id: \.label )
+                    ForEach( summary.rows( for: self.visibleFields ), id: \.field )
                     {
-                        row in self.row( row.label, row.value )
+                        row in self.row( row )
                     }
                 }
 
@@ -90,15 +90,22 @@ public struct ImageInfoPanelView: View
         self.preferences.infoPanelFields.filter { $0.isVisible }.map { $0.field }
     }
 
-    /// A label/value grid row.
-    private func row( _ label: String, _ value: String ) -> some View
+    /// An icon + label / value grid row.
+    private func row( _ row: ImageInformation.Row ) -> some View
     {
         GridRow
         {
-            Text( label )
-                .foregroundStyle( .secondary )
+            HStack( spacing: 5 )
+            {
+                Image( systemName: row.systemImageName )
+                    .foregroundStyle( .secondary )
+                    .frame( width: 12 )
 
-            Text( value )
+                Text( row.label )
+                    .foregroundStyle( .secondary )
+            }
+
+            Text( row.value )
         }
         .font( .system( size: 10 ) )
     }

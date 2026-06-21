@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import AppKit
 @testable import FITScope
 import Foundation
 import Testing
@@ -58,5 +59,20 @@ struct InfoFieldTests
     func canonicalOrderLeadsWithGeometry()
     {
         #expect( InfoField.allCases.prefix( 3 ) == [ .dimensions, .bitDepth, .channels ] )
+    }
+
+    /// Every field names a real SF Symbol — guarding against a typo'd or
+    /// nonexistent symbol slipping into the panel or its Preferences editor.
+    @Test
+    @MainActor
+    func everyFieldHasAResolvableSystemImage()
+    {
+        for field in InfoField.allCases
+        {
+            #expect(
+                NSImage( systemSymbolName: field.systemImageName, accessibilityDescription: nil ) != nil,
+                "\( field ) has no SF Symbol named \"\( field.systemImageName )\""
+            )
+        }
     }
 }

@@ -128,8 +128,11 @@ public struct InformationPanelPreferencesView: View
     {
         HStack( spacing: 10 )
         {
-            Toggle( field.label, isOn: self.isVisibleBinding( for: field ) )
-                .toggleStyle( .checkbox )
+            Toggle( isOn: self.isVisibleBinding( for: field ) )
+            {
+                Label( field.label, systemImage: field.systemImageName )
+            }
+            .toggleStyle( .checkbox )
 
             Spacer( minLength: 0 )
 
