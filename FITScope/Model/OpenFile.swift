@@ -79,6 +79,13 @@ public final class OpenFile: ObservableObject, Identifiable
     /// Forwards the loader's change notifications to this object's observers.
     private var loaderObserver: AnyCancellable?
 
+    /// The in-flight (or finished) load → render → thumbnail work, owned by the
+    /// model rather than any view. `nil` until ``prepare(throttle:)`` is called.
+    private( set ) var preparation: Task< Void, Never >?
+
+    /// The longest-side pixel size of the generated sidebar thumbnail.
+    private static let thumbnailDimension = 64
+
     /// Creates an open file for the given URL.
     ///
     /// - Parameter url: The source URL of the file.
@@ -152,6 +159,51 @@ public final class OpenFile: ObservableObject, Identifiable
     public func load() async
     {
         await self.loader.load()
+    }
+
+    /// Starts loading, rendering and thumbnailing the file in a model-owned task,
+    /// independent of whether it is displayed. Idempotent: a second call while a
+    /// preparation exists is a no-op.
+    ///
+    /// The work runs here — not in a view's `.task` — so the resulting
+    /// `@Published` changes are published outside SwiftUI's view-update pass. The
+    /// `throttle` bounds how many files prepare at once.
+    ///
+    /// - Parameter throttle: Gates concurrent preparations across the window.
+    func prepare( throttle: RenderThrottle )
+    {
+        guard self.preparation == nil
+        else
+        {
+            return
+        }
+
+        self.preparation = Task
+        {
+            [ weak self ] in
+
+            await throttle.acquire()
+
+            defer { throttle.release() }
+
+            guard let self, Task.isCancelled == false
+            else
+            {
+                return
+            }
+
+            await self.load()
+            await self.image?.renderer.render()
+            await self.makeThumbnail( maxDimension: Self.thumbnailDimension )
+        }
+    }
+
+    /// Cancels any in-flight preparation, e.g. when the file is closed. The
+    /// preparation task captures `self` weakly, so an un-cancelled task simply
+    /// bails once the file is released — this just stops the work sooner.
+    func cancelPreparation()
+    {
+        self.preparation?.cancel()
     }
 
     /// Generates a thumbnail from the current rendered image, downscaled so its

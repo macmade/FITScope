@@ -98,4 +98,82 @@ struct WindowModelTests
         #expect( model.files.isEmpty )
         #expect( model.selectedFileID == nil )
     }
+
+    @Test
+    @MainActor
+    func openPreparesEachFile() async throws
+    {
+        let model = WindowModel()
+
+        model.open( urls: self.corpusURLs )
+
+        for file in model.files
+        {
+            await file.preparation?.value
+        }
+
+        #expect( model.files.isEmpty == false )
+        #expect( model.files.allSatisfy { $0.renderPhase == .ready }, "opening a file renders it without waiting to be displayed" )
+    }
+
+    @Test
+    @MainActor
+    func closingAFileCancelsItsPreparation() throws
+    {
+        let model = WindowModel()
+
+        model.open( urls: [ self.corpusURLs[ 0 ] ] )
+
+        let file = try #require( model.files.first )
+
+        model.close( file )
+
+        #expect( file.preparation?.isCancelled == true, "closing a file cancels its in-flight preparation" )
+    }
+}
+
+/// Tests for `RenderThrottle`: it bounds how many preparations run at once.
+@Suite( "RenderThrottle" )
+@MainActor
+struct RenderThrottleTests
+{
+    @Test
+    func acquireBeyondTheLimitWaitsForARelease() async throws
+    {
+        let throttle = RenderThrottle( limit: 1 )
+
+        await throttle.acquire()
+
+        var secondAcquired = false
+
+        let waiter = Task
+        { @MainActor in
+            await throttle.acquire()
+            secondAcquired = true
+        }
+
+        // Let the waiter run; with the single slot taken it must block.
+        await Task.yield()
+        await Task.yield()
+
+        #expect( secondAcquired == false, "a second acquire beyond the limit must wait" )
+
+        throttle.release()
+        await waiter.value
+
+        #expect( secondAcquired, "releasing a slot lets a waiter proceed" )
+    }
+
+    @Test
+    func acquiresUpToTheLimitWithoutWaiting() async throws
+    {
+        let throttle = RenderThrottle( limit: 2 )
+
+        await throttle.acquire()
+        await throttle.acquire()
+
+        // Both acquired without suspending; release so the throttle is balanced.
+        throttle.release()
+        throttle.release()
+    }
 }

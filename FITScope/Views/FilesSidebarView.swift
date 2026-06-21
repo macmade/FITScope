@@ -67,7 +67,7 @@ public struct FilesSidebarView: View
             .padding( .top, 12 )
             .padding( .bottom, 6 )
 
-            List( selection: self.$model.selectedFileID )
+            List( selection: self.selectionBinding )
             {
                 ForEach( self.model.files )
                 {
@@ -90,6 +90,21 @@ public struct FilesSidebarView: View
                 ImageInfoPanelView( file: selected )
             }
         }
+    }
+
+    /// The List's selection binding, which writes the model's selection on the
+    /// next run-loop turn.
+    ///
+    /// `List` writes its selection binding from within SwiftUI's view-update
+    /// pass; writing the model's `@Published` selection there is reported as
+    /// "publishing changes from within view updates". Deferring the write moves
+    /// it out of the update pass. The one-turn delay is imperceptible.
+    private var selectionBinding: Binding< OpenFile.ID? >
+    {
+        Binding(
+            get: { self.model.selectedFileID },
+            set: { id in DispatchQueue.main.async { self.model.selectedFileID = id } }
+        )
     }
 
     /// Presents an open panel and opens the chosen FITS files into the window.

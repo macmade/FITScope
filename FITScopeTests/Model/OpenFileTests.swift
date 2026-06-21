@@ -121,4 +121,39 @@ struct OpenFileTests
 
         #expect( file.renderPhase == .ready, "after loading and rendering the file is ready" )
     }
+
+    @Test
+    @MainActor
+    func prepareLoadsRendersAndThumbnails() async throws
+    {
+        let file     = OpenFile( url: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) )
+        let throttle = RenderThrottle( limit: 2 )
+
+        file.prepare( throttle: throttle )
+
+        await file.preparation?.value
+
+        #expect( file.renderPhase == .ready, "prepare loads and renders the file without it being displayed" )
+        #expect( file.thumbnail != nil, "prepare also produces the sidebar thumbnail" )
+    }
+
+    @Test
+    @MainActor
+    func prepareIsIdempotent() async throws
+    {
+        let file     = OpenFile( url: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) )
+        let throttle = RenderThrottle( limit: 2 )
+
+        file.prepare( throttle: throttle )
+
+        let started = try #require( file.preparation )
+
+        // A second prepare while one is in flight must not start another.
+        file.prepare( throttle: throttle )
+
+        await started.value
+        await file.preparation?.value
+
+        #expect( file.renderPhase == .ready )
+    }
 }

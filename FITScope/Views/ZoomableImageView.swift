@@ -198,6 +198,27 @@ public struct ZoomableImageView: NSViewRepresentable
             NotificationCenter.default.addObserver( self, selector: #selector( self.magnificationChanged ), name: NSScrollView.didEndLiveMagnifyNotification, object: scrollView )
         }
 
+        /// Reports the magnification to SwiftUI on the next run-loop turn.
+        ///
+        /// The coordinator runs from `updateNSView` / `makeNSView` and from AppKit
+        /// layout notifications that fire during SwiftUI's update pass; writing the
+        /// observed `zoom` / `canZoomOut` state synchronously there is reported as
+        /// "publishing changes from within view updates" (notably when switching
+        /// to a file changes the image and triggers a re-fit). Deferring the write
+        /// moves it out of the update pass — imperceptible for the read-out and the
+        /// zoom-out button.
+        private func reportZoom( _ magnification: CGFloat )
+        {
+            DispatchQueue.main.async { self.parent.onZoomChange( magnification ) }
+        }
+
+        /// Reports zoom-out availability to SwiftUI on the next run-loop turn, for
+        /// the same reason as ``reportZoom(_:)``.
+        private func reportCanZoomOut( _ canZoomOut: Bool )
+        {
+            DispatchQueue.main.async { self.parent.onCanZoomOutChange( canZoomOut ) }
+        }
+
         @objc
         private func magnificationChanged()
         {
@@ -207,7 +228,7 @@ public struct ZoomableImageView: NSViewRepresentable
                 return
             }
 
-            self.parent.onZoomChange( scrollView.magnification )
+            self.reportZoom( scrollView.magnification )
 
             self.publishZoomOutAvailability()
         }
@@ -250,7 +271,7 @@ public struct ZoomableImageView: NSViewRepresentable
                 return
             }
 
-            self.parent.onCanZoomOutChange( CanvasGeometry.canZoomOut( magnification: scrollView.magnification, minimum: scrollView.minMagnification ) )
+            self.reportCanZoomOut( CanvasGeometry.canZoomOut( magnification: scrollView.magnification, minimum: scrollView.minMagnification ) )
         }
 
         /// Applies a one-shot command if its token is new.
@@ -316,7 +337,7 @@ public struct ZoomableImageView: NSViewRepresentable
                 // recenter it.
                 scrollView.magnification = target
 
-                self.parent.onZoomChange( target )
+                self.reportZoom( target )
                 self.recenter()
             }
             else if wasFitted
@@ -355,7 +376,7 @@ public struct ZoomableImageView: NSViewRepresentable
             }
 
             scrollView.magnification = fit
-            self.parent.onZoomChange( fit )
+            self.reportZoom( fit )
             self.hasFitted           = true
 
             self.recenter()
@@ -393,7 +414,7 @@ public struct ZoomableImageView: NSViewRepresentable
             let center = CGPoint( x: clip.midX, y: clip.midY )
 
             scrollView.setMagnification( target, centeredAt: center )
-            self.parent.onZoomChange( scrollView.magnification )
+            self.reportZoom( scrollView.magnification )
         }
 
         /// Sets the magnification to an absolute value, keeping the centre of the
@@ -411,7 +432,7 @@ public struct ZoomableImageView: NSViewRepresentable
             let center = CGPoint( x: clip.midX, y: clip.midY )
 
             scrollView.setMagnification( target, centeredAt: center )
-            self.parent.onZoomChange( scrollView.magnification )
+            self.reportZoom( scrollView.magnification )
         }
     }
 }

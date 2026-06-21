@@ -93,13 +93,18 @@ public struct ImageCanvasView: View
             }
             .task( id: self.file.id )
             {
-                self.readout = .empty
+                // The file loads and renders itself in a model-owned task (see
+                // `OpenFile.prepare`); the canvas only observes the result. Reset
+                // the per-file view state on a fresh run-loop turn: the task body
+                // runs within SwiftUI's update pass, and writing this @State
+                // synchronously there is reported as "publishing changes from
+                // within view updates".
+                DispatchQueue.main.async
+                {
+                    self.readout = .empty
 
-                await self.file.load()
-                await self.file.image?.renderer.render()
-                await self.file.makeThumbnail( maxDimension: 64 )
-
-                self.revealBars()
+                    self.revealBars()
+                }
             }
     }
 

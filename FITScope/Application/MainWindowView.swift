@@ -134,7 +134,16 @@ public struct MainWindowView: View
         }
         .onAppear
         {
-            if self.model.files.isEmpty, self.initialURLs.isEmpty == false
+            guard self.model.files.isEmpty, self.initialURLs.isEmpty == false
+            else
+            {
+                return
+            }
+
+            // `onAppear` runs within SwiftUI's update pass; opening here sets the
+            // model's @Published state, which would be reported as "publishing
+            // changes from within view updates". Defer it to a fresh run-loop turn.
+            DispatchQueue.main.async
             {
                 self.model.open( urls: self.initialURLs )
             }
