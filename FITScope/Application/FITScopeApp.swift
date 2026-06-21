@@ -119,6 +119,10 @@ public struct FITScopeApp: App
         .windowStyle( .hiddenTitleBar )
         .windowResizability( .contentSize )
         .restorationBehavior( .disabled )
+        // Open centered on screen rather than cascaded as an "additional" window.
+        // This is only the initial default: while the window is open, re-issuing
+        // the About command just brings it forward without moving it.
+        .defaultPosition( .center )
     }
 
     /// Seeds the app model's new-window callback with the SwiftUI `openWindow`
