@@ -58,6 +58,10 @@ public struct ErrorView: View
                     .foregroundStyle( Color.secondary )
             }
         }
+        // Centre the wrapped lines of the title and message: the stack centres
+        // each Text as a block, but a multi-line Text defaults to leading
+        // alignment within that block, which reads as left-aligned.
+        .multilineTextAlignment( .center )
         .frame( minWidth: 400, maxWidth: .infinity, minHeight: 300, maxHeight: .infinity )
         .accessibilityElement( children: .contain )
         .accessibilityIdentifier( AccessibilityIdentifier.ErrorView.view )

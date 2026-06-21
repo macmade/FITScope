@@ -94,6 +94,8 @@ public struct HistogramStatisticsView: View
                     Text( descriptor.label )
                         .font( .caption )
                         .foregroundStyle( .secondary )
+                        .lineLimit( 1 )
+                        .fixedSize( horizontal: true, vertical: false )
                         .gridColumnAlignment( .leading )
 
                     let statistics =
@@ -116,6 +118,8 @@ public struct HistogramStatisticsView: View
                         Text( value )
                             .font( .system( .caption2, design: .monospaced ) )
                             .foregroundStyle( color )
+                            .lineLimit( 1 )
+                            .fixedSize( horizontal: true, vertical: false )
                             .gridColumnAlignment( .trailing )
                     }
                 }
