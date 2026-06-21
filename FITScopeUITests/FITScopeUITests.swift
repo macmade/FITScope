@@ -794,6 +794,43 @@ final class FITScopeUITests: XCTestCase
             UITestSupport.element( app, AccessibilityIdentifier.InspectorView.Section.debayer ).exists,
             "The debayer section should be hidden for a monochrome image."
         )
+
+        // Saturation is likewise hidden for a monochrome file (no colour to
+        // scale); it is covered for a colour image by
+        // testSaturationSectionShownForColorImage.
+        XCTAssertFalse(
+            UITestSupport.element( app, AccessibilityIdentifier.InspectorView.Section.saturation ).exists,
+            "The saturation section should be hidden for a monochrome image."
+        )
+    }
+
+    /// For a colour (Bayer) image the saturation section and its slider are
+    /// present. Its pixel effect is covered by unit tests (the SwiftPixel
+    /// `Saturation` processor and the adjustments-to-config mapping); per the
+    /// suite's depth, the slider value is not dragged.
+    @MainActor
+    func testSaturationSectionShownForColorImage() throws
+    {
+        self.continueAfterFailure = true
+
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "ColorImage.fits", in: app )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
+            "The image canvas did not appear after opening the colour fixture."
+        )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.InspectorView.Section.saturation ).waitForExistence( timeout: 5 ),
+            "The saturation section was not shown for a colour image."
+        )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.SaturationControlView.slider ).exists,
+            "The saturation slider was not shown for a colour image."
+        )
     }
 
     /// A file that fails to render shows the inspector's placeholder instead of the

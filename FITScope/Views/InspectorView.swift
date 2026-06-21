@@ -110,6 +110,19 @@ public struct InspectorView: View
 
                     Divider()
 
+                    // Saturation only applies to a colour image; a monochrome file
+                    // has no colour to scale, so the section is hidden for it (as
+                    // with the debayer section).
+                    if self.image.info.isColorFilterArray
+                    {
+                        InspectorSectionView( "Saturation", identifier: AccessibilityIdentifier.InspectorView.Section.saturation )
+                        {
+                            SaturationControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                        }
+
+                        Divider()
+                    }
+
                     InspectorSectionView( "Color", identifier: AccessibilityIdentifier.InspectorView.Section.color )
                     {
                         ColorControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
@@ -170,6 +183,7 @@ public struct InspectorView: View
         current.invert       = defaults.invert
         current.brightness   = defaults.brightness
         current.contrast     = defaults.contrast
+        current.saturation   = defaults.saturation
         current.debayer      = defaults.debayer
         current.orientation  = defaults.orientation
 

@@ -63,6 +63,9 @@ public final class ImageAdjustments: ObservableObject
     /// default.
     @Published public var contrast: Double = 1
 
+    /// The colour-saturation factor. Neutral (`1`) by default.
+    @Published public var saturation: Double = 1
+
     /// How to debayer a colour-filter-array image into RGB.
     @Published public var debayer: ImageProcessor.DebayerSelection = .auto
 
@@ -89,6 +92,7 @@ public final class ImageAdjustments: ObservableObject
             invert:       self.invert,
             brightness:   self.brightness,
             contrast:     self.contrast,
+            saturation:   self.saturation,
             debayer:      self.debayer,
             debayerMode:  self.debayerAlgorithm,
             orientation:  self.orientation

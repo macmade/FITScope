@@ -85,6 +85,15 @@ struct ImageAdjustmentsTests
         #expect( brightnessContrast.brightness == 0.2 )
         #expect( brightnessContrast.contrast   == 1.5 )
 
+        // Saturation defaults to neutral (1) and is omitted from the config.
+        #expect( adjustments.saturation == 1 )
+        #expect( config.saturation == nil )
+
+        // A change flows into a freshly built config.
+        adjustments.saturation = 1.4
+
+        #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).saturation == 1.4 )
+
         // The default .auto debayer selection uses the header pattern.
         let debayer = try #require( config.debayer )
 

@@ -123,6 +123,9 @@ public enum AccessibilityIdentifier
             /// The brightness & contrast section.
             public static let brightnessContrast = "InspectorView.Section.brightnessContrast"
 
+            /// The saturation section (colour images only).
+            public static let saturation = "InspectorView.Section.saturation"
+
             /// The orientation (rotate / flip) section.
             public static let orientation = "InspectorView.Section.orientation"
         }
@@ -170,6 +173,13 @@ public enum AccessibilityIdentifier
 
         /// The contrast slider.
         public static let contrastSlider = "BrightnessContrastControlView.contrastSlider"
+    }
+
+    /// Identifiers applied by ``FITScope/SaturationControlView``.
+    public enum SaturationControlView
+    {
+        /// The saturation slider.
+        public static let slider = "SaturationControlView.slider"
     }
 
     /// Identifiers applied by ``FITScope/OrientationControlView``.
