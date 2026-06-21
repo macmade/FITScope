@@ -30,73 +30,15 @@ import SwiftUI
 /// colour channels and showing summary statistics.
 public struct HistogramControlView: View
 {
-    /// Which histogram is displayed.
-    public enum Mode: CaseIterable, CustomStringConvertible
-    {
-        /// The per-channel red/green/blue histogram.
-        case rgb
+    /// Which histogram is displayed. Defined on the model as ``HistogramMode`` so
+    /// the per-image ``HistogramViewOptions`` can store it; aliased here for the
+    /// view's call sites.
+    public typealias Mode = HistogramMode
 
-        /// The single-channel luminance histogram.
-        case luminance
-
-        /// The single-channel histogram of a monochrome image.
-        case mono
-
-        /// The picker label for the mode.
-        public var description: String
-        {
-            switch self
-            {
-                case .rgb:       return "RGB"
-                case .luminance: return "Luminance"
-                case .mono:      return "Mono"
-            }
-        }
-
-        /// The modes a histogram offers for an image, given whether it is
-        /// monochrome: a single ``mono`` mode for mono images, or the RGB and
-        /// luminance choice for colour images.
-        ///
-        /// - Parameter isMono: Whether the rendered image is monochrome.
-        /// - Returns: The selectable modes, in display order.
-        public static func availableModes( isMono: Bool ) -> [ Mode ]
-        {
-            isMono ? [ .mono ] : [ .rgb, .luminance ]
-        }
-
-        /// Resolves the mode actually shown for an image, clamping a stored mode
-        /// that no longer applies: a mono image is always shown in ``mono`` mode,
-        /// and a stale ``mono`` selection carried over to a colour image falls
-        /// back to ``rgb``.
-        ///
-        /// - Parameters:
-        ///   - stored: The mode last selected by the user.
-        ///   - isMono: Whether the rendered image is monochrome.
-        /// - Returns: The mode to display.
-        public static func effectiveMode( stored: Mode, isMono: Bool ) -> Mode
-        {
-            if isMono
-            {
-                return .mono
-            }
-
-            return stored == .mono ? .rgb : stored
-        }
-    }
-
-    /// Whether the RGB channels are drawn stacked separately rather than
-    /// overlaid. Has no effect in luminance mode.
-    @State private var separateChannels = false
-
-    /// Whether the summary statistics panel is shown.
-    @State private var showStatistics   = false
-
-    /// Whether the original (unprocessed) histogram is shown instead of the
-    /// current processed one.
-    @State private var showOriginal     = false
-
-    /// The currently displayed histogram mode.
-    @State private var mode             = Mode.rgb
+    /// The per-image histogram view options this control reads and writes. Held
+    /// on the image, so the choices persist across selection changes even though
+    /// the inspector is rebuilt for each image.
+    @ObservedObject private var options: HistogramViewOptions
 
     /// The processed histograms to display.
     public let histogram:  FITSImageRenderer.Histogram
@@ -107,6 +49,21 @@ public struct HistogramControlView: View
     /// The original (unprocessed) histogram and statistics, or `nil` if not yet
     /// computed. When present, the user can switch the display to it.
     public let original:   FITSImageRenderer.HistogramSet?
+
+    /// Creates the histogram control.
+    ///
+    /// - Parameters:
+    ///   - histogram:  The processed histograms to display.
+    ///   - statistics: The per-channel statistics for the processed image.
+    ///   - original:   The original histogram and statistics, or `nil`.
+    ///   - options:    The image's persistent histogram view options.
+    public init( histogram: FITSImageRenderer.Histogram, statistics: FITSImageRenderer.HistogramStatistics, original: FITSImageRenderer.HistogramSet?, options: HistogramViewOptions )
+    {
+        self.histogram  = histogram
+        self.statistics = statistics
+        self.original   = original
+        self.options    = options
+    }
 
     /// The view's content.
     public var body: some View
@@ -125,7 +82,7 @@ public struct HistogramControlView: View
 
             HistogramView(
                 histogram:        self.displayedHistogram,
-                separateChannels: self.separateChannels && self.effectiveMode == .rgb,
+                separateChannels: self.options.separateChannels && self.effectiveMode == .rgb,
                 mode:             self.effectiveMode
             )
             .frame( height: 110 )
@@ -134,7 +91,7 @@ public struct HistogramControlView: View
             .clipShape( RoundedRectangle( cornerRadius: 10 ) )
             .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
 
-            if self.showStatistics
+            if self.options.showStatistics
             {
                 HStack
                 {
@@ -161,19 +118,19 @@ public struct HistogramControlView: View
     {
         Menu
         {
-            Toggle( isOn: self.$showOriginal )
+            Toggle( isOn: self.$options.showOriginal )
             {
                 Label( "Show Original", systemImage: "photo" )
             }
             .disabled( self.original == nil )
 
-            Toggle( isOn: self.$separateChannels )
+            Toggle( isOn: self.$options.separateChannels )
             {
                 Label( "Separate Channels", systemImage: "chart.bar.xaxis" )
             }
             .disabled( self.effectiveMode != .rgb )
 
-            Toggle( isOn: self.$showStatistics )
+            Toggle( isOn: self.$options.showStatistics )
             {
                 Label( "Statistics", systemImage: "tablecells" )
             }
@@ -214,22 +171,22 @@ public struct HistogramControlView: View
     /// applies to the current image (see ``Mode/effectiveMode(stored:isMono:)``).
     private var effectiveMode: Mode
     {
-        Mode.effectiveMode( stored: self.mode, isMono: self.isMono )
+        Mode.effectiveMode( stored: self.options.mode, isMono: self.isMono )
     }
 
     /// A binding that drives the picker from ``effectiveMode`` while recording the
-    /// user's choice in ``mode``, so a stored colour mode survives a detour
-    /// through a mono image.
+    /// user's choice in the options' mode, so a stored colour mode survives a
+    /// detour through a mono image.
     private var modeBinding: Binding< Mode >
     {
-        Binding( get: { self.effectiveMode }, set: { self.mode = $0 } )
+        Binding( get: { self.effectiveMode }, set: { self.options.mode = $0 } )
     }
 
     /// The histograms to draw: the original when "Show Original" is on and the
     /// original is available, otherwise the processed ones.
     private var displayedHistogram: FITSImageRenderer.Histogram
     {
-        if self.showOriginal, let original = self.original
+        if self.options.showOriginal, let original = self.original
         {
             return original.histogram
         }
@@ -240,7 +197,7 @@ public struct HistogramControlView: View
     /// The statistics to show, matching ``displayedHistogram``.
     private var displayedStatistics: FITSImageRenderer.HistogramStatistics
     {
-        if self.showOriginal, let original = self.original
+        if self.options.showOriginal, let original = self.original
         {
             return original.statistics
         }
@@ -254,7 +211,8 @@ public struct HistogramControlView: View
     HistogramControlView(
         histogram:  PreviewHelper.histogram(),
         statistics: PreviewHelper.statistics(),
-        original:   FITSImageRenderer.HistogramSet( histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() )
+        original:   FITSImageRenderer.HistogramSet( histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() ),
+        options:    HistogramViewOptions()
     )
     .frame( maxWidth: .infinity, alignment: .leading )
     .frame( maxHeight: .infinity, alignment: .top )

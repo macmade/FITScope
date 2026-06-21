@@ -520,6 +520,57 @@ final class FITScopeUITests: XCTestCase
         )
     }
 
+    /// The histogram view options are per image: enabling Statistics on one file
+    /// must not carry over to another, and must still be set when switching back —
+    /// they survive the inspector's per-image recreation via a per-image store.
+    @MainActor
+    func testHistogramOptionsPersistPerImage() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
+
+        let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
+
+        XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The first file did not render." )
+
+        try UITestSupport.openAnotherFixture( "ColorImage.fits", in: app )
+
+        let rows = app.descendants( matching: .any ).matching( identifier: AccessibilityIdentifier.OpenFileRowView.row )
+
+        XCTAssertTrue(
+            UITestSupport.waitFor( timeout: 30 ) { rows.count == 2 },
+            "Expected two file rows after opening two files (rows: \( rows.count ))."
+        )
+
+        let viewOptions = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.viewOptions )
+        let panel       = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.statisticsPanel )
+
+        // Enable Statistics on the first image: its panel appears.
+        rows.element( boundBy: 0 ).click()
+        XCTAssertTrue( viewOptions.waitForExistence( timeout: 30 ), "The histogram view-options button did not appear." )
+        XCTAssertFalse( panel.exists, "The statistics panel was visible before it was enabled." )
+
+        viewOptions.click()
+        app.menuItems[ "Statistics" ].click()
+        XCTAssertTrue( panel.waitForExistence( timeout: 5 ), "Enabling Statistics did not reveal the panel." )
+
+        // The second image has its own options, defaulting off — it must not
+        // inherit the first image's Statistics setting.
+        rows.element( boundBy: 1 ).click()
+        XCTAssertTrue(
+            panel.waitForNonExistence( timeout: 10 ),
+            "The second image inherited the first image's Statistics setting."
+        )
+
+        // Switching back shows the first image's Statistics setting still on.
+        rows.element( boundBy: 0 ).click()
+        XCTAssertTrue(
+            panel.waitForExistence( timeout: 10 ),
+            "The first image's Statistics setting was lost after switching away and back."
+        )
+    }
+
     /// The file row's context menu opens the FITS headers window via "View FITS
     /// Headers".
     @MainActor
