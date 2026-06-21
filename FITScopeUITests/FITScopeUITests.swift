@@ -1052,6 +1052,42 @@ final class FITScopeUITests: XCTestCase
 
     // MARK: - Preferences
 
+    /// The Preferences window renders its tabs with no file open: the General
+    /// tab's toggle and the API Keys tab's two key fields are all reachable. It is
+    /// driven the right way — by cancelling the launch Open panel rather than
+    /// loading an image, since Preferences has nothing to do with a loaded file.
+    @MainActor
+    func testPreferencesWindowShowsItsControls() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        UITestSupport.dismissLaunchPanel( in: app )
+
+        app.typeKey( ",", modifierFlags: .command )
+
+        // The Settings window remembers its last-selected pane, so select each tab
+        // explicitly rather than assuming which one opens.
+        let generalTab = app.buttons[ "General" ]
+
+        XCTAssertTrue( generalTab.waitForExistence( timeout: 10 ), "The Preferences window did not open." )
+
+        generalTab.click()
+
+        let toggle = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.autoHideFloatingBarsToggle )
+
+        XCTAssertTrue( toggle.waitForExistence( timeout: 10 ), "The General tab's auto-hide toggle did not appear in Preferences." )
+
+        app.buttons[ "API Keys" ].click()
+
+        let astrometry = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.astrometryNetKeyField )
+        let weather    = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.openWeatherMapKeyField )
+
+        XCTAssertTrue( astrometry.waitForExistence( timeout: 10 ), "The Astrometry.net key field did not appear on the API Keys tab." )
+        XCTAssertTrue( weather.waitForExistence( timeout: 10 ),    "The OpenWeatherMap key field did not appear on the API Keys tab." )
+
+        app.typeKey( "w", modifierFlags: .command )
+    }
+
     /// The General preference "Automatically hide the floating toolbars" controls
     /// the canvas's auto-hide behaviour both ways. The test exercises the real
     /// behaviour rather than a stored value: with auto-hide on (the default) the
@@ -1072,8 +1108,9 @@ final class FITScopeUITests: XCTestCase
 
         let canvas    = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
         let filesList = UITestSupport.element( app, AccessibilityIdentifier.FilesSidebarView.list )
-        let fit       = UITestSupport.element( app, AccessibilityIdentifier.ImageToolbarView.fit )
-        let toggle    = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.autoHideFloatingBarsToggle )
+        let fit        = UITestSupport.element( app, AccessibilityIdentifier.ImageToolbarView.fit )
+        let toggle     = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.autoHideFloatingBarsToggle )
+        let generalTab = app.buttons[ "General" ]
 
         XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The image canvas did not appear after opening a fixture." )
 
@@ -1086,8 +1123,13 @@ final class FITScopeUITests: XCTestCase
         XCTAssertTrue( fit.waitForExistence( timeout: 5 ), "The floating toolbar did not reveal on cursor movement." )
         XCTAssertTrue( fit.waitForNonExistence( timeout: 5 ), "The floating toolbar did not auto-hide by default." )
 
-        // Turn auto-hide off in Preferences.
+        // Turn auto-hide off in Preferences. The Settings window remembers its
+        // last-selected pane, so select the General tab explicitly.
         app.typeKey( ",", modifierFlags: .command )
+
+        XCTAssertTrue( generalTab.waitForExistence( timeout: 10 ), "The Preferences window did not open." )
+
+        generalTab.click()
 
         XCTAssertTrue( toggle.waitForExistence( timeout: 10 ), "The auto-hide toggle did not appear in Preferences." )
 
@@ -1105,6 +1147,10 @@ final class FITScopeUITests: XCTestCase
 
         // Turn auto-hide back on, restoring the default for the machine.
         app.typeKey( ",", modifierFlags: .command )
+
+        XCTAssertTrue( generalTab.waitForExistence( timeout: 10 ), "The Preferences window did not reopen." )
+
+        generalTab.click()
 
         XCTAssertTrue( toggle.waitForExistence( timeout: 10 ), "The auto-hide toggle did not reappear in Preferences." )
 

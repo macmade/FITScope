@@ -84,7 +84,14 @@
 		52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */; };
 		05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A0E1 /* AppModelTests.swift */; };
 		05FB1000000000000000D302 /* PreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000D301 /* PreferencesTests.swift */; };
+		05FB1000000000000000E202 /* APIKeyStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E201 /* APIKeyStoreTests.swift */; };
 		05FB1000000000000000D102 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000D101 /* Preferences.swift */; };
+		05FB1000000000000000E102 /* APIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E101 /* APIKeyStore.swift */; };
+		05FB1000000000000000E702 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E701 /* Keychain.swift */; };
+		05FB1000000000000000E302 /* APIKeyFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E301 /* APIKeyFieldView.swift */; };
+		05FB1000000000000000E402 /* GeneralPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E401 /* GeneralPreferencesView.swift */; };
+		05FB1000000000000000E502 /* APIKeysPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E501 /* APIKeysPreferencesView.swift */; };
+		05FB1000000000000000E602 /* PreferencesPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E601 /* PreferencesPlaceholderView.swift */; };
 		05FB1000000000000000D202 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000D201 /* PreferencesView.swift */; };
 		669B304AA37E4BEB8964FC03 /* WindowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92EEE3EEA80B1B8809982F35 /* WindowModel.swift */; };
 		6A1572CF23B612DB37F852EC /* CanvasGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D3D9131B43725B5D03FCFA /* CanvasGeometry.swift */; };
@@ -276,7 +283,14 @@
 		0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowModelTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A0E1 /* AppModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000D301 /* PreferencesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreferencesTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000E201 /* APIKeyStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIKeyStoreTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000D101 /* Preferences.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
+		05FB1000000000000000E101 /* APIKeyStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIKeyStore.swift; sourceTree = "<group>"; };
+		05FB1000000000000000E701 /* Keychain.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		05FB1000000000000000E301 /* APIKeyFieldView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIKeyFieldView.swift; sourceTree = "<group>"; };
+		05FB1000000000000000E401 /* GeneralPreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GeneralPreferencesView.swift; sourceTree = "<group>"; };
+		05FB1000000000000000E501 /* APIKeysPreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIKeysPreferencesView.swift; sourceTree = "<group>"; };
+		05FB1000000000000000E601 /* PreferencesPlaceholderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreferencesPlaceholderView.swift; sourceTree = "<group>"; };
 		05FB1000000000000000D201 /* PreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		1CDEBA7E46E766BCABAF5462 /* CanvasGeometryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasGeometryTests.swift; sourceTree = "<group>"; };
 		22D6641B378926115E450672 /* WindowContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowContent.swift; sourceTree = "<group>"; };
@@ -568,6 +582,8 @@
 				0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */,
 				05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */,
 				05FB1000000000000000D101 /* Preferences.swift */,
+				05FB1000000000000000E101 /* APIKeyStore.swift */,
+				05FB1000000000000000E701 /* Keychain.swift */,
 				0579B61D2DF24998002FDD47 /* FITSImageSection.swift */,
 				9696A9D7B24CC9A58998C7AC /* OpenFile.swift */,
 				92EEE3EEA80B1B8809982F35 /* WindowModel.swift */,
@@ -624,6 +640,18 @@
 			path = FITScopeUITests;
 			sourceTree = "<group>";
 		};
+		05FB1000000000000000E001 /* Preferences */ = {
+			isa = PBXGroup;
+			children = (
+				05FB1000000000000000D201 /* PreferencesView.swift */,
+				05FB1000000000000000E401 /* GeneralPreferencesView.swift */,
+				05FB1000000000000000E501 /* APIKeysPreferencesView.swift */,
+				05FB1000000000000000E301 /* APIKeyFieldView.swift */,
+				05FB1000000000000000E601 /* PreferencesPlaceholderView.swift */,
+			);
+			path = Preferences;
+			sourceTree = "<group>";
+		};
 		05BD7A922DF311EB00F4AAFC /* ImageControls */ = {
 			isa = PBXGroup;
 			children = (
@@ -644,7 +672,6 @@
 			children = (
 				05D710D12DF2049800CE32E3 /* FITSDocument.swift */,
 				05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */,
-				05FB1000000000000000D201 /* PreferencesView.swift */,
 				DF3765F1937F36620A92317F /* MainWindowView.swift */,
 				77051EA6E847507556D8B2B0 /* AppModel.swift */,
 				3BEAE300CD214042135F55D9 /* AppDelegate.swift */,
@@ -662,6 +689,7 @@
 				05DC79A02DF2F827003E2AFA /* ErrorView.swift */,
 				057F611B2DF8B78000EE82D1 /* ImageControlContainer.swift */,
 				05BD7A922DF311EB00F4AAFC /* ImageControls */,
+				05FB1000000000000000E001 /* Preferences */,
 				0579B6212DF24C31002FDD47 /* InfoView.swift */,
 				05C4BD732DF2E4F500326B69 /* InfoViewTable.swift */,
 				05C4BD772DF2E7D000326B69 /* InfoViewTableCell.swift */,
@@ -717,6 +745,7 @@
 				0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */,
 				05FB1000000000000000A0E1 /* AppModelTests.swift */,
 				05FB1000000000000000D301 /* PreferencesTests.swift */,
+				05FB1000000000000000E201 /* APIKeyStoreTests.swift */,
 				641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */,
 				C07659F02B1A39E7821ED5BE /* ImageInformationTests.swift */,
 				AFBDAF375886651EAEF634B1 /* DropAcceptanceTests.swift */,
@@ -921,7 +950,13 @@
 				05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */,
 				05C0A75C2DDE64E0005DECEF /* ImageAdjustments.swift in Sources */,
 				05FB1000000000000000D102 /* Preferences.swift in Sources */,
+				05FB1000000000000000E102 /* APIKeyStore.swift in Sources */,
+				05FB1000000000000000E702 /* Keychain.swift in Sources */,
 				05FB1000000000000000D202 /* PreferencesView.swift in Sources */,
+				05FB1000000000000000E402 /* GeneralPreferencesView.swift in Sources */,
+				05FB1000000000000000E502 /* APIKeysPreferencesView.swift in Sources */,
+				05FB1000000000000000E302 /* APIKeyFieldView.swift in Sources */,
+				05FB1000000000000000E602 /* PreferencesPlaceholderView.swift in Sources */,
 				05C0A75E2DDE64E0005DECEF /* Benchmarking.swift in Sources */,
 				0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */,
 				0579B6122DF220D1002FDD47 /* FITSImageRenderer.swift in Sources */,
@@ -1002,6 +1037,7 @@
 				52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */,
 				05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */,
 				05FB1000000000000000D302 /* PreferencesTests.swift in Sources */,
+				05FB1000000000000000E202 /* APIKeyStoreTests.swift in Sources */,
 				1ED9E2EDDC7585655A55E63C /* PixelValueTests.swift in Sources */,
 				8FD4823A666A3CBBBA760D54 /* CursorReadoutTests.swift in Sources */,
 				18168279CF74754A2213F80E /* ImageInformationTests.swift in Sources */,

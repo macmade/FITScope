@@ -55,6 +55,7 @@ public struct FITScopeApp: App
             $content in MainWindowView( initialURLs: $content.wrappedValue?.urls ?? [] )
                 .environmentObject( self.appDelegate.appModel )
                 .environmentObject( self.appDelegate.preferences )
+                .environmentObject( self.appDelegate.apiKeyStore )
         }
         .windowStyle( .titleBar )
         .defaultLaunchBehavior( .suppressed )
@@ -129,6 +130,7 @@ public struct FITScopeApp: App
         {
             PreferencesView()
                 .environmentObject( self.appDelegate.preferences )
+                .environmentObject( self.appDelegate.apiKeyStore )
         }
         .windowResizability( .contentSize )
     }

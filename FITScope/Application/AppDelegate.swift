@@ -37,6 +37,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
     /// environment so the windows and the Preferences scene share one store.
     public let preferences = Preferences()
 
+    /// The app's secure, Keychain-backed API keys, injected into the SwiftUI
+    /// environment so the windows and the Preferences scene share one store.
+    public let apiKeyStore = APIKeyStore()
+
     /// Whether a Finder/Dock open already delivered files, so the launch panel
     /// is not presented on top of a window that is opening.
     private var didOpenFilesAtLaunch = false

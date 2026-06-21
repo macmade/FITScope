@@ -24,13 +24,12 @@
 
 import SwiftUI
 
-/// The content of the Preferences (Settings) window: a tabbed surface for the
-/// app's settings.
+/// The content of the Preferences (Settings) window: a tabbed surface composing
+/// one component view per section.
 ///
-/// The General tab carries the first real setting; the API Keys, Information
-/// Panel and Astro tabs are placeholders filled in by later milestones. The
-/// settings bind to the shared ``Preferences`` store from the environment, so a
-/// change here is observed app-wide and persisted.
+/// The General and API Keys tabs carry real settings; the Information Panel and
+/// Astro tabs are placeholders. Each tab is its own view and is given the shared
+/// stores it needs explicitly.
 public struct PreferencesView: View
 {
     /// The tabs shown in the window, in order.
@@ -42,8 +41,14 @@ public struct PreferencesView: View
         case astro
     }
 
-    /// The shared, persisted preferences.
+    /// The shared, persisted preferences. Resolved here — before the `TabView` —
+    /// and passed into the tabs explicitly, since a `Settings` scene's `TabView`
+    /// does not reliably propagate environment objects to its tab content.
     @EnvironmentObject private var preferences: Preferences
+
+    /// The shared, Keychain-backed API keys, resolved here and passed down for
+    /// the same reason as ``preferences``.
+    @EnvironmentObject private var apiKeyStore: APIKeyStore
 
     /// Creates the preferences view.
     public init()
@@ -54,62 +59,22 @@ public struct PreferencesView: View
     {
         TabView
         {
-            self.generalTab
+            GeneralPreferencesView( preferences: self.preferences )
                 .tabItem { Label( "General", systemImage: "gearshape" ) }
                 .tag( Tab.general )
 
-            self.placeholderTab( "API Keys", systemImage: "key" )
+            APIKeysPreferencesView( apiKeyStore: self.apiKeyStore )
                 .tabItem { Label( "API Keys", systemImage: "key" ) }
                 .tag( Tab.apiKeys )
 
-            self.placeholderTab( "Information Panel", systemImage: "list.bullet.rectangle" )
+            PreferencesPlaceholderView( "Information Panel", systemImage: "list.bullet.rectangle" )
                 .tabItem { Label( "Information Panel", systemImage: "list.bullet.rectangle" ) }
                 .tag( Tab.informationPanel )
 
-            self.placeholderTab( "Astro", systemImage: "sparkles" )
+            PreferencesPlaceholderView( "Astro", systemImage: "sparkles" )
                 .tabItem { Label( "Astro", systemImage: "sparkles" ) }
                 .tag( Tab.astro )
         }
         .frame( width: 480, height: 260 )
-    }
-
-    /// The General tab: the first real setting plus room for more.
-    private var generalTab: some View
-    {
-        Form
-        {
-            Toggle( "Automatically hide the floating toolbars", isOn: self.$preferences.autoHideFloatingBars )
-                .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.autoHideFloatingBarsToggle )
-
-            Text( "When on, the canvas's zoom toolbar and status pill fade out after a moment of inactivity and reappear when you move the pointer. When off, they stay visible." )
-                .font( .caption )
-                .foregroundStyle( .secondary )
-        }
-        .formStyle( .grouped )
-        .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.generalTab )
-    }
-
-    /// A placeholder tab for a section a later milestone fills in.
-    ///
-    /// - Parameters:
-    ///   - title:       The section's name.
-    ///   - systemImage: The SF Symbol shown above the message.
-    /// - Returns: The placeholder content.
-    private func placeholderTab( _ title: String, systemImage: String ) -> some View
-    {
-        VStack( spacing: 10 )
-        {
-            Image( systemName: systemImage )
-                .font( .system( size: 34 ) )
-                .foregroundStyle( .secondary )
-
-            Text( title )
-                .font( .headline )
-
-            Text( "Coming soon." )
-                .font( .subheadline )
-                .foregroundStyle( .secondary )
-        }
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
     }
 }

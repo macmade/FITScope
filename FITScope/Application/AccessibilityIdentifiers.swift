@@ -271,5 +271,14 @@ public enum AccessibilityIdentifier
 
         /// The "auto-hide the floating bars" toggle in the General tab.
         public static let autoHideFloatingBarsToggle = "PreferencesView.autoHideFloatingBarsToggle"
+
+        /// The API Keys tab's content.
+        public static let apiKeysTab = "PreferencesView.apiKeysTab"
+
+        /// The Astrometry.net API-key secure field in the API Keys tab.
+        public static let astrometryNetKeyField = "PreferencesView.astrometryNetKeyField"
+
+        /// The OpenWeatherMap API-key secure field in the API Keys tab.
+        public static let openWeatherMapKeyField = "PreferencesView.openWeatherMapKeyField"
     }
 }

@@ -203,6 +203,25 @@ enum UITestSupport
         item.click()
     }
 
+    /// Cancels the Open panel the app presents at launch, leaving the app running
+    /// with no file open — the right starting point for testing UI that has
+    /// nothing to do with a loaded image (such as the Preferences window).
+    ///
+    /// - Parameters:
+    ///   - app:     The launched application proxy.
+    ///   - timeout: How long to wait for the panel to appear and dismiss.
+    @MainActor
+    static func dismissLaunchPanel( in app: XCUIApplication, timeout: TimeInterval = 15 )
+    {
+        let dialog = app.dialogs.firstMatch
+
+        XCTAssertTrue( dialog.waitForExistence( timeout: timeout ), "The Open panel did not appear." )
+
+        app.typeKey( .escape, modifierFlags: [] )
+
+        XCTAssertTrue( dialog.waitForNonExistence( timeout: timeout ), "The Open panel did not dismiss." )
+    }
+
     /// Opens a fixture through the app's Open panel, granting the sandbox access
     /// the same way a user's selection would.
     ///
