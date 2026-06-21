@@ -491,6 +491,35 @@ final class FITScopeUITests: XCTestCase
         )
     }
 
+    /// "Reset View" must reset the inspector controls' displayed state, not just
+    /// the underlying render: after enabling gamma, resetting must hide the gamma
+    /// slider again, proving the control followed the reset rather than keeping
+    /// its enabled state.
+    @MainActor
+    func testResetViewResetsInspectorControls() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
+
+        let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
+        let toggle = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.toggle )
+        let slider = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.slider )
+        let reset  = UITestSupport.element( app, AccessibilityIdentifier.InspectorView.resetButton )
+
+        XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The image did not render." )
+        XCTAssertTrue( toggle.waitForExistence( timeout: 5 ), "The gamma toggle did not appear." )
+
+        toggle.click()
+        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "Enabling gamma did not reveal its slider." )
+
+        reset.click()
+        XCTAssertTrue(
+            slider.waitForNonExistence( timeout: 10 ),
+            "Reset View did not reset the gamma control — its slider stayed visible."
+        )
+    }
+
     /// The file row's context menu opens the FITS headers window via "View FITS
     /// Headers".
     @MainActor

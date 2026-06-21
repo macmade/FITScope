@@ -32,6 +32,12 @@ public struct InspectorView: View
     /// The image whose renderer/adjustments the controls bind to.
     @ObservedObject private var image: FITSImage
 
+    /// The controls' identity token. Reset View replaces it with a fresh value to
+    /// recreate the controls so they reseed from the just-defaulted adjustments:
+    /// reset mutates the adjustments in place — the same object, same image —
+    /// which on its own would not refresh the controls' own `@State`.
+    @State private var controlsID = UUID()
+
     /// Creates the inspector.
     ///
     /// - Parameter image: The image to inspect and adjust.
@@ -117,6 +123,9 @@ public struct InspectorView: View
             // they re-enable as soon as the render commits. Applied to the content
             // stack rather than the scroll view, so it still scrolls meanwhile.
             .disabled( self.image.renderer.isRendering )
+            // Reset View replaces this, recreating the controls so they reseed
+            // from the freshly-defaulted adjustments.
+            .id( self.controlsID )
         }
         .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.container )
     }
@@ -145,6 +154,11 @@ public struct InspectorView: View
         current.whiteBalance = defaults.whiteBalance
         current.invert       = defaults.invert
         current.debayer      = defaults.debayer
+
+        // Recreate the controls so they reseed from the now-default adjustments;
+        // they cache their displayed state in @State, which the in-place mutation
+        // above does not refresh on its own.
+        self.controlsID = UUID()
 
         self.reRender()
     }
