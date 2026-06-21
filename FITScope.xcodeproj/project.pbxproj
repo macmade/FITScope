@@ -39,7 +39,7 @@
 		05BD7A982DF3120E00F4AAFC /* StretchControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A972DF3120600F4AAFC /* StretchControlView.swift */; };
 		05BD7A9A2DF3121600F4AAFC /* WhiteBalanceControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A992DF3121100F4AAFC /* WhiteBalanceControlView.swift */; };
 		05BD7A9C2DF3121B00F4AAFC /* HistogramControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A9B2DF3121800F4AAFC /* HistogramControlView.swift */; };
-		05C0A75A2DDE64E0005DECEF /* FITSCorpus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A7592DDE64E0005DECEF /* FITSCorpus.swift */; };
+		05C0A75A2DDE64E0005DECEF /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A7592DDE64E0005DECEF /* TestFixtures.swift */; };
 		05C0A75C2DDE64E0005DECEF /* ImageAdjustments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */; };
 		05C0A75E2DDE64E0005DECEF /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */; };
 		05C4BD722DF2C9A200326B69 /* SearchField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C4BD712DF2C9A000326B69 /* SearchField.swift */; };
@@ -55,7 +55,6 @@
 		05DC79A72DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits in Resources */ = {isa = PBXBuildFile; fileRef = 05DC79A62DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits */; };
 		05DC79A92DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits in Resources */ = {isa = PBXBuildFile; fileRef = 05DC79A82DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits */; };
 		05FB0B02000000000000FB02 /* BannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB0B01000000000000FB01 /* BannerView.swift */; };
-		05FB1000000000000000B001 /* FITSCorpusRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A001 /* FITSCorpusRenderTests.swift */; };
 		05FB1000000000000000B002 /* FITSTestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A002 /* FITSTestData.swift */; };
 		05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A003 /* ImageProcessorTests.swift */; };
 		05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A004 /* FITSImageRendererTests.swift */; };
@@ -239,7 +238,7 @@
 		05BD7A972DF3120600F4AAFC /* StretchControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchControlView.swift; sourceTree = "<group>"; };
 		05BD7A992DF3121100F4AAFC /* WhiteBalanceControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteBalanceControlView.swift; sourceTree = "<group>"; };
 		05BD7A9B2DF3121800F4AAFC /* HistogramControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramControlView.swift; sourceTree = "<group>"; };
-		05C0A7592DDE64E0005DECEF /* FITSCorpus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSCorpus.swift; sourceTree = "<group>"; };
+		05C0A7592DDE64E0005DECEF /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageAdjustments.swift; sourceTree = "<group>"; };
 		05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Benchmarking.swift; sourceTree = "<group>"; };
 		05C4BD712DF2C9A000326B69 /* SearchField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchField.swift; sourceTree = "<group>"; };
@@ -257,7 +256,6 @@
 		05DC79A82DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits */ = {isa = PBXFileReference; lastKnownFileType = text; name = FOSy19g0309t_c2f.fits; path = "Submodules/SwiftFITS/Test Files/NASA/FOSy19g0309t_c2f.fits"; sourceTree = SOURCE_ROOT; };
 		05E6184E2DE64C88007AED28 /* FITScope.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = FITScope.xctestplan; sourceTree = "<group>"; };
 		05FB0B01000000000000FB01 /* BannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerView.swift; sourceTree = "<group>"; };
-		05FB1000000000000000A001 /* FITSCorpusRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSCorpusRenderTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A002 /* FITSTestData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSTestData.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A003 /* ImageProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessorTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A004 /* FITSImageRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageRendererTests.swift; sourceTree = "<group>"; };
@@ -605,8 +603,7 @@
 				05FB1000000000000000C002 /* Image */,
 				05FB1000000000000000C003 /* Model */,
 				05FB1000000000000000C004 /* Views */,
-				05C0A7592DDE64E0005DECEF /* FITSCorpus.swift */,
-				05FB1000000000000000A001 /* FITSCorpusRenderTests.swift */,
+				05C0A7592DDE64E0005DECEF /* TestFixtures.swift */,
 			);
 			path = FITScopeTests;
 			sourceTree = "<group>";
@@ -977,8 +974,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				05C0A75A2DDE64E0005DECEF /* FITSCorpus.swift in Sources */,
-				05FB1000000000000000B001 /* FITSCorpusRenderTests.swift in Sources */,
+				05C0A75A2DDE64E0005DECEF /* TestFixtures.swift in Sources */,
 				05FB1000000000000000B002 /* FITSTestData.swift in Sources */,
 				05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */,
 				05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */,

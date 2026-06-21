@@ -84,7 +84,7 @@ struct FITSImageRendererTests
     @MainActor
     func renderInputCrossesTheConcurrencyBoundary() async throws
     {
-        let url = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url = TestFixtures.renderableImage
 
         // Resolve the Sendable render input off the main actor; only the input
         // (never the non-Sendable FITSFile) crosses back to the renderer.
@@ -115,7 +115,7 @@ struct FITSImageRendererTests
     @MainActor
     func reRenderWithChangedAdjustmentsProducesNewResult() async throws
     {
-        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.renderableImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
         let renderer = FITSImageRenderer( input: input )
 
@@ -138,7 +138,7 @@ struct FITSImageRendererTests
     @MainActor
     func failedRenderRetainsLastGoodResult() async throws
     {
-        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.renderableImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
         let renderer = FITSImageRenderer( input: input )
 
@@ -165,7 +165,7 @@ struct FITSImageRendererTests
     @MainActor
     func validRenderAfterFailureRecovers() async throws
     {
-        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.renderableImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
         let renderer = FITSImageRenderer( input: input )
 
@@ -204,7 +204,7 @@ struct FITSImageRendererTests
     @MainActor
     func laterStartedRenderWinsRegardlessOfCommitOrder() async throws
     {
-        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.renderableImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
         let renderer = FITSImageRenderer( input: input )
 
@@ -235,7 +235,7 @@ struct FITSImageRendererTests
     @MainActor
     func staleRenderDoesNotClobberNewerResult() async throws
     {
-        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.renderableImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
         let renderer = FITSImageRenderer( input: input )
 
@@ -280,7 +280,7 @@ struct FITSImageRendererTests
     @MainActor
     func histogramComparesByIdentityNotContents() async throws
     {
-        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.renderableImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
         let renderer = FITSImageRenderer( input: input )
 
@@ -309,7 +309,7 @@ struct FITSImageRendererTests
     @MainActor
     func renderClearsIsRenderingWhenComplete() async throws
     {
-        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.renderableImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
         let renderer = FITSImageRenderer( input: input )
 
@@ -325,7 +325,7 @@ struct FITSImageRendererTests
     @MainActor
     func committingTheLatestGenerationClearsIsRendering() async throws
     {
-        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.renderableImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
         let renderer = FITSImageRenderer( input: input )
 
@@ -348,7 +348,7 @@ struct FITSImageRendererTests
     @MainActor
     func staleCommitLeavesIsRenderingForTheInFlightRender() async throws
     {
-        let file     = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) ), options: .lenient )
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.renderableImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
         let renderer = FITSImageRenderer( input: input )
 

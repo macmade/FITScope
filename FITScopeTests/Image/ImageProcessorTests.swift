@@ -32,32 +32,62 @@ import Testing
 @Suite( "ImageProcessor" )
 struct ImageProcessorTests
 {
-    /// Scaling keywords written in floating-point form must be honoured rather
-    /// than read as the integer defaults. UIT's `BSCALE` is float-formatted.
+    /// A `BSCALE` carrying a floating-point value must be honoured as that
+    /// float, rather than falling back to the integer default of 1.
     @Test
     func floatScalingKeywordsAreHonoured() throws
     {
-        let file = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "NASA/UITfuv2582gc.fits" ) ), options: .lenient )
-        let hdu  = try FITSImageRenderer.renderInput( from: file.sections )
+        let properties =
+            [
+                FITSPropertySnapshot( name: "BSCALE", value: .float( 1.5 ) ),
+                FITSPropertySnapshot( name: "BZERO",  value: .float( 0 ) ),
+            ]
 
-        let headerScale = try #require( hdu.properties.first { $0.name == "BSCALE" }?.value.float )
-        let scaling     = ImageProcessor.scaling( from: hdu.properties )
+        let scaling = ImageProcessor.scaling( from: properties )
 
-        #expect( scaling.scale == headerScale )
+        #expect( scaling.scale == 1.5 )
         #expect( scaling.scale != 1, "a float BSCALE must not fall back to the default scale" )
     }
 
-    /// Integer-formatted scaling keywords keep working. The M42 file's `BZERO`
-    /// is the integer `32768`.
+    /// Integer-formatted scaling keywords keep working: a `BZERO` of the
+    /// integer `32768` (the usual unsigned-16-bit offset) is read as `32768`.
     @Test
     func integerScalingKeywordsAreHonoured() throws
     {
-        let file = try FITSFile( data: Data( contentsOf: FITSCorpus.url( "2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits" ) ), options: .lenient )
-        let hdu  = try FITSImageRenderer.renderInput( from: file.sections )
+        let properties =
+            [
+                FITSPropertySnapshot( name: "BZERO",  value: .integer( 32768 ) ),
+                FITSPropertySnapshot( name: "BSCALE", value: .integer( 1 ) ),
+            ]
 
-        let scaling = ImageProcessor.scaling( from: hdu.properties )
+        let scaling = ImageProcessor.scaling( from: properties )
 
         #expect( scaling.offset == 32768 )
+    }
+
+    /// A non-2-D geometry (a 3-D cube / multi-plane image) is rejected with a
+    /// diagnostic that names the offending `NAXIS` value, rather than rendering.
+    @Test
+    func nonTwoDimensionalGeometryIsRejected() throws
+    {
+        let properties: [ FITSPropertySnapshot ] =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 3 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS3", value: .integer( 2 ) ),
+            ]
+
+        let error = try #require( throws: ( any Error ).self )
+        {
+            _ = try ImageProcessor.render( data: Data(), properties: properties )
+        }
+
+        let message = "\( error )"
+
+        #expect( message.contains( "only 2-dimensional images are supported" ), "expected an unsupported-geometry error, got: \"\( message )\"" )
+        #expect( message.contains( "NAXIS = 3" ), "the error must report the offending NAXIS value, got: \"\( message )\"" )
     }
 
     /// A non-positive `NAXIS2` is rejected with a diagnostic that names the

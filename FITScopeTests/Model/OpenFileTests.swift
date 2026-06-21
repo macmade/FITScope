@@ -34,18 +34,18 @@ struct OpenFileTests
     @MainActor
     func exposesURLAndDisplayName() throws
     {
-        let url  = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url  = TestFixtures.renderableImage
         let file = OpenFile( url: url )
 
         #expect( file.url == url )
-        #expect( file.displayName == "FOSy19g0309t_c2f.fits" )
+        #expect( file.displayName == "RenderableImage.fits" )
     }
 
     @Test
     @MainActor
     func loadPopulatesImage() async throws
     {
-        let url  = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url  = TestFixtures.renderableImage
         let file = OpenFile( url: url )
 
         await file.load()
@@ -58,7 +58,7 @@ struct OpenFileTests
     @MainActor
     func distinctInstancesHaveDistinctIdentity() throws
     {
-        let url = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url = TestFixtures.renderableImage
 
         #expect( OpenFile( url: url ).id != OpenFile( url: url ).id, "each open file is a distinct entry even for the same URL" )
     }
@@ -67,7 +67,7 @@ struct OpenFileTests
     @MainActor
     func loadAndRenderProducesThumbnail() async throws
     {
-        let url  = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url  = TestFixtures.renderableImage
         let file = OpenFile( url: url )
 
         await file.load()
@@ -124,7 +124,7 @@ struct OpenFileTests
     @MainActor
     func renderPhaseTracksLoadThenRender() async throws
     {
-        let url  = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url  = TestFixtures.renderableImage
         let file = OpenFile( url: url )
 
         #expect( file.renderPhase == .loading, "a freshly opened file is loading" )
@@ -139,7 +139,7 @@ struct OpenFileTests
     @MainActor
     func prepareLoadsRendersAndThumbnails() async throws
     {
-        let file     = OpenFile( url: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) )
+        let file     = OpenFile( url: TestFixtures.renderableImage )
         let throttle = RenderThrottle( limit: 2 )
 
         file.prepare( throttle: throttle )
@@ -154,7 +154,7 @@ struct OpenFileTests
     @MainActor
     func prepareIsIdempotent() async throws
     {
-        let file     = OpenFile( url: FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ) )
+        let file     = OpenFile( url: TestFixtures.renderableImage )
         let throttle = RenderThrottle( limit: 2 )
 
         file.prepare( throttle: throttle )

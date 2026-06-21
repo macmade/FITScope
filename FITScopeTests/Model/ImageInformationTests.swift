@@ -32,9 +32,9 @@ import Testing
 struct ImageInformationTests
 {
     @Test
-    func extractsCoreFieldsFromCorpusFile() throws
+    func extractsCoreFieldsFromFixture() throws
     {
-        let url  = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url  = TestFixtures.renderableImage
         let file = try FITSFile( url: url, options: .lenient )
         let info = FITSImageInfo( url: url, file: file )
 
@@ -57,7 +57,7 @@ struct ImageInformationTests
     @Test
     func absentFieldsAreOmittedFromRows() throws
     {
-        let url  = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url  = TestFixtures.renderableImage
         let file = try FITSFile( url: url, options: .lenient )
         let info = FITSImageInfo( url: url, file: file )
 

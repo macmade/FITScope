@@ -39,7 +39,7 @@ struct FITSImageLoaderTests
     @MainActor
     func loadIsIdempotentOnSuccess() async throws
     {
-        let url    = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url    = TestFixtures.renderableImage
         let data   = try Data( contentsOf: url )
         let loader = FITSImageLoader( url: url, document: FITSDocument( data: data ) )
 
@@ -61,7 +61,7 @@ struct FITSImageLoaderTests
     @MainActor
     func loadProducesRenderableImageWithValidInfo() async throws
     {
-        let url    = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url    = TestFixtures.renderableImage
         let data   = try Data( contentsOf: url )
         let loader = FITSImageLoader( url: url, document: FITSDocument( data: data ) )
 
@@ -82,7 +82,7 @@ struct FITSImageLoaderTests
     @MainActor
     func loadFromURLProducesRenderableImage() async throws
     {
-        let url    = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let url    = TestFixtures.renderableImage
         let loader = FITSImageLoader( url: url )
 
         await loader.load()

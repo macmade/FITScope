@@ -31,11 +31,11 @@ import Testing
 @Suite( "WindowModel" )
 struct WindowModelTests
 {
-    private var corpusURLs: [ URL ]
+    private var fixtureURLs: [ URL ]
     {
         [
-            FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ),
-            FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" ),
+            TestFixtures.renderableImage,
+            TestFixtures.renderableImage,
         ]
     }
 
@@ -45,7 +45,7 @@ struct WindowModelTests
     {
         let model = WindowModel()
 
-        model.open( urls: self.corpusURLs )
+        model.open( urls: self.fixtureURLs )
 
         #expect( model.files.count == 2 )
         #expect( model.selectedFileID == model.files.first?.id, "opening into an empty window selects the first new file" )
@@ -57,11 +57,11 @@ struct WindowModelTests
     {
         let model = WindowModel()
 
-        model.open( urls: [ self.corpusURLs[ 0 ] ] )
+        model.open( urls: [ self.fixtureURLs[ 0 ] ] )
 
         let firstID = try #require( model.selectedFileID )
 
-        model.open( urls: [ self.corpusURLs[ 1 ] ] )
+        model.open( urls: [ self.fixtureURLs[ 1 ] ] )
 
         #expect( model.files.count == 2 )
         #expect( model.selectedFileID == firstID, "opening more files must not steal an existing selection" )
@@ -73,7 +73,7 @@ struct WindowModelTests
     {
         let model = WindowModel()
 
-        model.open( urls: self.corpusURLs )
+        model.open( urls: self.fixtureURLs )
 
         let selected = try #require( model.selectedFile )
 
@@ -89,7 +89,7 @@ struct WindowModelTests
     {
         let model = WindowModel()
 
-        model.open( urls: [ self.corpusURLs[ 0 ] ] )
+        model.open( urls: [ self.fixtureURLs[ 0 ] ] )
 
         let only = try #require( model.selectedFile )
 
@@ -105,7 +105,7 @@ struct WindowModelTests
     {
         let model = WindowModel()
 
-        model.open( urls: self.corpusURLs )
+        model.open( urls: self.fixtureURLs )
 
         for file in model.files
         {
@@ -122,7 +122,7 @@ struct WindowModelTests
     {
         let model = WindowModel()
 
-        model.open( urls: [ self.corpusURLs[ 0 ] ] )
+        model.open( urls: [ self.fixtureURLs[ 0 ] ] )
 
         let file = try #require( model.files.first )
 
