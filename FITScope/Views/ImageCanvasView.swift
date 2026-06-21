@@ -38,6 +38,9 @@ public struct ImageCanvasView: View
     /// The current magnification.
     @State private var zoom:    CGFloat = 1.0
 
+    /// Whether zoom-out is available; `false` once the whole image is visible.
+    @State private var canZoomOut = true
+
     /// The latest one-shot canvas command.
     @State private var command  = CanvasCommand( kind: .fit, token: 0 )
 
@@ -75,10 +78,13 @@ public struct ImageCanvasView: View
             {
                 if let result = image.renderer.result
                 {
-                    ZoomableImageView( image: result.image, zoom: self.$zoom, command: self.command )
-                    {
-                        coordinate in self.report( coordinate: coordinate )
-                    }
+                    ZoomableImageView(
+                        image:              result.image,
+                        command:            self.command,
+                        onHover:            { coordinate in self.report( coordinate: coordinate ) },
+                        onZoomChange:       { self.zoom = $0 },
+                        onCanZoomOutChange: { self.canZoomOut = $0 }
+                    )
                     .accessibilityIdentifier( AccessibilityIdentifier.ImageCanvasView.canvas )
                     .overlay( alignment: .top )
                     {
@@ -86,6 +92,7 @@ public struct ImageCanvasView: View
                         {
                             ImageToolbarView(
                                 zoom:         self.zoom,
+                                canZoomOut:   self.canZoomOut,
                                 onFit:        { self.send( .fit ) },
                                 onActualSize: { self.send( .actualSize ) },
                                 onRecenter:   { self.send( .recenter ) },

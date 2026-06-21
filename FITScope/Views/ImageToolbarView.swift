@@ -31,6 +31,10 @@ public struct ImageToolbarView: View
     /// The current magnification (1.0 == 100%), shown as a percentage.
     public let zoom:         CGFloat
 
+    /// Whether zoom-out is available; the zoom-out button is disabled otherwise
+    /// (the whole image is already visible).
+    public let canZoomOut:   Bool
+
     /// Called to request a fit.
     public let onFit:        () -> Void
 
@@ -47,9 +51,10 @@ public struct ImageToolbarView: View
     public let onZoomOut:    () -> Void
 
     /// Creates the toolbar.
-    public init( zoom: CGFloat, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void )
+    public init( zoom: CGFloat, canZoomOut: Bool, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void )
     {
         self.zoom         = zoom
+        self.canZoomOut   = canZoomOut
         self.onFit        = onFit
         self.onActualSize = onActualSize
         self.onRecenter   = onRecenter
@@ -67,6 +72,7 @@ public struct ImageToolbarView: View
             Divider().frame( height: 16 )
 
             self.button( image: "minus", help: "Zoom out", identifier: AccessibilityIdentifier.ImageToolbarView.zoomOut, action: self.onZoomOut )
+                .disabled( self.canZoomOut == false )
 
             Text( "\( Int( ( self.zoom * 100 ).rounded() ) )%" )
                 .font( .system( size: 11, design: .monospaced ) )
@@ -104,7 +110,7 @@ public struct ImageToolbarView: View
 
 #Preview
 {
-    ImageToolbarView( zoom: 1.0, onFit: {}, onActualSize: {}, onRecenter: {}, onZoomIn: {}, onZoomOut: {} )
+    ImageToolbarView( zoom: 1.0, canZoomOut: true, onFit: {}, onActualSize: {}, onRecenter: {}, onZoomIn: {}, onZoomOut: {} )
         .padding()
         .background( .black )
 }

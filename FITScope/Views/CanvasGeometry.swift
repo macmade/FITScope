@@ -58,4 +58,73 @@ public enum CanvasGeometry
     {
         Swift.max( lower, Swift.min( upper, value ) )
     }
+
+    /// The relative tolerance used when comparing magnifications, so that
+    /// floating-point rounding at a bound reads as equality.
+    private static let tolerance: CGFloat = 0.0001
+
+    /// The magnification at which `content` fits entirely within `visible`,
+    /// clamped to the scroll view's `minimum...maximum` magnification range so an
+    /// extreme content-to-viewport ratio can't push it past those limits. This is
+    /// the magnification a "fit" applies, and re-evaluating it after a viewport
+    /// resize keeps a fitted image fitted. Returns `0` for degenerate sizes.
+    public static func boundedFitFactor( content: CGSize, visible: CGSize, minimum: CGFloat, maximum: CGFloat ) -> CGFloat
+    {
+        let factor = self.fitFactor( content: content, visible: visible )
+
+        guard factor > 0
+        else
+        {
+            return 0
+        }
+
+        return self.clamp( factor, min: minimum, max: maximum )
+    }
+
+    /// The smallest useful magnification given a `fitFactor`: zooming out past the
+    /// point where the whole image is visible only adds empty margin, so the fit
+    /// factor is the lower bound — but never above actual size (so 100% stays
+    /// reachable for a small image scaled up to fit) nor below `floor`.
+    public static func minimumMagnification( fitFactor: CGFloat, floor: CGFloat ) -> CGFloat
+    {
+        Swift.max( floor, Swift.min( fitFactor, 1.0 ) )
+    }
+
+    /// Whether zoom-out remains useful: `true` while `magnification` sits
+    /// meaningfully above the `minimum` bound. At or below the bound the whole
+    /// image is already visible, so zoom-out is disabled.
+    public static func canZoomOut( magnification: CGFloat, minimum: CGFloat ) -> Bool
+    {
+        guard minimum > 0
+        else
+        {
+            return true
+        }
+
+        return magnification > minimum * ( 1 + self.tolerance )
+    }
+
+    /// Whether `magnification` is at the `fitMagnification` (within tolerance),
+    /// used to keep a fitted image fitted across viewport resizes. Distinct from
+    /// the zoom-out bound, since a small image fits while scaled up above 100%.
+    public static func isFitted( magnification: CGFloat, fitMagnification: CGFloat ) -> Bool
+    {
+        guard fitMagnification > 0
+        else
+        {
+            return false
+        }
+
+        return abs( magnification - fitMagnification ) <= fitMagnification * self.tolerance
+    }
+
+    /// The magnification to display after a viewport resize. A fitted image
+    /// follows the new `fitMagnification`; a zoomed-in image keeps its
+    /// magnification while it still fills the viewport, but never drops below the
+    /// fit magnification — otherwise the viewport would have grown past the image
+    /// and show black borders on all sides.
+    public static func magnificationAfterResize( currentMagnification: CGFloat, fitMagnification: CGFloat, wasFitted: Bool ) -> CGFloat
+    {
+        wasFitted ? fitMagnification : Swift.max( currentMagnification, fitMagnification )
+    }
 }

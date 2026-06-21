@@ -63,22 +63,27 @@ public struct ZoomableImageView: NSViewRepresentable
     /// The image to display.
     public let image: CGImage
 
-    /// The current magnification (1.0 == 100%). Updated as the user zooms.
-    @Binding public var zoom: CGFloat
-
     /// The latest one-shot command to apply.
     public let command: CanvasCommand
 
     /// Called with the pixel coordinate under the cursor, or `nil` when outside.
     public let onHover: ( ( x: Int, y: Int )? ) -> Void
 
+    /// Called with the current magnification (1.0 == 100%) as the user zooms.
+    public let onZoomChange: ( CGFloat ) -> Void
+
+    /// Called when zoom-out availability changes; `false` once the whole image
+    /// is visible. Driven by the canvas as the magnification and viewport change.
+    public let onCanZoomOutChange: ( Bool ) -> Void
+
     /// Creates the canvas.
-    public init( image: CGImage, zoom: Binding< CGFloat >, command: CanvasCommand, onHover: @escaping ( ( x: Int, y: Int )? ) -> Void )
+    public init( image: CGImage, command: CanvasCommand, onHover: @escaping ( ( x: Int, y: Int )? ) -> Void, onZoomChange: @escaping ( CGFloat ) -> Void, onCanZoomOutChange: @escaping ( Bool ) -> Void )
     {
-        self.image    = image
-        self._zoom    = zoom
-        self.command  = command
-        self.onHover  = onHover
+        self.image              = image
+        self.command            = command
+        self.onHover            = onHover
+        self.onZoomChange       = onZoomChange
+        self.onCanZoomOutChange = onCanZoomOutChange
     }
 
     public func makeCoordinator() -> Coordinator
@@ -153,15 +158,19 @@ public struct ZoomableImageView: NSViewRepresentable
         /// The hosted scroll view.
         weak var scrollView: NSScrollView?
 
+        /// The hard lower bound on magnification, used when an image is too large
+        /// to ever fully fit, so the scroll view keeps a sane minimum.
+        private static let minimumZoom: CGFloat = 0.05
+
         /// The token of the last command applied, to ignore repeats.
         private var lastCommandToken: Int?
 
         /// Whether the image has been fitted to the viewport at least once.
         private var hasFitted = false
 
-        /// The pixel dimensions last fitted to, used to detect a genuinely new
-        /// image so the view is only re-fitted then.
-        private var contentSize = CGSize.zero
+        /// The magnification at which the image currently fits the viewport,
+        /// recomputed whenever the image or viewport changes.
+        private var fitMagnification: CGFloat = 0
 
         init( _ parent: ZoomableImageView )
         {
@@ -198,7 +207,50 @@ public struct ZoomableImageView: NSViewRepresentable
                 return
             }
 
-            self.parent.zoom = scrollView.magnification
+            self.parent.onZoomChange( scrollView.magnification )
+
+            self.publishZoomOutAvailability()
+        }
+
+        /// Recomputes the fit magnification and the scroll view's minimum
+        /// magnification for the current image and viewport sizes, and returns the
+        /// fit magnification (`0` for degenerate sizes).
+        @discardableResult
+        private func updateFitGeometry() -> CGFloat
+        {
+            guard let scrollView = self.scrollView,
+                  let imageView  = scrollView.documentView
+            else
+            {
+                return 0
+            }
+
+            let fit = CanvasGeometry.boundedFitFactor( content: imageView.frame.size, visible: scrollView.contentView.frame.size, minimum: Self.minimumZoom, maximum: scrollView.maxMagnification )
+
+            guard fit > 0
+            else
+            {
+                return 0
+            }
+
+            let rawFit = CanvasGeometry.fitFactor( content: imageView.frame.size, visible: scrollView.contentView.frame.size )
+
+            self.fitMagnification       = fit
+            scrollView.minMagnification = CanvasGeometry.minimumMagnification( fitFactor: rawFit, floor: Self.minimumZoom )
+
+            return fit
+        }
+
+        /// Publishes whether zoom-out is still useful at the current magnification.
+        private func publishZoomOutAvailability()
+        {
+            guard let scrollView = self.scrollView
+            else
+            {
+                return
+            }
+
+            self.parent.onCanZoomOutChange( CanvasGeometry.canZoomOut( magnification: scrollView.magnification, minimum: scrollView.minMagnification ) )
         }
 
         /// Applies a one-shot command if its token is new.
@@ -232,15 +284,49 @@ public struct ZoomableImageView: NSViewRepresentable
             }
         }
 
-        /// Re-fits when the clip view first gains a non-zero size, avoiding the
-        /// zero bounds seen during `makeNSView`.
+        /// Handles a viewport size change: re-fits when the clip view first gains
+        /// a non-zero size (avoiding the zero bounds seen during `makeNSView`),
+        /// and afterwards keeps a fitted image fitted while tracking the zoom-out
+        /// bound for an image the user has zoomed in on.
         @objc
         func clipBoundsChanged()
         {
+            guard let scrollView = self.scrollView
+            else
+            {
+                return
+            }
+
             if self.hasFitted == false
             {
                 self.fit()
+
+                return
             }
+
+            let wasFitted = CanvasGeometry.isFitted( magnification: scrollView.magnification, fitMagnification: self.fitMagnification )
+
+            self.updateFitGeometry()
+
+            let target = CanvasGeometry.magnificationAfterResize( currentMagnification: scrollView.magnification, fitMagnification: self.fitMagnification, wasFitted: wasFitted )
+
+            if target != scrollView.magnification
+            {
+                // The image was re-fitted or snapped back up to fill the viewport;
+                // recenter it.
+                scrollView.magnification = target
+
+                self.parent.onZoomChange( target )
+                self.recenter()
+            }
+            else if wasFitted
+            {
+                // Still fitted at the same magnification: keep it centred as the
+                // viewport changes.
+                self.recenter()
+            }
+
+            self.publishZoomOutAvailability()
         }
 
         /// Forces a fresh fit, used when a genuinely new image is displayed.
@@ -254,31 +340,26 @@ public struct ZoomableImageView: NSViewRepresentable
         /// Scales the image to fit the visible area and recenters.
         func fit()
         {
-            guard let scrollView = self.scrollView,
-                  let imageView  = scrollView.documentView
+            guard let scrollView = self.scrollView
             else
             {
                 return
             }
 
-            let visible = scrollView.contentView.frame.size
-            let content = imageView.frame.size
-            let factor  = CanvasGeometry.fitFactor( content: content, visible: visible )
+            let fit = self.updateFitGeometry()
 
-            guard factor > 0
+            guard fit > 0
             else
             {
                 return
             }
 
-            let clamped = max( scrollView.minMagnification, min( scrollView.maxMagnification, factor ) )
-
-            scrollView.magnification = clamped
-            self.parent.zoom         = clamped
+            scrollView.magnification = fit
+            self.parent.onZoomChange( fit )
             self.hasFitted           = true
-            self.contentSize         = content
 
             self.recenter()
+            self.publishZoomOutAvailability()
         }
 
         /// Centers the document in the visible area.
@@ -312,7 +393,7 @@ public struct ZoomableImageView: NSViewRepresentable
             let center = CGPoint( x: clip.midX, y: clip.midY )
 
             scrollView.setMagnification( target, centeredAt: center )
-            self.parent.zoom = scrollView.magnification
+            self.parent.onZoomChange( scrollView.magnification )
         }
 
         /// Sets the magnification to an absolute value, keeping the centre of the
@@ -330,7 +411,7 @@ public struct ZoomableImageView: NSViewRepresentable
             let center = CGPoint( x: clip.midX, y: clip.midY )
 
             scrollView.setMagnification( target, centeredAt: center )
-            self.parent.zoom = scrollView.magnification
+            self.parent.onZoomChange( scrollView.magnification )
         }
     }
 }
@@ -500,7 +581,12 @@ final class HoverImageNSView: NSView
         origin.x  -= ( location.x - anchor.x ) / magnification
         origin.y  += ( location.y - anchor.y ) / magnification
 
-        clip.scroll( to: origin )
+        // Route the proposed origin through the clip view's own constraint so a
+        // pan can't drag the image past its edges into the black background;
+        // `scroll(to:)` alone does not constrain.
+        let constrained = clip.constrainBoundsRect( NSRect( origin: origin, size: clip.bounds.size ) )
+
+        clip.scroll( to: constrained.origin )
         scrollView.reflectScrolledClipView( clip )
 
         self.panAnchor = location
