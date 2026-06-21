@@ -35,6 +35,9 @@ public struct ImageCanvasView: View
     /// The file to display.
     @ObservedObject private var file: OpenFile
 
+    /// The shared user preferences; drives whether the floating bars auto-hide.
+    @EnvironmentObject private var preferences: Preferences
+
     /// The current magnification.
     @State private var zoom:    CGFloat = 1.0
 
@@ -89,6 +92,26 @@ public struct ImageCanvasView: View
                     case .active: self.revealBars()
                     case .ended:  break
                     @unknown default: break
+                }
+            }
+            .onChange( of: self.preferences.autoHideFloatingBars )
+            {
+                _, autoHide in
+
+                if autoHide
+                {
+                    // Re-enabled: start the countdown so the bars fade as usual.
+                    self.scheduleHide()
+                }
+                else
+                {
+                    // Disabled: cancel any pending hide and reveal the bars to stay.
+                    self.cancelHide()
+
+                    withAnimation( .easeInOut( duration: 0.2 ) )
+                    {
+                        self.barsVisible = true
+                    }
                 }
             }
             .task( id: self.file.id )
@@ -223,14 +246,15 @@ public struct ImageCanvasView: View
         self.scheduleHide()
     }
 
-    /// Starts (or restarts) the auto-hide countdown, unless the cursor is
-    /// resting over a bar, in which case the bars stay visible.
+    /// Starts (or restarts) the auto-hide countdown, unless auto-hide is turned
+    /// off in preferences or the cursor is resting over a bar — in either case
+    /// the bars stay visible.
     private func scheduleHide()
     {
         self.hideTask?.cancel()
         self.hideTask = nil
 
-        guard self.isHoveringBar == false
+        guard self.preferences.autoHideFloatingBars, self.isHoveringBar == false
         else
         {
             return

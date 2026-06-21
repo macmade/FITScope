@@ -83,6 +83,9 @@
 		4D40EC938ECB07A3AB919772 /* DropAcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFBDAF375886651EAEF634B1 /* DropAcceptanceTests.swift */; };
 		52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */; };
 		05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A0E1 /* AppModelTests.swift */; };
+		05FB1000000000000000D302 /* PreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000D301 /* PreferencesTests.swift */; };
+		05FB1000000000000000D102 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000D101 /* Preferences.swift */; };
+		05FB1000000000000000D202 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000D201 /* PreferencesView.swift */; };
 		669B304AA37E4BEB8964FC03 /* WindowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92EEE3EEA80B1B8809982F35 /* WindowModel.swift */; };
 		6A1572CF23B612DB37F852EC /* CanvasGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D3D9131B43725B5D03FCFA /* CanvasGeometry.swift */; };
 		8883C39B7FD3BD8B2E8035DD /* FilesSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA256D7D36DCB17FA81958C /* FilesSidebarView.swift */; };
@@ -272,6 +275,9 @@
 		0E6A0CA25BD529178F2F9432 /* CursorReadout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CursorReadout.swift; sourceTree = "<group>"; };
 		0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowModelTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A0E1 /* AppModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000D301 /* PreferencesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreferencesTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000D101 /* Preferences.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
+		05FB1000000000000000D201 /* PreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		1CDEBA7E46E766BCABAF5462 /* CanvasGeometryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasGeometryTests.swift; sourceTree = "<group>"; };
 		22D6641B378926115E450672 /* WindowContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowContent.swift; sourceTree = "<group>"; };
 		3BEAE300CD214042135F55D9 /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -561,6 +567,7 @@
 				0579B61F2DF249A9002FDD47 /* FITSImageProperty.swift */,
 				0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */,
 				05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */,
+				05FB1000000000000000D101 /* Preferences.swift */,
 				0579B61D2DF24998002FDD47 /* FITSImageSection.swift */,
 				9696A9D7B24CC9A58998C7AC /* OpenFile.swift */,
 				92EEE3EEA80B1B8809982F35 /* WindowModel.swift */,
@@ -637,6 +644,7 @@
 			children = (
 				05D710D12DF2049800CE32E3 /* FITSDocument.swift */,
 				05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */,
+				05FB1000000000000000D201 /* PreferencesView.swift */,
 				DF3765F1937F36620A92317F /* MainWindowView.swift */,
 				77051EA6E847507556D8B2B0 /* AppModel.swift */,
 				3BEAE300CD214042135F55D9 /* AppDelegate.swift */,
@@ -708,6 +716,7 @@
 				FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */,
 				0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */,
 				05FB1000000000000000A0E1 /* AppModelTests.swift */,
+				05FB1000000000000000D301 /* PreferencesTests.swift */,
 				641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */,
 				C07659F02B1A39E7821ED5BE /* ImageInformationTests.swift */,
 				AFBDAF375886651EAEF634B1 /* DropAcceptanceTests.swift */,
@@ -911,6 +920,8 @@
 			files = (
 				05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */,
 				05C0A75C2DDE64E0005DECEF /* ImageAdjustments.swift in Sources */,
+				05FB1000000000000000D102 /* Preferences.swift in Sources */,
+				05FB1000000000000000D202 /* PreferencesView.swift in Sources */,
 				05C0A75E2DDE64E0005DECEF /* Benchmarking.swift in Sources */,
 				0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */,
 				0579B6122DF220D1002FDD47 /* FITSImageRenderer.swift in Sources */,
@@ -990,6 +1001,7 @@
 				1B8A22E86CD946413A1C30D9 /* OpenFileTests.swift in Sources */,
 				52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */,
 				05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */,
+				05FB1000000000000000D302 /* PreferencesTests.swift in Sources */,
 				1ED9E2EDDC7585655A55E63C /* PixelValueTests.swift in Sources */,
 				8FD4823A666A3CBBBA760D54 /* CursorReadoutTests.swift in Sources */,
 				18168279CF74754A2213F80E /* ImageInformationTests.swift in Sources */,

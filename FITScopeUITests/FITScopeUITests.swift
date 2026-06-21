@@ -1049,4 +1049,72 @@ final class FITScopeUITests: XCTestCase
         XCTAssertTrue( picker.waitForExistence( timeout: 10 ), "The headers section picker did not appear." )
         XCTAssertTrue( picker.isEnabled, "The headers section picker is not enabled." )
     }
+
+    // MARK: - Preferences
+
+    /// The General preference "Automatically hide the floating toolbars" controls
+    /// the canvas's auto-hide behaviour both ways. The test exercises the real
+    /// behaviour rather than a stored value: with auto-hide on (the default) the
+    /// bars fade when the cursor rests away from them; turning the preference off
+    /// keeps them visible even at rest; turning it back on restores the fade.
+    ///
+    /// The preference is opened with the standard Settings shortcut (⌘,), the
+    /// toggle is driven by its identifier, and the Settings window is closed (⌘W)
+    /// between phases so the main window's canvas is observed each time. The
+    /// preference is left back on at the end so the run doesn't change the
+    /// machine's default behaviour.
+    @MainActor
+    func testAutoHideFloatingBarsPreferenceControlsHiding() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
+
+        let canvas    = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
+        let filesList = UITestSupport.element( app, AccessibilityIdentifier.FilesSidebarView.list )
+        let fit       = UITestSupport.element( app, AccessibilityIdentifier.ImageToolbarView.fit )
+        let toggle    = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.autoHideFloatingBarsToggle )
+
+        XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The image canvas did not appear after opening a fixture." )
+
+        // Reveal the bars (movement onto the canvas), then confirm the default
+        // behaviour: with auto-hide on, resting the cursor away from the bars
+        // (canvas centre) lets them fade out and leave the accessibility tree.
+        filesList.hover()
+        canvas.hover()
+
+        XCTAssertTrue( fit.waitForExistence( timeout: 5 ), "The floating toolbar did not reveal on cursor movement." )
+        XCTAssertTrue( fit.waitForNonExistence( timeout: 5 ), "The floating toolbar did not auto-hide by default." )
+
+        // Turn auto-hide off in Preferences.
+        app.typeKey( ",", modifierFlags: .command )
+
+        XCTAssertTrue( toggle.waitForExistence( timeout: 10 ), "The auto-hide toggle did not appear in Preferences." )
+
+        toggle.click()
+        app.typeKey( "w", modifierFlags: .command )
+
+        // With auto-hide off the bars stay visible — even when the cursor rests on
+        // the canvas, which would normally start the fade. They are revealed by the
+        // change and must not disappear past the auto-hide delay.
+        XCTAssertTrue( fit.waitForExistence( timeout: 5 ), "The floating toolbar was not shown after disabling auto-hide." )
+
+        canvas.hover()
+
+        XCTAssertFalse( fit.waitForNonExistence( timeout: 3 ), "The floating toolbar auto-hid even though auto-hide was disabled." )
+
+        // Turn auto-hide back on, restoring the default for the machine.
+        app.typeKey( ",", modifierFlags: .command )
+
+        XCTAssertTrue( toggle.waitForExistence( timeout: 10 ), "The auto-hide toggle did not reappear in Preferences." )
+
+        toggle.click()
+        app.typeKey( "w", modifierFlags: .command )
+
+        // The fade is restored: resting the cursor on the canvas hides the bars.
+        filesList.hover()
+        canvas.hover()
+
+        XCTAssertTrue( fit.waitForNonExistence( timeout: 5 ), "The floating toolbar did not auto-hide after re-enabling auto-hide." )
+    }
 }

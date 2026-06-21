@@ -54,6 +54,7 @@ public struct FITScopeApp: App
         {
             $content in MainWindowView( initialURLs: $content.wrappedValue?.urls ?? [] )
                 .environmentObject( self.appDelegate.appModel )
+                .environmentObject( self.appDelegate.preferences )
         }
         .windowStyle( .titleBar )
         .defaultLaunchBehavior( .suppressed )
@@ -123,6 +124,13 @@ public struct FITScopeApp: App
         // This is only the initial default: while the window is open, re-issuing
         // the About command just brings it forward without moving it.
         .defaultPosition( .center )
+
+        Settings
+        {
+            PreferencesView()
+                .environmentObject( self.appDelegate.preferences )
+        }
+        .windowResizability( .contentSize )
     }
 
     /// Seeds the app model's new-window callback with the SwiftUI `openWindow`

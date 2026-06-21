@@ -33,6 +33,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
     /// The shared app model, also injected into the SwiftUI environment.
     public let appModel = AppModel()
 
+    /// The app's persisted user preferences, injected into the SwiftUI
+    /// environment so the windows and the Preferences scene share one store.
+    public let preferences = Preferences()
+
     /// Whether a Finder/Dock open already delivered files, so the launch panel
     /// is not presented on top of a window that is opening.
     private var didOpenFilesAtLaunch = false

@@ -262,4 +262,14 @@ public enum AccessibilityIdentifier
         /// The About window's root content.
         public static let view = "AboutView.view"
     }
+
+    /// Identifiers applied by ``FITScope/PreferencesView``.
+    public enum PreferencesView
+    {
+        /// The General tab's content.
+        public static let generalTab = "PreferencesView.generalTab"
+
+        /// The "auto-hide the floating bars" toggle in the General tab.
+        public static let autoHideFloatingBarsToggle = "PreferencesView.autoHideFloatingBarsToggle"
+    }
 }
