@@ -94,6 +94,16 @@ struct ImageAdjustmentsTests
 
         #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).saturation == 1.4 )
 
+        // Levels default to an identity uniform mapping and are omitted from the
+        // config (the image renders unadjusted).
+        #expect( adjustments.levels == .uniform( .identity ) )
+        #expect( config.levels == nil )
+
+        // A non-identity levels remap flows into a freshly built config.
+        adjustments.levels = .uniform( .init( inputBlack: 0.1, inputWhite: 0.9, gamma: 1.5 ) )
+
+        #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).levels == .uniform( .init( inputBlack: 0.1, inputWhite: 0.9, gamma: 1.5 ) ) )
+
         // The default .auto debayer selection uses the header pattern.
         let debayer = try #require( config.debayer )
 

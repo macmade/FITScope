@@ -38,6 +38,9 @@ public struct InspectorView: View
     /// which on its own would not refresh the controls' own `@State`.
     @State private var controlsID = UUID()
 
+    /// Opens the singleton Levels editor window.
+    @Environment( \.openWindow ) private var openWindow
+
     /// Creates the inspector.
     ///
     /// - Parameter image: The image to inspect and adjust.
@@ -106,6 +109,23 @@ public struct InspectorView: View
                     InspectorSectionView( "Brightness & Contrast", identifier: AccessibilityIdentifier.InspectorView.Section.brightnessContrast )
                     {
                         BrightnessContrastControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                    }
+
+                    Divider()
+
+                    InspectorSectionView( "Levels", identifier: AccessibilityIdentifier.InspectorView.Section.levels )
+                    {
+                        Button
+                        {
+                            self.openWindow( id: "LevelsWindow" )
+                        }
+                        label:
+                        {
+                            Label( "Levels\u{2026}", systemImage: "slider.horizontal.below.rectangle" )
+                                .frame( maxWidth: .infinity )
+                        }
+                        .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.openLevelsButton )
+                        .help( "Open the Levels Editor" )
                     }
 
                     Divider()
@@ -183,6 +203,7 @@ public struct InspectorView: View
         current.invert       = defaults.invert
         current.brightness   = defaults.brightness
         current.contrast     = defaults.contrast
+        current.levels       = defaults.levels
         current.saturation   = defaults.saturation
         current.debayer      = defaults.debayer
         current.orientation  = defaults.orientation

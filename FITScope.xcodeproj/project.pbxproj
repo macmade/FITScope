@@ -113,6 +113,10 @@
 		BB151EF31682CFC60AB2CB64 /* OpenFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9696A9D7B24CC9A58998C7AC /* OpenFile.swift */; };
 		C13E4F74949472B2970E39C7 /* CursorReadout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6A0CA25BD529178F2F9432 /* CursorReadout.swift */; };
 		C7C9D58AF79A7584E987A03B /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8993FF77DBD5F754CAB41153 /* InspectorView.swift */; };
+		0AB10000000000000000FE02 /* LevelsWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000FE01 /* LevelsWindowView.swift */; };
+		0AB10000000000000000D202 /* LevelsEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000D201 /* LevelsEditorView.swift */; };
+		0AB10000000000000000D102 /* LevelsUnavailableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000D101 /* LevelsUnavailableView.swift */; };
+		0AB10000000000000000D002 /* LevelsActiveModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000D001 /* LevelsActiveModelView.swift */; };
 		CD510204921F275575D2C42F /* ImageToolbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C9EFEE0E53D9E62C7D3A9F /* ImageToolbarView.swift */; };
 		DAE7CCB9CC877AD2ECC8C933 /* CanvasGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CDEBA7E46E766BCABAF5462 /* CanvasGeometryTests.swift */; };
 		DE3E4CDC3C96EE6242C8D3CF /* ImageCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A0C09D641F9B35838FED0C /* ImageCanvasView.swift */; };
@@ -311,6 +315,10 @@
 		1805AA8818E2418AA78360ED /* ViewCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewCommands.swift; sourceTree = "<group>"; };
 		7C686F7A99DA48AB69336E13 /* StatisticsFormat.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatisticsFormat.swift; sourceTree = "<group>"; };
 		8993FF77DBD5F754CAB41153 /* InspectorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000FE01 /* LevelsWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LevelsWindowView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000D201 /* LevelsEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LevelsEditorView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000D101 /* LevelsUnavailableView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LevelsUnavailableView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000D001 /* LevelsActiveModelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LevelsActiveModelView.swift; sourceTree = "<group>"; };
 		92EEE3EEA80B1B8809982F35 /* WindowModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowModel.swift; sourceTree = "<group>"; };
 		9696A9D7B24CC9A58998C7AC /* OpenFile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFile.swift; sourceTree = "<group>"; };
 		9D7E39AB2783ACE444D01AA1 /* InspectorColumnView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InspectorColumnView.swift; sourceTree = "<group>"; };
@@ -723,6 +731,10 @@
 				B8A0C09D641F9B35838FED0C /* ImageCanvasView.swift */,
 				0378BAF85DE48F0D74A2DFCC /* InspectorSectionView.swift */,
 				8993FF77DBD5F754CAB41153 /* InspectorView.swift */,
+				0AB10000000000000000FE01 /* LevelsWindowView.swift */,
+				0AB10000000000000000D201 /* LevelsEditorView.swift */,
+				0AB10000000000000000D101 /* LevelsUnavailableView.swift */,
+				0AB10000000000000000D001 /* LevelsActiveModelView.swift */,
 				D6F768D0B5B05753212F21BA /* ImageInfoPanelView.swift */,
 				C7D3D9131B43725B5D03FCFA /* CanvasGeometry.swift */,
 				7C686F7A99DA48AB69336E13 /* StatisticsFormat.swift */,
@@ -1022,6 +1034,10 @@
 				DE3E4CDC3C96EE6242C8D3CF /* ImageCanvasView.swift in Sources */,
 				E79B56F2683FA70FC52D6AFA /* InspectorSectionView.swift in Sources */,
 				C7C9D58AF79A7584E987A03B /* InspectorView.swift in Sources */,
+				0AB10000000000000000FE02 /* LevelsWindowView.swift in Sources */,
+				0AB10000000000000000D202 /* LevelsEditorView.swift in Sources */,
+				0AB10000000000000000D102 /* LevelsUnavailableView.swift in Sources */,
+				0AB10000000000000000D002 /* LevelsActiveModelView.swift in Sources */,
 				9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */,
 				05FB1000000000000000F102 /* InfoField.swift in Sources */,
 				B3478104EBCB8EB1B9C44998 /* ImageInfoPanelView.swift in Sources */,

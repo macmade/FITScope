@@ -102,6 +102,10 @@ public enum ImageProcessor
         /// neutral).
         public var contrast: Double
 
+        /// The levels remap to apply. An identity mapping is omitted from the
+        /// pipeline configuration.
+        public var levels: Processors.Levels.Channels
+
         /// The colour-saturation factor (`1` is neutral).
         public var saturation: Double
 
@@ -127,11 +131,12 @@ public enum ImageProcessor
         ///   - invert:       Whether to invert the image.
         ///   - brightness:   The additive brightness offset (`0` is neutral).
         ///   - contrast:     The contrast factor about the midpoint (`1` is neutral).
+        ///   - levels:       The levels remap (an identity mapping is neutral).
         ///   - saturation:   The colour-saturation factor (`1` is neutral).
         ///   - debayer:      How to debayer the image.
         ///   - debayerMode:  The demosaic algorithm used when debayering.
         ///   - orientation:  The net orientation applied to the rendered image.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
         {
             self.normalize    = normalize
             self.stretch      = stretch
@@ -140,6 +145,7 @@ public enum ImageProcessor
             self.invert       = invert
             self.brightness   = brightness
             self.contrast     = contrast
+            self.levels       = levels
             self.saturation   = saturation
             self.debayer      = debayer
             self.debayerMode  = debayerMode
@@ -173,6 +179,7 @@ public enum ImageProcessor
                 whiteBalance:       self.whiteBalance,
                 invert:             self.invert,
                 brightnessContrast: ( self.brightness == 0 && self.contrast == 1 ) ? nil : ( brightness: self.brightness, contrast: self.contrast ),
+                levels:             self.levels.isIdentity ? nil : self.levels,
                 saturation:         self.saturation == 1 ? nil : self.saturation,
                 orient:             self.orientation.isIdentity ? nil : self.orientation
             )

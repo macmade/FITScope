@@ -34,7 +34,24 @@ public final class AppModel: ObservableObject
 {
     /// The model of the window that is currently key, or `nil` when no window
     /// is key.
+    ///
+    /// Observed (via a manual `objectWillChange` on assignment) so an auxiliary
+    /// window — the Levels editor — can follow the frontmost document. It stays
+    /// `weak` to avoid retaining a closed window's model, which rules out
+    /// `@Published` (a property wrapper cannot combine with `weak`); the
+    /// `willSet` publishes the change instead. The automatic weak-nil on
+    /// deallocation does not publish, but `windowDidClose(_:)` clears it
+    /// explicitly, which does.
     public weak var activeModel: WindowModel?
+    {
+        willSet
+        {
+            if newValue !== self.activeModel
+            {
+                self.objectWillChange.send()
+            }
+        }
+    }
 
     /// Set by `FITScopeApp` so non-SwiftUI call sites (the delegate) can open a
     /// new window carrying initial URLs.

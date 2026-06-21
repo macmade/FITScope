@@ -95,6 +95,9 @@ public enum AccessibilityIdentifier
         /// The inspector's "Reset View" button.
         public static let resetButton = "InspectorView.resetButton"
 
+        /// The button that opens the Levels editor window.
+        public static let openLevelsButton = "InspectorView.openLevelsButton"
+
         /// Stable identifiers for the inspector's sections.
         ///
         /// Each is an explicit constant rather than a value derived from the
@@ -126,9 +129,50 @@ public enum AccessibilityIdentifier
             /// The saturation section (colour images only).
             public static let saturation = "InspectorView.Section.saturation"
 
+            /// The levels section (holds the button opening the Levels editor).
+            public static let levels = "InspectorView.Section.levels"
+
             /// The orientation (rotate / flip) section.
             public static let orientation = "InspectorView.Section.orientation"
         }
+    }
+
+    /// Identifiers applied by ``FITScope/LevelsWindowView`` and its editor.
+    public enum LevelsWindowView
+    {
+        /// The editor's root container, present when an image is being edited.
+        public static let editor = "LevelsWindowView.editor"
+
+        /// The placeholder shown when no image is available to edit.
+        public static let unavailable = "LevelsWindowView.unavailable"
+
+        /// The per-channel toggle (colour images only).
+        public static let perChannelToggle = "LevelsWindowView.perChannelToggle"
+
+        /// The "Switch to Master" button in the confirmation shown when leaving
+        /// per-channel mode with edits.
+        public static let switchToMasterConfirm = "LevelsWindowView.switchToMasterConfirm"
+
+        /// The channel picker shown while editing per channel.
+        public static let channelPicker = "LevelsWindowView.channelPicker"
+
+        /// The input black-point slider.
+        public static let inputBlackSlider = "LevelsWindowView.inputBlackSlider"
+
+        /// The input white-point slider.
+        public static let inputWhiteSlider = "LevelsWindowView.inputWhiteSlider"
+
+        /// The midtone gamma slider.
+        public static let gammaSlider = "LevelsWindowView.gammaSlider"
+
+        /// The output black-point slider.
+        public static let outputBlackSlider = "LevelsWindowView.outputBlackSlider"
+
+        /// The output white-point slider.
+        public static let outputWhiteSlider = "LevelsWindowView.outputWhiteSlider"
+
+        /// The button that resets the levels to their defaults.
+        public static let resetButton = "LevelsWindowView.resetButton"
     }
 
     /// Identifiers applied by ``FITScope/ImageToolbarView``.

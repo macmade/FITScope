@@ -63,6 +63,11 @@ public final class ImageAdjustments: ObservableObject
     /// default.
     @Published public var contrast: Double = 1
 
+    /// The levels remap (input black/white, midtone gamma, output range),
+    /// applied uniformly or per channel. An identity uniform mapping by default,
+    /// so the image opens with no levels adjustment.
+    @Published public var levels: Processors.Levels.Channels = .uniform( .identity )
+
     /// The colour-saturation factor. Neutral (`1`) by default.
     @Published public var saturation: Double = 1
 
@@ -92,6 +97,7 @@ public final class ImageAdjustments: ObservableObject
             invert:       self.invert,
             brightness:   self.brightness,
             contrast:     self.contrast,
+            levels:       self.levels,
             saturation:   self.saturation,
             debayer:      self.debayer,
             debayerMode:  self.debayerAlgorithm,

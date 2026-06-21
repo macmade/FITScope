@@ -361,6 +361,101 @@ final class FITScopeUITests: XCTestCase
         XCTAssertTrue( table.exists, "The headers window's keyword table did not appear." )
     }
 
+    /// The inspector's Levels button opens the Levels editor window, which shows
+    /// its sliders. For a monochrome image the per-channel toggle is hidden (the
+    /// channels are replicated, so per-channel editing would only tint). The
+    /// levels pixel math and the adjustments-to-config mapping are covered by
+    /// unit tests; per the suite's depth the slider values are not dragged.
+    @MainActor
+    func testOpeningLevelsEditorWindow() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
+            "The image canvas did not appear after opening a fixture."
+        )
+
+        let openLevels = UITestSupport.element( app, AccessibilityIdentifier.InspectorView.openLevelsButton )
+
+        XCTAssertTrue( openLevels.waitForExistence( timeout: 10 ), "The Levels button did not appear in the inspector." )
+
+        openLevels.click()
+
+        let editor      = UITestSupport.element( app, AccessibilityIdentifier.LevelsWindowView.editor )
+        let inputBlack  = UITestSupport.element( app, AccessibilityIdentifier.LevelsWindowView.inputBlackSlider )
+        let gammaSlider = UITestSupport.element( app, AccessibilityIdentifier.LevelsWindowView.gammaSlider )
+
+        XCTAssertTrue( editor.waitForExistence( timeout: 10 ), "The Levels editor did not appear after clicking the Levels button." )
+        XCTAssertTrue( inputBlack.waitForExistence( timeout: 10 ), "The Levels editor's input-black slider did not appear." )
+        XCTAssertTrue( gammaSlider.waitForExistence( timeout: 5 ), "The Levels editor's gamma slider did not appear." )
+
+        // The per-channel toggle is hidden for a monochrome image; it is covered
+        // for a colour image by testLevelsEditorPerChannelForColorImage.
+        XCTAssertFalse(
+            UITestSupport.element( app, AccessibilityIdentifier.LevelsWindowView.perChannelToggle ).exists,
+            "The per-channel toggle should be hidden for a monochrome image."
+        )
+    }
+
+    /// For a colour image the Levels editor offers the per-channel toggle, which
+    /// reveals the channel picker when enabled.
+    @MainActor
+    func testLevelsEditorPerChannelForColorImage() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "ColorImage.fits", in: app )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
+            "The image canvas did not appear after opening the colour fixture."
+        )
+
+        let openLevels = UITestSupport.element( app, AccessibilityIdentifier.InspectorView.openLevelsButton )
+
+        XCTAssertTrue( openLevels.waitForExistence( timeout: 10 ), "The Levels button did not appear in the inspector." )
+
+        openLevels.click()
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.LevelsWindowView.editor ).waitForExistence( timeout: 10 ),
+            "The Levels editor did not appear after clicking the Levels button."
+        )
+
+        let perChannel = UITestSupport.element( app, AccessibilityIdentifier.LevelsWindowView.perChannelToggle )
+
+        XCTAssertTrue( perChannel.waitForExistence( timeout: 10 ), "The per-channel toggle did not appear for a colour image." )
+
+        perChannel.click()
+
+        let channelPicker = UITestSupport.element( app, AccessibilityIdentifier.LevelsWindowView.channelPicker )
+
+        XCTAssertTrue(
+            channelPicker.waitForExistence( timeout: 5 ),
+            "Enabling per-channel did not reveal the channel picker."
+        )
+
+        // With no per-channel edits made, switching back to master is not
+        // destructive, so it happens immediately with no confirmation: the
+        // channel picker disappears and no "switch to master" dialog appears.
+        // (The confirmation path — switching with edits — needs a slider drag,
+        // which this suite leaves to manual verification.)
+        perChannel.click()
+
+        XCTAssertTrue(
+            channelPicker.waitForNonExistence( timeout: 5 ),
+            "Disabling per-channel did not hide the channel picker."
+        )
+
+        XCTAssertFalse(
+            UITestSupport.element( app, AccessibilityIdentifier.LevelsWindowView.switchToMasterConfirm ).exists,
+            "Switching to master with no per-channel edits should not show a confirmation."
+        )
+    }
+
     /// The inspector toggle hides and re-shows the trailing inspector column. The
     /// inspector's content is identified by ``AccessibilityIdentifier/InspectorView/container``,
     /// so its presence tracks whether the column is shown.
@@ -774,6 +869,7 @@ final class FITScopeUITests: XCTestCase
                 ( "gamma section",       AccessibilityIdentifier.InspectorView.Section.gamma ),
                 ( "white-balance section", AccessibilityIdentifier.InspectorView.Section.whiteBalance ),
                 ( "brightness & contrast section", AccessibilityIdentifier.InspectorView.Section.brightnessContrast ),
+                ( "levels section",      AccessibilityIdentifier.InspectorView.Section.levels ),
                 ( "color section",       AccessibilityIdentifier.InspectorView.Section.color ),
                 ( "orientation section", AccessibilityIdentifier.InspectorView.Section.orientation ),
                 ( "reset button",        AccessibilityIdentifier.InspectorView.resetButton ),

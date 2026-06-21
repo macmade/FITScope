@@ -112,6 +112,15 @@ public struct FITScopeApp: App
         .windowStyle( .titleBar )
         .restorationBehavior( .disabled )
 
+        Window( "Levels", id: "LevelsWindow" )
+        {
+            LevelsWindowView()
+                .environmentObject( self.appDelegate.appModel )
+        }
+        .windowStyle( .titleBar )
+        .restorationBehavior( .disabled )
+        .defaultPosition( .trailing )
+
         Window( "About \( Bundle.main.title )", id: "AboutWindow" )
         {
             AboutView()
