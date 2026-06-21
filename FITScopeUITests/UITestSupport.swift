@@ -59,7 +59,7 @@ enum UITestSupport
 
     /// Resolves a fixture by its file name within the `Fixtures` directory.
     ///
-    /// - Parameter name: e.g. `RenderableImage.fits`.
+    /// - Parameter name: e.g. `MonoImage.fits`.
     /// - Returns: The absolute file URL.
     static func fixtureURL( _ name: String ) -> URL
     {

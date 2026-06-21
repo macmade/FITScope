@@ -36,7 +36,7 @@ public struct HistogramView: View
     /// overlaid. Only honoured in RGB mode.
     public let separateChannels: Bool
 
-    /// Which histogram (RGB or luminance) to draw.
+    /// Which histogram (RGB, luminance or mono) to draw.
     public let mode:             HistogramControlView.Mode
 
     /// The view's content.
@@ -117,14 +117,15 @@ public struct HistogramView: View
         {
             case .luminance: return 0.5
             case .rgb:       return self.separateChannels ? 0.5 : 0.35
+            case .mono:      return 0.5
         }
     }
 
     /// The fill colour for a channel by index.
     ///
     /// - Parameter index: The channel index (0…2 for red/green/blue).
-    /// - Returns: Grey in luminance mode, the matching RGB colour otherwise, or
-    ///   `.clear` for an out-of-range index.
+    /// - Returns: Grey in luminance and mono modes, the matching RGB colour in
+    ///   RGB mode, or `.clear` for an out-of-range index.
     private func color( index: Int ) -> Color
     {
         guard index <= 2
@@ -137,6 +138,7 @@ public struct HistogramView: View
         {
             case .luminance: return .gray
             case .rgb:       return [ .red, .green, .blue ][ index ]
+            case .mono:      return .gray
         }
     }
 
@@ -147,6 +149,7 @@ public struct HistogramView: View
         {
             case .luminance: return self.histogram.luminance.data
             case .rgb:       return self.histogram.rgb.data
+            case .mono:      return self.histogram.mono.data
         }
     }
 

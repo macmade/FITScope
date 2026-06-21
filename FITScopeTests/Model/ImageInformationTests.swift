@@ -34,7 +34,7 @@ struct ImageInformationTests
     @Test
     func extractsCoreFieldsFromFixture() throws
     {
-        let url  = TestFixtures.renderableImage
+        let url  = TestFixtures.monoImage
         let file = try FITSFile( url: url, options: .lenient )
         let info = FITSImageInfo( url: url, file: file )
 
@@ -57,7 +57,7 @@ struct ImageInformationTests
     @Test
     func absentFieldsAreOmittedFromRows() throws
     {
-        let url  = TestFixtures.renderableImage
+        let url  = TestFixtures.monoImage
         let file = try FITSFile( url: url, options: .lenient )
         let info = FITSImageInfo( url: url, file: file )
 

@@ -34,8 +34,8 @@ struct WindowModelTests
     private var fixtureURLs: [ URL ]
     {
         [
-            TestFixtures.renderableImage,
-            TestFixtures.renderableImage,
+            TestFixtures.monoImage,
+            TestFixtures.monoImage,
         ]
     }
 

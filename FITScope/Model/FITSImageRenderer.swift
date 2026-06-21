@@ -72,6 +72,18 @@ public class FITSImageRenderer: ObservableObject
         /// The single-channel luminance histogram.
         public let luminance: SwiftPixel.Histogram
 
+        /// The single-channel histogram of the rendered first channel, shown for
+        /// monochrome images in place of the redundant RGB triple.
+        public let mono:      SwiftPixel.Histogram
+
+        /// Whether the rendered image is monochrome. The pipeline always emits a
+        /// 3-channel buffer (a colour-filter-array image is demosaiced to RGB,
+        /// anything else is replicated from one channel to RGB), so this can't be
+        /// read back from the channel count — it records whether debayering ran.
+        /// When `true`, the inspector presents ``mono`` rather than
+        /// ``rgb``/``luminance``.
+        public let isMono:    Bool
+
         public static func == ( lhs: Histogram, rhs: Histogram ) -> Bool
         {
             lhs.id == rhs.id
@@ -92,6 +104,9 @@ public class FITSImageRenderer: ObservableObject
 
         /// Statistics for the luminance channel.
         public let luminance: SwiftPixel.HistogramStatistics
+
+        /// Statistics for the single (mono) channel, shown for monochrome images.
+        public let mono:      SwiftPixel.HistogramStatistics
     }
 
     /// A histogram paired with its statistics, used to retain the original,
@@ -286,12 +301,14 @@ public class FITSImageRenderer: ObservableObject
         let render             = try ImageProcessor.render( data: input.data, properties: input.properties, settings: settings )
         let rgbHistogram       = Benchmark.run( label: "Histogram (RGB)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .rgb ) }
         let luminanceHistogram = Benchmark.run( label: "Histogram (L)",   output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .luminance ) }
-        let histogram          = Histogram( rgb: rgbHistogram, luminance: luminanceHistogram )
+        let monoHistogram      = Benchmark.run( label: "Histogram (Mono)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .mono ) }
+        let histogram          = Histogram( rgb: rgbHistogram, luminance: luminanceHistogram, mono: monoHistogram, isMono: render.isMonochrome )
         let statistics         = HistogramStatistics(
             red:       Benchmark.run( label: "Statistics (R)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 0 ] ) },
             green:     Benchmark.run( label: "Statistics (G)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 1 ] ) },
             blue:      Benchmark.run( label: "Statistics (B)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 2 ] ) },
-            luminance: Benchmark.run( label: "Statistics (L)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: luminanceHistogram.data[ 0 ] ) }
+            luminance: Benchmark.run( label: "Statistics (L)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: luminanceHistogram.data[ 0 ] ) },
+            mono:      Benchmark.run( label: "Statistics (Mono)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: monoHistogram.data[ 0 ] ) }
         )
 
         return Result( image: render.image, histogram: histogram, statistics: statistics )

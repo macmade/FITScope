@@ -34,18 +34,18 @@ struct OpenFileTests
     @MainActor
     func exposesURLAndDisplayName() throws
     {
-        let url  = TestFixtures.renderableImage
+        let url  = TestFixtures.monoImage
         let file = OpenFile( url: url )
 
         #expect( file.url == url )
-        #expect( file.displayName == "RenderableImage.fits" )
+        #expect( file.displayName == "MonoImage.fits" )
     }
 
     @Test
     @MainActor
     func loadPopulatesImage() async throws
     {
-        let url  = TestFixtures.renderableImage
+        let url  = TestFixtures.monoImage
         let file = OpenFile( url: url )
 
         await file.load()
@@ -58,7 +58,7 @@ struct OpenFileTests
     @MainActor
     func distinctInstancesHaveDistinctIdentity() throws
     {
-        let url = TestFixtures.renderableImage
+        let url = TestFixtures.monoImage
 
         #expect( OpenFile( url: url ).id != OpenFile( url: url ).id, "each open file is a distinct entry even for the same URL" )
     }
@@ -67,7 +67,7 @@ struct OpenFileTests
     @MainActor
     func loadAndRenderProducesThumbnail() async throws
     {
-        let url  = TestFixtures.renderableImage
+        let url  = TestFixtures.monoImage
         let file = OpenFile( url: url )
 
         await file.load()
@@ -124,7 +124,7 @@ struct OpenFileTests
     @MainActor
     func renderPhaseTracksLoadThenRender() async throws
     {
-        let url  = TestFixtures.renderableImage
+        let url  = TestFixtures.monoImage
         let file = OpenFile( url: url )
 
         #expect( file.renderPhase == .loading, "a freshly opened file is loading" )
@@ -139,7 +139,7 @@ struct OpenFileTests
     @MainActor
     func prepareLoadsRendersAndThumbnails() async throws
     {
-        let file     = OpenFile( url: TestFixtures.renderableImage )
+        let file     = OpenFile( url: TestFixtures.monoImage )
         let throttle = RenderThrottle( limit: 2 )
 
         file.prepare( throttle: throttle )
@@ -154,7 +154,7 @@ struct OpenFileTests
     @MainActor
     func prepareIsIdempotent() async throws
     {
-        let file     = OpenFile( url: TestFixtures.renderableImage )
+        let file     = OpenFile( url: TestFixtures.monoImage )
         let throttle = RenderThrottle( limit: 2 )
 
         file.prepare( throttle: throttle )
@@ -174,7 +174,7 @@ struct OpenFileTests
     @MainActor
     func warningFlagsAFileThatCannotBeDisplayed() async throws
     {
-        let file = OpenFile( url: TestFixtures.invalidStructure )
+        let file = OpenFile( url: TestFixtures.invalidImage )
 
         await file.load()
         await file.image?.renderer.render()
@@ -186,7 +186,7 @@ struct OpenFileTests
     @MainActor
     func noWarningForAHealthyFile() async throws
     {
-        let file = OpenFile( url: TestFixtures.renderableImage )
+        let file = OpenFile( url: TestFixtures.monoImage )
 
         await file.load()
         await file.image?.renderer.render()
@@ -198,7 +198,7 @@ struct OpenFileTests
     @MainActor
     func noWarningWhileStillLoading() throws
     {
-        let file = OpenFile( url: TestFixtures.renderableImage )
+        let file = OpenFile( url: TestFixtures.monoImage )
 
         #expect( file.warning == nil, "a file still loading has no failure to flag yet" )
     }
@@ -207,7 +207,7 @@ struct OpenFileTests
     @MainActor
     func noWarningWhenABadAdjustmentRetainsTheLastGoodResult() async throws
     {
-        let file = OpenFile( url: TestFixtures.renderableImage )
+        let file = OpenFile( url: TestFixtures.monoImage )
 
         await file.load()
         await file.image?.renderer.render()

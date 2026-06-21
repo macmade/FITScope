@@ -38,4 +38,43 @@ struct HistogramViewTests
         #expect( HistogramView.yPosition( count: 0, maxCount: 0, height: 50 ).isFinite )
         #expect( HistogramView.yPosition( count: 0, maxCount: 0, height: 50 ) == 50 )
     }
+
+    /// A monochrome image offers only the single "Mono" mode, so the picker shows
+    /// one segment rather than the RGB-only RGB/Luminance choice.
+    @Test
+    @MainActor
+    func monoImageOffersOnlyMonoMode() throws
+    {
+        #expect( HistogramControlView.Mode.availableModes( isMono: true ) == [ .mono ] )
+    }
+
+    /// A colour image offers the RGB and luminance modes, and never the mono mode.
+    @Test
+    @MainActor
+    func colorImageOffersRGBAndLuminance() throws
+    {
+        #expect( HistogramControlView.Mode.availableModes( isMono: false ) == [ .rgb, .luminance ] )
+    }
+
+    /// A mono image is always shown in mono mode, whatever colour mode was stored
+    /// from a previously viewed image.
+    @Test
+    @MainActor
+    func monoImageIsAlwaysShownInMonoMode() throws
+    {
+        #expect( HistogramControlView.Mode.effectiveMode( stored: .rgb,       isMono: true ) == .mono )
+        #expect( HistogramControlView.Mode.effectiveMode( stored: .luminance, isMono: true ) == .mono )
+        #expect( HistogramControlView.Mode.effectiveMode( stored: .mono,      isMono: true ) == .mono )
+    }
+
+    /// A colour image keeps its stored colour mode, but a stale mono selection
+    /// carried over from a previous mono image clamps back to RGB.
+    @Test
+    @MainActor
+    func colorImageClampsStaleMonoSelection() throws
+    {
+        #expect( HistogramControlView.Mode.effectiveMode( stored: .rgb,       isMono: false ) == .rgb )
+        #expect( HistogramControlView.Mode.effectiveMode( stored: .luminance, isMono: false ) == .luminance )
+        #expect( HistogramControlView.Mode.effectiveMode( stored: .mono,      isMono: false ) == .rgb )
+    }
 }

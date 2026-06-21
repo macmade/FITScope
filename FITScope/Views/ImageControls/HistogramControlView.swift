@@ -39,6 +39,9 @@ public struct HistogramControlView: View
         /// The single-channel luminance histogram.
         case luminance
 
+        /// The single-channel histogram of a monochrome image.
+        case mono
+
         /// The picker label for the mode.
         public var description: String
         {
@@ -46,7 +49,38 @@ public struct HistogramControlView: View
             {
                 case .rgb:       return "RGB"
                 case .luminance: return "Luminance"
+                case .mono:      return "Mono"
             }
+        }
+
+        /// The modes a histogram offers for an image, given whether it is
+        /// monochrome: a single ``mono`` mode for mono images, or the RGB and
+        /// luminance choice for colour images.
+        ///
+        /// - Parameter isMono: Whether the rendered image is monochrome.
+        /// - Returns: The selectable modes, in display order.
+        public static func availableModes( isMono: Bool ) -> [ Mode ]
+        {
+            isMono ? [ .mono ] : [ .rgb, .luminance ]
+        }
+
+        /// Resolves the mode actually shown for an image, clamping a stored mode
+        /// that no longer applies: a mono image is always shown in ``mono`` mode,
+        /// and a stale ``mono`` selection carried over to a colour image falls
+        /// back to ``rgb``.
+        ///
+        /// - Parameters:
+        ///   - stored: The mode last selected by the user.
+        ///   - isMono: Whether the rendered image is monochrome.
+        /// - Returns: The mode to display.
+        public static func effectiveMode( stored: Mode, isMono: Bool ) -> Mode
+        {
+            if isMono
+            {
+                return .mono
+            }
+
+            return stored == .mono ? .rgb : stored
         }
     }
 
@@ -81,7 +115,7 @@ public struct HistogramControlView: View
         {
             HStack( spacing: 6 )
             {
-                SegmentedControlView( selection: self.$mode, values: Mode.allCases, title: { $0.description } )
+                SegmentedControlView( selection: self.modeBinding, values: self.availableModes, title: { $0.description } )
                     .frame( maxWidth: .infinity )
                     .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.mode )
 
@@ -90,8 +124,8 @@ public struct HistogramControlView: View
 
             HistogramView(
                 histogram:        self.displayedHistogram,
-                separateChannels: self.separateChannels && self.mode == .rgb,
-                mode:             self.mode
+                separateChannels: self.separateChannels && self.effectiveMode == .rgb,
+                mode:             self.effectiveMode
             )
             .frame( height: 110 )
             .padding( 6 )
@@ -103,7 +137,7 @@ public struct HistogramControlView: View
             {
                 HStack
                 {
-                    HistogramStatisticsView( statistics: self.displayedStatistics, mode: self.mode )
+                    HistogramStatisticsView( statistics: self.displayedStatistics, mode: self.effectiveMode )
                         .padding( 12 )
                 }
                 .frame( maxWidth: .infinity, alignment: .leading )
@@ -136,7 +170,7 @@ public struct HistogramControlView: View
             {
                 Label( "Separate Channels", systemImage: "chart.bar.xaxis" )
             }
-            .disabled( self.mode == .luminance )
+            .disabled( self.effectiveMode != .rgb )
 
             Toggle( isOn: self.$showStatistics )
             {
@@ -160,6 +194,34 @@ public struct HistogramControlView: View
         .foregroundStyle( .secondary )
         .help( "Histogram view options" )
         .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.viewOptions )
+    }
+
+    /// Whether the rendered image is monochrome, in which case the histogram is
+    /// shown as a single mono channel rather than RGB/luminance.
+    private var isMono: Bool
+    {
+        self.histogram.isMono
+    }
+
+    /// The modes the picker offers for the current image.
+    private var availableModes: [ Mode ]
+    {
+        Mode.availableModes( isMono: self.isMono )
+    }
+
+    /// The mode actually displayed, clamping the stored selection to one that
+    /// applies to the current image (see ``Mode/effectiveMode(stored:isMono:)``).
+    private var effectiveMode: Mode
+    {
+        Mode.effectiveMode( stored: self.mode, isMono: self.isMono )
+    }
+
+    /// A binding that drives the picker from ``effectiveMode`` while recording the
+    /// user's choice in ``mode``, so a stored colour mode survives a detour
+    /// through a mono image.
+    private var modeBinding: Binding< Mode >
+    {
+        Binding( get: { self.effectiveMode }, set: { self.mode = $0 } )
     }
 
     /// The histograms to draw: the original when "Show Original" is on and the

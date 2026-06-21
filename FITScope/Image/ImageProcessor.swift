@@ -170,7 +170,7 @@ public enum ImageProcessor
     /// - Throws: ``RuntimeError`` for a missing or unsupported `BITPIX`, a
     ///   non-2-D image, invalid dimensions, truncated data, or an unsupported
     ///   `BAYERPAT`.
-    public static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> ( image: CGImage, bytes: [ UInt8 ], channels: Int )
+    public static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> ( image: CGImage, bytes: [ UInt8 ], channels: Int, isMonochrome: Bool )
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.integer
         else
@@ -250,13 +250,19 @@ public enum ImageProcessor
         let config   = settings.config( scale: scale, offset: offset, headerPattern: bayerPattern )
         let pipeline = PixelPipeline( config: config )
 
+        // The pipeline always emits a 3-channel buffer: a colour-filter-array
+        // image is demosaiced to RGB, while everything else is expanded from a
+        // single channel to RGB. The image is therefore monochrome — the three
+        // channels are replicated from one — exactly when no debayering ran.
+        let isMonochrome = config.debayer == nil
+
         return try Benchmark.run( label: "Rendering Image", output: Benchmarking.log )
         {
             let buffer = try pipeline.run( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel )
             let bytes  = try buffer.convertTo8Bits()
             let image  = try PixelBuffer.createCGImage( bytes: bytes, width: buffer.width, height: buffer.height, channels: buffer.channels )
 
-            return ( image, bytes, buffer.channels )
+            return ( image, bytes, buffer.channels, isMonochrome )
         }
     }
 

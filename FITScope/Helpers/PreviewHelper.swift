@@ -193,8 +193,9 @@ public enum PreviewHelper
         let bytes     = self.generateRandomRGBData( count: 1000 )
         let rgb       = Histogram( bytes: bytes, channels: 3, mode: .rgb )
         let luminance = Histogram( bytes: bytes, channels: 3, mode: .luminance )
+        let mono      = Histogram( bytes: bytes, channels: 3, mode: .mono )
 
-        return FITSImageRenderer.Histogram( rgb: rgb, luminance: luminance )
+        return FITSImageRenderer.Histogram( rgb: rgb, luminance: luminance, mono: mono, isMono: false )
     }
 
     /// Builds synthetic per-channel histogram statistics from the same random
@@ -208,12 +209,14 @@ public enum PreviewHelper
         let green     = HistogramStatistics( data: histogram.rgb.data[ 1 ] )
         let blue      = HistogramStatistics( data: histogram.rgb.data[ 2 ] )
         let luminance = HistogramStatistics( data: histogram.luminance.data[ 0 ] )
+        let mono      = HistogramStatistics( data: histogram.mono.data[ 0 ] )
 
         return FITSImageRenderer.HistogramStatistics(
             red:       red,
             green:     green,
             blue:      blue,
-            luminance: luminance
+            luminance: luminance,
+            mono:      mono
         )
     }
 

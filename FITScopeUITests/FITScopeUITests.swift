@@ -77,7 +77,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
 
@@ -92,7 +92,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "InvalidStructure.fits", in: app )
+        try UITestSupport.openFixture( "InvalidImage.fits", in: app )
 
         let errorView = UITestSupport.element( app, AccessibilityIdentifier.ErrorView.view )
 
@@ -112,7 +112,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "InvalidStructure.fits", in: app )
+        try UITestSupport.openFixture( "InvalidImage.fits", in: app )
 
         let window    = app.windows.firstMatch
         let filesList = UITestSupport.element( app, AccessibilityIdentifier.FilesSidebarView.list )
@@ -142,7 +142,7 @@ final class FITScopeUITests: XCTestCase
 
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         // The canvas confirms the file rendered before the rest is probed.
         XCTAssertTrue(
@@ -179,7 +179,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let canvas    = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
         let filesList = UITestSupport.element( app, AccessibilityIdentifier.FilesSidebarView.list )
@@ -241,7 +241,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
         let toggle = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.toggle )
@@ -268,7 +268,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         XCTAssertTrue(
             UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
@@ -296,7 +296,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         XCTAssertTrue(
             UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
@@ -329,7 +329,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         XCTAssertTrue(
             UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
@@ -355,7 +355,7 @@ final class FITScopeUITests: XCTestCase
 
         // Open a file first: the app menu only has a real on-screen frame while the
         // app has a window and is frontmost.
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         XCTAssertTrue(
             UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
@@ -388,7 +388,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let add = UITestSupport.element( app, AccessibilityIdentifier.FilesSidebarView.addButton )
 
@@ -412,14 +412,14 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
         let error  = UITestSupport.element( app, AccessibilityIdentifier.ErrorView.view )
 
         XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The first (valid) file did not render." )
 
-        try UITestSupport.openAnotherFixture( "InvalidStructure.fits", in: app )
+        try UITestSupport.openAnotherFixture( "InvalidImage.fits", in: app )
 
         let rows = app.descendants( matching: .any ).matching( identifier: AccessibilityIdentifier.OpenFileRowView.row )
 
@@ -446,7 +446,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let row = UITestSupport.element( app, AccessibilityIdentifier.OpenFileRowView.row )
 
@@ -468,9 +468,9 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
-        try UITestSupport.openAnotherFixture( "InvalidStructure.fits", in: app )
+        try UITestSupport.openAnotherFixture( "InvalidImage.fits", in: app )
 
         let rows = app.descendants( matching: .any ).matching( identifier: AccessibilityIdentifier.OpenFileRowView.row )
 
@@ -501,7 +501,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let canvas      = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
         let zoomIn      = UITestSupport.element( app, AccessibilityIdentifier.ImageToolbarView.zoomIn )
@@ -554,7 +554,7 @@ final class FITScopeUITests: XCTestCase
 
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         XCTAssertTrue(
             UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
@@ -589,7 +589,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "InvalidStructure.fits", in: app )
+        try UITestSupport.openFixture( "InvalidImage.fits", in: app )
 
         XCTAssertTrue(
             UITestSupport.element( app, AccessibilityIdentifier.InspectorPlaceholderView.view ).waitForExistence( timeout: 30 ),
@@ -610,7 +610,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let viewOptions = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.viewOptions )
         let panel       = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.statisticsPanel )
@@ -631,19 +631,52 @@ final class FITScopeUITests: XCTestCase
         XCTAssertTrue( panel.waitForNonExistence( timeout: 5 ), "Disabling Statistics did not hide the panel." )
     }
 
-    /// Switching the histogram to luminance mode disables the "Separate Channels"
-    /// menu item (channel separation is meaningless for a single-channel
-    /// histogram).
+    /// A monochrome image offers only the single "Mono" histogram mode — not the
+    /// RGB/Luminance choice — and "Separate Channels" is disabled, since channel
+    /// separation is meaningless for a single-channel histogram. The launch
+    /// fixture (`MonoImage.fits`) is a mono image.
     @MainActor
-    func testHistogramLuminanceModeDisablesSeparateChannels() throws
+    func testMonoImageOffersOnlyMonoHistogram() throws
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let viewOptions = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.viewOptions )
 
         XCTAssertTrue( viewOptions.waitForExistence( timeout: 30 ), "The histogram view-options button did not appear." )
+
+        // The segmented control's segments are plain buttons labelled by their
+        // title. A mono image shows only "Mono", never the colour-only choices.
+        XCTAssertTrue( app.buttons[ "Mono" ].waitForExistence( timeout: 5 ), "The mono histogram segment did not appear." )
+        XCTAssertFalse( app.buttons[ "Luminance" ].exists, "A mono image must not offer the Luminance mode." )
+        XCTAssertFalse( app.buttons[ "RGB" ].exists,       "A mono image must not offer the RGB mode." )
+
+        // Separate Channels is meaningless for a single-channel histogram.
+        viewOptions.click()
+        let separateChannels = app.menuItems[ "Separate Channels" ]
+        XCTAssertTrue( separateChannels.waitForExistence( timeout: 5 ), "The Separate Channels menu item did not appear." )
+        XCTAssertFalse( separateChannels.isEnabled, "Separate Channels must be disabled for a mono image." )
+    }
+
+    /// A colour image offers the RGB and Luminance modes (not Mono), and switching
+    /// from RGB to Luminance disables the "Separate Channels" menu item. The
+    /// `ColorImage.fits` fixture is a Bayer mosaic the app demosaics to RGB.
+    @MainActor
+    func testColorImageOffersRGBAndLuminanceModes() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "ColorImage.fits", in: app )
+
+        let viewOptions = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.viewOptions )
+
+        XCTAssertTrue( viewOptions.waitForExistence( timeout: 30 ), "The histogram view-options button did not appear." )
+
+        // A colour image offers RGB and Luminance segments, never Mono.
+        XCTAssertTrue( app.buttons[ "RGB" ].waitForExistence( timeout: 5 ), "The RGB histogram segment did not appear." )
+        XCTAssertTrue( app.buttons[ "Luminance" ].exists, "A colour image must offer the Luminance mode." )
+        XCTAssertFalse( app.buttons[ "Mono" ].exists,     "A colour image must not offer the Mono mode." )
 
         // In RGB mode the item is enabled.
         viewOptions.click()
@@ -651,9 +684,8 @@ final class FITScopeUITests: XCTestCase
         XCTAssertTrue( separateChannels.waitForExistence( timeout: 5 ), "The Separate Channels menu item did not appear." )
         XCTAssertTrue( separateChannels.isEnabled, "Separate Channels should be enabled in RGB mode." )
 
-        // Dismiss the menu, switch to luminance, then reopen it. The segmented
-        // control's segments are plain buttons labelled by their title;
-        // "Luminance" is unique in the UI.
+        // Dismiss the menu, switch to luminance, then reopen it. "Luminance" is
+        // unique in the UI.
         app.typeKey( .escape, modifierFlags: [] )
         app.buttons[ "Luminance" ].click()
         viewOptions.click()
@@ -672,7 +704,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let picker    = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.modePicker )
         let intensity = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.intensitySlider )
@@ -700,7 +732,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let picker = UITestSupport.element( app, AccessibilityIdentifier.WhiteBalanceControlView.modePicker )
         let red    = UITestSupport.element( app, AccessibilityIdentifier.WhiteBalanceControlView.redSlider )
@@ -724,7 +756,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let mode      = UITestSupport.element( app, AccessibilityIdentifier.DebayerControlView.modePicker )
         let algorithm = UITestSupport.element( app, AccessibilityIdentifier.DebayerControlView.algorithmPicker )
@@ -755,7 +787,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
         let invert = UITestSupport.element( app, AccessibilityIdentifier.ColorControlView.invertToggle )
@@ -785,7 +817,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
         let reset  = UITestSupport.element( app, AccessibilityIdentifier.InspectorView.resetButton )
@@ -807,7 +839,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         XCTAssertTrue(
             UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
@@ -859,7 +891,7 @@ final class FITScopeUITests: XCTestCase
     {
         let app = UITestSupport.launchApp()
 
-        try UITestSupport.openFixture( "RenderableImage.fits", in: app )
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         XCTAssertTrue(
             UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),

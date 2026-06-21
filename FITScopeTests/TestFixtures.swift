@@ -45,23 +45,31 @@ enum TestFixtures
 
     /// Resolves a fixture by its file name within the `Fixtures` directory.
     ///
-    /// - Parameter name: e.g. `RenderableImage.fits`.
+    /// - Parameter name: e.g. `MonoImage.fits`.
     /// - Returns: The absolute URL of the fixture on disk.
     static func url( _ name: String ) -> URL
     {
         self.directory.appendingPathComponent( name )
     }
 
-    /// A real, NAXIS = 2 image fixture that loads and renders successfully.
-    static var renderableImage: URL
+    /// A real, monochrome NAXIS = 2 image fixture that loads and renders
+    /// successfully.
+    static var monoImage: URL
     {
-        self.url( "RenderableImage.fits" )
+        self.url( "MonoImage.fits" )
+    }
+
+    /// A synthetic RGGB Bayer mosaic that the default `.auto` debayer demosaics
+    /// to true RGB, so it renders as a colour (non-monochrome) image.
+    static var colorImage: URL
+    {
+        self.url( "ColorImage.fits" )
     }
 
     /// A deliberately malformed fixture whose mandatory `SIMPLE` keyword is
     /// absent, so parsing always fails — exercising the load-failure path.
-    static var invalidStructure: URL
+    static var invalidImage: URL
     {
-        self.url( "InvalidStructure.fits" )
+        self.url( "InvalidImage.fits" )
     }
 }

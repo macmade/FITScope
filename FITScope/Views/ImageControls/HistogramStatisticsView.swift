@@ -27,7 +27,7 @@ import SwiftUI
 
 /// A grid of histogram statistics — mean, standard deviation, median, min, max,
 /// percentiles and pixel count — with one column per channel for the current
-/// mode (three for RGB, one for luminance).
+/// mode (three for RGB, one for luminance or mono).
 public struct HistogramStatisticsView: View
 {
     /// One labelled statistic row, pairing a display label with a closure that
@@ -64,7 +64,7 @@ public struct HistogramStatisticsView: View
     /// The per-channel statistics to display.
     public let statistics: FITSImageRenderer.HistogramStatistics
 
-    /// Whether to show RGB channels or a single luminance channel.
+    /// Whether to show RGB channels or a single luminance/mono channel.
     public let mode:       HistogramControlView.Mode
 
     /// The ordered statistic rows displayed in the grid.
@@ -102,6 +102,7 @@ public struct HistogramStatisticsView: View
                         {
                             case .rgb:       return [ self.statistics.red, self.statistics.green, self.statistics.blue ]
                             case .luminance: return [ self.statistics.luminance ]
+                            case .mono:      return [ self.statistics.mono ]
                         }
                     }()
 
@@ -110,7 +111,7 @@ public struct HistogramStatisticsView: View
                         index in
 
                         let value        = descriptor.provideValue( statistics[ index ] )
-                        let color: Color = mode == .luminance ? .primary : [ Color.red, .green, .blue ][ index ]
+                        let color: Color = mode == .rgb ? [ Color.red, .green, .blue ][ index ] : .primary
 
                         Text( value )
                             .font( .system( .caption2, design: .monospaced ) )
