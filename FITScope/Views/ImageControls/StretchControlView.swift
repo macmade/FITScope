@@ -83,23 +83,27 @@ public struct StretchControlView: View
     /// Requests a debounced re-render after a change.
     private let reRender:    () -> Void
 
-    /// The selected stretch mode. `.none` by default, so the image opens
-    /// linear.
-    @State private var mode      = Mode.none
+    /// The selected stretch mode. Seeded from the image's adjustments so the
+    /// control reflects the file it belongs to.
+    @State private var mode:      Mode
 
     /// The logarithmic intensity slider value.
-    @State private var logN1     = StretchControlView.defaultLogIntensity
+    @State private var logN1:     Double
 
     /// The arcsinh factor slider value.
-    @State private var arcsinhN1 = StretchControlView.defaultArcsinhFactor
+    @State private var arcsinhN1: Double
 
     /// The sigmoid midpoint slider value.
-    @State private var sigmoidN1 = StretchControlView.defaultSigmoidN1
+    @State private var sigmoidN1: Double
 
     /// The sigmoid contrast slider value.
-    @State private var sigmoidN2 = StretchControlView.defaultSigmoidN2
+    @State private var sigmoidN2: Double
 
     /// Creates the stretch control.
+    ///
+    /// Each slider is seeded from the image's current algorithm when that mode is
+    /// active, and from its default otherwise — so an inactive mode still offers a
+    /// sensible starting value.
     ///
     /// - Parameters:
     ///   - adjustments: The shared adjustment values to write to.
@@ -108,6 +112,51 @@ public struct StretchControlView: View
     {
         self.adjustments = adjustments
         self.reRender    = reRender
+
+        var logN1     = Self.defaultLogIntensity
+        var arcsinhN1 = Self.defaultArcsinhFactor
+        var sigmoidN1 = Self.defaultSigmoidN1
+        var sigmoidN2 = Self.defaultSigmoidN2
+
+        if let stretch = adjustments.stretch
+        {
+            switch stretch
+            {
+                case .log( let n ):            logN1 = n
+                case .arcsinh( let n ):        arcsinhN1 = n
+                case .sigmoid( let a, let b ): sigmoidN1 = a
+                    sigmoidN2 = b
+                @unknown default:              break
+            }
+        }
+
+        self.mode      = Self.mode( adjustments.stretch )
+        self.logN1     = logN1
+        self.arcsinhN1 = arcsinhN1
+        self.sigmoidN1 = sigmoidN1
+        self.sigmoidN2 = sigmoidN2
+    }
+
+    /// Maps a stretch algorithm back to the control's mode, used to seed the
+    /// control from an image's adjustments.
+    ///
+    /// - Parameter algorithm: The stretch algorithm, or `nil` for a linear image.
+    /// - Returns: The corresponding mode.
+    static func mode( _ algorithm: Processors.Stretch.Algorithm? ) -> Mode
+    {
+        guard let algorithm
+        else
+        {
+            return .none
+        }
+
+        switch algorithm
+        {
+            case .log:        return .log
+            case .arcsinh:    return .arcsinh
+            case .sigmoid:    return .sigmoid
+            @unknown default: return .none
+        }
     }
 
     /// Maps the control's selection and slider values to a stretch algorithm.

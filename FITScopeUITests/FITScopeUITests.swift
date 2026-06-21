@@ -439,6 +439,58 @@ final class FITScopeUITests: XCTestCase
         XCTAssertTrue( error.waitForNonExistence( timeout: 5 ), "The error view stayed after selecting the valid file." )
     }
 
+    /// Switching the selected file must refresh the inspector controls to that
+    /// file's own adjustments — a control's state must not leak between images.
+    /// Enabling gamma on one file must not show as enabled on another, and the
+    /// first file's state must survive switching away and back.
+    @MainActor
+    func testSwitchingFilesRefreshesInspectorControls() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
+
+        let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
+        let toggle = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.toggle )
+        let slider = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.slider )
+
+        XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The first file did not render." )
+
+        try UITestSupport.openAnotherFixture( "ColorImage.fits", in: app )
+
+        let rows = app.descendants( matching: .any ).matching( identifier: AccessibilityIdentifier.OpenFileRowView.row )
+
+        XCTAssertTrue(
+            UITestSupport.waitFor( timeout: 30 ) { rows.count == 2 },
+            "Expected two file rows after opening two files (rows: \( rows.count ))."
+        )
+
+        // Select the first file and enable gamma: its slider appears.
+        rows.element( boundBy: 0 ).click()
+        XCTAssertTrue( toggle.waitForExistence( timeout: 30 ), "The gamma toggle did not appear." )
+        XCTAssertFalse( slider.exists, "The gamma slider was present before gamma was enabled." )
+
+        toggle.click()
+        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "Enabling gamma did not reveal its slider." )
+
+        // Switch to the second file: it has its own (default) adjustments, so gamma
+        // reads as off and the slider must be gone — the control must follow the
+        // newly selected image, not keep the first file's state.
+        rows.element( boundBy: 1 ).click()
+        XCTAssertTrue(
+            slider.waitForNonExistence( timeout: 10 ),
+            "The gamma slider stayed visible after switching files — the inspector did not refresh to the new image."
+        )
+
+        // Switch back: the first file's gamma is still enabled (its adjustments
+        // persisted), so the control must reseed from that image rather than reset.
+        rows.element( boundBy: 0 ).click()
+        XCTAssertTrue(
+            slider.waitForExistence( timeout: 10 ),
+            "The first file's gamma state was lost after switching away and back."
+        )
+    }
+
     /// The file row's context menu opens the FITS headers window via "View FITS
     /// Headers".
     @MainActor

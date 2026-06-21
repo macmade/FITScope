@@ -45,12 +45,13 @@ public struct GammaCorrectionControlView: View
     /// Requests a debounced re-render after a change.
     private let reRender:    () -> Void
 
-    /// Whether gamma correction is enabled. Off by default, so the image opens
-    /// without gamma correction.
-    @State private var enabled = false
+    /// Whether gamma correction is enabled. Seeded from the image's adjustments
+    /// so the control reflects the file it belongs to.
+    @State private var enabled: Bool
 
-    /// The current gamma exponent. Seeded to the pipeline's default of `1.8`.
-    @State private var gamma   = GammaCorrectionControlView.defaultGamma
+    /// The current gamma exponent. Seeded from the image's adjustments, falling
+    /// back to the pipeline's default of `1.8` when gamma is off.
+    @State private var gamma:   Double
 
     /// Creates the gamma control.
     ///
@@ -61,6 +62,8 @@ public struct GammaCorrectionControlView: View
     {
         self.adjustments = adjustments
         self.reRender    = reRender
+        self.enabled     = adjustments.gamma != nil
+        self.gamma       = adjustments.gamma ?? Self.defaultGamma
     }
 
     /// Maps the toggle and slider value to a gamma exponent.

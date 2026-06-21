@@ -34,9 +34,9 @@ public struct ColorControlView: View
     /// Requests a debounced re-render after a change.
     private let reRender:    () -> Void
 
-    /// Whether the image is inverted. Seeded to mirror the pipeline's default
-    /// (off).
-    @State private var invert = false
+    /// Whether the image is inverted. Seeded from the image's adjustments so the
+    /// control reflects the file it belongs to.
+    @State private var invert: Bool
 
     /// Creates the color control.
     ///
@@ -47,6 +47,7 @@ public struct ColorControlView: View
     {
         self.adjustments = adjustments
         self.reRender    = reRender
+        self.invert      = adjustments.invert
     }
 
     /// The view's content.

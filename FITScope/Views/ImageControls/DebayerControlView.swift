@@ -71,9 +71,9 @@ public struct DebayerControlView: View
     /// Requests a debounced re-render after the selection changes.
     private let reRender:    () -> Void
 
-    /// The selected mode. Seeded to mirror the pipeline's default debayer
-    /// selection (`.auto`).
-    @State private var mode = Mode.auto
+    /// The selected mode. Seeded from the image's adjustments so the control
+    /// reflects the file it belongs to.
+    @State private var mode: Mode
 
     /// Creates the debayer control.
     ///
@@ -84,6 +84,7 @@ public struct DebayerControlView: View
     {
         self.adjustments = adjustments
         self.reRender    = reRender
+        self.mode        = Self.mode( adjustments.debayer )
     }
 
     /// Maps the control's selection to a debayer selection.
@@ -100,6 +101,30 @@ public struct DebayerControlView: View
             case .rgbg: return .pattern( .rgbg )
             case .grbg: return .pattern( .grbg )
             case .rggb: return .pattern( .rggb )
+        }
+    }
+
+    /// Maps a debayer selection back to the control's mode, used to seed the
+    /// control from an image's adjustments.
+    ///
+    /// - Parameter selection: The debayer selection.
+    /// - Returns: The corresponding mode.
+    static func mode( _ selection: ImageProcessor.DebayerSelection ) -> Mode
+    {
+        switch selection
+        {
+            case .none: return .none
+            case .auto: return .auto
+            case .pattern( let pattern ):
+
+                switch pattern
+                {
+                    case .bggr:       return .bggr
+                    case .rgbg:       return .rgbg
+                    case .grbg:       return .grbg
+                    case .rggb:       return .rggb
+                    @unknown default: return .auto
+                }
         }
     }
 

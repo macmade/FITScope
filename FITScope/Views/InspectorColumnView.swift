@@ -49,7 +49,13 @@ public struct InspectorColumnView: View
     {
         if let image = self.file.image
         {
+            // Tie the inspector's identity to the image, so switching the selected
+            // file recreates the controls rather than reusing them. Each control's
+            // @State mirrors the image's adjustments and is seeded from it at init;
+            // a reused control would keep the previous image's state (e.g. gamma
+            // still shown as enabled). A new identity discards that and reseeds.
             InspectorView( image: image )
+                .id( ObjectIdentifier( image ) )
         }
         else if self.file.error != nil
         {

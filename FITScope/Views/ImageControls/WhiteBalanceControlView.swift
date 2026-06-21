@@ -64,20 +64,23 @@ public struct WhiteBalanceControlView: View
     /// Requests a debounced re-render after a change.
     private let reRender:    () -> Void
 
-    /// The selected white-balance mode. `.none` by default, so the channels
-    /// open untouched.
-    @State private var mode  = Mode.none
+    /// The selected white-balance mode. Seeded from the image's adjustments so
+    /// the control reflects the file it belongs to.
+    @State private var mode:  Mode
 
     /// The manual red-channel gain.
-    @State private var red   = WhiteBalanceControlView.defaultManualGain
+    @State private var red:   Double
 
     /// The manual green-channel gain.
-    @State private var green = WhiteBalanceControlView.defaultManualGain
+    @State private var green: Double
 
     /// The manual blue-channel gain.
-    @State private var blue  = WhiteBalanceControlView.defaultManualGain
+    @State private var blue:  Double
 
     /// Creates the white-balance control.
+    ///
+    /// The manual gains are seeded from the image's adjustments when Manual is
+    /// active, and from the identity default otherwise.
     ///
     /// - Parameters:
     ///   - adjustments: The shared adjustment values to write to.
@@ -86,6 +89,43 @@ public struct WhiteBalanceControlView: View
     {
         self.adjustments = adjustments
         self.reRender    = reRender
+
+        var red   = Self.defaultManualGain
+        var green = Self.defaultManualGain
+        var blue  = Self.defaultManualGain
+
+        if case .manual( let r, let g, let b )? = adjustments.whiteBalance
+        {
+            red   = r
+            green = g
+            blue  = b
+        }
+
+        self.mode  = Self.mode( adjustments.whiteBalance )
+        self.red   = red
+        self.green = green
+        self.blue  = blue
+    }
+
+    /// Maps a white-balance mode back to the control's mode, used to seed the
+    /// control from an image's adjustments.
+    ///
+    /// - Parameter mode: The white-balance mode, or `nil` for untouched channels.
+    /// - Returns: The corresponding control mode.
+    static func mode( _ mode: Processors.WhiteBalance.Mode? ) -> Mode
+    {
+        guard let mode
+        else
+        {
+            return .none
+        }
+
+        switch mode
+        {
+            case .auto:        return .auto
+            case .manual:      return .manual
+            @unknown default:  return .none
+        }
     }
 
     /// Maps the control's selection and slider values to a white-balance mode.
