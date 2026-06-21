@@ -602,7 +602,9 @@ final class FITScopeUITests: XCTestCase
         )
     }
 
-    /// The histogram's Statistics toggle reveals and hides the statistics panel.
+    /// The histogram's Statistics toggle — now an item in the view-options pull-
+    /// down menu — reveals and hides the statistics panel. Clicking a menu item
+    /// dismisses the menu, so each toggle reopens it.
     @MainActor
     func testHistogramStatisticsToggleRevealsPanel() throws
     {
@@ -610,21 +612,28 @@ final class FITScopeUITests: XCTestCase
 
         try UITestSupport.openFixture( "RenderableImage.fits", in: app )
 
-        let statistics = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.statistics )
-        let panel      = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.statisticsPanel )
+        let viewOptions = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.viewOptions )
+        let panel       = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.statisticsPanel )
 
-        XCTAssertTrue( statistics.waitForExistence( timeout: 30 ), "The Statistics toggle did not appear." )
+        XCTAssertTrue( viewOptions.waitForExistence( timeout: 30 ), "The histogram view-options button did not appear." )
         XCTAssertFalse( panel.exists, "The statistics panel was visible before the toggle was enabled." )
 
+        // Menu items carry no accessibility identifier, so they are matched by
+        // their (unique) title.
+        viewOptions.click()
+        let statistics = app.menuItems[ "Statistics" ]
+        XCTAssertTrue( statistics.waitForExistence( timeout: 5 ), "The Statistics menu item did not appear." )
         statistics.click()
         XCTAssertTrue( panel.waitForExistence( timeout: 5 ), "Enabling Statistics did not reveal the panel." )
 
-        statistics.click()
+        viewOptions.click()
+        app.menuItems[ "Statistics" ].click()
         XCTAssertTrue( panel.waitForNonExistence( timeout: 5 ), "Disabling Statistics did not hide the panel." )
     }
 
     /// Switching the histogram to luminance mode disables the "Separate Channels"
-    /// toggle (channel separation is meaningless for a single-channel histogram).
+    /// menu item (channel separation is meaningless for a single-channel
+    /// histogram).
     @MainActor
     func testHistogramLuminanceModeDisablesSeparateChannels() throws
     {
@@ -632,17 +641,25 @@ final class FITScopeUITests: XCTestCase
 
         try UITestSupport.openFixture( "RenderableImage.fits", in: app )
 
-        let separateChannels = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.separateChannels )
+        let viewOptions = UITestSupport.element( app, AccessibilityIdentifier.HistogramControlView.viewOptions )
 
-        XCTAssertTrue( separateChannels.waitForExistence( timeout: 30 ), "The Separate Channels toggle did not appear." )
+        XCTAssertTrue( viewOptions.waitForExistence( timeout: 30 ), "The histogram view-options button did not appear." )
+
+        // In RGB mode the item is enabled.
+        viewOptions.click()
+        let separateChannels = app.menuItems[ "Separate Channels" ]
+        XCTAssertTrue( separateChannels.waitForExistence( timeout: 5 ), "The Separate Channels menu item did not appear." )
         XCTAssertTrue( separateChannels.isEnabled, "Separate Channels should be enabled in RGB mode." )
 
-        // The segmented control's segments are plain buttons labelled by their
-        // title; "Luminance" is unique in the UI.
+        // Dismiss the menu, switch to luminance, then reopen it. The segmented
+        // control's segments are plain buttons labelled by their title;
+        // "Luminance" is unique in the UI.
+        app.typeKey( .escape, modifierFlags: [] )
         app.buttons[ "Luminance" ].click()
+        viewOptions.click()
 
         XCTAssertTrue(
-            UITestSupport.waitFor( timeout: 5 ) { separateChannels.isEnabled == false },
+            UITestSupport.waitFor( timeout: 5 ) { app.menuItems[ "Separate Channels" ].isEnabled == false },
             "Separate Channels was not disabled in luminance mode."
         )
     }

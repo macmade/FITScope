@@ -150,14 +150,10 @@ public enum AccessibilityIdentifier
         /// The RGB / Luminance mode segmented control.
         public static let mode = "HistogramControlView.mode"
 
-        /// The "Show Original" toggle (disabled when no original is available).
-        public static let showOriginal = "HistogramControlView.showOriginal"
-
-        /// The "Separate Channels" toggle (disabled in luminance mode).
-        public static let separateChannels = "HistogramControlView.separateChannels"
-
-        /// The "Statistics" toggle.
-        public static let statistics = "HistogramControlView.statistics"
+        /// The view-options menu button that holds the histogram toggles. The
+        /// toggles themselves are menu items, which carry no identifier — tests
+        /// drive them by title.
+        public static let viewOptions = "HistogramControlView.viewOptions"
 
         /// The statistics panel, shown only while the Statistics toggle is on.
         public static let statisticsPanel = "HistogramControlView.statisticsPanel"

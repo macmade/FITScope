@@ -79,8 +79,14 @@ public struct HistogramControlView: View
     {
         VStack( alignment: .leading )
         {
-            SegmentedControlView( selection: self.$mode, values: Mode.allCases, title: { $0.description } )
-                .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.mode )
+            HStack( spacing: 6 )
+            {
+                SegmentedControlView( selection: self.$mode, values: Mode.allCases, title: { $0.description } )
+                    .frame( maxWidth: .infinity )
+                    .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.mode )
+
+                self.optionsButton
+            }
 
             HistogramView(
                 histogram:        self.displayedHistogram,
@@ -92,18 +98,6 @@ public struct HistogramControlView: View
             .background( Color.black.opacity( 0.35 ) )
             .clipShape( RoundedRectangle( cornerRadius: 10 ) )
             .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
-
-            Toggle( "Show Original", isOn: $showOriginal )
-                .disabled( self.original == nil )
-                .help( "Show the histogram of the original image, before stretch, gamma and white balance." )
-                .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.showOriginal )
-
-            Toggle( "Separate Channels", isOn: $separateChannels )
-                .disabled( self.mode == .luminance )
-                .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.separateChannels )
-
-            Toggle( "Statistics", isOn: $showStatistics )
-                .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.statistics )
 
             if self.showStatistics
             {
@@ -119,6 +113,53 @@ public struct HistogramControlView: View
                 .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.statisticsPanel )
             }
         }
+    }
+
+    /// The view-options menu. The toggles were previously three full-width rows;
+    /// collapsing them into a native pull-down menu opened from this button keeps
+    /// every option reachable in far less vertical space.
+    ///
+    /// The toggles render as checkmark menu items. Menu items carry no
+    /// accessibility identifier (only their title), so the UI tests drive them by
+    /// title — hence no per-toggle identifiers here.
+    private var optionsButton: some View
+    {
+        Menu
+        {
+            Toggle( isOn: self.$showOriginal )
+            {
+                Label( "Show Original", systemImage: "photo" )
+            }
+            .disabled( self.original == nil )
+
+            Toggle( isOn: self.$separateChannels )
+            {
+                Label( "Separate Channels", systemImage: "chart.bar.xaxis" )
+            }
+            .disabled( self.mode == .luminance )
+
+            Toggle( isOn: self.$showStatistics )
+            {
+                Label( "Statistics", systemImage: "tablecells" )
+            }
+        }
+        label:
+        {
+            // Sized to fill the row height so the button matches the segmented
+            // control beside it; the rounded track mirrors that control's style.
+            Image( systemName: "slider.horizontal.3" )
+                .frame( width: 30 )
+                .frame( maxHeight: .infinity )
+                .contentShape( Rectangle() )
+                .background( Color.black.opacity( 0.25 ), in: RoundedRectangle( cornerRadius: 7 ) )
+                .overlay( RoundedRectangle( cornerRadius: 7 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+        }
+        .menuStyle( .button )
+        .buttonStyle( .plain )
+        .menuIndicator( .hidden )
+        .foregroundStyle( .secondary )
+        .help( "Histogram view options" )
+        .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.viewOptions )
     }
 
     /// The histograms to draw: the original when "Show Original" is on and the
