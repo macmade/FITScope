@@ -35,8 +35,58 @@ struct HistogramViewTests
     @MainActor
     func histogramYPositionHandlesAllZeroData() throws
     {
-        #expect( HistogramView.yPosition( count: 0, maxCount: 0, height: 50 ).isFinite )
-        #expect( HistogramView.yPosition( count: 0, maxCount: 0, height: 50 ) == 50 )
+        #expect( HistogramView.yPosition( count: 0, maxCount: 0, height: 50, logScale: false ).isFinite )
+        #expect( HistogramView.yPosition( count: 0, maxCount: 0, height: 50, logScale: false ) == 50 )
+        #expect( HistogramView.yPosition( count: 0, maxCount: 0, height: 50, logScale: true ).isFinite )
+        #expect( HistogramView.yPosition( count: 0, maxCount: 0, height: 50, logScale: true ) == 50 )
+    }
+
+    /// An empty bin is at the baseline (fraction 0) and the tallest bin fills the
+    /// height (fraction 1), in both linear and logarithmic scaling.
+    @Test
+    @MainActor
+    func barFractionPinsEndpoints() throws
+    {
+        #expect( HistogramView.barFraction( count: 0,   maxCount: 100, logScale: false ) == 0 )
+        #expect( HistogramView.barFraction( count: 100, maxCount: 100, logScale: false ) == 1 )
+        #expect( HistogramView.barFraction( count: 0,   maxCount: 100, logScale: true )  == 0 )
+        #expect( abs( HistogramView.barFraction( count: 100, maxCount: 100, logScale: true ) - 1 ) < 1e-12 )
+    }
+
+    /// Bar height is monotonic in the bin count for both scalings.
+    @Test
+    @MainActor
+    func barFractionIsMonotonic() throws
+    {
+        for logScale in [ false, true ]
+        {
+            let fractions = [ 0, 1, 10, 50, 200, 1000 ].map { HistogramView.barFraction( count: $0, maxCount: 1000, logScale: logScale ) }
+
+            #expect( zip( fractions, fractions.dropFirst() ).allSatisfy { $0 <= $1 }, "non-monotonic for logScale=\( logScale ): \( fractions )" )
+        }
+    }
+
+    /// Logarithmic scaling lifts a small bin far higher than linear scaling does —
+    /// the point of the option when a few bins dominate.
+    @Test
+    @MainActor
+    func logScaleEmphasizesSmallBins() throws
+    {
+        let linear = HistogramView.barFraction( count: 10, maxCount: 1000, logScale: false )
+        let log    = HistogramView.barFraction( count: 10, maxCount: 1000, logScale: true )
+
+        #expect( log > linear )
+    }
+
+    /// An all-zero histogram yields a zero, finite fraction in both scalings
+    /// (no divide-by-zero into `NaN`).
+    @Test
+    @MainActor
+    func barFractionHandlesAllZeroData() throws
+    {
+        #expect( HistogramView.barFraction( count: 0, maxCount: 0, logScale: false ) == 0 )
+        #expect( HistogramView.barFraction( count: 0, maxCount: 0, logScale: true ) == 0 )
+        #expect( HistogramView.barFraction( count: 0, maxCount: 0, logScale: true ).isFinite )
     }
 
     /// A monochrome image offers only the single "Mono" mode, so the picker shows

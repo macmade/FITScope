@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import Foundation
 import SwiftPixel
 import SwiftUI
 
@@ -38,6 +39,10 @@ public struct HistogramView: View
 
     /// Which histogram (RGB, luminance or mono) to draw.
     public let mode:             HistogramControlView.Mode
+
+    /// Whether to scale bar heights logarithmically, lifting small bins so detail
+    /// is visible when a few bins dominate. Linear when `false`.
+    public let logScale:         Bool
 
     /// The view's content.
     public var body: some View
@@ -95,7 +100,7 @@ public struct HistogramView: View
 
         ZStack
         {
-            Self.path( data: data, size: size, maxCount: maxCount )
+            Self.path( data: data, size: size, maxCount: maxCount, logScale: self.logScale )
                 .fill(
                     LinearGradient(
                         colors:     [ base.opacity( self.fillTopOpacity ), base.opacity( 0.04 ) ],
@@ -104,7 +109,7 @@ public struct HistogramView: View
                     )
                 )
 
-            Self.linePath( data: data, size: size, maxCount: maxCount )
+            Self.linePath( data: data, size: size, maxCount: maxCount, logScale: self.logScale )
                 .stroke( base.opacity( 0.9 ), style: StrokeStyle( lineWidth: 1, lineJoin: .round ) )
         }
     }
@@ -162,7 +167,7 @@ public struct HistogramView: View
     ///   - maxCount: The largest bin count across all channels, used to scale
     ///               the heights consistently.
     /// - Returns: The filled histogram path.
-    static func path( data: [ Int ], size: CGSize, maxCount: Int ) -> Path
+    static func path( data: [ Int ], size: CGSize, maxCount: Int, logScale: Bool ) -> Path
     {
         let binWidth = size.width / CGFloat( data.count )
 
@@ -175,7 +180,7 @@ public struct HistogramView: View
             data.enumerated().forEach
             {
                 let x = CGFloat( $0.offset ) * binWidth
-                let y = Self.yPosition( count: $0.element, maxCount: maxCount, height: size.height )
+                let y = Self.yPosition( count: $0.element, maxCount: maxCount, height: size.height, logScale: logScale )
                 path.addLine( to: CGPoint( x: x, y: y ))
             }
 
@@ -192,7 +197,7 @@ public struct HistogramView: View
     ///   - size:     The drawing area.
     ///   - maxCount: The largest bin count across all channels.
     /// - Returns: The open histogram outline.
-    static func linePath( data: [ Int ], size: CGSize, maxCount: Int ) -> Path
+    static func linePath( data: [ Int ], size: CGSize, maxCount: Int, logScale: Bool ) -> Path
     {
         let binWidth = size.width / CGFloat( data.count )
 
@@ -203,7 +208,7 @@ public struct HistogramView: View
             data.enumerated().forEach
             {
                 let x     = CGFloat( $0.offset ) * binWidth
-                let y     = Self.yPosition( count: $0.element, maxCount: maxCount, height: size.height )
+                let y     = Self.yPosition( count: $0.element, maxCount: maxCount, height: size.height, logScale: logScale )
                 let point = CGPoint( x: x, y: y )
 
                 if $0.offset == 0
@@ -218,12 +223,44 @@ public struct HistogramView: View
         }
     }
 
-    /// The y-coordinate of a histogram bar, with the bin count normalized
-    /// against the largest bin. Guards against an all-zero histogram, where the
-    /// maximum count is `0`, to avoid a divide-by-zero producing `NaN`.
-    static func yPosition( count: Int, maxCount: Int, height: CGFloat ) -> CGFloat
+    /// The y-coordinate of a histogram bar, measured from the top, for a bin
+    /// count normalized against the largest bin.
+    ///
+    /// - Parameters:
+    ///   - count:    The bin's count.
+    ///   - maxCount: The largest bin count across all channels.
+    ///   - height:   The drawing height.
+    ///   - logScale: Whether to scale logarithmically.
+    /// - Returns: The bar's top y-coordinate.
+    static func yPosition( count: Int, maxCount: Int, height: CGFloat, logScale: Bool ) -> CGFloat
     {
-        height - CGFloat( count ) / CGFloat( max( 1, maxCount ) ) * height
+        height - Self.barFraction( count: count, maxCount: maxCount, logScale: logScale ) * height
+    }
+
+    /// The bar height as a fraction (`0…1`) of the drawing height, for a bin
+    /// count normalized against the largest bin.
+    ///
+    /// Linear scaling is `count / maxCount`; logarithmic scaling is
+    /// `ln(1 + count) / ln(1 + maxCount)`, which lifts small bins so detail stays
+    /// visible when a few bins dominate. Both map an empty bin to `0` and the
+    /// tallest bin to `1`. The maximum is floored at `1` so an all-zero histogram
+    /// yields a finite `0` rather than dividing by zero.
+    ///
+    /// - Parameters:
+    ///   - count:    The bin's count.
+    ///   - maxCount: The largest bin count across all channels.
+    ///   - logScale: Whether to scale logarithmically.
+    /// - Returns: The normalized bar height in `0…1`.
+    static func barFraction( count: Int, maxCount: Int, logScale: Bool ) -> CGFloat
+    {
+        let maxCount = max( 1, maxCount )
+
+        if logScale
+        {
+            return CGFloat( log( 1.0 + Double( count ) ) / log( 1.0 + Double( maxCount ) ) )
+        }
+
+        return CGFloat( count ) / CGFloat( maxCount )
     }
 }
 
@@ -272,11 +309,11 @@ struct HistogramGridView: View
 
     VStack( alignment: .leading )
     {
-        HistogramView( histogram: histogram, separateChannels: false, mode: .rgb )
+        HistogramView( histogram: histogram, separateChannels: false, mode: .rgb, logScale: false )
         Divider()
-        HistogramView( histogram: histogram, separateChannels: true,  mode: .rgb )
+        HistogramView( histogram: histogram, separateChannels: true,  mode: .rgb, logScale: false )
         Divider()
-        HistogramView( histogram: histogram, separateChannels: false, mode: .luminance )
+        HistogramView( histogram: histogram, separateChannels: false, mode: .luminance, logScale: true )
     }
     .frame( maxWidth: .infinity, alignment: .leading )
     .frame( maxHeight: .infinity, alignment: .top )

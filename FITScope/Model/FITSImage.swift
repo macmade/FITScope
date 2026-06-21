@@ -101,6 +101,9 @@ public final class HistogramViewOptions: ObservableObject
     /// Whether the RGB channels are drawn stacked separately rather than overlaid.
     @Published public var separateChannels = false
 
+    /// Whether bar heights are scaled logarithmically rather than linearly.
+    @Published public var logScale = false
+
     /// Creates an options set with the default view (RGB, no panels shown).
     public init()
     {}

@@ -83,7 +83,8 @@ public struct HistogramControlView: View
             HistogramView(
                 histogram:        self.displayedHistogram,
                 separateChannels: self.options.separateChannels && self.effectiveMode == .rgb,
-                mode:             self.effectiveMode
+                mode:             self.effectiveMode,
+                logScale:         self.options.logScale
             )
             .frame( height: 110 )
             .padding( 6 )
@@ -129,6 +130,11 @@ public struct HistogramControlView: View
                 Label( "Separate Channels", systemImage: "chart.bar.xaxis" )
             }
             .disabled( self.effectiveMode != .rgb )
+
+            Toggle( isOn: self.$options.logScale )
+            {
+                Label( "Logarithmic", systemImage: "function" )
+            }
 
             Toggle( isOn: self.$options.showStatistics )
             {
