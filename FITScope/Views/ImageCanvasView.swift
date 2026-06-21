@@ -70,86 +70,98 @@ public struct ImageCanvasView: View
     /// The view's content.
     public var body: some View
     {
-        ZStack
-        {
-            Color.black
-
-            if let image = self.file.image
+        // The black background drives the pane's size and fills it; the
+        // state-dependent content is layered on top as an overlay so a
+        // placeholder's minimum width (``LoadingView`` / ``ErrorView``) can never
+        // widen the detail column and push the split-view sidebars off-window.
+        Color.black
+            .frame( maxWidth: .infinity, maxHeight: .infinity )
+            .overlay
             {
-                if let result = image.renderer.result
+                self.canvasContent
+            }
+            .onContinuousHover
+            {
+                phase in
+
+                switch phase
                 {
-                    ZoomableImageView(
-                        image:              result.image,
-                        command:            self.command,
-                        onHover:            { coordinate in self.report( coordinate: coordinate ) },
-                        onZoomChange:       { self.zoom = $0 },
-                        onCanZoomOutChange: { self.canZoomOut = $0 }
-                    )
-                    .accessibilityIdentifier( AccessibilityIdentifier.ImageCanvasView.canvas )
-                    .overlay( alignment: .top )
-                    {
-                        self.floatingBar
-                        {
-                            ImageToolbarView(
-                                zoom:         self.zoom,
-                                canZoomOut:   self.canZoomOut,
-                                onFit:        { self.send( .fit ) },
-                                onActualSize: { self.send( .actualSize ) },
-                                onRecenter:   { self.send( .recenter ) },
-                                onZoomIn:     { self.send( .zoomIn ) },
-                                onZoomOut:    { self.send( .zoomOut ) }
-                            )
-                            .padding( .top, 16 )
-                        }
-                    }
-                    .overlay( alignment: .bottom )
-                    {
-                        self.floatingBar
-                        {
-                            StatusBarView( status: "Ready", readout: self.readout, dimensions: self.dimensionsSummary )
-                                .padding( .bottom, 16 )
-                        }
-                    }
-                }
-                else if let error = image.renderer.error
-                {
-                    ErrorView( title: "Error Rendering Image", message: error.localizedDescription )
-                }
-                else
-                {
-                    LoadingView( title: "Rendering Image..." )
+                    case .active: self.revealBars()
+                    case .ended:  break
+                    @unknown default: break
                 }
             }
-            else if let error = self.file.error
+            .task( id: self.file.id )
             {
-                ErrorView( title: "Error Loading FITS File", message: error.localizedDescription )
+                self.readout = .empty
+
+                await self.file.load()
+                await self.file.image?.renderer.render()
+                await self.file.makeThumbnail( maxDimension: 64 )
+
+                self.revealBars()
+            }
+    }
+
+    /// The state-dependent canvas content: the zoomable image with its floating
+    /// bars once rendered, an error view on failure, or a loading placeholder
+    /// while loading or rendering. Hosted as an overlay over the black canvas, so
+    /// its size never feeds back into the split-view column layout.
+    @ViewBuilder     private var canvasContent: some View
+    {
+        if let image = self.file.image
+        {
+            if let result = image.renderer.result
+            {
+                ZoomableImageView(
+                    image:              result.image,
+                    command:            self.command,
+                    onHover:            { coordinate in self.report( coordinate: coordinate ) },
+                    onZoomChange:       { self.zoom = $0 },
+                    onCanZoomOutChange: { self.canZoomOut = $0 }
+                )
+                .accessibilityIdentifier( AccessibilityIdentifier.ImageCanvasView.canvas )
+                .overlay( alignment: .top )
+                {
+                    self.floatingBar
+                    {
+                        ImageToolbarView(
+                            zoom:         self.zoom,
+                            canZoomOut:   self.canZoomOut,
+                            onFit:        { self.send( .fit ) },
+                            onActualSize: { self.send( .actualSize ) },
+                            onRecenter:   { self.send( .recenter ) },
+                            onZoomIn:     { self.send( .zoomIn ) },
+                            onZoomOut:    { self.send( .zoomOut ) }
+                        )
+                        .padding( .top, 16 )
+                    }
+                }
+                .overlay( alignment: .bottom )
+                {
+                    self.floatingBar
+                    {
+                        StatusBarView( status: "Ready", readout: self.readout, dimensions: self.dimensionsSummary )
+                            .padding( .bottom, 16 )
+                    }
+                }
+            }
+            else if let error = image.renderer.error
+            {
+                ErrorView( title: "Error Rendering Image", message: error.localizedDescription )
             }
             else
             {
-                LoadingView( title: "Loading FITS file..." )
+                LoadingView( title: "Rendering Image..." )
             }
         }
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
-        .onContinuousHover
+        else if let error = self.file.error
         {
-            phase in
-
-            switch phase
-            {
-                case .active: self.revealBars()
-                case .ended:  break
-                @unknown default: break
-            }
+            ErrorView( title: "Error Loading FITS File", message: error.localizedDescription )
         }
-        .task( id: self.file.id )
+        else
         {
-            self.readout = .empty
-
-            await self.file.load()
-            await self.file.image?.renderer.render()
-            await self.file.makeThumbnail( maxDimension: 64 )
-
-            self.revealBars()
+            LoadingView( title: "Loading FITS file..." )
         }
     }
 

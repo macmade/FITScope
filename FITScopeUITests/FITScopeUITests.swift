@@ -104,6 +104,27 @@ final class FITScopeUITests: XCTestCase
         XCTAssertTrue( UITestSupport.element( app, AccessibilityIdentifier.OpenFileRowView.row ).exists, "The failed file was not listed in the sidebar." )
     }
 
+    /// The split-view sidebars must stay within the window when the detail pane
+    /// shows the error placeholder: the placeholder's minimum width must not push
+    /// the columns wider than the window and clip the sidebars off its edges.
+    @MainActor
+    func testSidebarsStayWithinTheWindowForAnInvalidImage() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "InvalidStructure.fits", in: app )
+
+        let window    = app.windows.firstMatch
+        let filesList = UITestSupport.element( app, AccessibilityIdentifier.FilesSidebarView.list )
+
+        XCTAssertTrue( UITestSupport.element( app, AccessibilityIdentifier.ErrorView.view ).waitForExistence( timeout: 30 ), "The error view did not appear for an invalid FITS file." )
+        XCTAssertTrue( filesList.waitForExistence( timeout: 5 ), "The files sidebar did not appear." )
+
+        // Clipping pushes the sidebar past the window's left edge; it must sit at
+        // or inside it.
+        XCTAssertGreaterThanOrEqual( filesList.frame.minX, window.frame.minX - 1, "The files sidebar is clipped past the window's left edge (minX \( filesList.frame.minX ) vs window \( window.frame.minX ))." )
+    }
+
     /// Guards against a mis-wired accessibility identifier: after opening a file,
     /// every identifier that is always present in the main window must resolve.
     /// This is one cheap check across the contract rather than a brittle test per
