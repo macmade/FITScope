@@ -73,7 +73,7 @@ public struct OpenFileRowView: View
                         .fill( Color( .windowBackgroundColor ) )
                         .overlay
                         {
-                            if self.file.image == nil
+                            if self.file.renderPhase.isInProgress
                             {
                                 ProgressView().controlSize( .small )
                             }

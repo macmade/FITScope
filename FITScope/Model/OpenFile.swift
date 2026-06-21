@@ -37,6 +37,32 @@ import SwiftUI
 @MainActor
 public final class OpenFile: ObservableObject, Identifiable
 {
+    /// The stage of an open file in the load → render pipeline, used to drive
+    /// per-file UI such as the sidebar row's progress indicator.
+    public enum RenderPhase: Equatable
+    {
+        /// The file is being parsed; no image yet.
+        case loading
+
+        /// The image is parsed but its displayable result is still being
+        /// rendered — distinct from ``loading`` so the UI keeps indicating work
+        /// in progress until the render commits, not merely until parsing ends.
+        case rendering
+
+        /// A rendered result is available.
+        case ready
+
+        /// Loading or rendering failed.
+        case failed
+
+        /// Whether the file is still working toward a result (loading or
+        /// rendering), i.e. a progress indicator should be shown.
+        public var isInProgress: Bool
+        {
+            self == .loading || self == .rendering
+        }
+    }
+
     /// A stable, per-instance identity, independent of the URL.
     public let id = UUID()
 
@@ -82,6 +108,44 @@ public final class OpenFile: ObservableObject, Identifiable
     public var error: Error?
     {
         self.loader.error
+    }
+
+    /// The file's current stage in the load → render pipeline.
+    ///
+    /// `rendering` covers the window after parsing finishes but before the first
+    /// render commits — the stage the sidebar row previously failed to indicate,
+    /// since it keyed its spinner on the parsed image rather than the result.
+    public var renderPhase: RenderPhase
+    {
+        Self.renderPhase(
+            hasImage:  self.image != nil,
+            hasResult: self.image?.renderer.result != nil,
+            hasError:  self.error != nil || self.image?.renderer.error != nil
+        )
+    }
+
+    /// Maps the pipeline's observable state to a ``RenderPhase``. A failure wins;
+    /// then an unparsed file is loading; a parsed file with a committed result is
+    /// ready; otherwise it is still rendering.
+    ///
+    /// - Parameters:
+    ///   - hasImage:  Whether the file has parsed into an image.
+    ///   - hasResult: Whether the renderer has committed a result.
+    ///   - hasError:  Whether loading or rendering failed.
+    /// - Returns: The corresponding phase.
+    nonisolated static func renderPhase( hasImage: Bool, hasResult: Bool, hasError: Bool ) -> RenderPhase
+    {
+        if hasError
+        {
+            return .failed
+        }
+
+        if hasImage == false
+        {
+            return .loading
+        }
+
+        return hasResult ? .ready : .rendering
     }
 
     /// Loads (parses) the file, if not already loaded.

@@ -79,4 +79,46 @@ struct OpenFileTests
         #expect( thumbnail.width <= 64 && thumbnail.height <= 64, "thumbnail is bounded by the requested max dimension" )
         #expect( thumbnail.width >= 1 && thumbnail.height >= 1 )
     }
+
+    @Test
+    func renderPhaseMapsPipelineState() throws
+    {
+        // Not yet parsed → loading.
+        #expect( OpenFile.renderPhase( hasImage: false, hasResult: false, hasError: false ) == .loading )
+
+        // Parsed, no committed result yet → still rendering (the bug: this read
+        // as "done" because it keyed off the parsed image, not the result).
+        #expect( OpenFile.renderPhase( hasImage: true, hasResult: false, hasError: false ) == .rendering )
+
+        // Parsed and rendered → ready.
+        #expect( OpenFile.renderPhase( hasImage: true, hasResult: true, hasError: false ) == .ready )
+
+        // A failure wins, whether it came from loading (no image) or rendering.
+        #expect( OpenFile.renderPhase( hasImage: false, hasResult: false, hasError: true ) == .failed )
+        #expect( OpenFile.renderPhase( hasImage: true,  hasResult: false, hasError: true ) == .failed )
+    }
+
+    @Test
+    func renderPhaseInProgressCoversLoadingAndRendering() throws
+    {
+        #expect( OpenFile.RenderPhase.loading.isInProgress )
+        #expect( OpenFile.RenderPhase.rendering.isInProgress )
+        #expect( OpenFile.RenderPhase.ready.isInProgress  == false )
+        #expect( OpenFile.RenderPhase.failed.isInProgress == false )
+    }
+
+    @Test
+    @MainActor
+    func renderPhaseTracksLoadThenRender() async throws
+    {
+        let url  = FITSCorpus.url( "NASA/FOSy19g0309t_c2f.fits" )
+        let file = OpenFile( url: url )
+
+        #expect( file.renderPhase == .loading, "a freshly opened file is loading" )
+
+        await file.load()
+        await file.image?.renderer.render()
+
+        #expect( file.renderPhase == .ready, "after loading and rendering the file is ready" )
+    }
 }
