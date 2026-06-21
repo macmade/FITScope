@@ -143,6 +143,10 @@ public struct MainWindowView: View
         {
             _, active in if active { self.appModel.activeModel = self.model }
         }
+        .onDisappear
+        {
+            self.appModel.windowDidClose( self.model )
+        }
     }
 
     /// Loads dropped file URLs into the window.

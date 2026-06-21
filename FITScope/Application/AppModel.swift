@@ -65,6 +65,21 @@ public final class AppModel: ObservableObject
         }
     }
 
+    /// Forgets a window's model once its window has closed. The active model is a
+    /// `weak` reference, but a closed window's model can briefly outlive its
+    /// window (held by SwiftUI's scene storage); leaving it as the active model
+    /// would route a subsequently opened file into a window that is gone, so no
+    /// window appears. Clearing it here makes the next open create a new window.
+    ///
+    /// - Parameter model: The closing window's model.
+    public func windowDidClose( _ model: WindowModel )
+    {
+        if self.activeModel === model
+        {
+            self.activeModel = nil
+        }
+    }
+
     /// Presents an Open panel for FITS files.
     ///
     /// - Returns: The chosen URLs, or an empty array if cancelled.
