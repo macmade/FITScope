@@ -68,6 +68,11 @@ public final class ImageAdjustments: ObservableObject
     /// so the image opens with no levels adjustment.
     @Published public var levels: Processors.Levels.Channels = .uniform( .identity )
 
+    /// The tone curve (control points interpolated with a monotone cubic spline),
+    /// applied uniformly or per channel. An identity curve by default, so the
+    /// image opens with no curve adjustment.
+    @Published public var curves: Processors.Curves.Channels = .uniform( .identity )
+
     /// The colour-saturation factor. Neutral (`1`) by default.
     @Published public var saturation: Double = 1
 
@@ -98,6 +103,7 @@ public final class ImageAdjustments: ObservableObject
             brightness:   self.brightness,
             contrast:     self.contrast,
             levels:       self.levels,
+            curves:       self.curves,
             saturation:   self.saturation,
             debayer:      self.debayer,
             debayerMode:  self.debayerAlgorithm,

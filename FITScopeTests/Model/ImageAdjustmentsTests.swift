@@ -104,6 +104,16 @@ struct ImageAdjustmentsTests
 
         #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).levels == .uniform( .init( inputBlack: 0.1, inputWhite: 0.9, gamma: 1.5 ) ) )
 
+        // Curves default to an identity uniform curve and are omitted from the
+        // config (the image renders unadjusted).
+        #expect( adjustments.curves == .uniform( .identity ) )
+        #expect( config.curves == nil )
+
+        // A non-identity tone curve flows into a freshly built config.
+        adjustments.curves = .uniform( .init( points: [ .init( x: 0, y: 0 ), .init( x: 0.5, y: 0.7 ), .init( x: 1, y: 1 ) ] ) )
+
+        #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).curves == .uniform( .init( points: [ .init( x: 0, y: 0 ), .init( x: 0.5, y: 0.7 ), .init( x: 1, y: 1 ) ] ) ) )
+
         // The default .auto debayer selection uses the header pattern.
         let debayer = try #require( config.debayer )
 

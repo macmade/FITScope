@@ -98,6 +98,9 @@ public enum AccessibilityIdentifier
         /// The button that opens the Levels editor window.
         public static let openLevelsButton = "InspectorView.openLevelsButton"
 
+        /// The button that opens the Curves editor window.
+        public static let openCurvesButton = "InspectorView.openCurvesButton"
+
         /// Stable identifiers for the inspector's sections.
         ///
         /// Each is an explicit constant rather than a value derived from the
@@ -131,6 +134,9 @@ public enum AccessibilityIdentifier
 
             /// The levels section (holds the button opening the Levels editor).
             public static let levels = "InspectorView.Section.levels"
+
+            /// The curves section (holds the button opening the Curves editor).
+            public static let curves = "InspectorView.Section.curves"
 
             /// The orientation (rotate / flip) section.
             public static let orientation = "InspectorView.Section.orientation"
@@ -173,6 +179,32 @@ public enum AccessibilityIdentifier
 
         /// The button that resets the levels to their defaults.
         public static let resetButton = "LevelsWindowView.resetButton"
+    }
+
+    /// Identifiers applied by ``FITScope/CurvesWindowView`` and its editor.
+    public enum CurvesWindowView
+    {
+        /// The editor's root container, present when an image is being edited.
+        public static let editor = "CurvesWindowView.editor"
+
+        /// The placeholder shown when no image is available to edit.
+        public static let unavailable = "CurvesWindowView.unavailable"
+
+        /// The interactive curve-editor canvas.
+        public static let canvas = "CurvesWindowView.canvas"
+
+        /// The per-channel toggle (colour images only).
+        public static let perChannelToggle = "CurvesWindowView.perChannelToggle"
+
+        /// The "Switch to Master" button in the confirmation shown when leaving
+        /// per-channel mode with edits.
+        public static let switchToMasterConfirm = "CurvesWindowView.switchToMasterConfirm"
+
+        /// The channel picker shown while editing per channel.
+        public static let channelPicker = "CurvesWindowView.channelPicker"
+
+        /// The button that resets the curve to the identity (a straight line).
+        public static let resetButton = "CurvesWindowView.resetButton"
     }
 
     /// Identifiers applied by ``FITScope/ImageToolbarView``.

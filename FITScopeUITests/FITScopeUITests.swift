@@ -456,6 +456,93 @@ final class FITScopeUITests: XCTestCase
         )
     }
 
+    /// The inspector's Curves button opens the Curves editor window, which shows
+    /// its draggable canvas. For a monochrome image the per-channel toggle is
+    /// hidden. The curve math and the adjustments-to-config mapping are covered by
+    /// unit tests; the drag interaction (add/move/remove points) is left to manual
+    /// verification, as with the suite's other drag exclusions.
+    @MainActor
+    func testOpeningCurvesEditorWindow() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "MonoImage.fits", in: app )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
+            "The image canvas did not appear after opening a fixture."
+        )
+
+        let openCurves = UITestSupport.element( app, AccessibilityIdentifier.InspectorView.openCurvesButton )
+
+        XCTAssertTrue( openCurves.waitForExistence( timeout: 10 ), "The Curves button did not appear in the inspector." )
+
+        openCurves.click()
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.CurvesWindowView.editor ).waitForExistence( timeout: 10 ),
+            "The Curves editor did not appear after clicking the Curves button."
+        )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.CurvesWindowView.canvas ).waitForExistence( timeout: 10 ),
+            "The Curves editor's canvas did not appear."
+        )
+
+        // The per-channel toggle is hidden for a monochrome image; it is covered
+        // for a colour image by testCurvesEditorPerChannelForColorImage.
+        XCTAssertFalse(
+            UITestSupport.element( app, AccessibilityIdentifier.CurvesWindowView.perChannelToggle ).exists,
+            "The per-channel toggle should be hidden for a monochrome image."
+        )
+    }
+
+    /// For a colour image the Curves editor offers the per-channel toggle, which
+    /// reveals the channel picker; switching back with no edits is immediate (no
+    /// confirmation).
+    @MainActor
+    func testCurvesEditorPerChannelForColorImage() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        try UITestSupport.openFixture( "ColorImage.fits", in: app )
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas ).waitForExistence( timeout: 30 ),
+            "The image canvas did not appear after opening the colour fixture."
+        )
+
+        let openCurves = UITestSupport.element( app, AccessibilityIdentifier.InspectorView.openCurvesButton )
+
+        XCTAssertTrue( openCurves.waitForExistence( timeout: 10 ), "The Curves button did not appear in the inspector." )
+
+        openCurves.click()
+
+        XCTAssertTrue(
+            UITestSupport.element( app, AccessibilityIdentifier.CurvesWindowView.editor ).waitForExistence( timeout: 10 ),
+            "The Curves editor did not appear after clicking the Curves button."
+        )
+
+        let perChannel = UITestSupport.element( app, AccessibilityIdentifier.CurvesWindowView.perChannelToggle )
+
+        XCTAssertTrue( perChannel.waitForExistence( timeout: 10 ), "The per-channel toggle did not appear for a colour image." )
+
+        perChannel.click()
+
+        let channelPicker = UITestSupport.element( app, AccessibilityIdentifier.CurvesWindowView.channelPicker )
+
+        XCTAssertTrue( channelPicker.waitForExistence( timeout: 5 ), "Enabling per-channel did not reveal the channel picker." )
+
+        perChannel.click()
+
+        XCTAssertTrue( channelPicker.waitForNonExistence( timeout: 5 ), "Disabling per-channel did not hide the channel picker." )
+
+        XCTAssertFalse(
+            UITestSupport.element( app, AccessibilityIdentifier.CurvesWindowView.switchToMasterConfirm ).exists,
+            "Switching to master with no per-channel edits should not show a confirmation."
+        )
+    }
+
     /// The inspector toggle hides and re-shows the trailing inspector column. The
     /// inspector's content is identified by ``AccessibilityIdentifier/InspectorView/container``,
     /// so its presence tracks whether the column is shown.
@@ -870,6 +957,7 @@ final class FITScopeUITests: XCTestCase
                 ( "white-balance section", AccessibilityIdentifier.InspectorView.Section.whiteBalance ),
                 ( "brightness & contrast section", AccessibilityIdentifier.InspectorView.Section.brightnessContrast ),
                 ( "levels section",      AccessibilityIdentifier.InspectorView.Section.levels ),
+                ( "curves section",      AccessibilityIdentifier.InspectorView.Section.curves ),
                 ( "color section",       AccessibilityIdentifier.InspectorView.Section.color ),
                 ( "orientation section", AccessibilityIdentifier.InspectorView.Section.orientation ),
                 ( "reset button",        AccessibilityIdentifier.InspectorView.resetButton ),

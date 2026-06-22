@@ -121,6 +121,15 @@ public struct FITScopeApp: App
         .restorationBehavior( .disabled )
         .defaultPosition( .trailing )
 
+        Window( "Curves", id: "CurvesWindow" )
+        {
+            CurvesWindowView()
+                .environmentObject( self.appDelegate.appModel )
+        }
+        .windowStyle( .titleBar )
+        .restorationBehavior( .disabled )
+        .defaultPosition( .trailing )
+
         Window( "About \( Bundle.main.title )", id: "AboutWindow" )
         {
             AboutView()

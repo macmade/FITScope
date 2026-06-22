@@ -130,6 +130,23 @@ public struct InspectorView: View
 
                     Divider()
 
+                    InspectorSectionView( "Curves", identifier: AccessibilityIdentifier.InspectorView.Section.curves )
+                    {
+                        Button
+                        {
+                            self.openWindow( id: "CurvesWindow" )
+                        }
+                        label:
+                        {
+                            Label( "Curves\u{2026}", systemImage: "point.topleft.down.to.point.bottomright.curvepath" )
+                                .frame( maxWidth: .infinity )
+                        }
+                        .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.openCurvesButton )
+                        .help( "Open the Curves Editor" )
+                    }
+
+                    Divider()
+
                     // Saturation only applies to a colour image; a monochrome file
                     // has no colour to scale, so the section is hidden for it (as
                     // with the debayer section).
@@ -204,6 +221,7 @@ public struct InspectorView: View
         current.brightness   = defaults.brightness
         current.contrast     = defaults.contrast
         current.levels       = defaults.levels
+        current.curves       = defaults.curves
         current.saturation   = defaults.saturation
         current.debayer      = defaults.debayer
         current.orientation  = defaults.orientation
