@@ -108,13 +108,12 @@ public struct HistogramControlView: View
         }
     }
 
-    /// The view-options menu. The toggles were previously three full-width rows;
-    /// collapsing them into a native pull-down menu opened from this button keeps
-    /// every option reachable in far less vertical space.
+    /// The view-options menu. A native pull-down menu opened from this button
+    /// collects the toggles into checkmark menu items, keeping every option
+    /// reachable in little vertical space.
     ///
-    /// The toggles render as checkmark menu items. Menu items carry no
-    /// accessibility identifier (only their title), so the UI tests drive them by
-    /// title — hence no per-toggle identifiers here.
+    /// Menu items carry no accessibility identifier (only their title), so the UI
+    /// tests drive them by title — hence no per-toggle identifiers here.
     private var optionsButton: some View
     {
         Menu

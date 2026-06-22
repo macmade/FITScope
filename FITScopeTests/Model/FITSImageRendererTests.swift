@@ -45,7 +45,7 @@ struct FITSImageRendererTests
         let data = FITSTestData.headerOnly()
         let file = try FITSFile( data: data, options: .lenient )
 
-        // The file that used to trap: a single header section, no data section.
+        // A single header section, no data section.
         try #require( file.sections.count == 1 )
 
         let renderer = FITSImageRenderer( file: file )

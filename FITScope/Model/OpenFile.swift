@@ -144,8 +144,8 @@ public final class OpenFile: ObservableObject, Identifiable
     /// The file's current stage in the load → render pipeline.
     ///
     /// `rendering` covers the window after parsing finishes but before the first
-    /// render commits — the stage the sidebar row previously failed to indicate,
-    /// since it keyed its spinner on the parsed image rather than the result.
+    /// render commits, so the sidebar row keys its spinner on the committed
+    /// result rather than the parsed image.
     public var renderPhase: RenderPhase
     {
         Self.renderPhase(
