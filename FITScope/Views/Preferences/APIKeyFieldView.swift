@@ -69,7 +69,7 @@ public struct APIKeyFieldView: View
             {
                 HStack( spacing: 6 )
                 {
-                    TextField( "", text: self.$key )
+                    TextField( "", text: self.$key, prompt: Text( "<enter key here>" ) )
                         .font( .body.monospaced() )
                         .foregroundStyle( .secondary )
                         .accessibilityIdentifier( self.identifier )
