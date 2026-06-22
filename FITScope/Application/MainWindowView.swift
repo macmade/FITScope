@@ -125,6 +125,9 @@ public struct MainWindowView: View
         .frame( minWidth: 900, minHeight: 600 )
         .navigationTitle( self.model.selectedFile?.displayName ?? Bundle.main.title )
         .navigationDocument( ifPresent: self.model.selectedFile?.url )
+        // Publish the selected file as the scene's focused object so the File-menu
+        // commands (Save As / Export) target and validate against it.
+        .focusedSceneObject( self.model.selectedFile )
         .onOpenURL
         {
             url in self.model.open( urls: [ url ] )

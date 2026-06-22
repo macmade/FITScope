@@ -123,13 +123,7 @@ public final class AppModel: ObservableObject
     /// - Parameter file: The open file to copy.
     public func saveCopy( of file: OpenFile )
     {
-        let panel = NSSavePanel()
-
-        panel.allowedContentTypes  = [ .fits ]
-        panel.nameFieldStringValue = file.displayName
-        panel.canCreateDirectories = true
-
-        guard panel.runModal() == .OK, let destination = panel.url
+        guard let destination = Self.runSavePanel( suggestedName: file.displayName, contentTypes: [ .fits ] )
         else
         {
             return
@@ -141,14 +135,133 @@ public final class AppModel: ObservableObject
         }
         catch
         {
+            Self.presentFailureAlert( "Could not save a copy of \u{201C}\( file.displayName )\u{201D}.", error: error )
+        }
+    }
+
+    /// Presents a Save panel — with a format/quality accessory — and exports the
+    /// file's *rendered* image (TIFF, PNG, or JPEG) to the chosen location.
+    /// Presents an alert if encoding fails, so an export never fails silently. A
+    /// cancelled panel is a no-op.
+    ///
+    /// Unlike ``saveCopy(of:)``, which duplicates the original FITS bytes, this
+    /// encodes the display-ready pixels. If the image has not finished rendering
+    /// there is nothing to export, so the user is told to try again rather than
+    /// shown an empty panel.
+    ///
+    /// - Parameter file: The open file whose rendered image to export.
+    public func exportImage( of file: OpenFile )
+    {
+        guard let image = file.image?.renderer.result?.image
+        else
+        {
             let alert = NSAlert()
 
-            alert.messageText     = "Could not save a copy of \u{201C}\( file.displayName )\u{201D}."
-            alert.informativeText = error.localizedDescription
-            alert.alertStyle      = .warning
+            alert.messageText     = "\u{201C}\( file.displayName )\u{201D} is not ready to export yet."
+            alert.informativeText = "Wait until the image has finished rendering, then try again."
+            alert.alertStyle      = .informational
 
             alert.runModal()
+
+            return
         }
+
+        let options = ImageExportOptions()
+
+        let destination = Self.runSavePanel( suggestedName: ( file.displayName as NSString ).deletingPathExtension, contentTypes: [ options.kind.utType ] )
+        {
+            panel in
+
+            AnyView(
+                ImageExportOptionsView( options: options )
+                {
+                    [ weak panel ] kind in panel?.allowedContentTypes = [ kind.utType ]
+                }
+            )
+        }
+
+        guard let destination
+        else
+        {
+            return
+        }
+
+        do
+        {
+            try ImageExporter.write( image, format: options.format, to: destination )
+        }
+        catch
+        {
+            Self.presentFailureAlert( "Could not export \u{201C}\( file.displayName )\u{201D}.", error: error )
+        }
+    }
+
+    /// Presents a Save panel with the common configuration applied and returns
+    /// the chosen URL, or `nil` if the user cancels.
+    ///
+    /// - Parameters:
+    ///   - suggestedName: The file name to pre-fill.
+    ///   - contentTypes:  The allowed content types, driving the file extension.
+    ///   - accessory:     An optional builder for a SwiftUI accessory view. It
+    ///                    receives the panel — so the accessory can update, for
+    ///                    example, `allowedContentTypes` as the user changes
+    ///                    format — and the returned view is hosted with the
+    ///                    event-routing fix below.
+    /// - Returns: The chosen destination URL, or `nil` on cancel.
+    public static func runSavePanel( suggestedName: String, contentTypes: [ UTType ], accessory: ( ( NSSavePanel ) -> AnyView )? = nil ) -> URL?
+    {
+        let panel = NSSavePanel()
+
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = suggestedName
+        panel.allowedContentTypes  = contentTypes
+
+        if let accessory
+        {
+            // A hosting view set directly as the accessory leaves its SwiftUI
+            // controls unable to receive mouse events (a menu would not open).
+            // Hosting it inside a plain container pinned with Auto Layout restores
+            // event routing, and tracking the intrinsic content size lets the
+            // panel resize with the content.
+            let hosting = NSHostingView( rootView: accessory( panel ) )
+
+            hosting.sizingOptions = [ .intrinsicContentSize ]
+            hosting.translatesAutoresizingMaskIntoConstraints = false
+
+            let container = NSView()
+
+            container.addSubview( hosting )
+
+            NSLayoutConstraint.activate(
+                [
+                    hosting.leadingAnchor.constraint( equalTo: container.leadingAnchor ),
+                    hosting.trailingAnchor.constraint( equalTo: container.trailingAnchor ),
+                    hosting.topAnchor.constraint( equalTo: container.topAnchor ),
+                    hosting.bottomAnchor.constraint( equalTo: container.bottomAnchor ),
+                ]
+            )
+
+            panel.accessoryView = container
+        }
+
+        return panel.runModal() == .OK ? panel.url : nil
+    }
+
+    /// Presents a warning alert describing a failed file operation, so a failure
+    /// is never silent.
+    ///
+    /// - Parameters:
+    ///   - message: The headline describing what failed.
+    ///   - error:   The underlying error, shown as the informative text.
+    public static func presentFailureAlert( _ message: String, error: Error )
+    {
+        let alert = NSAlert()
+
+        alert.messageText     = message
+        alert.informativeText = error.localizedDescription
+        alert.alertStyle      = .warning
+
+        alert.runModal()
     }
 
     /// Presents an Open panel for FITS files.

@@ -83,6 +83,7 @@ public struct FilesSidebarView: View
                         file:              file,
                         onOpenInNewWindow: { self.appModel.openInNewWindow( urls: [ file.url ] ) },
                         onSaveAs:          { self.appModel.saveCopy( of: file ) },
+                        onExport:          { self.appModel.exportImage( of: file ) },
                         onRevealInFinder:  { NSWorkspace.shared.activateFileViewerSelecting( [ file.url ] ) },
                         onMoveToTrash:     { self.moveToTrash( file ) },
                         onClose:           { self.model.close( file ) }
@@ -151,13 +152,7 @@ public struct FilesSidebarView: View
         }
         catch
         {
-            let alert = NSAlert()
-
-            alert.messageText     = "Could not move \u{201C}\( file.displayName )\u{201D} to the Trash."
-            alert.informativeText = error.localizedDescription
-            alert.alertStyle      = .warning
-
-            alert.runModal()
+            AppModel.presentFailureAlert( "Could not move \u{201C}\( file.displayName )\u{201D} to the Trash.", error: error )
         }
     }
 

@@ -41,6 +41,9 @@ public struct OpenFileRowView: View
     /// sidebar.
     private let onSaveAs: () -> Void
 
+    /// Exports this row's rendered image (TIFF/PNG/JPEG). Supplied by the sidebar.
+    private let onExport: () -> Void
+
     /// Reveals this row's file in Finder. Supplied by the sidebar.
     private let onRevealInFinder: () -> Void
 
@@ -62,6 +65,7 @@ public struct OpenFileRowView: View
     ///   - file:              The open file to display.
     ///   - onOpenInNewWindow: Called when the user chooses "Open in New Window".
     ///   - onSaveAs:          Called when the user chooses "Save As…".
+    ///   - onExport:          Called when the user chooses "Export…".
     ///   - onRevealInFinder:  Called when the user chooses "Reveal in Finder".
     ///   - onMoveToTrash:     Called when the user chooses "Move to Trash".
     ///   - onClose:           Called when the user chooses "Close".
@@ -69,6 +73,7 @@ public struct OpenFileRowView: View
         file:              OpenFile,
         onOpenInNewWindow: @escaping () -> Void = {},
         onSaveAs:          @escaping () -> Void = {},
+        onExport:          @escaping () -> Void = {},
         onRevealInFinder:  @escaping () -> Void = {},
         onMoveToTrash:     @escaping () -> Void = {},
         onClose:           @escaping () -> Void = {}
@@ -77,6 +82,7 @@ public struct OpenFileRowView: View
         self.file              = file
         self.onOpenInNewWindow = onOpenInNewWindow
         self.onSaveAs          = onSaveAs
+        self.onExport          = onExport
         self.onRevealInFinder  = onRevealInFinder
         self.onMoveToTrash     = onMoveToTrash
         self.onClose           = onClose
@@ -164,6 +170,12 @@ public struct OpenFileRowView: View
             {
                 self.onSaveAs()
             }
+
+            Button( "Export\u{2026}" )
+            {
+                self.onExport()
+            }
+            .disabled( self.file.image?.renderer.result == nil )
 
             Button( "Reveal in Finder" )
             {

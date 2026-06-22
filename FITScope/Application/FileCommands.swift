@@ -26,54 +26,51 @@ import SwiftUI
 
 /// The app's contributions to the standard *File* menu.
 ///
-/// The "Save As…" command targets the frontmost window's selected file. It reads
-/// the active window from the shared ``AppModel``, which publishes when its
-/// active model changes, so the command re-targets as the user switches windows.
-/// Observing `AppModel` alone is not enough, though: it does not publish when the
-/// selection changes *within* the active window — including the file being
-/// selected just after the window becomes active — so the command would be stuck
-/// in its initial (no-selection) state. ``ActiveFileCommands`` therefore observes
-/// the active window model itself, so the enabled state tracks the selection.
+/// Both commands act on the frontmost window's selected file, which each window
+/// publishes as its scene's focused object (see ``MainWindowView``). Reading it
+/// with `@FocusedObject` follows the key window, updates when the selection
+/// changes, and — because `@FocusedObject` observes the file — re-validates when
+/// the file's render result commits. "Save As…" only needs a selected file;
+/// "Export…" additionally needs a rendered image, so it stays disabled until one
+/// exists.
 struct FileCommands: View
 {
-    /// The app-wide coordination object that tracks the frontmost window.
-    @ObservedObject var appModel: AppModel
+    /// The frontmost window's selected file, or `nil` when none. Observed, so the
+    /// commands re-validate as it loads, renders, and changes.
+    @FocusedObject private var file: OpenFile?
 
-    /// The menu items, present only while a window is active — there is no
-    /// document to save without one.
-    var body: some View
+    /// The app-wide coordination object, used to run the Save / Export panels.
+    private let appModel: AppModel
+
+    /// Creates the File-menu commands.
+    ///
+    /// - Parameter appModel: The shared coordination object.
+    init( appModel: AppModel )
     {
-        if let model = self.appModel.activeModel
-        {
-            ActiveFileCommands( appModel: self.appModel, model: model )
-        }
+        self.appModel = appModel
     }
-}
-
-/// The *File*-menu items for a specific, active window model, observed so the
-/// command's enabled state follows that window's selection (a command-group
-/// closure cannot itself observe the model, and `@ObservedObject` cannot wrap an
-/// optional, so the active-model case is factored into this child view).
-private struct ActiveFileCommands: View
-{
-    /// The app-wide coordination object, used to run the Save panel.
-    let appModel: AppModel
-
-    /// The frontmost window's model, observed so selection changes re-evaluate
-    /// the command's enabled state.
-    @ObservedObject var model: WindowModel
 
     /// The menu items.
     var body: some View
     {
         Button( "Save As\u{2026}" )
         {
-            if let file = self.model.selectedFile
+            if let file = self.file
             {
                 self.appModel.saveCopy( of: file )
             }
         }
         .keyboardShortcut( "s", modifiers: [ .command, .shift ] )
-        .disabled( self.model.selectedFile == nil )
+        .disabled( self.file == nil )
+
+        Button( "Export\u{2026}" )
+        {
+            if let file = self.file
+            {
+                self.appModel.exportImage( of: file )
+            }
+        }
+        .keyboardShortcut( "e", modifiers: [ .command, .shift ] )
+        .disabled( self.file?.image?.renderer.result == nil )
     }
 }
