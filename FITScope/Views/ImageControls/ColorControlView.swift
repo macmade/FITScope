@@ -24,8 +24,7 @@
 
 import SwiftUI
 
-/// The color section of the controls panel: an invert toggle, with a note that
-/// the colour map and high-contrast options are not yet available.
+/// The color section of the controls panel: an invert toggle.
 public struct ColorControlView: View
 {
     /// The shared adjustment values this control writes to.
@@ -59,13 +58,6 @@ public struct ColorControlView: View
                 .toggleStyle( SwitchToggleStyle() )
                 .help( "Invert the Image (Photographic Negative)" )
                 .accessibilityIdentifier( AccessibilityIdentifier.ColorControlView.invertToggle )
-
-            Text( "Color map and high contrast are not yet available." )
-                .font( .system( size: 10 ) )
-                .foregroundStyle( .tertiary )
-                .frame( maxWidth: .infinity, alignment: .leading )
-                .padding( 10 )
-                .background( RoundedRectangle( cornerRadius: 8 ).strokeBorder( .quaternary, style: StrokeStyle( lineWidth: 1, dash: [ 3 ] ) ) )
         }
         .onChange( of: self.invert )
         {
