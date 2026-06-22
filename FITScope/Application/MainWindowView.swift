@@ -124,6 +124,7 @@ public struct MainWindowView: View
         }
         .frame( minWidth: 900, minHeight: 600 )
         .navigationTitle( self.model.selectedFile?.displayName ?? Bundle.main.title )
+        .navigationDocument( ifPresent: self.model.selectedFile?.url )
         .onOpenURL
         {
             url in self.model.open( urls: [ url ] )
