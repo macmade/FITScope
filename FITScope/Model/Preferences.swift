@@ -63,6 +63,7 @@ public final class Preferences: ObservableObject
     private enum Key
     {
         static let autoHideFloatingBars = "autoHideFloatingBars"
+        static let confirmMoveToTrash   = "confirmMoveToTrash"
         static let infoPanelFields      = "infoPanelFields"
     }
 
@@ -86,6 +87,15 @@ public final class Preferences: ObservableObject
     @Published public var autoHideFloatingBars: Bool
     {
         didSet { self.defaults.set( self.autoHideFloatingBars, forKey: Key.autoHideFloatingBars ) }
+    }
+
+    /// Whether moving a file to the Trash asks the user to confirm first. On by
+    /// default — the safe choice for a destructive action; the confirmation
+    /// alert's "don't ask again" checkbox, and the General preferences toggle,
+    /// turn it off.
+    @Published public var confirmMoveToTrash: Bool
+    {
+        didSet { self.defaults.set( self.confirmMoveToTrash, forKey: Key.confirmMoveToTrash ) }
     }
 
     /// The information-panel fields, in display order, each flagged visible or
@@ -112,6 +122,7 @@ public final class Preferences: ObservableObject
         // `object(forKey:)` distinguishes "never set" (nil → the default) from a
         // stored `false`, which a plain `bool(forKey:)` could not.
         self.autoHideFloatingBars = ( defaults.object( forKey: Key.autoHideFloatingBars ) as? Bool ) ?? true
+        self.confirmMoveToTrash   = ( defaults.object( forKey: Key.confirmMoveToTrash ) as? Bool ) ?? true
         self.infoPanelFields      = Self.decodeInfoPanelFields( defaults.data( forKey: Key.infoPanelFields ) )
     }
 

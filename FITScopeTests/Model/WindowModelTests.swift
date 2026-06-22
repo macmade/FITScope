@@ -130,6 +130,28 @@ struct WindowModelTests
 
         #expect( file.preparation?.isCancelled == true, "closing a file cancels its in-flight preparation" )
     }
+
+    @Test
+    @MainActor
+    func trashingAFileTrashesItAndRemovesItFromTheModel() throws
+    {
+        let url = URL( fileURLWithPath: NSTemporaryDirectory() ).appendingPathComponent( "FITScopeTrashTest-\( UUID().uuidString ).fits" )
+
+        try Data( "dummy".utf8 ).write( to: url )
+
+        defer { try? FileManager.default.removeItem( at: url ) }
+
+        let model = WindowModel()
+
+        model.open( urls: [ url ] )
+
+        let file = try #require( model.files.first )
+
+        try model.trash( file )
+
+        #expect( model.files.isEmpty, "trashing a file removes its entry from the window" )
+        #expect( FileManager.default.fileExists( atPath: url.path ) == false, "trashing moves the original file out of its location" )
+    }
 }
 
 /// Tests for `RenderThrottle`: it bounds how many preparations run at once.

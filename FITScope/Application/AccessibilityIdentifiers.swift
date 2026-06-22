@@ -402,6 +402,9 @@ public enum AccessibilityIdentifier
         /// The "auto-hide the floating bars" toggle in the General tab.
         public static let autoHideFloatingBarsToggle = "PreferencesView.autoHideFloatingBarsToggle"
 
+        /// The "confirm before moving files to the Trash" toggle in the General tab.
+        public static let confirmMoveToTrashToggle = "PreferencesView.confirmMoveToTrashToggle"
+
         /// The API Keys tab's content.
         public static let apiKeysTab = "PreferencesView.apiKeysTab"
 

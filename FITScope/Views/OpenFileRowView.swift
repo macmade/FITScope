@@ -34,6 +34,15 @@ public struct OpenFileRowView: View
     /// Opens the auxiliary headers window.
     @Environment( \.openWindow ) private var openWindow
 
+    /// Opens this row's file in a new window. Supplied by the sidebar.
+    private let onOpenInNewWindow: () -> Void
+
+    /// Reveals this row's file in Finder. Supplied by the sidebar.
+    private let onRevealInFinder: () -> Void
+
+    /// Moves this row's file to the Trash. Supplied by the sidebar.
+    private let onMoveToTrash: () -> Void
+
     /// Closes this row's file. Supplied by the sidebar.
     private let onClose: () -> Void
 
@@ -46,12 +55,24 @@ public struct OpenFileRowView: View
     /// is still loading) and never refresh.
     ///
     /// - Parameters:
-    ///   - file:    The open file to display.
-    ///   - onClose: Called when the user chooses "Close" from the context menu.
-    public init( file: OpenFile, onClose: @escaping () -> Void = {} )
+    ///   - file:              The open file to display.
+    ///   - onOpenInNewWindow: Called when the user chooses "Open in New Window".
+    ///   - onRevealInFinder:  Called when the user chooses "Reveal in Finder".
+    ///   - onMoveToTrash:     Called when the user chooses "Move to Trash".
+    ///   - onClose:           Called when the user chooses "Close".
+    public init(
+        file:              OpenFile,
+        onOpenInNewWindow: @escaping () -> Void = {},
+        onRevealInFinder:  @escaping () -> Void = {},
+        onMoveToTrash:     @escaping () -> Void = {},
+        onClose:           @escaping () -> Void = {}
+    )
     {
-        self.file    = file
-        self.onClose = onClose
+        self.file              = file
+        self.onOpenInNewWindow = onOpenInNewWindow
+        self.onRevealInFinder  = onRevealInFinder
+        self.onMoveToTrash     = onMoveToTrash
+        self.onClose           = onClose
     }
 
     /// The view's content.
@@ -116,6 +137,11 @@ public struct OpenFileRowView: View
         .help( self.file.url.path )
         .contextMenu
         {
+            Button( "Open in New Window" )
+            {
+                self.onOpenInNewWindow()
+            }
+
             Button( "View FITS Headers" )
             {
                 if let info = self.file.image?.info
@@ -124,6 +150,20 @@ public struct OpenFileRowView: View
                 }
             }
             .disabled( self.file.image?.info == nil )
+
+            Divider()
+
+            Button( "Reveal in Finder" )
+            {
+                self.onRevealInFinder()
+            }
+
+            Divider()
+
+            Button( "Move to Trash", role: .destructive )
+            {
+                self.onMoveToTrash()
+            }
 
             Button( "Close", role: .destructive )
             {

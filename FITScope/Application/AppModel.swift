@@ -97,6 +97,22 @@ public final class AppModel: ObservableObject
         }
     }
 
+    /// Opens the given URLs in a brand-new window, regardless of any active
+    /// window. Used by the file list's "Open in New Window" action, which must
+    /// always spawn a window rather than route into the current one.
+    ///
+    /// - Parameter urls: The file URLs to open.
+    public func openInNewWindow( urls: [ URL ] )
+    {
+        guard urls.isEmpty == false
+        else
+        {
+            return
+        }
+
+        self.openWindowWithURLs?( urls )
+    }
+
     /// Presents an Open panel for FITS files.
     ///
     /// - Returns: The chosen URLs, or an empty array if cancelled.

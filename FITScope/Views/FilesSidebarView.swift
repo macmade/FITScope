@@ -33,6 +33,12 @@ public struct FilesSidebarView: View
     /// The window's open files and selection.
     @ObservedObject private var model: WindowModel
 
+    /// App-wide coordination, used to open a file in a new window.
+    @EnvironmentObject private var appModel: AppModel
+
+    /// The shared, persisted preferences, used for the trash-confirmation setting.
+    @EnvironmentObject private var preferences: Preferences
+
     /// Creates the files sidebar.
     ///
     /// - Parameter model: The window model to drive.
@@ -73,10 +79,13 @@ public struct FilesSidebarView: View
                 {
                     file in
 
-                    OpenFileRowView( file: file )
-                    {
-                        self.model.close( file )
-                    }
+                    OpenFileRowView(
+                        file:              file,
+                        onOpenInNewWindow: { self.appModel.openInNewWindow( urls: [ file.url ] ) },
+                        onRevealInFinder:  { NSWorkspace.shared.activateFileViewerSelecting( [ file.url ] ) },
+                        onMoveToTrash:     { self.moveToTrash( file ) },
+                        onClose:           { self.model.close( file ) }
+                    )
                     .tag( file.id )
                 }
             }
@@ -121,5 +130,62 @@ public struct FilesSidebarView: View
         {
             self.model.open( urls: panel.urls )
         }
+    }
+
+    /// Moves a file to the Trash, asking the user to confirm first unless they
+    /// have turned the confirmation off. Presents an alert if the operation fails
+    /// so a destructive action never fails silently.
+    ///
+    /// - Parameter file: The file to trash.
+    private func moveToTrash( _ file: OpenFile )
+    {
+        if self.preferences.confirmMoveToTrash, self.confirmTrashing( file ) == false
+        {
+            return
+        }
+
+        do
+        {
+            try self.model.trash( file )
+        }
+        catch
+        {
+            let alert = NSAlert()
+
+            alert.messageText     = "Could not move \u{201C}\( file.displayName )\u{201D} to the Trash."
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle      = .warning
+
+            alert.runModal()
+        }
+    }
+
+    /// Presents the trash-confirmation alert for a file, including a "Don't ask
+    /// again" checkbox that, when ticked, turns the confirmation off in the
+    /// preferences so it is not shown again.
+    ///
+    /// - Parameter file: The file about to be trashed.
+    /// - Returns: `true` if the user confirmed, `false` if they cancelled.
+    private func confirmTrashing( _ file: OpenFile ) -> Bool
+    {
+        let confirm = NSAlert()
+
+        confirm.messageText            = "Move \u{201C}\( file.displayName )\u{201D} to the Trash?"
+        confirm.informativeText        = "The file will be removed from its directory and moved to the Trash."
+        confirm.alertStyle             = .warning
+        confirm.showsSuppressionButton = true
+        confirm.suppressionButton?.title = "Don\u{2019}t ask again"
+
+        confirm.addButton( withTitle: "Move to Trash" ).hasDestructiveAction = true
+        confirm.addButton( withTitle: "Cancel" )
+
+        let confirmed = confirm.runModal() == .alertFirstButtonReturn
+
+        if confirmed, confirm.suppressionButton?.state == .on
+        {
+            self.preferences.confirmMoveToTrash = false
+        }
+
+        return confirmed
     }
 }

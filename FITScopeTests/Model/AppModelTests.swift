@@ -103,6 +103,35 @@ struct AppModelTests
     }
 
     @Test
+    func openInNewWindowAlwaysSpawnsANewWindowEvenWithAnActiveOne() throws
+    {
+        let app           = AppModel()
+        let model         = WindowModel()
+        var requestedURLs = [ URL ]()
+
+        app.activeModel        = model
+        app.openWindowWithURLs = { requestedURLs.append( contentsOf: $0 ) }
+
+        app.openInNewWindow( urls: [ self.url ] )
+
+        #expect( requestedURLs == [ self.url ], "open-in-new-window must always request a new window carrying the URLs" )
+        #expect( model.files.isEmpty, "open-in-new-window must not route into the active window" )
+    }
+
+    @Test
+    func openInNewWindowIgnoresAnEmptyURLList() throws
+    {
+        let app       = AppModel()
+        var requested = 0
+
+        app.openWindowWithURLs = { _ in requested += 1 }
+
+        app.openInNewWindow( urls: [] )
+
+        #expect( requested == 0, "opening no files must not spawn a window" )
+    }
+
+    @Test
     func handsTheActiveWindowToAnotherWhenTheActiveOneCloses() throws
     {
         let app    = AppModel()

@@ -53,6 +53,13 @@ public struct GeneralPreferencesView: View
             Text( "When on, the canvas's zoom toolbar and status pill fade out after a moment of inactivity and reappear when you move the pointer. When off, they stay visible." )
                 .font( .caption )
                 .foregroundStyle( .secondary )
+
+            Toggle( "Confirm before moving files to the Trash", isOn: self.$preferences.confirmMoveToTrash )
+                .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.confirmMoveToTrashToggle )
+
+            Text( "When on, moving a file to the Trash from the file list asks you to confirm first. When off, the file is moved without asking." )
+                .font( .caption )
+                .foregroundStyle( .secondary )
         }
         .formStyle( .grouped )
         .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.generalTab )

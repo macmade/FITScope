@@ -104,6 +104,21 @@ public final class WindowModel: ObservableObject
             self.selectedFileID = fallback?.id
         }
     }
+
+    /// Moves the given file to the Trash and closes it.
+    ///
+    /// The entry is removed from the window only if trashing succeeds; a failure
+    /// (e.g. a permissions error) propagates so the caller can report it and the
+    /// file stays in the list, still pointing at its on-disk source.
+    ///
+    /// - Parameter file: The file to trash.
+    /// - Throws: Any error thrown by `FileManager.trashItem(at:resultingItemURL:)`.
+    public func trash( _ file: OpenFile ) throws
+    {
+        try FileManager.default.trashItem( at: file.url, resultingItemURL: nil )
+
+        self.close( file )
+    }
 }
 
 private extension Array

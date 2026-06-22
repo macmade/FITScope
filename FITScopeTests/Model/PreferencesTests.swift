@@ -75,6 +75,40 @@ struct PreferencesTests
         #expect( reloaded.autoHideFloatingBars == false )
     }
 
+    /// With nothing stored, moving a file to the Trash asks for confirmation —
+    /// the safe default for a destructive action.
+    @Test
+    @MainActor
+    func defaultsToConfirmingMoveToTrash()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.confirmMoveToTrash == true )
+    }
+
+    /// Turning the trash confirmation off (e.g. via the alert's "don't ask again"
+    /// checkbox) is written to the store and read back by a fresh instance.
+    @Test
+    @MainActor
+    func persistsConfirmMoveToTrashChangesAcrossInstances()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        preferences.confirmMoveToTrash = false
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.confirmMoveToTrash == false )
+    }
+
     /// With nothing stored, every information-panel field is present and visible,
     /// in the canonical order — so the panel looks exactly as it did before the
     /// field configuration existed.
