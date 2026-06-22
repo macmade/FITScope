@@ -82,6 +82,11 @@ public struct FITScopeApp: App
                 .keyboardShortcut( "o", modifiers: .command )
             }
 
+            CommandGroup( after: CommandGroupPlacement.newItem )
+            {
+                FileCommands( appModel: self.appDelegate.appModel )
+            }
+
             CommandGroup( replacing: CommandGroupPlacement.appInfo )
             {
                 Button( action: { openWindow( id: "AboutWindow" ) } )

@@ -113,6 +113,44 @@ public final class AppModel: ObservableObject
         self.openWindowWithURLs?( urls )
     }
 
+    /// Presents a Save panel and copies the file's original, unmodified FITS
+    /// bytes to the chosen location. Presents an alert if the copy fails, so a
+    /// save never fails silently. A cancelled panel is a no-op.
+    ///
+    /// The copy is byte-identical to the opened file — no re-encoding — so this
+    /// is "Save As…", not an export of the rendered image.
+    ///
+    /// - Parameter file: The open file to copy.
+    public func saveCopy( of file: OpenFile )
+    {
+        let panel = NSSavePanel()
+
+        panel.allowedContentTypes  = [ .fits ]
+        panel.nameFieldStringValue = file.displayName
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let destination = panel.url
+        else
+        {
+            return
+        }
+
+        do
+        {
+            try file.copyOriginalFile( to: destination )
+        }
+        catch
+        {
+            let alert = NSAlert()
+
+            alert.messageText     = "Could not save a copy of \u{201C}\( file.displayName )\u{201D}."
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle      = .warning
+
+            alert.runModal()
+        }
+    }
+
     /// Presents an Open panel for FITS files.
     ///
     /// - Returns: The chosen URLs, or an empty array if cancelled.

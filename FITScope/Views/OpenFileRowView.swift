@@ -37,6 +37,10 @@ public struct OpenFileRowView: View
     /// Opens this row's file in a new window. Supplied by the sidebar.
     private let onOpenInNewWindow: () -> Void
 
+    /// Saves a byte-identical copy of this row's original file. Supplied by the
+    /// sidebar.
+    private let onSaveAs: () -> Void
+
     /// Reveals this row's file in Finder. Supplied by the sidebar.
     private let onRevealInFinder: () -> Void
 
@@ -57,12 +61,14 @@ public struct OpenFileRowView: View
     /// - Parameters:
     ///   - file:              The open file to display.
     ///   - onOpenInNewWindow: Called when the user chooses "Open in New Window".
+    ///   - onSaveAs:          Called when the user chooses "Save As…".
     ///   - onRevealInFinder:  Called when the user chooses "Reveal in Finder".
     ///   - onMoveToTrash:     Called when the user chooses "Move to Trash".
     ///   - onClose:           Called when the user chooses "Close".
     public init(
         file:              OpenFile,
         onOpenInNewWindow: @escaping () -> Void = {},
+        onSaveAs:          @escaping () -> Void = {},
         onRevealInFinder:  @escaping () -> Void = {},
         onMoveToTrash:     @escaping () -> Void = {},
         onClose:           @escaping () -> Void = {}
@@ -70,6 +76,7 @@ public struct OpenFileRowView: View
     {
         self.file              = file
         self.onOpenInNewWindow = onOpenInNewWindow
+        self.onSaveAs          = onSaveAs
         self.onRevealInFinder  = onRevealInFinder
         self.onMoveToTrash     = onMoveToTrash
         self.onClose           = onClose
@@ -152,6 +159,11 @@ public struct OpenFileRowView: View
             .disabled( self.file.image?.info == nil )
 
             Divider()
+
+            Button( "Save As\u{2026}" )
+            {
+                self.onSaveAs()
+            }
 
             Button( "Reveal in Finder" )
             {

@@ -82,6 +82,7 @@ public struct FilesSidebarView: View
                     OpenFileRowView(
                         file:              file,
                         onOpenInNewWindow: { self.appModel.openInNewWindow( urls: [ file.url ] ) },
+                        onSaveAs:          { self.appModel.saveCopy( of: file ) },
                         onRevealInFinder:  { NSWorkspace.shared.activateFileViewerSelecting( [ file.url ] ) },
                         onMoveToTrash:     { self.moveToTrash( file ) },
                         onClose:           { self.model.close( file ) }

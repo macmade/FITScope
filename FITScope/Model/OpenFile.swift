@@ -242,6 +242,33 @@ public final class OpenFile: ObservableObject, Identifiable
         self.preparation?.cancel()
     }
 
+    /// Copies the original, unmodified file to a destination, byte for byte.
+    ///
+    /// This is the "Save As…" action: it duplicates the source FITS file exactly,
+    /// with no re-encoding or processing, so the copy is identical to what was
+    /// opened. An existing file at the destination is replaced (the save panel
+    /// has already confirmed the overwrite with the user). Copying a file onto
+    /// its own URL is a no-op, so the source can never be destroyed.
+    ///
+    /// - Parameter destination: The URL to write the copy to.
+    /// - Throws: Any error thrown by `FileManager` while removing an existing
+    ///   destination or copying the file.
+    public func copyOriginalFile( to destination: URL ) throws
+    {
+        guard self.url.standardizedFileURL != destination.standardizedFileURL
+        else
+        {
+            return
+        }
+
+        if FileManager.default.fileExists( atPath: destination.path )
+        {
+            try FileManager.default.removeItem( at: destination )
+        }
+
+        try FileManager.default.copyItem( at: self.url, to: destination )
+    }
+
     /// Generates a thumbnail from the current rendered image, downscaled so its
     /// longest side is at most `maxDimension` pixels. A no-op when nothing has
     /// rendered yet.

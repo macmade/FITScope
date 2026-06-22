@@ -127,6 +127,7 @@
 		DE3E4CDC3C96EE6242C8D3CF /* ImageCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A0C09D641F9B35838FED0C /* ImageCanvasView.swift */; };
 		E79B56F2683FA70FC52D6AFA /* InspectorSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0378BAF85DE48F0D74A2DFCC /* InspectorSectionView.swift */; };
 		FB5814672B1E4C298DB21E2A /* ViewCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1805AA8818E2418AA78360ED /* ViewCommands.swift */; };
+		05A1B2C30000000000000004 /* FileCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000003 /* FileCommands.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -325,6 +326,7 @@
 		0E6A0CA25BD529178F2F9432 /* CursorReadout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CursorReadout.swift; sourceTree = "<group>"; };
 		0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowModelTests.swift; sourceTree = "<group>"; };
 		1805AA8818E2418AA78360ED /* ViewCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewCommands.swift; sourceTree = "<group>"; };
+		05A1B2C30000000000000003 /* FileCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCommands.swift; sourceTree = "<group>"; };
 		1CDEBA7E46E766BCABAF5462 /* CanvasGeometryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasGeometryTests.swift; sourceTree = "<group>"; };
 		22D6641B378926115E450672 /* WindowContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowContent.swift; sourceTree = "<group>"; };
 		3BEAE300CD214042135F55D9 /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -702,6 +704,7 @@
 				3BEAE300CD214042135F55D9 /* AppDelegate.swift */,
 				0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */,
 				1805AA8818E2418AA78360ED /* ViewCommands.swift */,
+				05A1B2C30000000000000003 /* FileCommands.swift */,
 				22D6641B378926115E450672 /* WindowContent.swift */,
 			);
 			path = Application;
@@ -1069,6 +1072,7 @@
 				2D8702C0C4F8BCD0EB3272DA /* AppDelegate.swift in Sources */,
 				0AC10000000000000000F002 /* AccessibilityIdentifiers.swift in Sources */,
 				FB5814672B1E4C298DB21E2A /* ViewCommands.swift in Sources */,
+				05A1B2C30000000000000004 /* FileCommands.swift in Sources */,
 				382F7DF73F52BD55C45092C9 /* DropAcceptance.swift in Sources */,
 				6A1572CF23B612DB37F852EC /* CanvasGeometry.swift in Sources */,
 				42B9BD4E43A2D02914FDDE09 /* StatisticsFormat.swift in Sources */,
