@@ -15,6 +15,12 @@
 		05398CE32DEECF4F005904EC /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
 		053C2E752DF6EE3300DA637A /* Slider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 053C2E742DF6EE3200DA637A /* Slider.swift */; };
 		056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
+		05A1B2C30000000000000C01 /* SwiftPixel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 050F38492DEEC2F000E84F97 /* SwiftPixel.framework */; };
+		05A1B2C30000000000000C02 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
+		05A1B2C30000000000000C03 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
+		05A1B2C30000000000000C04 /* SwiftPixel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 050F38492DEEC2F000E84F97 /* SwiftPixel.framework */; };
+		05A1B2C30000000000000C05 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
+		05A1B2C30000000000000C06 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
 		056E5C522DDF1356003254C7 /* SwiftFITS.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
 		0579B6122DF220D1002FDD47 /* FITSImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */; };
@@ -33,11 +39,29 @@
 		05A1B2C30000000000000002 /* View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000001 /* View.swift */; };
 		05A1B2C30000000000000004 /* FileCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000003 /* FileCommands.swift */; };
 		05A1B2C30000000000000006 /* ImageExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000005 /* ImageExporterTests.swift */; };
+		05A1B2C30000000000000A04 /* FITSPreviewRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000A03 /* FITSPreviewRendererTests.swift */; };
 		05A1B2C30000000000000008 /* ImageExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000007 /* ImageExporter.swift */; };
+		05A1B2C30000000000000A02 /* FITSPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */; };
+		05A1B2C30000000000000B01 /* FITSPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */; };
+		05A1B2C30000000000000B02 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8E2DE0C41800550A87 /* ImageProcessor.swift */; };
+		05A1B2C30000000000000B03 /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
+		05A1B2C30000000000000B04 /* FITSPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */; };
+		05A1B2C30000000000000B05 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8E2DE0C41800550A87 /* ImageProcessor.swift */; };
+		05A1B2C30000000000000B06 /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
+		05A1B2C30000000000000B07 /* ImageExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000007 /* ImageExporter.swift */; };
+		05A1B2C30000000000000B08 /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */; };
+		05A1B2C30000000000000B09 /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */; };
+		05A1B2C3000000000000000A /* ImageExportOptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000009 /* ImageExportOptionsView.swift */; };
 		05A1B2C300000000000000F2 /* RenderedImageShareItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C300000000000000F1 /* RenderedImageShareItem.swift */; };
 		05A1B2C300000000000000F4 /* RenderedImageShareItemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C300000000000000F3 /* RenderedImageShareItemTests.swift */; };
-		05A1B2C3000000000000000A /* ImageExportOptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000009 /* ImageExportOptionsView.swift */; };
 		05A1B2C300000000000000F6 /* ImageShareLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C300000000000000F5 /* ImageShareLink.swift */; };
+		05B189C82FEAE7930056553A /* QuickLookThumbnailing.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05B189C72FEAE7930056553A /* QuickLookThumbnailing.framework */; };
+		05B189CA2FEAE7930056553A /* Quartz.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05B189C92FEAE7930056553A /* Quartz.framework */; };
+		05B189D12FEAE7930056553A /* FITScopeThumbnailExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 05B189C62FEAE7930056553A /* FITScopeThumbnailExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		05B189E42FEAE7AD0056553A /* Quartz.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05B189C92FEAE7930056553A /* Quartz.framework */; };
+		05B189F02FEAE7AD0056553A /* FITScopePreviewExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 05B189E32FEAE7AD0056553A /* FITScopePreviewExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		05B189F92FEAE7BC0056553A /* ThumbnailProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B189F62FEAE7BC0056553A /* ThumbnailProvider.swift */; };
+		05B18A002FEAE7BE0056553A /* PreviewProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B189FB2FEAE7BE0056553A /* PreviewProvider.swift */; };
 		05BD7A942DF311F700F4AAFC /* DebayerControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */; };
 		05BD7A962DF3120400F4AAFC /* GammaCorrectionControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A952DF3120100F4AAFC /* GammaCorrectionControlView.swift */; };
 		05BD7A982DF3120E00F4AAFC /* StretchControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A972DF3120600F4AAFC /* StretchControlView.swift */; };
@@ -172,6 +196,20 @@
 			remoteGlobalIDString = 05C527822DD8E36300843626;
 			remoteInfo = SwiftFITS;
 		};
+		05B189CF2FEAE7930056553A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 053BEA9A2DDDDDA800EF0C79 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 05B189C52FEAE7930056553A;
+			remoteInfo = FITScopeThumbnailExtension;
+		};
+		05B189EE2FEAE7AD0056553A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 053BEA9A2DDDDDA800EF0C79 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 05B189E22FEAE7AD0056553A;
+			remoteInfo = FITScopePreviewExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -185,6 +223,18 @@
 				050F384D2DEEC2FA00E84F97 /* SwiftPixel.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		05B189D22FEAE7930056553A /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				05B189F02FEAE7AD0056553A /* FITScopePreviewExtension.appex in Embed Foundation Extensions */,
+				05B189D12FEAE7930056553A /* FITScopeThumbnailExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -273,11 +323,21 @@
 		05A1B2C30000000000000001 /* View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = View.swift; sourceTree = "<group>"; };
 		05A1B2C30000000000000003 /* FileCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCommands.swift; sourceTree = "<group>"; };
 		05A1B2C30000000000000005 /* ImageExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageExporterTests.swift; sourceTree = "<group>"; };
+		05A1B2C30000000000000A03 /* FITSPreviewRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSPreviewRendererTests.swift; sourceTree = "<group>"; };
 		05A1B2C30000000000000007 /* ImageExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageExporter.swift; sourceTree = "<group>"; };
+		05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSPreviewRenderer.swift; sourceTree = "<group>"; };
+		05A1B2C30000000000000009 /* ImageExportOptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageExportOptionsView.swift; sourceTree = "<group>"; };
 		05A1B2C300000000000000F1 /* RenderedImageShareItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderedImageShareItem.swift; sourceTree = "<group>"; };
 		05A1B2C300000000000000F3 /* RenderedImageShareItemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderedImageShareItemTests.swift; sourceTree = "<group>"; };
-		05A1B2C30000000000000009 /* ImageExportOptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageExportOptionsView.swift; sourceTree = "<group>"; };
 		05A1B2C300000000000000F5 /* ImageShareLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageShareLink.swift; sourceTree = "<group>"; };
+		05B189C62FEAE7930056553A /* FITScopeThumbnailExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FITScopeThumbnailExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		05B189C72FEAE7930056553A /* QuickLookThumbnailing.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickLookThumbnailing.framework; path = System/Library/Frameworks/QuickLookThumbnailing.framework; sourceTree = SDKROOT; };
+		05B189C92FEAE7930056553A /* Quartz.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Quartz.framework; path = System/Library/Frameworks/Quartz.framework; sourceTree = SDKROOT; };
+		05B189E32FEAE7AD0056553A /* FITScopePreviewExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FITScopePreviewExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		05B189F52FEAE7BC0056553A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		05B189F62FEAE7BC0056553A /* ThumbnailProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailProvider.swift; sourceTree = "<group>"; };
+		05B189FA2FEAE7BE0056553A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		05B189FB2FEAE7BE0056553A /* PreviewProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewProvider.swift; sourceTree = "<group>"; };
 		05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebayerControlView.swift; sourceTree = "<group>"; };
 		05BD7A952DF3120100F4AAFC /* GammaCorrectionControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GammaCorrectionControlView.swift; sourceTree = "<group>"; };
 		05BD7A972DF3120600F4AAFC /* StretchControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchControlView.swift; sourceTree = "<group>"; };
@@ -405,6 +465,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		05B189C32FEAE7930056553A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				05A1B2C30000000000000C01 /* SwiftPixel.framework in Frameworks */,
+				05A1B2C30000000000000C02 /* SwiftFITS.framework in Frameworks */,
+				05A1B2C30000000000000C03 /* SwiftUtilities.framework in Frameworks */,
+				05B189C82FEAE7930056553A /* QuickLookThumbnailing.framework in Frameworks */,
+				05B189CA2FEAE7930056553A /* Quartz.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		05B189E02FEAE7AD0056553A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				05A1B2C30000000000000C04 /* SwiftPixel.framework in Frameworks */,
+				05A1B2C30000000000000C05 /* SwiftFITS.framework in Frameworks */,
+				05A1B2C30000000000000C06 /* SwiftUtilities.framework in Frameworks */,
+				05B189E42FEAE7AD0056553A /* Quartz.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -432,6 +515,7 @@
 			children = (
 				05206B8E2DE0C41800550A87 /* ImageProcessor.swift */,
 				05A1B2C30000000000000007 /* ImageExporter.swift */,
+				05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */,
 				05A1B2C300000000000000F1 /* RenderedImageShareItem.swift */,
 			);
 			path = Image;
@@ -449,6 +533,8 @@
 				056E5C3E2DDF1041003254C7 /* xcconfig */,
 				056E5C062DDF0EB5003254C7 /* .github */,
 				0587FF0D2DDE64DF005DECEF /* FITScope */,
+				05B189F72FEAE7BC0056553A /* FITScopeThumbnailExtension */,
+				05B189FF2FEAE7BE0056553A /* FITScopePreviewExtension */,
 				0587FF122DDE64E0005DECEF /* FITScopeTests */,
 				0587FF162DDE64E3005DECEF /* FITScopeUITests */,
 				056E5C4F2DDF134F003254C7 /* Frameworks */,
@@ -462,6 +548,8 @@
 				053BEAA22DDDDDA800EF0C79 /* FITScope.app */,
 				053BEAB12DDDDDA900EF0C79 /* FITScopeTests.xctest */,
 				053BEABB2DDDDDA900EF0C79 /* FITScopeUITests.xctest */,
+				05B189C62FEAE7930056553A /* FITScopeThumbnailExtension.appex */,
+				05B189E32FEAE7AD0056553A /* FITScopePreviewExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -632,6 +720,8 @@
 			isa = PBXGroup;
 			children = (
 				05398CE22DEECF4F005904EC /* SwiftUtilities.framework */,
+				05B189C72FEAE7930056553A /* QuickLookThumbnailing.framework */,
+				05B189C92FEAE7930056553A /* Quartz.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -701,6 +791,24 @@
 			path = FITScopeUITests;
 			sourceTree = "<group>";
 		};
+		05B189F72FEAE7BC0056553A /* FITScopeThumbnailExtension */ = {
+			isa = PBXGroup;
+			children = (
+				05B189F52FEAE7BC0056553A /* Info.plist */,
+				05B189F62FEAE7BC0056553A /* ThumbnailProvider.swift */,
+			);
+			path = FITScopeThumbnailExtension;
+			sourceTree = "<group>";
+		};
+		05B189FF2FEAE7BE0056553A /* FITScopePreviewExtension */ = {
+			isa = PBXGroup;
+			children = (
+				05B189FA2FEAE7BE0056553A /* Info.plist */,
+				05B189FB2FEAE7BE0056553A /* PreviewProvider.swift */,
+			);
+			path = FITScopePreviewExtension;
+			sourceTree = "<group>";
+		};
 		05BD7A922DF311EB00F4AAFC /* ImageControls */ = {
 			isa = PBXGroup;
 			children = (
@@ -766,6 +874,7 @@
 			children = (
 				05FB1000000000000000A003 /* ImageProcessorTests.swift */,
 				05A1B2C30000000000000005 /* ImageExporterTests.swift */,
+				05A1B2C30000000000000A03 /* FITSPreviewRendererTests.swift */,
 				05A1B2C300000000000000F3 /* RenderedImageShareItemTests.swift */,
 				BD699731BC20D77496B1C9AA /* PixelValueTests.swift */,
 				00D623443776E3C8CE7D5534 /* DebayerModeTests.swift */,
@@ -1014,10 +1123,13 @@
 				053BEA9F2DDDDDA800EF0C79 /* Frameworks */,
 				053BEAA02DDDDDA800EF0C79 /* Resources */,
 				056E5C532DDF1356003254C7 /* Embed Frameworks */,
+				05B189D22FEAE7930056553A /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				05B189D02FEAE7930056553A /* PBXTargetDependency */,
+				05B189EF2FEAE7AD0056553A /* PBXTargetDependency */,
 			);
 			name = FITScope;
 			productName = FITScope;
@@ -1060,6 +1172,44 @@
 			productReference = 053BEABB2DDDDDA900EF0C79 /* FITScopeUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		05B189C52FEAE7930056553A /* FITScopeThumbnailExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 05B189D62FEAE7930056553A /* Build configuration list for PBXNativeTarget "FITScopeThumbnailExtension" */;
+			buildPhases = (
+				05B189C22FEAE7930056553A /* Sources */,
+				05B189C32FEAE7930056553A /* Frameworks */,
+				05B189C42FEAE7930056553A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FITScopeThumbnailExtension;
+			packageProductDependencies = (
+			);
+			productName = FITScopeThumbnailExtension;
+			productReference = 05B189C62FEAE7930056553A /* FITScopeThumbnailExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		05B189E22FEAE7AD0056553A /* FITScopePreviewExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 05B189F22FEAE7AD0056553A /* Build configuration list for PBXNativeTarget "FITScopePreviewExtension" */;
+			buildPhases = (
+				05B189DF2FEAE7AD0056553A /* Sources */,
+				05B189E02FEAE7AD0056553A /* Frameworks */,
+				05B189E12FEAE7AD0056553A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FITScopePreviewExtension;
+			packageProductDependencies = (
+			);
+			productName = FITScopePreviewExtension;
+			productReference = 05B189E32FEAE7AD0056553A /* FITScopePreviewExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -1067,7 +1217,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1630;
+				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					053BEAA12DDDDDA800EF0C79 = {
@@ -1080,6 +1230,12 @@
 					053BEABA2DDDDDA900EF0C79 = {
 						CreatedOnToolsVersion = 16.3;
 						TestTargetID = 053BEAA12DDDDDA800EF0C79;
+					};
+					05B189C52FEAE7930056553A = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					05B189E22FEAE7AD0056553A = {
+						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
@@ -1110,6 +1266,8 @@
 				053BEAA12DDDDDA800EF0C79 /* FITScope */,
 				053BEAB02DDDDDA900EF0C79 /* FITScopeTests */,
 				053BEABA2DDDDDA900EF0C79 /* FITScopeUITests */,
+				05B189C52FEAE7930056553A /* FITScopeThumbnailExtension */,
+				05B189E22FEAE7AD0056553A /* FITScopePreviewExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -1152,6 +1310,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		053BEAB92DDDDDA900EF0C79 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		05B189C42FEAE7930056553A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		05B189E12FEAE7AD0056553A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1203,6 +1375,7 @@
 				05A1B2C30000000000000002 /* View.swift in Sources */,
 				05206B8F2DE0C41C00550A87 /* ImageProcessor.swift in Sources */,
 				05A1B2C30000000000000008 /* ImageExporter.swift in Sources */,
+				05A1B2C30000000000000A02 /* FITSPreviewRenderer.swift in Sources */,
 				05A1B2C300000000000000F2 /* RenderedImageShareItem.swift in Sources */,
 				05D710D22DF2049B00CE32E3 /* FITSDocument.swift in Sources */,
 				05DC79A32DF2FCF8003E2AFA /* LoadingView.swift in Sources */,
@@ -1269,6 +1442,7 @@
 				05FB1000000000000000B002 /* FITSTestData.swift in Sources */,
 				05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */,
 				05A1B2C30000000000000006 /* ImageExporterTests.swift in Sources */,
+				05A1B2C30000000000000A04 /* FITSPreviewRendererTests.swift in Sources */,
 				05A1B2C300000000000000F4 /* RenderedImageShareItemTests.swift in Sources */,
 				05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */,
 				05FB1000000000000000B00B /* FITSImageLoaderTests.swift in Sources */,
@@ -1306,6 +1480,31 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		05B189C22FEAE7930056553A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				05A1B2C30000000000000B08 /* Benchmarking.swift in Sources */,
+				05A1B2C30000000000000B01 /* FITSPreviewRenderer.swift in Sources */,
+				05A1B2C30000000000000B02 /* ImageProcessor.swift in Sources */,
+				05A1B2C30000000000000B03 /* FITSPropertySnapshot.swift in Sources */,
+				05B189F92FEAE7BC0056553A /* ThumbnailProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		05B189DF2FEAE7AD0056553A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				05A1B2C30000000000000B09 /* Benchmarking.swift in Sources */,
+				05A1B2C30000000000000B04 /* FITSPreviewRenderer.swift in Sources */,
+				05A1B2C30000000000000B05 /* ImageProcessor.swift in Sources */,
+				05A1B2C30000000000000B06 /* FITSPropertySnapshot.swift in Sources */,
+				05A1B2C30000000000000B07 /* ImageExporter.swift in Sources */,
+				05B18A002FEAE7BE0056553A /* PreviewProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1318,6 +1517,16 @@
 			isa = PBXTargetDependency;
 			target = 053BEAA12DDDDDA800EF0C79 /* FITScope */;
 			targetProxy = 053BEABC2DDDDDA900EF0C79 /* PBXContainerItemProxy */;
+		};
+		05B189D02FEAE7930056553A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 05B189C52FEAE7930056553A /* FITScopeThumbnailExtension */;
+			targetProxy = 05B189CF2FEAE7930056553A /* PBXContainerItemProxy */;
+		};
+		05B189EF2FEAE7AD0056553A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 05B189E22FEAE7AD0056553A /* FITScopePreviewExtension */;
+			targetProxy = 05B189EE2FEAE7AD0056553A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1437,6 +1646,90 @@
 			};
 			name = Release;
 		};
+		05B189D32FEAE7930056553A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FITScopeThumbnailExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FITScopeThumbnailExtension;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.xs-labs.FITScope.FITScopeThumbnailExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		05B189D42FEAE7930056553A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FITScopeThumbnailExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FITScopeThumbnailExtension;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.xs-labs.FITScope.FITScopeThumbnailExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		05B189F32FEAE7AD0056553A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FITScopePreviewExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FITScopePreviewExtension;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.xs-labs.FITScope.FITScopePreviewExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		05B189F42FEAE7AD0056553A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FITScopePreviewExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FITScopePreviewExtension;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.xs-labs.FITScope.FITScopePreviewExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1472,6 +1765,24 @@
 			buildConfigurations = (
 				053BEACC2DDDDDA900EF0C79 /* Debug */,
 				053BEACD2DDDDDA900EF0C79 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		05B189D62FEAE7930056553A /* Build configuration list for PBXNativeTarget "FITScopeThumbnailExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				05B189D32FEAE7930056553A /* Debug */,
+				05B189D42FEAE7930056553A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		05B189F22FEAE7AD0056553A /* Build configuration list for PBXNativeTarget "FITScopePreviewExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				05B189F32FEAE7AD0056553A /* Debug */,
+				05B189F42FEAE7AD0056553A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

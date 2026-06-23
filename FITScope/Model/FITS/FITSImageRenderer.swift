@@ -213,27 +213,18 @@ public class FITSImageRenderer: ObservableObject
     /// Selects the first renderable image HDU and snapshots it into a Sendable
     /// ``RenderInput``.
     ///
-    /// FITS files may place the image in an extension following an empty
-    /// primary header, and a header-only file has no data section at all.
-    /// Rather than indexing a fixed position — which mis-pairs extension data
-    /// with the primary header and traps on single-section files — find the
-    /// first `.data` section and pair it with the header that owns it (the
-    /// section immediately preceding it in file order).
+    /// The HDU-selection rule lives in ``FITSPreviewRenderer/imageHDU(from:)``
+    /// so the app's render path and the QuickLook extensions pick the same image
+    /// HDU; this only wraps the result in the Sendable ``RenderInput``.
     ///
     /// - Parameter sections: The file's sections, in file order.
     /// - Returns: The data bytes and owning-header property snapshots.
     /// - Throws: ``RuntimeError`` when the file contains no image data section.
     nonisolated static func renderInput( from sections: [ FITSSection ] ) throws -> RenderInput
     {
-        guard let dataIndex = sections.firstIndex( where: { $0.kind == .data } ), dataIndex > 0
-        else
-        {
-            throw RuntimeError( message: "FITS file contains no image HDU" )
-        }
+        let hdu = try FITSPreviewRenderer.imageHDU( from: sections )
 
-        let properties = sections[ dataIndex - 1 ].properties.map { FITSPropertySnapshot( name: $0.name, value: $0.value ) }
-
-        return RenderInput( data: sections[ dataIndex ].data, properties: properties )
+        return RenderInput( data: hdu.data, properties: hdu.properties )
     }
 
     /// Renders the image with the current adjustments and commits the result.
