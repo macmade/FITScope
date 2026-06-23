@@ -25,34 +25,6 @@
 import AppKit
 import SwiftUI
 
-/// A discrete command sent from SwiftUI into the scroll view, bumped by changing
-/// its `token` so the same command can be requested twice in a row.
-public struct CanvasCommand: Equatable
-{
-    /// The kind of one-shot canvas command.
-    public enum Kind: Equatable
-    {
-        case fit
-        case actualSize
-        case recenter
-        case zoomIn
-        case zoomOut
-    }
-
-    /// The command to perform.
-    public var kind:  Kind
-
-    /// A nonce making each request distinct.
-    public var token: Int
-
-    /// Creates a command.
-    public init( kind: Kind, token: Int )
-    {
-        self.kind  = kind
-        self.token = token
-    }
-}
-
 /// A zoomable, pannable image canvas backed by `NSScrollView`.
 ///
 /// Reports the magnification through `zoom`, performs one-shot fit/recenter/zoom

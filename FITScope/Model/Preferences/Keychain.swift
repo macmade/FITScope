@@ -25,21 +25,6 @@
 import Foundation
 import Security
 
-/// A secure string-valued store keyed by account name. Abstracts the Keychain so
-/// ``APIKeyStore`` can be exercised against an isolated, in-memory backend in
-/// tests, exactly as ``Preferences`` injects a throwaway `UserDefaults` suite.
-public protocol KeychainStoring
-{
-    /// Returns the stored string for `account`, or `nil` when nothing is stored.
-    func string( forAccount account: String ) -> String?
-
-    /// Stores `value` for `account`, replacing any existing entry.
-    func setString( _ value: String, forAccount account: String )
-
-    /// Removes any stored entry for `account`.
-    func removeString( forAccount account: String )
-}
-
 /// The system Keychain, backing ``APIKeyStore`` in the running app.
 ///
 /// Each value is a generic-password item scoped to the app by service name and

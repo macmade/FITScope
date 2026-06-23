@@ -28,31 +28,6 @@ import SwiftFITS
 import SwiftPixel
 import SwiftUtilities
 
-/// A `Sendable` snapshot of a FITS header property.
-///
-/// `FITSProperty` is a reference type and not `Sendable`, so it cannot cross
-/// the render concurrency boundary. This value type captures the keyword name
-/// and its (already `Sendable`) value, which is all the renderer needs.
-public struct FITSPropertySnapshot: Sendable
-{
-    /// The keyword name (e.g. `NAXIS1`).
-    public let name:  String
-
-    /// The keyword's value.
-    public let value: FITSValue
-
-    /// Creates a snapshot.
-    ///
-    /// - Parameters:
-    ///   - name:  The keyword name.
-    ///   - value: The keyword's value.
-    public init( name: String, value: FITSValue )
-    {
-        self.name  = name
-        self.value = value
-    }
-}
-
 /// Turns a FITS image HDU's raw bytes and header keywords into a displayable
 /// `CGImage`, driving the `SwiftPixel` pipeline.
 ///
