@@ -110,6 +110,14 @@ public struct MainWindowView: View
         {
             ToolbarItem( placement: .primaryAction )
             {
+                if let file = self.model.selectedFile
+                {
+                    ImageShareLink( file: file )
+                }
+            }
+
+            ToolbarItem( placement: .primaryAction )
+            {
                 Button
                 {
                     self.showInspector.toggle()

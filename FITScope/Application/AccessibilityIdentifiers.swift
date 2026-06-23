@@ -376,6 +376,9 @@ public enum AccessibilityIdentifier
     {
         /// The window-toolbar button that toggles the inspector.
         public static let inspectorToggle = "MainWindowView.inspectorToggle"
+
+        /// The window-toolbar control that shares the rendered image.
+        public static let share = "MainWindowView.share"
     }
 
     /// Identifiers applied by ``FITScope/InspectorPlaceholderView``.
