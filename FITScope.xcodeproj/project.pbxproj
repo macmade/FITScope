@@ -848,6 +848,13 @@
 			path = ImageControls;
 			sourceTree = "<group>";
 		};
+		05C01AB62FEF2C6200FE62EC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		05D710C52DF2007D00CE32E3 /* Application */ = {
 			isa = PBXGroup;
 			children = (
@@ -1281,6 +1288,10 @@
 			productRefGroup = 053BEAA32DDDDDA800EF0C79 /* Products */;
 			projectDirPath = "";
 			projectReferences = (
+				{
+					ProductGroup = 05C01AB62FEF2C6200FE62EC /* Products */;
+					ProjectRef = 05C01AA22FEF2ACE00FE62EC /* SwiftAstro.xcodeproj */;
+				},
 				{
 					ProductGroup = 056E5C402DDF104D003254C7 /* Products */;
 					ProjectRef = 056E5C3F2DDF104D003254C7 /* SwiftFITS.xcodeproj */;

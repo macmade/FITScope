@@ -48,7 +48,8 @@ public struct FrameOverlay: CanvasOverlay
     private static let crossArm: CGFloat = 8
 
     /// Creates the overlay.
-    public init() {}
+    public init()
+    {}
 
     public func draw( in context: inout GraphicsContext, imageSize: CGSize, displayedRect: CGRect )
     {
