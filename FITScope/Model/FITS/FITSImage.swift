@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Combine
+import SwiftAstro
 import SwiftUI
 import SwiftUtilities
 
@@ -41,6 +42,12 @@ public class FITSImage: ObservableObject
     /// The renderer that turns the image HDU into displayable pixels and
     /// histograms.
     @Published public private( set ) var renderer: FITSImageRenderer
+
+    /// The detected stars and their aggregate metrics, populated asynchronously
+    /// after the image loads. `nil` until detection has run, or when detection
+    /// found nothing usable. Independent of the display pipeline, since detection
+    /// uses the linear sensor values rather than the rendered image.
+    @Published public private( set ) var starField: StarField?
 
     /// The image's histogram view options, kept here so each file retains its own
     /// histogram display choices across selection changes.
@@ -63,5 +70,25 @@ public class FITSImage: ObservableObject
         {
             [ weak self ] _ in self?.objectWillChange.send()
         }
+    }
+
+    /// Runs star detection on the image's linear data and publishes the result.
+    ///
+    /// The detection itself runs off the main actor; only the published
+    /// assignment happens here. Does nothing when the render input is
+    /// unavailable.
+    public func detectStars() async
+    {
+        guard let input = try? self.renderer.renderInputSnapshot()
+        else
+        {
+            return
+        }
+
+        self.starField = await Task.detached
+        {
+            StarDetection.detectStars( data: input.data, properties: input.properties )
+        }
+        .value
     }
 }

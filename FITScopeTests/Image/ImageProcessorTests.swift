@@ -143,4 +143,27 @@ struct ImageProcessorTests
         #expect( message.contains( "NAXIS2" ), "the error must name NAXIS2, got: \"\( message )\"" )
         #expect( message.contains( "0" ),      "the error must report the offending value, got: \"\( message )\"" )
     }
+
+    /// `linearMonoSamples` decodes the whole HDU into a row-major array of linear
+    /// (`BSCALE`/`BZERO`-applied) values, consistent with per-pixel
+    /// `rawPixelValue`.
+    @Test
+    func decodesLinearMonoSamples() throws
+    {
+        let ( data, properties ) = FITSTestData.gradient( width: 4, height: 4 )
+
+        let samples = try #require( ImageProcessor.linearMonoSamples( data: data, properties: properties ) )
+
+        #expect( samples.count == 16 )
+        #expect( samples.first == 0 )
+        #expect( samples.last  == 255 )
+        #expect( samples[ 5 ] == ImageProcessor.rawPixelValue( data: data, properties: properties, x: 1, y: 1 )?.value )
+    }
+
+    /// `linearMonoSamples` returns `nil` when the geometry keywords are missing.
+    @Test
+    func linearMonoSamplesReturnsNilWithoutGeometry() throws
+    {
+        #expect( ImageProcessor.linearMonoSamples( data: Data(), properties: [] ) == nil )
+    }
 }

@@ -300,6 +300,48 @@ public enum ImageProcessor
         return ( width, height )
     }
 
+    /// Decodes the whole image HDU into a row-major array of linear samples, with
+    /// `BSCALE`/`BZERO` applied and a top-left origin.
+    ///
+    /// This is the single-channel "raw" view used for analysis such as star
+    /// detection, which needs the linear sensor values rather than the processed
+    /// display image. For a colour-filter-array image these are the undebayered
+    /// mosaic values.
+    ///
+    /// - Parameters:
+    ///   - data:       The image HDU's raw pixel bytes.
+    ///   - properties: The owning header's property snapshots.
+    /// - Returns: The `width × height` linear samples, or `nil` for missing or
+    ///   unsupported geometry, or truncated data.
+    public static func linearMonoSamples( data: Data, properties: [ FITSPropertySnapshot ] ) -> [ Double ]?
+    {
+        guard let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
+              let bitsPerPixel = BitsPerPixel.from( value: bitPix ),
+              let dimensions   = Self.imageDimensions( from: properties )
+        else
+        {
+            return nil
+        }
+
+        let bytesPerSample = bitsPerPixel.size( numberOfPixels: 1 )
+        let count          = dimensions.width * dimensions.height
+
+        guard count * bytesPerSample <= data.count
+        else
+        {
+            return nil
+        }
+
+        let ( scale, offset ) = Self.scaling( from: properties )
+
+        return ( 0 ..< count ).map
+        {
+            let start = data.startIndex + ( $0 * bytesPerSample )
+
+            return ( Self.decodeSample( data: data, at: start, bitsPerPixel: bitsPerPixel ) * scale ) + offset
+        }
+    }
+
     /// Reads the linear pixel-scaling keywords `BSCALE` and `BZERO`.
     ///
     /// - Parameter properties: The image HDU's header properties.

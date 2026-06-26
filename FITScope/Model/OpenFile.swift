@@ -230,6 +230,7 @@ public final class OpenFile: ObservableObject, Identifiable
 
             await self.load()
             await self.image?.renderer.render()
+            await self.image?.detectStars()
             await self.makeThumbnail( maxDimension: Self.thumbnailDimension )
         }
     }
