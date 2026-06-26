@@ -14,16 +14,16 @@
   "testTargets" : [
     {
       "target" : {
-        "containerPath" : "container:FITScope.xcodeproj",
-        "identifier" : "053BEAB02DDDDDA900EF0C79",
-        "name" : "FITScopeTests"
+        "containerPath" : "container:Submodules\/SwiftAstro\/SwiftAstro.xcodeproj",
+        "identifier" : "05E974C82FE921070078F616",
+        "name" : "SwiftAstroTests"
       }
     },
     {
       "target" : {
-        "containerPath" : "container:FITScope.xcodeproj",
-        "identifier" : "053BEABA2DDDDDA900EF0C79",
-        "name" : "FITScopeUITests"
+        "containerPath" : "container:Submodules\/SwiftPixel\/Submodules\/SwiftUtilities\/SwiftUtilities.xcodeproj",
+        "identifier" : "05F175C32DD8E36300843626",
+        "name" : "SwiftUtilitiesTests"
       }
     },
     {
@@ -35,6 +35,13 @@
     },
     {
       "target" : {
+        "containerPath" : "container:FITScope.xcodeproj",
+        "identifier" : "053BEAB02DDDDDA900EF0C79",
+        "name" : "FITScopeTests"
+      }
+    },
+    {
+      "target" : {
         "containerPath" : "container:Submodules\/SwiftPixel\/SwiftPixel.xcodeproj",
         "identifier" : "05F175B22DD8E36300843626",
         "name" : "SwiftPixelTests"
@@ -42,9 +49,9 @@
     },
     {
       "target" : {
-        "containerPath" : "container:Submodules\/SwiftPixel\/Submodules\/SwiftUtilities\/SwiftUtilities.xcodeproj",
-        "identifier" : "05F175C32DD8E36300843626",
-        "name" : "SwiftUtilitiesTests"
+        "containerPath" : "container:FITScope.xcodeproj",
+        "identifier" : "053BEABA2DDDDDA900EF0C79",
+        "name" : "FITScopeUITests"
       }
     }
   ],

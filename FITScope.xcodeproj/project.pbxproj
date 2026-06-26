@@ -68,6 +68,8 @@
 		05BD7A982DF3120E00F4AAFC /* StretchControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A972DF3120600F4AAFC /* StretchControlView.swift */; };
 		05BD7A9A2DF3121600F4AAFC /* WhiteBalanceControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A992DF3121100F4AAFC /* WhiteBalanceControlView.swift */; };
 		05BD7A9C2DF3121B00F4AAFC /* HistogramControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A9B2DF3121800F4AAFC /* HistogramControlView.swift */; };
+		05C01AB42FEF2AD600FE62EC /* SwiftAstro.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05C01AB32FEF2AD600FE62EC /* SwiftAstro.framework */; };
+		05C01AB52FEF2AEC00FE62EC /* SwiftAstro.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 05C01AB32FEF2AD600FE62EC /* SwiftAstro.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		05C0A75A2DDE64E0005DECEF /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A7592DDE64E0005DECEF /* TestFixtures.swift */; };
 		05C0A75C2DDE64E0005DECEF /* ImageAdjustments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */; };
 		05C0A75E2DDE64E0005DECEF /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */; };
@@ -225,9 +227,10 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				05A1B2C30000000000000C07 /* SwiftUtilities.framework in Embed Frameworks */,
 				056E5C522DDF1356003254C7 /* SwiftFITS.framework in Embed Frameworks */,
 				050F384D2DEEC2FA00E84F97 /* SwiftPixel.framework in Embed Frameworks */,
-				05A1B2C30000000000000C07 /* SwiftUtilities.framework in Embed Frameworks */,
+				05C01AB52FEF2AEC00FE62EC /* SwiftAstro.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -350,6 +353,8 @@
 		05BD7A972DF3120600F4AAFC /* StretchControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchControlView.swift; sourceTree = "<group>"; };
 		05BD7A992DF3121100F4AAFC /* WhiteBalanceControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteBalanceControlView.swift; sourceTree = "<group>"; };
 		05BD7A9B2DF3121800F4AAFC /* HistogramControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramControlView.swift; sourceTree = "<group>"; };
+		05C01AA22FEF2ACE00FE62EC /* SwiftAstro.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftAstro.xcodeproj; path = Submodules/SwiftAstro/SwiftAstro.xcodeproj; sourceTree = "<group>"; };
+		05C01AB32FEF2AD600FE62EC /* SwiftAstro.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SwiftAstro.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		05C0A7592DDE64E0005DECEF /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageAdjustments.swift; sourceTree = "<group>"; };
 		05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Benchmarking.swift; sourceTree = "<group>"; };
@@ -460,6 +465,7 @@
 				05398CE32DEECF4F005904EC /* SwiftUtilities.framework in Frameworks */,
 				056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */,
 				050F384C2DEEC2FA00E84F97 /* SwiftPixel.framework in Frameworks */,
+				05C01AB42FEF2AD600FE62EC /* SwiftAstro.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -481,11 +487,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				05A1B2C30000000000000C01 /* SwiftPixel.framework in Frameworks */,
-				05A1B2C30000000000000C02 /* SwiftFITS.framework in Frameworks */,
 				05A1B2C30000000000000C03 /* SwiftUtilities.framework in Frameworks */,
-				05B189C82FEAE7930056553A /* QuickLookThumbnailing.framework in Frameworks */,
+				05A1B2C30000000000000C02 /* SwiftFITS.framework in Frameworks */,
+				05A1B2C30000000000000C01 /* SwiftPixel.framework in Frameworks */,
 				05B189CA2FEAE7930056553A /* Quartz.framework in Frameworks */,
+				05B189C82FEAE7930056553A /* QuickLookThumbnailing.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -493,9 +499,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				05A1B2C30000000000000C04 /* SwiftPixel.framework in Frameworks */,
-				05A1B2C30000000000000C05 /* SwiftFITS.framework in Frameworks */,
 				05A1B2C30000000000000C06 /* SwiftUtilities.framework in Frameworks */,
+				05A1B2C30000000000000C05 /* SwiftFITS.framework in Frameworks */,
+				05A1B2C30000000000000C04 /* SwiftPixel.framework in Frameworks */,
 				05B189E42FEAE7AD0056553A /* Quartz.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -542,6 +548,7 @@
 				05E6184E2DE64C88007AED28 /* FITScope.xctestplan */,
 				050F383F2DEEC2F000E84F97 /* SwiftPixel.xcodeproj */,
 				056E5C3F2DDF104D003254C7 /* SwiftFITS.xcodeproj */,
+				05C01AA22FEF2ACE00FE62EC /* SwiftAstro.xcodeproj */,
 				056E5C3E2DDF1041003254C7 /* xcconfig */,
 				056E5C062DDF0EB5003254C7 /* .github */,
 				0587FF0D2DDE64DF005DECEF /* FITScope */,
@@ -731,6 +738,7 @@
 		056E5C4F2DDF134F003254C7 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				05C01AB32FEF2AD600FE62EC /* SwiftAstro.framework */,
 				05398CE22DEECF4F005904EC /* SwiftUtilities.framework */,
 				05B189C72FEAE7930056553A /* QuickLookThumbnailing.framework */,
 				05B189C92FEAE7930056553A /* Quartz.framework */,
@@ -1134,7 +1142,6 @@
 				481FAC322DE74C3A02E83F40 /* CanvasOverlayLayer.swift */,
 				C6DBC1DF1230AE2C0E3EE031 /* FrameOverlay.swift */,
 			);
-			name = Overlays;
 			path = Overlays;
 			sourceTree = "<group>";
 		};
