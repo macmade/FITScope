@@ -239,6 +239,15 @@ public enum AccessibilityIdentifier
 
         /// The flip-vertical button.
         public static let flipVertical = "ImageToolbarView.flipVertical"
+
+        /// The toggle button for the overlay with the given stable identifier.
+        ///
+        /// - Parameter overlay: The overlay's stable ``CanvasOverlay/id``.
+        /// - Returns: The toggle's accessibility identifier.
+        public static func overlayToggle( _ overlay: String ) -> String
+        {
+            "ImageToolbarView.overlayToggle.\( overlay )"
+        }
     }
 
     /// Identifiers applied by ``FITScope/BrightnessContrastControlView``.

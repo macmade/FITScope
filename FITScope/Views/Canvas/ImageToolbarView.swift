@@ -62,8 +62,18 @@ public struct ImageToolbarView: View
     /// Called to flip the image vertically.
     public let onFlipVertical:   () -> Void
 
+    /// The overlays available for the current image, in toolbar order. Empty when
+    /// none apply, in which case no overlay section is shown.
+    public let overlays:         [ any CanvasOverlay ]
+
+    /// Whether the overlay with a given identifier is currently enabled.
+    public let isOverlayEnabled: ( String ) -> Bool
+
+    /// Called to toggle the overlay with a given identifier on or off.
+    public let onToggleOverlay:  ( String ) -> Void
+
     /// Creates the toolbar.
-    public init( zoom: CGFloat, canZoomOut: Bool, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void, onRotateLeft: @escaping () -> Void, onRotateRight: @escaping () -> Void, onFlipHorizontal: @escaping () -> Void, onFlipVertical: @escaping () -> Void )
+    public init( zoom: CGFloat, canZoomOut: Bool, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void, onRotateLeft: @escaping () -> Void, onRotateRight: @escaping () -> Void, onFlipHorizontal: @escaping () -> Void, onFlipVertical: @escaping () -> Void, overlays: [ any CanvasOverlay ], isOverlayEnabled: @escaping ( String ) -> Bool, onToggleOverlay: @escaping ( String ) -> Void )
     {
         self.zoom             = zoom
         self.canZoomOut       = canZoomOut
@@ -76,6 +86,9 @@ public struct ImageToolbarView: View
         self.onRotateRight    = onRotateRight
         self.onFlipHorizontal = onFlipHorizontal
         self.onFlipVertical   = onFlipVertical
+        self.overlays         = overlays
+        self.isOverlayEnabled = isOverlayEnabled
+        self.onToggleOverlay  = onToggleOverlay
     }
 
     /// The view's content.
@@ -108,6 +121,16 @@ public struct ImageToolbarView: View
             self.button( image: "rotate.right", help: "Rotate Right (90° Clockwise)",        identifier: AccessibilityIdentifier.ImageToolbarView.rotateRight, action: self.onRotateRight )
             self.button( image: "arrow.left.and.right.righttriangle.left.righttriangle.right", help: "Flip Horizontally", identifier: AccessibilityIdentifier.ImageToolbarView.flipHorizontal, action: self.onFlipHorizontal )
             self.button( image: "arrow.up.and.down.righttriangle.up.righttriangle.down",       help: "Flip Vertically",   identifier: AccessibilityIdentifier.ImageToolbarView.flipVertical,   action: self.onFlipVertical )
+
+            if self.overlays.isEmpty == false
+            {
+                Divider().frame( height: 16 )
+
+                ForEach( self.overlays, id: \.id )
+                {
+                    overlay in self.overlayToggle( overlay )
+                }
+            }
         }
         .buttonStyle( .borderless )
         .padding( .horizontal, 8 )
@@ -129,11 +152,32 @@ public struct ImageToolbarView: View
         .help( help )
         .accessibilityIdentifier( identifier )
     }
+
+    /// A toolbar toggle for an overlay: an SF Symbol that tints when the overlay
+    /// is enabled, with the overlay's title as its tooltip.
+    private func overlayToggle( _ overlay: any CanvasOverlay ) -> some View
+    {
+        let enabled = self.isOverlayEnabled( overlay.id )
+
+        return Button
+        {
+            self.onToggleOverlay( overlay.id )
+        }
+        label:
+        {
+            Image( systemName: overlay.systemImageName )
+                .frame( width: 26, height: 24 )
+                .contentShape( Rectangle() )
+        }
+        .help( overlay.title )
+        .foregroundStyle( enabled ? Color.accentColor : Color.primary )
+        .accessibilityIdentifier( AccessibilityIdentifier.ImageToolbarView.overlayToggle( overlay.id ) )
+    }
 }
 
 #Preview
 {
-    ImageToolbarView( zoom: 1.0, canZoomOut: true, onFit: {}, onActualSize: {}, onRecenter: {}, onZoomIn: {}, onZoomOut: {}, onRotateLeft: {}, onRotateRight: {}, onFlipHorizontal: {}, onFlipVertical: {} )
+    ImageToolbarView( zoom: 1.0, canZoomOut: true, onFit: {}, onActualSize: {}, onRecenter: {}, onZoomIn: {}, onZoomOut: {}, onRotateLeft: {}, onRotateRight: {}, onFlipHorizontal: {}, onFlipVertical: {}, overlays: [ FrameOverlay() ], isOverlayEnabled: { _ in false }, onToggleOverlay: { _ in } )
         .padding()
         .background( .black )
 }

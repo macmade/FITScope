@@ -1,0 +1,63 @@
+/*******************************************************************************
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2026, Jean-David Gadina - www.xs-labs.com
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the Software), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ ******************************************************************************/
+
+import SwiftUI
+
+/// An annotation drawn over the image canvas, registered to image space and
+/// transformed with zoom and pan.
+///
+/// An overlay never deals with magnification or scroll directly: it is handed
+/// the rectangle the displayed image currently occupies (which already encodes
+/// zoom, pan and the centering of a small image) and maps its image-space points
+/// into that rectangle with ``CanvasGeometry``. Stroke widths and marker sizes
+/// are expressed in on-screen points, so they stay constant across zoom; use
+/// ``CanvasGeometry/displayScale(imageSize:displayedRect:)`` when a size must
+/// instead scale with the image.
+public protocol CanvasOverlay
+{
+    /// A stable identifier, used to key the overlay's enabled state and its
+    /// toolbar toggle. It must not be a localized or display-derived string.
+    var id: String { get }
+
+    /// A short title for the overlay's toolbar toggle, shown as its tooltip.
+    var title: String { get }
+
+    /// The SF Symbol shown on the overlay's toolbar toggle.
+    var systemImageName: String { get }
+
+    /// Whether the overlay has something to show for the current image. Its
+    /// toolbar toggle is hidden when this is `false`, so the toolbar never offers
+    /// a toggle that would reveal nothing.
+    var isAvailable: Bool { get }
+
+    /// Draws the overlay into the canvas.
+    ///
+    /// - Parameters:
+    ///   - context:       The graphics context, in the canvas's top-left
+    ///                    coordinate space.
+    ///   - imageSize:     The displayed image's pixel dimensions.
+    ///   - displayedRect: The on-screen rectangle the image occupies; map
+    ///                    image-space points into it with ``CanvasGeometry``.
+    func draw( in context: inout GraphicsContext, imageSize: CGSize, displayedRect: CGRect )
+}

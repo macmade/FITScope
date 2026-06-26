@@ -54,6 +54,13 @@ public struct ImageCanvasView: View
     /// The latest cursor readout, shown in the status pill.
     @State private var readout  = CursorReadout.empty
 
+    /// The on-screen rectangle the displayed image currently occupies, reported
+    /// by the canvas and used to register overlays to image space.
+    @State private var displayedImageRect = CGRect.zero
+
+    /// The identifiers of the overlays the user has turned on for this file.
+    @State private var enabledOverlays = Set< String >()
+
     /// Whether the floating bars are currently shown.
     @State private var barsVisible = true
 
@@ -125,7 +132,8 @@ public struct ImageCanvasView: View
                 // within view updates".
                 DispatchQueue.main.async
                 {
-                    self.readout = .empty
+                    self.readout         = .empty
+                    self.enabledOverlays = []
 
                     self.revealBars()
                 }
@@ -143,13 +151,21 @@ public struct ImageCanvasView: View
             if let result = image.renderer.result
             {
                 ZoomableImageView(
-                    image:              result.image,
-                    command:            self.command,
-                    onHover:            { coordinate in self.report( coordinate: coordinate ) },
-                    onZoomChange:       { self.zoom = $0 },
-                    onCanZoomOutChange: { self.canZoomOut = $0 }
+                    image:                      result.image,
+                    command:                    self.command,
+                    onHover:                    { coordinate in self.report( coordinate: coordinate ) },
+                    onZoomChange:               { self.zoom = $0 },
+                    onCanZoomOutChange:         { self.canZoomOut = $0 },
+                    onDisplayedImageRectChange: { self.displayedImageRect = $0 }
                 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageCanvasView.canvas )
+                .overlay
+                {
+                    // The annotation overlays, registered to image space through
+                    // the reported displayed-image rectangle. Hit-test transparent,
+                    // so the cursor read-out and panning underneath keep working.
+                    CanvasOverlayLayer( overlays: self.activeOverlays, imageSize: CGSize( width: result.image.width, height: result.image.height ), displayedRect: self.displayedImageRect )
+                }
                 .overlay
                 {
                     // Dim the retained image and spin while a re-render is in
@@ -181,7 +197,10 @@ public struct ImageCanvasView: View
                             onRotateLeft:     { self.reorient { $0.rotatedCounterClockwise() } },
                             onRotateRight:    { self.reorient { $0.rotatedClockwise() } },
                             onFlipHorizontal: { self.reorient { $0.flippedHorizontally() } },
-                            onFlipVertical:   { self.reorient { $0.flippedVertically() } }
+                            onFlipVertical:   { self.reorient { $0.flippedVertically() } },
+                            overlays:         self.availableOverlays,
+                            isOverlayEnabled: { self.enabledOverlays.contains( $0 ) },
+                            onToggleOverlay:  { self.toggleOverlay( $0 ) }
                         )
                         .padding( .top, 16 )
                     }
@@ -301,6 +320,40 @@ public struct ImageCanvasView: View
         }
 
         return "\( summary.dimensions ) • \( summary.bitDepth )"
+    }
+
+    /// The overlays applicable to the current image, in toolbar (back-to-front)
+    /// order. The frame overlay is always present; data-driven overlays are added
+    /// by later milestones and gate themselves through ``CanvasOverlay/isAvailable``.
+    private var overlays: [ any CanvasOverlay ]
+    {
+        [ FrameOverlay() ]
+    }
+
+    /// The overlays that currently have something to show, surfaced as toolbar
+    /// toggles.
+    private var availableOverlays: [ any CanvasOverlay ]
+    {
+        self.overlays.filter { $0.isAvailable }
+    }
+
+    /// The available overlays the user has enabled, drawn back-to-front.
+    private var activeOverlays: [ any CanvasOverlay ]
+    {
+        self.availableOverlays.filter { self.enabledOverlays.contains( $0.id ) }
+    }
+
+    /// Toggles an overlay on or off by identifier.
+    private func toggleOverlay( _ id: String )
+    {
+        if self.enabledOverlays.contains( id )
+        {
+            self.enabledOverlays.remove( id )
+        }
+        else
+        {
+            self.enabledOverlays.insert( id )
+        }
     }
 
     /// Issues a one-shot canvas command with a fresh token.

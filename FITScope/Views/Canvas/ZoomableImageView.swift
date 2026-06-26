@@ -48,14 +48,21 @@ public struct ZoomableImageView: NSViewRepresentable
     /// is visible. Driven by the canvas as the magnification and viewport change.
     public let onCanZoomOutChange: ( Bool ) -> Void
 
+    /// Called with the on-screen rectangle the full image currently occupies, in
+    /// the canvas's top-left coordinate space, whenever zoom, pan or the viewport
+    /// changes. Overlays map image-space points into this rectangle, so it already
+    /// carries magnification, pan and the centering of a small image.
+    public let onDisplayedImageRectChange: ( CGRect ) -> Void
+
     /// Creates the canvas.
-    public init( image: CGImage, command: CanvasCommand, onHover: @escaping ( ( x: Int, y: Int )? ) -> Void, onZoomChange: @escaping ( CGFloat ) -> Void, onCanZoomOutChange: @escaping ( Bool ) -> Void )
+    public init( image: CGImage, command: CanvasCommand, onHover: @escaping ( ( x: Int, y: Int )? ) -> Void, onZoomChange: @escaping ( CGFloat ) -> Void, onCanZoomOutChange: @escaping ( Bool ) -> Void, onDisplayedImageRectChange: @escaping ( CGRect ) -> Void )
     {
-        self.image              = image
-        self.command            = command
-        self.onHover            = onHover
-        self.onZoomChange       = onZoomChange
-        self.onCanZoomOutChange = onCanZoomOutChange
+        self.image                      = image
+        self.command                    = command
+        self.onHover                    = onHover
+        self.onZoomChange               = onZoomChange
+        self.onCanZoomOutChange         = onCanZoomOutChange
+        self.onDisplayedImageRectChange = onDisplayedImageRectChange
     }
 
     public func makeCoordinator() -> Coordinator
@@ -191,6 +198,37 @@ public struct ZoomableImageView: NSViewRepresentable
             DispatchQueue.main.async { self.parent.onCanZoomOutChange( canZoomOut ) }
         }
 
+        /// Reports the on-screen rectangle the full image occupies, in the
+        /// canvas's top-left coordinate space, for overlays to draw into.
+        ///
+        /// The geometry is read now — from the document view's bounds converted up
+        /// through the magnifying clip view, then flipped from the scroll view's
+        /// bottom-left space to the overlay's top-left space — but the SwiftUI
+        /// write is deferred to the next run-loop turn, for the same reason as
+        /// ``reportZoom(_:)``.
+        private func reportDisplayedImageRect()
+        {
+            guard let scrollView = self.scrollView,
+                  let documentView = scrollView.documentView
+            else
+            {
+                return
+            }
+
+            // `convert(_:from:)` walks the document view up through the magnifying
+            // clip view, so the result is in points with magnification, pan and the
+            // centering of a small image already applied. The scroll view is
+            // flipped (top-left origin, matching the SwiftUI overlay), so the
+            // converted rect is used as-is; the non-flipped case is handled for
+            // completeness by mirroring the y axis about the scroll view's height.
+            let inScroll = scrollView.convert( documentView.bounds, from: documentView )
+            let rect      = scrollView.isFlipped
+                ? inScroll
+                : CGRect( x: inScroll.minX, y: scrollView.bounds.height - inScroll.maxY, width: inScroll.width, height: inScroll.height )
+
+            DispatchQueue.main.async { self.parent.onDisplayedImageRectChange( rect ) }
+        }
+
         @objc
         private func magnificationChanged()
         {
@@ -203,6 +241,7 @@ public struct ZoomableImageView: NSViewRepresentable
             self.reportZoom( scrollView.magnification )
 
             self.publishZoomOutAvailability()
+            self.reportDisplayedImageRect()
         }
 
         /// Recomputes the fit magnification and the scroll view's minimum
@@ -320,6 +359,7 @@ public struct ZoomableImageView: NSViewRepresentable
             }
 
             self.publishZoomOutAvailability()
+            self.reportDisplayedImageRect()
         }
 
         /// Forces a fresh fit, used when a genuinely new image is displayed.
@@ -353,6 +393,7 @@ public struct ZoomableImageView: NSViewRepresentable
 
             self.recenter()
             self.publishZoomOutAvailability()
+            self.reportDisplayedImageRect()
         }
 
         /// Centers the document in the visible area.

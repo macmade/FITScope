@@ -127,4 +127,55 @@ public enum CanvasGeometry
     {
         wasFitted ? fitMagnification : Swift.max( currentMagnification, fitMagnification )
     }
+
+    /// The point in the canvas (overlay) coordinate space corresponding to an
+    /// image-pixel point.
+    ///
+    /// `displayedRect` is the on-screen rectangle the full image currently
+    /// occupies; because it already encodes magnification, pan and the centering
+    /// of a small image, mapping an image point into it needs no separate zoom or
+    /// offset terms.
+    public static func viewPoint( forImagePoint point: CGPoint, imageSize: CGSize, displayedRect: CGRect ) -> CGPoint
+    {
+        guard imageSize.width > 0, imageSize.height > 0
+        else
+        {
+            return displayedRect.origin
+        }
+
+        return CGPoint(
+            x: displayedRect.minX + ( point.x / imageSize.width  ) * displayedRect.width,
+            y: displayedRect.minY + ( point.y / imageSize.height ) * displayedRect.height
+        )
+    }
+
+    /// The image-pixel point under a point in the canvas (overlay) coordinate
+    /// space — the inverse of ``viewPoint(forImagePoint:imageSize:displayedRect:)``.
+    public static func imagePoint( forViewPoint point: CGPoint, imageSize: CGSize, displayedRect: CGRect ) -> CGPoint
+    {
+        guard imageSize.width > 0, imageSize.height > 0, displayedRect.width > 0, displayedRect.height > 0
+        else
+        {
+            return .zero
+        }
+
+        return CGPoint(
+            x: ( point.x - displayedRect.minX ) / displayedRect.width  * imageSize.width,
+            y: ( point.y - displayedRect.minY ) / displayedRect.height * imageSize.height
+        )
+    }
+
+    /// On-screen points per image pixel, i.e. the effective magnification of the
+    /// displayed image. Used to keep stroke widths and marker radii constant on
+    /// screen regardless of zoom.
+    public static func displayScale( imageSize: CGSize, displayedRect: CGRect ) -> CGFloat
+    {
+        guard imageSize.width > 0
+        else
+        {
+            return 0
+        }
+
+        return displayedRect.width / imageSize.width
+    }
 }

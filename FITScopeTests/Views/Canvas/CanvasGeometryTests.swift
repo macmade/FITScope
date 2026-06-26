@@ -165,4 +165,69 @@ struct CanvasGeometryTests
         // magnification avoids black borders on all sides.
         #expect( CanvasGeometry.magnificationAfterResize( currentMagnification: 0.5, fitMagnification: 0.8, wasFitted: false ) == 0.8 )
     }
+
+    // MARK: - Overlay coordinate transform
+
+    /// The displayed-image rectangle already encodes zoom, pan and centering, so
+    /// the image centre maps to the rectangle centre regardless of those.
+    @Test
+    func viewPointMapsImageCentreToRectCentre() throws
+    {
+        let point = CanvasGeometry.viewPoint( forImagePoint: CGPoint( x: 50, y: 50 ), imageSize: CGSize( width: 100, height: 100 ), displayedRect: CGRect( x: 0, y: 0, width: 100, height: 100 ) )
+
+        #expect( point == CGPoint( x: 50, y: 50 ) )
+    }
+
+    /// A zoomed-in (2×), panned image: the rectangle's origin and size carry the
+    /// transform, so corners and centre land at the scaled, offset positions.
+    @Test
+    func viewPointAppliesZoomAndPan() throws
+    {
+        let size = CGSize( width: 100, height: 100 )
+        let rect = CGRect( x: 10, y: 20, width: 200, height: 200 )
+
+        #expect( CanvasGeometry.viewPoint( forImagePoint: CGPoint( x: 0,   y: 0   ), imageSize: size, displayedRect: rect ) == CGPoint( x: 10,  y: 20  ) )
+        #expect( CanvasGeometry.viewPoint( forImagePoint: CGPoint( x: 50,  y: 50  ), imageSize: size, displayedRect: rect ) == CGPoint( x: 110, y: 120 ) )
+        #expect( CanvasGeometry.viewPoint( forImagePoint: CGPoint( x: 100, y: 100 ), imageSize: size, displayedRect: rect ) == CGPoint( x: 210, y: 220 ) )
+    }
+
+    /// A small image fitted below 100% sits inset (centred) in the canvas; the
+    /// rectangle's offset origin reproduces that without any separate math.
+    @Test
+    func viewPointHandlesCenteringOffset() throws
+    {
+        let size = CGSize( width: 100, height: 100 )
+        let rect = CGRect( x: 150, y: 100, width: 50, height: 50 )
+
+        #expect( CanvasGeometry.viewPoint( forImagePoint: CGPoint( x: 0,   y: 0   ), imageSize: size, displayedRect: rect ) == CGPoint( x: 150, y: 100 ) )
+        #expect( CanvasGeometry.viewPoint( forImagePoint: CGPoint( x: 100, y: 100 ), imageSize: size, displayedRect: rect ) == CGPoint( x: 200, y: 150 ) )
+    }
+
+    /// The inverse maps a view point back to the image pixel it sits on.
+    @Test
+    func imagePointInvertsViewPoint() throws
+    {
+        let size = CGSize( width: 100, height: 100 )
+        let rect = CGRect( x: 10, y: 20, width: 200, height: 200 )
+
+        #expect( CanvasGeometry.imagePoint( forViewPoint: CGPoint( x: 110, y: 120 ), imageSize: size, displayedRect: rect ) == CGPoint( x: 50, y: 50 ) )
+        #expect( CanvasGeometry.imagePoint( forViewPoint: CGPoint( x: 10,  y: 20  ), imageSize: size, displayedRect: rect ) == CGPoint( x: 0,  y: 0  ) )
+    }
+
+    /// The display scale is on-screen points per image pixel — the value used to
+    /// keep stroke widths and marker radii constant on screen across zoom.
+    @Test
+    func displayScaleIsViewPointsPerImagePixel() throws
+    {
+        #expect( CanvasGeometry.displayScale( imageSize: CGSize( width: 100, height: 100 ), displayedRect: CGRect( x: 0, y: 0, width: 200, height: 200 ) ) == 2 )
+        #expect( CanvasGeometry.displayScale( imageSize: CGSize( width: 100, height: 100 ), displayedRect: CGRect( x: 0, y: 0, width: 50,  height: 50  ) ) == 0.5 )
+    }
+
+    /// Degenerate image sizes don't divide by zero.
+    @Test
+    func transformGuardsDegenerateImageSize() throws
+    {
+        #expect( CanvasGeometry.displayScale( imageSize: .zero, displayedRect: CGRect( x: 0, y: 0, width: 200, height: 200 ) ) == 0 )
+        #expect( CanvasGeometry.imagePoint( forViewPoint: CGPoint( x: 10, y: 10 ), imageSize: .zero, displayedRect: CGRect( x: 0, y: 0, width: 200, height: 200 ) ) == .zero )
+    }
 }
