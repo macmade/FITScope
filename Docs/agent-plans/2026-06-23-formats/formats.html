@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FITScope — Formats &amp; Dimensionality Roadmap</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --bg-card:   #181b24;
+            --bg-card-2: #1d212c;
+            --bg-code:   #11141c;
+            --border:    #2a2f3c;
+            --text:      #e6e9ef;
+            --text-dim:  #9aa3b2;
+            --accent:    #5aa9ff;
+            --accent-dim:#2d3b52;
+            --go:        #3fb950;
+            --go-bg:     #143620;
+            --code-fg:   #ffcb8a;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.65;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        header.doc {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 2.2rem;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .meta {
+            color: var(--text-dim);
+            font-size: 0.92rem;
+            margin: 4px 0;
+        }
+
+        .meta strong { color: var(--text); }
+
+        .intro {
+            color: var(--text-dim);
+            margin: 22px 0 0;
+        }
+
+        h2 {
+            font-size: 1.35rem;
+            margin: 44px 0 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            letter-spacing: -0.01em;
+        }
+
+        h3 {
+            font-size: 1.12rem;
+            margin: 26px 0 4px;
+            color: var(--accent);
+        }
+
+        p { margin: 12px 0; }
+
+        ul {
+            margin: 12px 0;
+            padding-left: 22px;
+        }
+
+        li { margin: 6px 0; }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            word-break: break-word;
+        }
+        a:hover { text-decoration: underline; }
+
+        code {
+            background: var(--bg-code);
+            color: var(--code-fg);
+            padding: 1px 6px;
+            border-radius: 5px;
+            font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.86em;
+            border: 1px solid var(--border);
+        }
+
+        .grounding {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 22px;
+            margin: 20px 0;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 6px 24px 18px;
+            margin: 18px 0;
+        }
+
+        .card h3 { margin-top: 18px; }
+
+        .foundation-tag {
+            display: inline-block;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 2px 9px;
+            border-radius: 6px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .verdict {
+            display: inline-block;
+            background: var(--go-bg);
+            color: var(--go);
+            border: 1px solid #1f5c34;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin: 8px 0 4px;
+        }
+
+        .used-by {
+            color: var(--text-dim);
+            font-size: 0.92rem;
+        }
+        .used-by strong { color: var(--text); }
+
+        .note {
+            border-left: 3px solid var(--accent-dim);
+            background: var(--bg-card-2);
+            padding: 8px 16px;
+            margin: 14px 0;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-dim);
+            font-size: 0.94rem;
+        }
+
+        ol.sequence {
+            counter-reset: seq;
+            list-style: none;
+            padding-left: 0;
+        }
+        ol.sequence > li {
+            counter-increment: seq;
+            position: relative;
+            padding-left: 44px;
+            margin: 12px 0;
+        }
+        ol.sequence > li::before {
+            content: counter(seq);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-size: 0.82rem;
+            font-weight: 700;
+            border-radius: 7px;
+        }
+
+        footer {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <header class="doc">
+            <h1>FITScope — Formats &amp; Dimensionality Roadmap</h1>
+            <p class="meta"><strong>Generated:</strong> 2026-06-23</p>
+            <p class="meta"><strong>Scope:</strong> Everything here is about <em>expanding what FITScope can open</em> — both <strong>new file formats</strong> (non-FITS rasters, XISF) and <strong>new data dimensionalities</strong> within FITS (1-D, 3-D, ≥3-D). It deliberately excludes the astro/feature work in Phase 5+.</p>
+            <p class="intro">Source document consolidating the five evaluation outcomes from the implementation plan (M4.6–M4.10), to be turned into one or more milestone plans later.</p>
+        </header>
+
+        <p>All findings below are grounded in the current code as of this date:</p>
+        <div class="grounding">
+            <ul>
+                <li>The open path is FITS-only: <code>Info.plist</code> declares <code>gov.nasa.gsfc.fits</code>; <code>AppModel.runOpenPanel()</code> sets <code>allowedContentTypes = [.fits]</code>; <code>DropAcceptance</code> gates drops.</li>
+                <li><code>FITSImageLoader.load()</code> → <code>FITSFile(data:options:.lenient)</code> → builds <code>FITSImageInfo(url:file:)</code> (metadata from header cards) + a <code>FITSImageRenderer.RenderInput</code> (<code>data: Data</code> + <code>properties: [FITSPropertySnapshot]</code>).</li>
+                <li><code>ImageProcessor.render(data:properties:settings:)</code> validates and requires <code>BITPIX</code> (8/16/32/−32/−64), <code>NAXIS == 2</code>, <code>NAXIS1/2</code>, optional <code>BAYERPAT</code>. It is the single gate that rejects everything non-2-D.</li>
+                <li>The <code>SwiftPixel</code> <code>PixelPipeline.run(...)</code> accepts <strong>single-channel</strong> input and synthesizes colour (expand 1→3, or demosaic CFA→RGB). <code>PixelBuffer</code> itself already supports N channels, but no <code>run</code> entry point ingests a pre-built multi-channel buffer.</li>
+                <li><code>FITSImageInfo</code> (and the info panel, headers window, and all Phase 5 astro features) read FITS header keywords. <code>SwiftFITS</code>'s <code>FITSSection</code> exposes <code>data</code>, <code>bitpix</code>, <code>naxis</code>, and <code>naxis(n)</code> for any axis.</li>
+            </ul>
+        </div>
+
+        <h2>The three shared foundations</h2>
+        <p>These are the reusable pieces every track below leans on. Building them once, deliberately, is the difference between a clean expansion and five bolted-on special cases.</p>
+
+        <div class="card">
+            <h3><span class="foundation-tag">F1</span><code>ImageSource</code> loader abstraction</h3>
+            <p>A seam <em>above</em> the FITS specifics so a window can hold either a FITS-backed or a non-FITS-backed image, both feeding the existing renderer/inspector. The natural boundary is the renderer's input: generalize from "raw FITS bytes + properties" to "a renderable buffer + a metadata snapshot."</p>
+            <p class="used-by"><strong>Used by:</strong> non-FITS rasters (M4.6), XISF (M4.10).</p>
+        </div>
+
+        <div class="card">
+            <h3><span class="foundation-tag">F2</span>Multi-channel <code>PixelBuffer</code> entry point (SwiftPixel)</h3>
+            <p>An additive <code>PixelPipeline.run</code> that accepts a <strong>pre-built multi-channel</strong> buffer and skips the 1→3 expansion, then runs the colour-appropriate processor subset (stretch, gamma, white balance, brightness/contrast, saturation, levels, curves, invert, orient — <em>not</em> debayer / raw-scale). <code>PixelBuffer</code> already models N channels, so this is additive, not a redesign.</p>
+            <p class="used-by"><strong>Used by:</strong> non-FITS RGB (M4.6), FITS colour cubes (M4.8), XISF RGB (M4.10).</p>
+            <div class="note"><strong>Note:</strong> SwiftPixel changes are marked approved in the plan legend, but re-confirm before editing the submodule.</div>
+        </div>
+
+        <div class="card">
+            <h3><span class="foundation-tag">F3</span>N-dimensional plane model (index vector)</h3>
+            <p>Model the displayed plane of an N-D FITS array as a <strong>higher-axis index vector</strong> (one selector per axis above 2), not a single scalar. Because NAXIS1/NAXIS2 are always the two fastest axes, any single display plane is one contiguous <code>W·H·bpp</code> byte range at offset <code>p·W·H·bpp</code>, where <code>p = i₃ + N₃·(i₄ + N₄·(…))</code>. Slicing is pure in-app arithmetic over the existing <code>RenderInput.data</code>, reusing <code>decodeSample</code> + <code>scaling</code>.</p>
+            <p class="used-by"><strong>Used by:</strong> 1-D (degenerate), 3-D (M4.8), ≥3-D (M4.9).</p>
+        </div>
+
+        <h2>Track A — File formats</h2>
+
+        <div class="card">
+            <h3>M4.6 — Non-FITS rasters (PNG/JPEG/TIFF, then HEIC; RAW later)</h3>
+            <span class="verdict">Verdict: Go, scoped, as its own plan.</span>
+            <ul>
+                <li>The decode is trivial (<code>CGImageSource</code>); the cost is that the model is FITS-shaped end to end (FITS-keyword render contract, single-channel pipeline, FITS-only metadata).</li>
+                <li>Needs <strong>F1</strong> (loader seam) and <strong>F2</strong> (multi-channel buffer) for colour. Metadata becomes EXIF/TIFF → an info-panel mapping, with the FITS headers window gracefully empty.</li>
+                <li><strong>First slice:</strong> 8-bit PNG/JPEG/TIFF (LDR, RGB or grayscale). <strong>HEIC second</strong> (10-bit / wide-gamut / colour-space handling). <strong>RAW is a separate, much larger evaluation</strong> (demosaic + develop via <code>CIRAWFilter</code>) — do not bundle.</li>
+                <li><strong>Effort:</strong> medium, ~5–6 milestones — F1 + UTType/open-panel/drop changes; F2; raster render path + histograms; EXIF→info mapping; branch FITS-only inspector controls (debayer); tests.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>M4.10 — XISF (PixInsight's format)</h3>
+            <span class="verdict">Verdict: Go eventually, as its own dedicated plan, <em>after</em> F1 lands.</span>
+            <ul>
+                <li>Open, free spec. Monolithic file = UTF-8 XML header + binary data blocks. Sample formats (UInt8/16/32, Float32/64) are exactly the app's <code>BITPIX</code> set, with planar multi-channel storage like FITS planes — so <code>decodeSample</code>/<code>scaling</code> and the 2-D pipeline largely apply. XML parses with <code>XMLParser</code>.</li>
+                <li><strong>One new dependency: decompression.</strong> Blocks may be zlib / lz4 / lz4hc / zstd (± byte-shuffling). Apple's <code>Compression</code> framework covers zlib + lz4 (shuffle is trivial); <strong>zstd is not</strong> and needs an external dep. First slice = uncompressed + zlib (+ lz4); defer zstd.</li>
+                <li><strong>Metadata fits:</strong> XISF carries FITS keywords + XISF properties → maps to the existing info panel / headers window.</li>
+                <li><strong>Licensing — write clean-room.</strong> No Swift library exists; the notable open one (sergio-dr/xisf) is Python + <strong>GPLv3</strong>, incompatible with this app's MIT licence. Implement a fresh Swift reader from the open spec.</li>
+                <li><strong>Architecture:</strong> a dedicated <code>SwiftXISF</code> submodule (XML → block extraction → decompress/un-shuffle → decode) plugging into <strong>F1</strong>, with RGB sharing <strong>F2</strong>.</li>
+                <li><strong>Effort:</strong> large (from-scratch format submodule). Sequence after F1; first slice = monolithic, uncompressed+zlib(+lz4), mono+RGB, embedded FITS keywords; defer distributed files, zstd, thumbnails, ICC profiles.</li>
+            </ul>
+            <p><strong>Spec / references:</strong></p>
+            <ul>
+                <li>PixInsight — XISF: <a href="https://pixinsight.com/xisf/">https://pixinsight.com/xisf/</a></li>
+                <li>XISF 1.0 Specification: <a href="https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html">https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html</a></li>
+                <li>sergio-dr/xisf (Python, GPLv3): <a href="https://github.com/sergio-dr/xisf">https://github.com/sergio-dr/xisf</a></li>
+            </ul>
+        </div>
+
+        <h2>Track B — FITS data dimensionality</h2>
+        <p>All three of these are one feature family built on <strong>F3</strong>, and should likely be <strong>one "N-dimensional data / data-cube" plan</strong>.</p>
+
+        <div class="card">
+            <h3>M4.7 — NAXIS=1 (1-D data, e.g. spectra)</h3>
+            <span class="verdict">Verdict: Go; small–medium, self-contained.</span>
+            <ul>
+                <li>The only block is <code>ImageProcessor.render</code>'s <code>guard nAxis == 2</code>; the 1-D bytes already reach the renderer, and decoding a series reuses <code>decodeSample</code> + <code>scaling</code>. Swift Charts is available (macOS 14 target).</li>
+                <li>It's a <strong>presentation, not a render</strong>: the whole detail pane assumes a <code>CGImage</code>, and the floating toolbar, cursor read-out, histogram and every inspector section are image-only.</li>
+                <li><strong>Approach:</strong> model a content kind (image <code>Result</code> <em>or</em> a <code>Series</code> = <code>[Double]</code> + x-axis metadata); relax the gate so NAXIS=1 decodes to a series; route the detail pane to a new <code>SpectrumChartView</code> (Swift Charts <code>LineMark</code>); inspector shows info-only. Optional WCS axis mapping (CTYPE1/CRVAL1/CRPIX1/CDELT1/CUNIT1 for X, BUNIT for Y). Unit-test decode-to-series + routing.</li>
+                <li><strong>Out of scope:</strong> BINTABLE spectra; single-row NAXIS=2.</li>
+                <li><strong>Effort:</strong> small–medium, ~3–4 milestones.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>M4.8 — NAXIS=3 (3-D: colour cubes vs. stacks)</h3>
+            <span class="verdict">Verdict: Go, scoped. SwiftFITS flag resolved → no change needed.</span>
+            <ul>
+                <li>Two semantically different cases with no definitive FITS marker: <strong>colour cube</strong> (NAXIS3=3 → one RGB image) vs. <strong>stack/data cube</strong> (N planes: spectral, time, focus…).</li>
+                <li><strong>Stack path — cheap, very high reuse:</strong> relax the gate, add a plane index (<strong>F3</strong>), render the selected plane through the <strong>unchanged 2-D pipeline</strong>. No submodule change.</li>
+                <li><strong>Colour-cube path — heavier:</strong> combine 3 planes into one RGB image → needs <strong>F2</strong>; until then a colour cube is still browsable as 3 mono planes.</li>
+                <li><strong>Disambiguation:</strong> default NAXIS3=3 → colour, with a per-file toggle (treat-as-colour ↔ browse-planes), optionally informed by <code>CTYPE3</code>.</li>
+                <li><strong>UI:</strong> plane slider/stepper, optional CTYPE3/CRVAL3/CDELT3 labelling, optional playback for time series.</li>
+                <li><strong>Effort:</strong> medium, ~3–5 milestones.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>M4.9 — NAXIS≥3 (hypercubes, e.g. NAXIS=4 RA/Dec/freq/Stokes)</h3>
+            <span class="verdict">Verdict: Go, by folding into M4.8 — essentially zero extra architecture.</span>
+            <ul>
+                <li>A hypercube is M4.8 generalized: every axis above 2 just selects which contiguous plane is shown. If M4.8's plane selection is built as a <strong>per-axis index vector (F3)</strong> from the start, NAXIS=3/4/5… all work uniformly.</li>
+                <li>No SwiftFITS change (same as M4.8); only one plane decoded at a time, so large cubes are fine on memory/perf.</li>
+                <li><strong>Incremental work over M4.8:</strong> N−2 sliders/steppers, each labelled by <code>CTYPEk</code> (+ <code>CRVALk</code>/<code>CDELTk</code>); special-case a <code>STOKES</code> axis to I/Q/U/V.</li>
+            </ul>
+        </div>
+
+        <h2>Recommended sequencing</h2>
+        <ol class="sequence">
+            <li><strong>F1 — <code>ImageSource</code> loader seam</strong> (unlocks both non-FITS rasters and XISF).</li>
+            <li><strong>F2 — multi-channel <code>PixelBuffer</code> entry point</strong> (unlocks all colour: rasters, FITS colour cubes, XISF RGB).</li>
+            <li><strong>Track B / F3 — one "N-dimensional data" plan</strong> (M4.7 + M4.8 + M4.9): build the index-vector plane model; ship 1-D charts, plane-stack browsing, and hypercube navigation together. Colour-cube combine lands once F2 exists.</li>
+            <li><strong>M4.6 first slice</strong> — 8-bit PNG/JPEG/TIFF (on F1 + F2), then HEIC.</li>
+            <li><strong>M4.10 — <code>SwiftXISF</code></strong> dedicated plan (on F1 + F2), uncompressed+zlib first.</li>
+            <li><strong>RAW</strong> — its own separate evaluation, much later.</li>
+        </ol>
+        <p>Track A (formats) and Track B (dimensionality) are independent once F1/F2/F3 exist and can proceed in parallel. F1 and F2 are the highest-leverage first steps because four of the five items depend on them.</p>
+
+        <footer>
+            FITScope — Formats &amp; Dimensionality Roadmap.
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improvements</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --bg-card:   #181b24;
+            --bg-card-2: #1d212c;
+            --border:    #2a2f3c;
+            --text:      #e6e9ef;
+            --text-dim:  #9aa3b2;
+            --accent:    #5aa9ff;
+            --accent-dim:#2d3b52;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 36px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 2.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .overview {
+            color: var(--text-dim);
+            margin: 24px 0 40px;
+            font-size: 1.02rem;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 0 0 20px;
+        }
+
+        ol.roadmap {
+            list-style: none;
+            counter-reset: item;
+            margin: 0;
+            padding: 0;
+        }
+
+        ol.roadmap > li {
+            counter-increment: item;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px 22px 18px 64px;
+            margin-bottom: 14px;
+            position: relative;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        ol.roadmap > li:hover {
+            border-color: var(--accent-dim);
+            background: var(--bg-card-2);
+        }
+
+        ol.roadmap > li::before {
+            content: counter(item);
+            position: absolute;
+            left: 16px;
+            top: 18px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-radius: 8px;
+        }
+
+        ol.roadmap > li h3 {
+            margin: 0 0 6px;
+            font-size: 1.08rem;
+            color: var(--text);
+        }
+
+        ol.roadmap > li p {
+            margin: 0;
+            color: var(--text-dim);
+            font-size: 0.96rem;
+        }
+
+        footer {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Improvements</h1>
+            <div class="meta">Generated &mdash; 2026-06-27</div>
+        </header>
+
+        <p class="overview">
+            A working list of improvements for FITScope, the macOS FITS image viewer.
+            The points span the rendering pipeline, the inspector's image-processing
+            controls, the information panels, and new image-adjustment features.
+        </p>
+
+        <h2>Roadmap</h2>
+
+        <ol class="roadmap">
+            <li>
+                <h3>Verify light mode appearance</h3>
+                <p>Check how the app looks in light mode and fix any contrast, color, or layout issues so it is on par with dark mode.</p>
+            </li>
+            <li>
+                <h3>Prioritize selected file for rendering</h3>
+                <p>When a file is selected, give it priority in the rendering pipeline so the image the user is looking at is processed first.</p>
+            </li>
+            <li>
+                <h3>Gamma &mdash; remove the on/off switch</h3>
+                <p>The gamma control does not need an enable switch: a value of 1 is already a no-op, so it can be the default with no separate toggle.</p>
+            </li>
+            <li>
+                <h3>Info view &mdash; no wrap, ellipsis with tooltips</h3>
+                <p>Stop wrapping long values in the info view; truncate them with an ellipsis and show the full value in a tooltip on hover.</p>
+            </li>
+            <li>
+                <h3>Review order of processors</h3>
+                <p>Revisit the order in which image processors are applied in the rendering pipeline to make sure it is correct and produces the expected result.</p>
+            </li>
+            <li>
+                <h3>Review order of controls in inspector</h3>
+                <p>Revisit the order of the controls shown in the inspector so it follows a logical, intuitive workflow.</p>
+            </li>
+            <li>
+                <h3>Gamma vs. levels gamma &mdash; do we need both?</h3>
+                <p>Evaluate whether the standalone gamma correction and the gamma (midtone) adjustment inside levels are redundant, and decide whether to keep both.</p>
+            </li>
+            <li>
+                <h3>Curves and levels windows &mdash; sizes and positions</h3>
+                <p>Review and refine the default sizes and on-screen positions of the curves and levels windows, and how they are persisted.</p>
+            </li>
+            <li>
+                <h3>Visible planets in info view (letters)</h3>
+                <p>Show which planets are visible in the information view, identified by their letters.</p>
+            </li>
+            <li>
+                <h3>Sunsets and sunrises (civil, nautical, astronomical)</h3>
+                <p>Display sunrise and sunset times, including the civil, nautical, and astronomical twilight phases.</p>
+            </li>
+            <li>
+                <h3>Reset on inspector controls (cross button?)</h3>
+                <p>Add a way to reset individual inspector controls to their default value &mdash; possibly via a small clear/cross button on each control.</p>
+            </li>
+            <li>
+                <h3>Denoise</h3>
+                <p>Add a denoise image-processing adjustment.</p>
+            </li>
+            <li>
+                <h3>Sharpen</h3>
+                <p>Add a sharpen image-processing adjustment.</p>
+            </li>
+            <li>
+                <h3>&ldquo;Open in&rdquo; menu (original and processed)</h3>
+                <p>Add an &ldquo;Open With&rdquo; menu to open the image in an external application, for both the original FITS file and the processed/rendered image.</p>
+            </li>
+            <li>
+                <h3>Window toolbar?</h3>
+                <p>Investigate whether it is worth adding a proper window toolbar to surface some of the controls.</p>
+            </li>
+            <li>
+                <h3>Add hue to saturation</h3>
+                <p>Extend the saturation control with a hue adjustment.</p>
+            </li>
+            <li>
+                <h3>Color balance (low, mid, high)</h3>
+                <p>Add a color balance control acting on shadows (low), midtones (mid), and highlights (high).</p>
+            </li>
+            <li>
+                <h3>Histogram backdrop on curves?</h3>
+                <p>Consider drawing a histogram backdrop behind the curves editor, as is already done in the levels editor.</p>
+            </li>
+            <li>
+                <h3>Before/after slider on image</h3>
+                <p>Add a before/after comparison slider over the image to compare the original and the processed result.</p>
+            </li>
+            <li>
+                <h3>Info panel &mdash; selectable labels</h3>
+                <p>Make the labels in the information panel selectable so their text can be copied.</p>
+            </li>
+            <li>
+                <h3>Star detection info presentation</h3>
+                <p>Decide how to present star detection information &mdash; inline/overlay, in the info panel, or in a dedicated section.</p>
+            </li>
+            <li>
+                <h3>Ensure debouncing with image renderer</h3>
+                <p>Make sure rendering requests are properly debounced so rapid control changes do not trigger redundant renders.</p>
+            </li>
+            <li>
+                <h3>Regroup levels and curves into one control</h3>
+                <p>Levels and curves currently sit on separate lines; regroup them inside a single control with both buttons on the same line.</p>
+            </li>
+        </ol>
+
+        <footer>
+            FITScope &mdash; FITS Image Viewer for macOS.
+        </footer>
+    </div>
+</body>
+</html>

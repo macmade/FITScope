@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FITScope — Roadmap</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --bg-card:   #181b24;
+            --bg-card-2: #1d212c;
+            --bg-code:   #11141c;
+            --border:    #2a2f3c;
+            --text:      #e6e9ef;
+            --text-dim:  #9aa3b2;
+            --accent:    #5aa9ff;
+            --accent-dim:#2d3b52;
+            --code-fg:   #ffcb8a;
+            --warn:      #ffb454;
+            --warn-bg:   #3a2a12;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.65;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        header.doc {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 2.2rem;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .meta {
+            color: var(--text-dim);
+            font-size: 0.92rem;
+            margin: 4px 0;
+        }
+        .meta strong { color: var(--text); }
+
+        .intro {
+            color: var(--text-dim);
+            margin: 18px 0 0;
+        }
+
+        h2 {
+            font-size: 1.45rem;
+            margin: 44px 0 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            letter-spacing: -0.01em;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            margin: 28px 0 6px;
+            color: var(--accent);
+        }
+
+        p { margin: 12px 0; }
+
+        ul {
+            margin: 12px 0;
+            padding-left: 4px;
+            list-style: none;
+        }
+
+        li {
+            margin: 8px 0;
+            padding: 10px 16px 10px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            position: relative;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        li:hover {
+            border-color: var(--accent-dim);
+            background: var(--bg-card-2);
+        }
+        li::before {
+            content: "";
+            position: absolute;
+            left: 6px;
+            top: 18px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        li { padding-left: 24px; }
+
+        code {
+            background: var(--bg-code);
+            color: var(--code-fg);
+            padding: 1px 6px;
+            border-radius: 5px;
+            font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.86em;
+            border: 1px solid var(--border);
+        }
+
+        .warn {
+            border-left: 3px solid var(--warn);
+            background: var(--warn-bg);
+            padding: 12px 18px;
+            margin: 16px 0;
+            border-radius: 0 8px 8px 0;
+            color: #f5d9ad;
+        }
+        .warn strong { color: var(--warn); }
+
+        footer {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <header class="doc">
+            <h1>FITScope — Roadmap</h1>
+            <p class="meta"><strong>Generated:</strong> 2026-06-17</p>
+            <p class="intro">Issues and features are in no particular order, but issues should be addressed before adding new features. Optimization points should be done last, when everything else is stable.</p>
+        </header>
+
+        <h2>1 — Tests</h2>
+        <p>The project contains a unit test target (<code>FITScopeTests</code>) and a UI test target (<code>FITScopeUITests</code>). There are currently almost no UI tests. Evaluate whether such UI tests are needed and could be beneficial for development, especially with an AI agent. If so, implement the UI tests for the existing project. This should come first.</p>
+
+        <h2>2 — Fixes</h2>
+        <ul>
+            <li>When opening a new window with an image, resizing the window is glitchy until the image is rendered — the left and right sidebars can clip.</li>
+            <li>When an image fits the window, it should keep fitting when the window is resized (larger or smaller).</li>
+            <li>If an image fits completely, disable zooming out.</li>
+            <li>For files with warnings (unable to render), add an attention icon to the right in the list view.</li>
+            <li>The loading status doesn't update in the list view when a non-displayed image is rendered — it only updates its status when clicked and displayed. Also, maybe related, rendering never ends or updates when opening the same image twice in the same window.</li>
+            <li>When re-rendering, loading should occur — spinning indicator in sidebar, status change in the bottom toolbar (ready/processing). Controls should be disabled in the inspector panel. Maybe add a dark overlay with a spinning indicator over the image.</li>
+            <li>The message text should be centered in the error view.</li>
+            <li>Checkboxes (original, channels, statistics) take a lot of space below the histogram. — Use another form of control for these options.</li>
+            <li>Invert should use a switch instead of a checkbox, as for gamma.</li>
+            <li>Review toolbar tooltips inconsistencies: "Toggle the inspector" vs "Hide Sidebar" / "Show Sidebar".</li>
+            <li>Tooltips should be added on all buttons in the top floating toolbar, in all inspector controls, and in the file list (maybe file path).</li>
+            <li>The about window should always be centered when shown, unless already shown.</li>
+            <li>Don't wrap text in histogram statistics.</li>
+            <li>There is currently no mono support for the histogram — it's always in RGB mode.</li>
+        </ul>
+
+        <h2>3 — New features</h2>
+
+        <h3>3.1 — Astro</h3>
+        <ul>
+            <li>Detect stars and compute FWHM, HFR, and eccentricity.</li>
+            <li>Show detected stars with an overlay on the image. Toggle from the top floating toolbar if stars were detected.</li>
+            <li>Plate solve via nova.astrometry.net (an API key is needed, see the point about preferences later). Could open a new window with plate-solving results.</li>
+            <li>Show objects if available in the plate solving with an overlay on the image. Toggle from the top floating toolbar if objects are present.</li>
+            <li>Measurements overlay on the image, if enough info is available (like a degree bar, using pixel scale, focal length, etc., bottom right).</li>
+            <li>Center reticle overlay. Toggle from the top floating toolbar.</li>
+            <li>Show similar images on Astrobin, using coordinates if available and if we can use a GET request on Astrobin. Could be in the files list context menu and/or in the top floating toolbar.</li>
+            <li>If it can be computed, add sampling info in the information panel and detect under/over-sampling.</li>
+            <li>If GPS coordinates are available, add an Apple Maps view. Same place as the info panel; could use tabs.</li>
+            <li>If the date is available and if it can be computed or retrieved using an external public API, add a Moon phase view. Same place as the info panel; could use tabs. It should also be displayed in the info panel with an icon.</li>
+            <li>If GPS coordinates and date are available, add a weather conditions view. Same place as the info panel; could use tabs. It should also be displayed in the info panel with an icon. Could use OpenWeatherMap with an API key (see the point about preferences later).</li>
+            <li>If GPS coordinates are available, add the Bortle scale to the info panel if it can be retrieved with an external public API.</li>
+            <li>If enough info is available, show north as an overlay on the image (top right). Toggle from the top floating toolbar.</li>
+            <li>Export FITS headers to TSV or CSV from the FITS headers window.</li>
+            <li>Allow entering a weight formula in the preferences window with placeholders (for FWHM, HFR, eccentricity). Validates the formula.</li>
+            <li>Compute weight using the formula if available.</li>
+            <li>Allow sorting of images in the list view by name, FWHM, HFR, eccentricity, weight, etc.</li>
+            <li>If RA/DEC and pixel scale are available, add an equatorial grid overlay on the image. Toggle from the top floating toolbar.</li>
+            <li>Recommend other useful features for astrophotography, if any.</li>
+        </ul>
+
+        <h3>3.2 — Processing</h3>
+        <ul>
+            <li>Add a logarithmic option to the histogram if useful.</li>
+            <li>Rotate and flip the image from the top floating toolbar or inspector panel. Processing code should be added in the <code>SwiftPixel</code> submodule.</li>
+            <li>Brightness and contrast controls in the inspector panel. Processing code should be added in the <code>SwiftPixel</code> submodule.</li>
+            <li>Saturation control in the inspector panel. Processing code should be added in the <code>SwiftPixel</code> submodule.</li>
+            <li>Curves adjustment tool. Maybe as a button in the inspector panel that opens a new window. Processing code should be added in the <code>SwiftPixel</code> submodule.</li>
+            <li>Levels adjustment tool. Maybe as a button in the inspector panel that opens a new window. Processing code should be added in the <code>SwiftPixel</code> submodule.</li>
+        </ul>
+
+        <h3>3.3 — File handling</h3>
+        <ul>
+            <li>Check whether the current implementation and pixel pipeline could support other file types, such as JPEG, TIFF, PNG, HEIC, RAW (Canon, Apple, etc), using Apple image frameworks such as <code>CoreGraphics</code> or <code>ImageIO</code>.</li>
+            <li>Evaluates support for XISF files if the format is documented and not too complex. This would require a dedicated submodule — only evaluation for now.</li>
+            <li>In the files list context menu, add "Reveal in Finder", "Move to Trash", "Open in new window".</li>
+            <li>Evaluate support for files with NAXIS=1. Propose a solution, maybe displaying a graph with <code>SwiftCharts</code>? If too complex, evaluate and propose — this could be part of another plan.</li>
+            <li>Evaluate support for files with NAXIS=3. If too complex, evaluate and propose — this could be part of another plan.</li>
+            <li>Evaluate support for files with NAXIS&gt;=3. If too complex, evaluate and propose — this could be part of another plan.</li>
+            <li>When clicking on the filename in the window's toolbar, display a dropdown menu with the folder hierarchy, opening the Finder when selected.</li>
+            <li>Add a QuickLook plugin for displaying FITS files in the Finder (no processing).</li>
+            <li>Add "Save as" in the main menu and in the files list context menu (copy the original FITS file).</li>
+            <li>Add "Export" to the main menu and to the files list context menu. Save as TIFF, PNG, or JPEG (with compression level).</li>
+            <li>Add a "Share" button somewhere (main window's toolbar?) using Apple's Share menu. Use JPEG with some level of compression, like maybe 90%.</li>
+        </ul>
+
+        <h3>3.4 — Miscellaneous</h3>
+        <ul>
+            <li>Redesign the FITS header window to make it look nicer. The search field is currently not very visible.</li>
+            <li>Add "Check for Updates" in the application's menu (using <code>GitHubUpdater</code> from <code>SwiftUtilities</code>).</li>
+            <li>Add a Preferences window (required by some milestone) — enter API keys, choose info panel values and order.</li>
+        </ul>
+
+        <h2>4 — Miscellaneous</h2>
+        <ul>
+            <li>Improve the README file, making it more commercial, with placeholders for screenshots.</li>
+        </ul>
+
+        <h2>5 — Optimization</h2>
+        <ul>
+            <li>Review all algorithms in <code>SwiftPixel</code> — verify current implementations, suggest new implementations or algorithms, check if some existing ones don't make sense.</li>
+            <li>Optimize algorithms in <code>SwiftPixel</code> using Metal kernels.</li>
+        </ul>
+
+        <h2>6 — Test API keys</h2>
+        <p>Some milestones require API keys. Test keys can be provided when needed.</p>
+        <div class="warn">
+            <strong>IMPORTANT:</strong> These keys should <strong>NEVER</strong> be added to the source code nor committed to the repository.
+        </div>
+        <ul>
+            <li>Astrometry.net: <code>&lt;to be provided&gt;</code></li>
+            <li>OpenWeatherMap: <code>&lt;to be provided&gt;</code></li>
+        </ul>
+
+        <footer>
+            FITScope — Roadmap.
+        </footer>
+    </div>
+</body>
+</html>
