@@ -14,23 +14,16 @@
   "testTargets" : [
     {
       "target" : {
-        "containerPath" : "container:Submodules\/SwiftAstro\/SwiftAstro.xcodeproj",
-        "identifier" : "05E974C82FE921070078F616",
-        "name" : "SwiftAstroTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Submodules\/SwiftPixel\/Submodules\/SwiftUtilities\/SwiftUtilities.xcodeproj",
-        "identifier" : "05F175C32DD8E36300843626",
-        "name" : "SwiftUtilitiesTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Submodules\/SwiftFITS\/SwiftFITS.xcodeproj",
+        "containerPath" : "container:Submodules\/SwiftAstro\/Submodules\/SwiftFITS\/SwiftFITS.xcodeproj",
         "identifier" : "05F175A12DD8E36300843626",
         "name" : "SwiftFITSTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Submodules\/SwiftAstro\/Submodules\/SwiftPixel\/Submodules\/SwiftUtilities\/SwiftUtilities.xcodeproj",
+        "identifier" : "05F175C32DD8E36300843626",
+        "name" : "SwiftUtilitiesTests"
       }
     },
     {
@@ -42,7 +35,14 @@
     },
     {
       "target" : {
-        "containerPath" : "container:Submodules\/SwiftPixel\/SwiftPixel.xcodeproj",
+        "containerPath" : "container:Submodules\/SwiftAstro\/SwiftAstro.xcodeproj",
+        "identifier" : "05E974C82FE921070078F616",
+        "name" : "SwiftAstroTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Submodules\/SwiftAstro\/Submodules\/SwiftPixel\/SwiftPixel.xcodeproj",
         "identifier" : "05F175B22DD8E36300843626",
         "name" : "SwiftPixelTests"
       }
