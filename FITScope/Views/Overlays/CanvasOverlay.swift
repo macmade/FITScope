@@ -51,6 +51,12 @@ public protocol CanvasOverlay
     /// a toggle that would reveal nothing.
     var isAvailable: Bool { get }
 
+    /// Whether the overlay's data is still being computed. While `true`, the
+    /// toolbar shows the overlay's button in a disabled, in-progress state instead
+    /// of an active toggle — so the toolbar handles "loading" generically, without
+    /// knowing what any particular overlay computes. Defaults to `false`.
+    var isLoading: Bool { get }
+
     /// Draws the overlay into the canvas.
     ///
     /// - Parameters:
@@ -60,4 +66,14 @@ public protocol CanvasOverlay
     ///   - displayedRect: The on-screen rectangle the image occupies; map
     ///                    image-space points into it with ``CanvasGeometry``.
     func draw( in context: inout GraphicsContext, imageSize: CGSize, displayedRect: CGRect )
+}
+
+public extension CanvasOverlay
+{
+    /// Overlays whose data is always ready report `false`; a data-driven overlay
+    /// that computes asynchronously overrides this while its work is in flight.
+    var isLoading: Bool
+    {
+        false
+    }
 }

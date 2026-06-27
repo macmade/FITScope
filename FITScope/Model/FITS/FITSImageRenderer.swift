@@ -49,6 +49,12 @@ public class FITSImageRenderer: ObservableObject
 
         /// Per-channel statistics derived from the histograms.
         public let statistics: HistogramStatistics
+
+        /// The orientation applied to produce ``image``. Annotations registered to
+        /// source space (such as the detected-star overlay) read it so they track
+        /// the displayed image and only reorient once a re-render commits — never
+        /// jumping ahead of the image while a rotation is still rendering.
+        public let orientation: Processors.Orient.Orientation
     }
 
     /// The histograms computed from a rendered image.
@@ -302,7 +308,7 @@ public class FITSImageRenderer: ObservableObject
             mono:      Benchmark.run( label: "Statistics (Mono)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: monoHistogram.data[ 0 ] ) }
         )
 
-        return Result( image: render.image, histogram: histogram, statistics: statistics )
+        return Result( image: render.image, histogram: histogram, statistics: statistics, orientation: settings.orientation )
     }
 
     /// Claims and returns the next render generation. Only the most recently

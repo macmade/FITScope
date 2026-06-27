@@ -208,10 +208,6 @@ final class FITScopeUITests: XCTestCase
                 ( "toolbar zoom out",    AccessibilityIdentifier.ImageToolbarView.zoomOut ),
                 ( "toolbar zoom in",     AccessibilityIdentifier.ImageToolbarView.zoomIn ),
                 ( "toolbar actual size", AccessibilityIdentifier.ImageToolbarView.actualSize ),
-                ( "toolbar rotate left",     AccessibilityIdentifier.ImageToolbarView.rotateLeft ),
-                ( "toolbar rotate right",    AccessibilityIdentifier.ImageToolbarView.rotateRight ),
-                ( "toolbar flip horizontal", AccessibilityIdentifier.ImageToolbarView.flipHorizontal ),
-                ( "toolbar flip vertical",   AccessibilityIdentifier.ImageToolbarView.flipVertical ),
             ]
 
         for entry in floating

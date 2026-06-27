@@ -194,11 +194,7 @@ public struct ImageCanvasView: View
                             onRecenter:   { self.send( .recenter ) },
                             onZoomIn:     { self.send( .zoomIn ) },
                             onZoomOut:    { self.send( .zoomOut ) },
-                            onRotateLeft:     { self.reorient { $0.rotatedCounterClockwise() } },
-                            onRotateRight:    { self.reorient { $0.rotatedClockwise() } },
-                            onFlipHorizontal: { self.reorient { $0.flippedHorizontally() } },
-                            onFlipVertical:   { self.reorient { $0.flippedVertically() } },
-                            overlays:         self.availableOverlays,
+                            overlays:         self.toolbarOverlays,
                             isOverlayEnabled: { self.enabledOverlays.contains( $0 ) },
                             onToggleOverlay:  { self.toggleOverlay( $0 ) }
                         )
@@ -323,24 +319,34 @@ public struct ImageCanvasView: View
     }
 
     /// The overlays applicable to the current image, in toolbar (back-to-front)
-    /// order. The frame overlay is always present; data-driven overlays are added
-    /// by later milestones and gate themselves through ``CanvasOverlay/isAvailable``.
+    /// order. The frame overlay is always present; data-driven overlays gate
+    /// themselves through ``CanvasOverlay/isAvailable`` — the stars overlay is
+    /// offered only once detection has populated ``FITSImage/starField``.
     private var overlays: [ any CanvasOverlay ]
     {
-        [ FrameOverlay() ]
+        [
+            FrameOverlay(),
+            // The orientation comes from the committed render result, not the live
+            // adjustment, so the markers reorient together with the image rather
+            // than jumping ahead while a rotation is still rendering. `isLoading`
+            // surfaces detection progress through the overlay, so the toolbar shows
+            // it generically without knowing about star detection.
+            StarsOverlay( stars: self.file.image?.starField?.stars ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, isLoading: self.file.image?.isDetectingStars ?? false ),
+        ]
     }
 
-    /// The overlays that currently have something to show, surfaced as toolbar
-    /// toggles.
-    private var availableOverlays: [ any CanvasOverlay ]
+    /// The overlays surfaced in the toolbar: those with something to show, plus
+    /// those still computing their data (shown as an in-progress button).
+    private var toolbarOverlays: [ any CanvasOverlay ]
     {
-        self.overlays.filter { $0.isAvailable }
+        self.overlays.filter { $0.isAvailable || $0.isLoading }
     }
 
-    /// The available overlays the user has enabled, drawn back-to-front.
+    /// The available overlays the user has enabled, drawn back-to-front. A loading
+    /// overlay has no data yet, so it is never drawn.
     private var activeOverlays: [ any CanvasOverlay ]
     {
-        self.availableOverlays.filter { self.enabledOverlays.contains( $0.id ) }
+        self.overlays.filter { $0.isAvailable && self.enabledOverlays.contains( $0.id ) }
     }
 
     /// Toggles an overlay on or off by identifier.
@@ -361,21 +367,6 @@ public struct ImageCanvasView: View
     {
         self.tokens  += 1
         self.command  = CanvasCommand( kind: kind, token: self.tokens )
-    }
-
-    /// Composes a screen-relative rotate/flip onto the current orientation and
-    /// re-renders. Shared by the floating toolbar and the inspector control.
-    private func reorient( _ transform: ( Processors.Orient.Orientation ) -> Processors.Orient.Orientation )
-    {
-        guard let renderer = self.file.image?.renderer
-        else
-        {
-            return
-        }
-
-        renderer.adjustments.orientation = transform( renderer.adjustments.orientation )
-
-        renderer.scheduleReRender()
     }
 
     /// Decodes the value under the cursor and reports a formatted readout.

@@ -49,6 +49,10 @@ public class FITSImage: ObservableObject
     /// uses the linear sensor values rather than the rendered image.
     @Published public private( set ) var starField: StarField?
 
+    /// Whether star detection is currently running, so the UI can show progress.
+    /// `true` only while ``detectStars()`` is in flight.
+    @Published public private( set ) var isDetectingStars = false
+
     /// The image's histogram view options, kept here so each file retains its own
     /// histogram display choices across selection changes.
     public let histogramOptions = HistogramViewOptions()
@@ -83,6 +87,13 @@ public class FITSImage: ObservableObject
         else
         {
             return
+        }
+
+        self.isDetectingStars = true
+
+        defer
+        {
+            self.isDetectingStars = false
         }
 
         self.starField = await Task.detached

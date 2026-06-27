@@ -228,18 +228,6 @@ public enum AccessibilityIdentifier
         /// The zoom-percentage readout between the zoom-out and zoom-in buttons.
         public static let zoomReadout = "ImageToolbarView.zoomReadout"
 
-        /// The rotate-left (counter-clockwise) button.
-        public static let rotateLeft = "ImageToolbarView.rotateLeft"
-
-        /// The rotate-right (clockwise) button.
-        public static let rotateRight = "ImageToolbarView.rotateRight"
-
-        /// The flip-horizontal button.
-        public static let flipHorizontal = "ImageToolbarView.flipHorizontal"
-
-        /// The flip-vertical button.
-        public static let flipVertical = "ImageToolbarView.flipVertical"
-
         /// The toggle button for the overlay with the given stable identifier.
         ///
         /// - Parameter overlay: The overlay's stable ``CanvasOverlay/id``.

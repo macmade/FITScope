@@ -109,6 +109,35 @@ struct FITSImageRendererTests
         #expect( result.histogram.luminance == SwiftPixel.Histogram( bytes: direct.bytes, channels: 3, mode: .luminance ) )
     }
 
+    /// The committed result records the orientation it was rendered with, so a
+    /// source-space overlay can reorient in lock-step with the image — and only
+    /// once the new render commits, never while a rotation is still in flight.
+    @Test
+    @MainActor
+    func resultCarriesTheRenderedOrientation() async throws
+    {
+        let url   = TestFixtures.monoImage
+        let input = try await Task.detached
+        {
+            let file = try FITSFile( data: Data( contentsOf: url ), options: .lenient )
+
+            return try FITSImageRenderer.renderInput( from: file.sections )
+        }
+        .value
+
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        #expect( renderer.result?.orientation == .identity, "a default render is unrotated" )
+
+        renderer.adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
+
+        await renderer.render()
+
+        #expect( renderer.result?.orientation == .init( rotation: .clockwise90, mirroredHorizontally: false ), "the result records the orientation it was rendered with" )
+    }
+
     /// Changing an adjustment and triggering the debounced re-render entry point
     /// produces a render distinct from the default one.
     @Test
