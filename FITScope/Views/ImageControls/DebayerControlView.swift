@@ -69,7 +69,7 @@ public struct DebayerControlView: View
     private let adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after the selection changes.
-    private let reRender:    () -> Void
+    private let reRender: () -> Void
 
     /// The selected mode. Seeded from the image's adjustments so the control
     /// reflects the file it belongs to.

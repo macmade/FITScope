@@ -42,19 +42,19 @@ public struct Slider: View
     public let maximumValue: Double
 
     /// An optional SF Symbol drawn inside the knob.
-    public let image:        String?
+    public let image: String?
 
     /// Whether the slider is disabled (dimmed and non-interactive).
-    public let disabled:     Bool
+    public let disabled: Bool
 
     /// The number of evenly spaced tick marks, or `nil` for none.
-    public let tickCount:    Int?
+    public let tickCount: Int?
 
     /// The snapping radius around each tick, or `nil` for no snapping.
-    public let friction:     Double?
+    public let friction: Double?
 
     /// Called with the new value and the drag state on every change.
-    public let onChange:     ( ( Double, Bool ) -> Void )?
+    public let onChange: ( ( Double, Bool ) -> Void )?
 
     /// Whether a drag is currently in progress, used for the knob's press
     /// styling.

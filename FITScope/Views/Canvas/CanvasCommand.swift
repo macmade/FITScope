@@ -39,7 +39,7 @@ public struct CanvasCommand: Equatable
     }
 
     /// The command to perform.
-    public var kind:  Kind
+    public var kind: Kind
 
     /// A nonce making each request distinct.
     public var token: Int

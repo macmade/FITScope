@@ -31,13 +31,13 @@ import SwiftFITS
 public struct FITSImageSection: Codable, Hashable, Identifiable
 {
     /// A stable identity combining the index and title.
-    public let id:         String
+    public let id: String
 
     /// The section's position within the file.
-    public let index:      Int
+    public let index: Int
 
     /// A human-readable title for the section (e.g. `"Primary Header"`).
-    public let title:      String
+    public let title: String
 
     /// The section's header keywords, as display properties.
     public let properties: [ FITSImageProperty ]

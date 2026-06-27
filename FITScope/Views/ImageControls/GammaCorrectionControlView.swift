@@ -43,7 +43,7 @@ public struct GammaCorrectionControlView: View
     private let adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
-    private let reRender:    () -> Void
+    private let reRender: () -> Void
 
     /// Whether gamma correction is enabled. Seeded from the image's adjustments
     /// so the control reflects the file it belongs to.
@@ -51,7 +51,7 @@ public struct GammaCorrectionControlView: View
 
     /// The current gamma exponent. Seeded from the image's adjustments, falling
     /// back to the pipeline's default of `1.8` when gamma is off.
-    @State private var gamma:   Double
+    @State private var gamma: Double
 
     /// Creates the gamma control.
     ///

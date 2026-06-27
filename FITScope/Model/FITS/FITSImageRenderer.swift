@@ -42,10 +42,10 @@ public class FITSImageRenderer: ObservableObject
     public struct Result
     {
         /// The rendered, display-ready image.
-        public let image:      CGImage
+        public let image: CGImage
 
         /// The RGB and luminance histograms of the rendered pixels.
-        public let histogram:  Histogram
+        public let histogram: Histogram
 
         /// Per-channel statistics derived from the histograms.
         public let statistics: HistogramStatistics
@@ -73,14 +73,14 @@ public class FITSImageRenderer: ObservableObject
         public let id = UUID()
 
         /// The per-channel (red, green, blue) histogram.
-        public let rgb:       SwiftPixel.Histogram
+        public let rgb: SwiftPixel.Histogram
 
         /// The single-channel luminance histogram.
         public let luminance: SwiftPixel.Histogram
 
         /// The single-channel histogram of the rendered first channel, shown for
         /// monochrome images in place of the redundant RGB triple.
-        public let mono:      SwiftPixel.Histogram
+        public let mono: SwiftPixel.Histogram
 
         /// Whether the rendered image is monochrome. The pipeline always emits a
         /// 3-channel buffer (a colour-filter-array image is demosaiced to RGB,
@@ -88,7 +88,7 @@ public class FITSImageRenderer: ObservableObject
         /// read back from the channel count — it records whether debayering ran.
         /// When `true`, the inspector presents ``mono`` rather than
         /// ``rgb``/``luminance``.
-        public let isMono:    Bool
+        public let isMono: Bool
 
         public static func == ( lhs: Histogram, rhs: Histogram ) -> Bool
         {
@@ -100,19 +100,19 @@ public class FITSImageRenderer: ObservableObject
     public struct HistogramStatistics
     {
         /// Statistics for the red channel.
-        public let red:       SwiftPixel.HistogramStatistics
+        public let red: SwiftPixel.HistogramStatistics
 
         /// Statistics for the green channel.
-        public let green:     SwiftPixel.HistogramStatistics
+        public let green: SwiftPixel.HistogramStatistics
 
         /// Statistics for the blue channel.
-        public let blue:      SwiftPixel.HistogramStatistics
+        public let blue: SwiftPixel.HistogramStatistics
 
         /// Statistics for the luminance channel.
         public let luminance: SwiftPixel.HistogramStatistics
 
         /// Statistics for the single (mono) channel, shown for monochrome images.
-        public let mono:      SwiftPixel.HistogramStatistics
+        public let mono: SwiftPixel.HistogramStatistics
     }
 
     /// A histogram paired with its statistics, used to retain the original,
@@ -120,7 +120,7 @@ public class FITSImageRenderer: ObservableObject
     public struct HistogramSet
     {
         /// The RGB and luminance histograms.
-        public let histogram:  Histogram
+        public let histogram: Histogram
 
         /// Per-channel statistics derived from the histograms.
         public let statistics: HistogramStatistics
@@ -133,7 +133,7 @@ public class FITSImageRenderer: ObservableObject
     public struct RenderInput: Sendable
     {
         /// The image HDU's raw pixel bytes.
-        public let data:       Data
+        public let data: Data
 
         /// The owning header's property snapshots, used to interpret the bytes.
         public let properties: [ FITSPropertySnapshot ]
@@ -160,7 +160,7 @@ public class FITSImageRenderer: ObservableObject
     @Published public private( set ) var original: HistogramSet?
 
     /// The error from the most recent failed render, or `nil` on success.
-    @Published public private( set ) var error:  Error?
+    @Published public private( set ) var error: Error?
 
     /// Whether a render is currently in flight — set when a render claims its
     /// generation and cleared when the latest generation commits. Stays set

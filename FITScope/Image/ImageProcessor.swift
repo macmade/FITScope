@@ -363,7 +363,7 @@ public enum ImageProcessor
     public struct PixelValue: Equatable
     {
         /// The raw value after `BSCALE`/`BZERO` scaling.
-        public let value:    Double
+        public let value: Double
 
         /// The value as a fraction (`0...1`) of the integer format's full scale,
         /// or `nil` for floating-point formats which have no fixed full scale.

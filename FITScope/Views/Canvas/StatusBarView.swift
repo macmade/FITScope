@@ -30,10 +30,10 @@ import SwiftUI
 public struct StatusBarView: View
 {
     /// The leading status message (e.g. "Ready").
-    public let status:    String
+    public let status: String
 
     /// The cursor readout fields.
-    public let readout:   CursorReadout
+    public let readout: CursorReadout
 
     /// The trailing dimensions / bit-depth summary, or `nil` when no file.
     public let dimensions: String?

@@ -34,19 +34,19 @@ import SwiftUI
 public struct BannerView: View
 {
     /// The banner's bold headline.
-    public let title:       String
+    public let title: String
 
     /// The secondary descriptive text below the title.
-    public let message:     String
+    public let message: String
 
     /// The SF Symbol name shown as the leading icon.
     public let systemImage: String
 
     /// The tint applied to the leading icon.
-    public let tint:        Color
+    public let tint: Color
 
     /// Invoked when the user taps the close button.
-    public let onDismiss:   () -> Void
+    public let onDismiss: () -> Void
 
     /// Creates a banner.
     ///

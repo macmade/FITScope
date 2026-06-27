@@ -38,7 +38,7 @@ public struct OrientationControlView: View
     private let adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
-    private let reRender:    () -> Void
+    private let reRender: () -> Void
 
     /// Creates the orientation control.
     ///

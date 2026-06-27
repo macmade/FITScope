@@ -40,19 +40,19 @@ public struct ImageCanvasView: View
     @EnvironmentObject private var preferences: Preferences
 
     /// The current magnification.
-    @State private var zoom:    CGFloat = 1.0
+    @State private var zoom: CGFloat = 1.0
 
     /// Whether zoom-out is available; `false` once the whole image is visible.
     @State private var canZoomOut = true
 
     /// The latest one-shot canvas command.
-    @State private var command  = CanvasCommand( kind: .fit, token: 0 )
+    @State private var command = CanvasCommand( kind: .fit, token: 0 )
 
     /// A monotonically increasing token source for commands.
-    @State private var tokens   = 0
+    @State private var tokens = 0
 
     /// The latest cursor readout, shown in the status pill.
-    @State private var readout  = CursorReadout.empty
+    @State private var readout = CursorReadout.empty
 
     /// The on-screen rectangle the displayed image currently occupies, reported
     /// by the canvas and used to register overlays to image space.

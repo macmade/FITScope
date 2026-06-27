@@ -31,18 +31,18 @@ import SwiftUI
 public struct HistogramView: View
 {
     /// The histograms to draw.
-    public let histogram:        FITSImageRenderer.Histogram
+    public let histogram: FITSImageRenderer.Histogram
 
     /// Whether to draw the RGB channels in separate stacked strips rather than
     /// overlaid. Only honoured in RGB mode.
     public let separateChannels: Bool
 
     /// Which histogram (RGB, luminance or mono) to draw.
-    public let mode:             HistogramControlView.Mode
+    public let mode: HistogramControlView.Mode
 
     /// Whether to scale bar heights logarithmically, lifting small bins so detail
     /// is visible when a few bins dominate. Linear when `false`.
-    public let logScale:         Bool
+    public let logScale: Bool
 
     /// The view's content.
     public var body: some View

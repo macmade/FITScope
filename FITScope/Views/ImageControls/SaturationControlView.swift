@@ -36,7 +36,7 @@ public struct SaturationControlView: View
     private let adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
-    private let reRender:    () -> Void
+    private let reRender: () -> Void
 
     /// The current saturation factor. Seeded from the image's adjustments.
     @State private var saturation: Double

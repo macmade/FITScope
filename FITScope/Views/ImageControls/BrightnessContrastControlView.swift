@@ -40,13 +40,13 @@ public struct BrightnessContrastControlView: View
     private let adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
-    private let reRender:    () -> Void
+    private let reRender: () -> Void
 
     /// The current brightness offset. Seeded from the image's adjustments.
     @State private var brightness: Double
 
     /// The current contrast factor. Seeded from the image's adjustments.
-    @State private var contrast:   Double
+    @State private var contrast: Double
 
     /// Creates the brightness/contrast control.
     ///

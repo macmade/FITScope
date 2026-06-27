@@ -65,30 +65,30 @@ public struct StretchControlView: View
     /// interaction yields a valid, non-degenerate render: the arcsinh factor is
     /// non-zero (zero throws), and the sigmoid constants produce a centred
     /// S-curve on normalized data rather than a flat 50% grey.
-    static let defaultLogIntensity  = 50.0
+    static let defaultLogIntensity = 50.0
 
     /// The seed for the arcsinh factor slider. Non-zero, since a factor of zero
     /// makes the algorithm throw.
     static let defaultArcsinhFactor = 50.0
 
     /// The seed for the sigmoid midpoint slider.
-    static let defaultSigmoidN1     = 10.0
+    static let defaultSigmoidN1 = 10.0
 
     /// The seed for the sigmoid contrast slider.
-    static let defaultSigmoidN2     = 0.5
+    static let defaultSigmoidN2 = 0.5
 
     /// The shared adjustment values this control writes to.
     private let adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
-    private let reRender:    () -> Void
+    private let reRender: () -> Void
 
     /// The selected stretch mode. Seeded from the image's adjustments so the
     /// control reflects the file it belongs to.
-    @State private var mode:      Mode
+    @State private var mode: Mode
 
     /// The logarithmic intensity slider value.
-    @State private var logN1:     Double
+    @State private var logN1: Double
 
     /// The arcsinh factor slider value.
     @State private var arcsinhN1: Double

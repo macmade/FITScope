@@ -29,13 +29,13 @@ import Foundation
 public struct CursorReadout: Equatable, Sendable
 {
     /// The column under the cursor, or `nil` when off-image.
-    public let x:        Int?
+    public let x: Int?
 
     /// The row under the cursor, or `nil` when off-image.
-    public let y:        Int?
+    public let y: Int?
 
     /// The raw pixel value, or `nil` when off-image.
-    public let value:    Double?
+    public let value: Double?
 
     /// The value's fraction of full scale, or `nil`.
     public let fraction: Double?

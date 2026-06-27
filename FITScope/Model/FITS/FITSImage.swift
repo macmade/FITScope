@@ -37,7 +37,7 @@ import SwiftUtilities
 public class FITSImage: ObservableObject
 {
     /// The file's header metadata, grouped into sections.
-    @Published public private( set ) var info:     FITSImageInfo
+    @Published public private( set ) var info: FITSImageInfo
 
     /// The renderer that turns the image HDU into displayable pixels and
     /// histograms.

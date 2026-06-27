@@ -41,14 +41,14 @@ public struct HistogramControlView: View
     @ObservedObject private var options: HistogramViewOptions
 
     /// The processed histograms to display.
-    public let histogram:  FITSImageRenderer.Histogram
+    public let histogram: FITSImageRenderer.Histogram
 
     /// The per-channel statistics for the processed image.
     public let statistics: FITSImageRenderer.HistogramStatistics
 
     /// The original (unprocessed) histogram and statistics, or `nil` if not yet
     /// computed. When present, the user can switch the display to it.
-    public let original:   FITSImageRenderer.HistogramSet?
+    public let original: FITSImageRenderer.HistogramSet?
 
     /// Creates the histogram control.
     ///

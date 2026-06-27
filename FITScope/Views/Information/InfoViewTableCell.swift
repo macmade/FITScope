@@ -33,7 +33,7 @@ public struct InfoViewTableCell: View
     public let value: String
 
     /// The font point size.
-    public let size:  Double
+    public let size: Double
 
     /// The foreground shape style (e.g. `.primary`, `.secondary`).
     public let style: any ShapeStyle

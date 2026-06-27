@@ -66,10 +66,10 @@ public struct ImageInformation
     public let dimensions: String
 
     /// The bit depth, e.g. `"16-bit"`. Used by the file row and status bar.
-    public let bitDepth:   String
+    public let bitDepth: String
 
     /// The channel description, e.g. `"1 (Grayscale)"`.
-    public let channels:   String
+    public let channels: String
 
     /// The present-only rows for the given fields, in the given order.
     ///

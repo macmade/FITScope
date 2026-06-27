@@ -35,7 +35,7 @@ public struct HistogramStatisticsView: View
     private struct Descriptor: Hashable
     {
         /// The label shown for the statistic (e.g. `"Mean"`).
-        public let label:        String
+        public let label: String
 
         /// Extracts and formats the statistic from a channel's statistics.
         public let provideValue: ( HistogramStatistics ) -> String
@@ -65,7 +65,7 @@ public struct HistogramStatisticsView: View
     public let statistics: FITSImageRenderer.HistogramStatistics
 
     /// Whether to show RGB channels or a single luminance/mono channel.
-    public let mode:       HistogramControlView.Mode
+    public let mode: HistogramControlView.Mode
 
     /// The ordered statistic rows displayed in the grid.
     private let descriptors =

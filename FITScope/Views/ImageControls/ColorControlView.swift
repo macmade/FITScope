@@ -31,7 +31,7 @@ public struct ColorControlView: View
     private let adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
-    private let reRender:    () -> Void
+    private let reRender: () -> Void
 
     /// Whether the image is inverted. Seeded from the image's adjustments so the
     /// control reflects the file it belongs to.

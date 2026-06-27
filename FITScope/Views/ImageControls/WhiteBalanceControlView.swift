@@ -62,20 +62,20 @@ public struct WhiteBalanceControlView: View
     private let adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
-    private let reRender:    () -> Void
+    private let reRender: () -> Void
 
     /// The selected white-balance mode. Seeded from the image's adjustments so
     /// the control reflects the file it belongs to.
-    @State private var mode:  Mode
+    @State private var mode: Mode
 
     /// The manual red-channel gain.
-    @State private var red:   Double
+    @State private var red: Double
 
     /// The manual green-channel gain.
     @State private var green: Double
 
     /// The manual blue-channel gain.
-    @State private var blue:  Double
+    @State private var blue: Double
 
     /// Creates the white-balance control.
     ///

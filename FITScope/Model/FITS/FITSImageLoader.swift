@@ -44,11 +44,11 @@ public class FITSImageLoader: ObservableObject
     @Published public private( set ) var error: Error?
 
     /// The URL the document was loaded from, retained for metadata.
-    private let url:           URL
+    private let url: URL
 
     /// The document whose bytes are parsed, when the loader was created from a
     /// pre-read document. `nil` when the loader reads the URL itself.
-    private let document:      FITSDocument?
+    private let document: FITSDocument?
 
     /// Forwards the loaded image's change notifications to this object's
     /// observers.

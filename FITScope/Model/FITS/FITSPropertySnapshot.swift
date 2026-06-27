@@ -32,7 +32,7 @@ import SwiftFITS
 public struct FITSPropertySnapshot: Sendable
 {
     /// The keyword name (e.g. `NAXIS1`).
-    public let name:  String
+    public let name: String
 
     /// The keyword's value.
     public let value: FITSValue

@@ -30,7 +30,7 @@ import SwiftFITS
 public struct FITSImageInfo: Codable, Hashable
 {
     /// The URL of the source file.
-    public let url:      URL
+    public let url: URL
 
     /// The file's metadata sections (primary header and any extensions), in file
     /// order. Data-only sections are excluded.

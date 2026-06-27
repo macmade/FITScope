@@ -34,19 +34,19 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
 {
     /// A stable identity combining the index, name, kind, value and comment, so
     /// distinct rows never collide even when keywords repeat.
-    public let id:      String
+    public let id: String
 
     /// The property's position within its section.
-    public let index:   Int
+    public let index: Int
 
     /// The keyword name (e.g. `BITPIX`).
-    public let name:    String
+    public let name: String
 
     /// A human-readable description of the value's type (logical, integer, …).
-    public let kind:    String
+    public let kind: String
 
     /// The value formatted as a display string, or `""` when absent.
-    public let value:   String
+    public let value: String
 
     /// The keyword's comment, or `""` when absent.
     public let comment: String
