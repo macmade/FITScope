@@ -24,28 +24,28 @@
 
 import Foundation
 import SwiftAstro
+import SwiftPixel
 
-/// Bridges the app's FITS data to SwiftAstro's star detection: it decodes the
-/// linear mono buffer from a render input and runs a detector over it.
+/// Runs SwiftAstro's star detection over a detection-ready image.
 ///
-/// The entry point is `nonisolated` and works on `Sendable` inputs, so a caller
-/// can run it off the main actor (detection is independent of the display
-/// pipeline — it uses the linear sensor values, not the rendered image).
+/// The detection-ready, single-channel linear buffer is produced at load time by
+/// `SwiftAstro.FITSImageDecoder` (which demosaics one-shot-colour frames); this
+/// only selects a detector and runs it. The entry point is `nonisolated` and
+/// works on the `Sendable` ``SwiftPixel/PixelBuffer``, so a caller can run it off
+/// the main actor.
 public enum StarDetection
 {
-    /// Detects stars in the raw FITS image data.
+    /// Detects stars in a detection-ready image.
     ///
     /// - Parameters:
-    ///   - data:       The image HDU's raw pixel bytes.
-    ///   - properties: The owning header's property snapshots.
-    ///   - detector:   The detector to use; defaults to ``MomentStarDetector``.
+    ///   - image:    The detection-ready single-channel linear image, or `nil`
+    ///               when none is available (detection is then skipped).
+    ///   - detector: The detector to use; defaults to ``MomentStarDetector``.
     /// - Returns: The detected stars and their aggregate metrics, or `nil` when
-    ///   the data cannot be decoded into an image.
-    public static func detectStars( data: Data, properties: [ FITSPropertySnapshot ], using detector: any StarDetecting = MomentStarDetector() ) -> StarField?
+    ///   no image is given or detection fails.
+    public static func detectStars( in image: PixelBuffer?, using detector: any StarDetecting = MomentStarDetector() ) -> StarField?
     {
-        guard let samples    = ImageProcessor.linearMonoSamples( data: data, properties: properties ),
-              let dimensions = ImageProcessor.imageDimensions( from: properties ),
-              let image      = try? GrayscaleImage( width: dimensions.width, height: dimensions.height, pixels: samples )
+        guard let image
         else
         {
             return nil

@@ -25,21 +25,23 @@
 @testable import FITScope
 import Foundation
 import SwiftAstro
+import SwiftPixel
 import Testing
 
-/// Tests for the ``StarDetection`` coordinator, which decodes the linear mono
-/// buffer from raw FITS data and runs a detector over it.
+/// Tests for the ``StarDetection`` coordinator, which runs a detector over a
+/// detection-ready image. (The FITS-to-image decoding it consumes — including
+/// one-shot-colour demosaicing — is covered by SwiftAstro's `FITSImageDecoder`
+/// tests.)
 @Suite( "StarDetection" )
 struct StarDetectionTests
 {
-    /// A synthetic 8-bit HDU: a flat background with a single bright square,
-    /// returned as raw bytes plus the header property snapshots — the same shape
-    /// the renderer hands the coordinator.
-    private static func starFieldHDU( width: Int = 32, height: Int = 32, background: UInt8 = 10, peak: UInt8 = 200 ) -> ( data: Data, properties: [ FITSPropertySnapshot ] )
+    /// A synthetic single-channel linear image: a flat background with a single
+    /// bright square, the same shape a decoded detection buffer has.
+    private static func starImage( width: Int = 32, height: Int = 32, background: Double = 10, peak: Double = 200 ) throws -> PixelBuffer
     {
-        let bytes = ( 0 ..< ( width * height ) ).map
+        let pixels = ( 0 ..< ( width * height ) ).map
         {
-            index -> UInt8 in
+            index -> Double in
 
             let x      = index % width
             let y      = index / width
@@ -48,25 +50,17 @@ struct StarDetectionTests
             return inStar ? peak : background
         }
 
-        let properties =
-            [
-                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
-                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
-                FITSPropertySnapshot( name: "NAXIS1", value: .integer( Int64( width ) ) ),
-                FITSPropertySnapshot( name: "NAXIS2", value: .integer( Int64( height ) ) ),
-            ]
-
-        return ( Data( bytes ), properties )
+        return try PixelBuffer( width: width, height: height, channels: 1, pixels: pixels, isNormalized: false )
     }
 
-    /// The coordinator decodes the raw data and returns the detected stars with
+    /// The coordinator runs the detector and returns the detected stars with
     /// their metrics.
     @Test
-    func detectsStarsFromRawFITSData() throws
+    func detectsStarsInImage() throws
     {
-        let ( data, properties ) = Self.starFieldHDU()
+        let image = try Self.starImage()
 
-        let field = try #require( StarDetection.detectStars( data: data, properties: properties ) )
+        let field = try #require( StarDetection.detectStars( in: image ) )
         let star  = try #require( field.stars.first )
 
         #expect( field.count == 1 )
@@ -75,10 +69,10 @@ struct StarDetectionTests
         #expect( star.fwhm > 0 )
     }
 
-    /// The coordinator returns `nil` when the data cannot be decoded (no geometry).
+    /// The coordinator returns `nil` when no detection image is available.
     @Test
-    func returnsNilForUndecodableData() throws
+    func returnsNilForMissingImage() throws
     {
-        #expect( StarDetection.detectStars( data: Data(), properties: [] ) == nil )
+        #expect( StarDetection.detectStars( in: nil ) == nil )
     }
 }

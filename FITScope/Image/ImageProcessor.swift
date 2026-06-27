@@ -243,21 +243,7 @@ public enum ImageProcessor
             throw RuntimeError( message: "Data too small: \( data.count ) < \( size )" )
         }
 
-        let bayerPattern: Processors.Debayer.Pattern? = if let pattern = properties.first( where: { $0.name == "BAYERPAT" } )?.value.string
-        {
-            switch pattern
-            {
-                case "BGGR": .bggr
-                case "RGBG": .rgbg
-                case "GRBG": .grbg
-                case "RGGB": .rggb
-                default:     throw RuntimeError( message: "Unsupported BAYERPAT value \( pattern )" )
-            }
-        }
-        else
-        {
-            nil
-        }
+        let bayerPattern = try Self.bayerPattern( from: properties )
 
         let ( scale, offset ) = ImageProcessor.scaling( from: properties )
 
@@ -280,6 +266,30 @@ public enum ImageProcessor
         }
     }
 
+    /// Maps the header's `BAYERPAT` keyword to a debayer pattern.
+    ///
+    /// - Parameter properties: The image HDU's header properties.
+    /// - Returns: The colour-filter-array pattern, or `nil` when the header has
+    ///   no `BAYERPAT` keyword (i.e. the frame is monochrome).
+    /// - Throws: ``RuntimeError`` when `BAYERPAT` holds an unsupported value.
+    public static func bayerPattern( from properties: [ FITSPropertySnapshot ] ) throws -> Processors.Debayer.Pattern?
+    {
+        guard let pattern = properties.first( where: { $0.name == "BAYERPAT" } )?.value.string
+        else
+        {
+            return nil
+        }
+
+        switch pattern
+        {
+            case "BGGR": return .bggr
+            case "RGBG": return .rgbg
+            case "GRBG": return .grbg
+            case "RGGB": return .rggb
+            default:     throw RuntimeError( message: "Unsupported BAYERPAT value \( pattern )" )
+        }
+    }
+
     /// Reads the image dimensions from the header's `NAXIS1` / `NAXIS2`
     /// keywords.
     ///
@@ -298,48 +308,6 @@ public enum ImageProcessor
         }
 
         return ( width, height )
-    }
-
-    /// Decodes the whole image HDU into a row-major array of linear samples, with
-    /// `BSCALE`/`BZERO` applied and a top-left origin.
-    ///
-    /// This is the single-channel "raw" view used for analysis such as star
-    /// detection, which needs the linear sensor values rather than the processed
-    /// display image. For a colour-filter-array image these are the undebayered
-    /// mosaic values.
-    ///
-    /// - Parameters:
-    ///   - data:       The image HDU's raw pixel bytes.
-    ///   - properties: The owning header's property snapshots.
-    /// - Returns: The `width × height` linear samples, or `nil` for missing or
-    ///   unsupported geometry, or truncated data.
-    public static func linearMonoSamples( data: Data, properties: [ FITSPropertySnapshot ] ) -> [ Double ]?
-    {
-        guard let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
-              let bitsPerPixel = BitsPerPixel.from( value: bitPix ),
-              let dimensions   = Self.imageDimensions( from: properties )
-        else
-        {
-            return nil
-        }
-
-        let bytesPerSample = bitsPerPixel.size( numberOfPixels: 1 )
-        let count          = dimensions.width * dimensions.height
-
-        guard count * bytesPerSample <= data.count
-        else
-        {
-            return nil
-        }
-
-        let ( scale, offset ) = Self.scaling( from: properties )
-
-        return ( 0 ..< count ).map
-        {
-            let start = data.startIndex + ( $0 * bytesPerSample )
-
-            return ( Self.decodeSample( data: data, at: start, bitsPerPixel: bitsPerPixel ) * scale ) + offset
-        }
     }
 
     /// Reads the linear pixel-scaling keywords `BSCALE` and `BZERO`.

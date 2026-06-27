@@ -138,15 +138,23 @@ public class FITSImageRenderer: ObservableObject
         /// The owning header's property snapshots, used to interpret the bytes.
         public let properties: [ FITSPropertySnapshot ]
 
+        /// The detection-ready single-channel linear image — demosaiced to a
+        /// luminance channel for one-shot-colour frames — built once at load time
+        /// via `SwiftAstro.FITSImageDecoder`. `nil` when no detection input is
+        /// needed (e.g. the QuickLook extensions) or it could not be decoded.
+        public let detectionImage: PixelBuffer?
+
         /// Creates a render input.
         ///
         /// - Parameters:
-        ///   - data:       The image HDU's raw pixel bytes.
-        ///   - properties: The owning header's property snapshots.
-        public init( data: Data, properties: [ FITSPropertySnapshot ] )
+        ///   - data:           The image HDU's raw pixel bytes.
+        ///   - properties:     The owning header's property snapshots.
+        ///   - detectionImage: The detection-ready single-channel image, or `nil`.
+        public init( data: Data, properties: [ FITSPropertySnapshot ], detectionImage: PixelBuffer? = nil )
         {
-            self.data       = data
-            self.properties = properties
+            self.data           = data
+            self.properties     = properties
+            self.detectionImage = detectionImage
         }
     }
 
@@ -223,14 +231,19 @@ public class FITSImageRenderer: ObservableObject
     /// so the app's render path and the QuickLook extensions pick the same image
     /// HDU; this only wraps the result in the Sendable ``RenderInput``.
     ///
-    /// - Parameter sections: The file's sections, in file order.
-    /// - Returns: The data bytes and owning-header property snapshots.
+    /// - Parameters:
+    ///   - sections:       The file's sections, in file order.
+    ///   - detectionImage: The detection-ready single-channel image to carry
+    ///                     alongside the render bytes, or `nil` when star
+    ///                     detection is not needed for this input.
+    /// - Returns: The data bytes, owning-header property snapshots and optional
+    ///   detection image.
     /// - Throws: ``RuntimeError`` when the file contains no image data section.
-    nonisolated static func renderInput( from sections: [ FITSSection ] ) throws -> RenderInput
+    nonisolated static func renderInput( from sections: [ FITSSection ], detectionImage: PixelBuffer? = nil ) throws -> RenderInput
     {
         let hdu = try FITSPreviewRenderer.imageHDU( from: sections )
 
-        return RenderInput( data: hdu.data, properties: hdu.properties )
+        return RenderInput( data: hdu.data, properties: hdu.properties, detectionImage: detectionImage )
     }
 
     /// Renders the image with the current adjustments and commits the result.

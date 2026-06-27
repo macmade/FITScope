@@ -1,12 +1,6 @@
 [submodule "Submodules/xcconfig"]
 	path = Submodules/xcconfig
 	url = https://github.com/macmade/xcconfig.git
-[submodule "Submodules/SwiftFITS"]
-	path = Submodules/SwiftFITS
-	url = https://github.com/macmade/SwiftFITS.git
-[submodule "Submodules/SwiftPixel"]
-	path = Submodules/SwiftPixel
-	url = https://github.com/macmade/SwiftPixel.git
 [submodule "Submodules/SwiftAstro"]
 	path = Submodules/SwiftAstro
 	url = https://github.com/macmade/SwiftAstro.git

@@ -84,7 +84,7 @@
                BlueprintIdentifier = "05F175A12DD8E36300843626"
                BuildableName = "SwiftFITSTests.xctest"
                BlueprintName = "SwiftFITSTests"
-               ReferencedContainer = "container:Submodules/SwiftFITS/SwiftFITS.xcodeproj">
+               ReferencedContainer = "container:Submodules/SwiftAstro/Submodules/SwiftFITS/SwiftFITS.xcodeproj">
             </BuildableReference>
          </TestableReference>
          <TestableReference
@@ -94,7 +94,7 @@
                BlueprintIdentifier = "05F175B22DD8E36300843626"
                BuildableName = "SwiftPixelTests.xctest"
                BlueprintName = "SwiftPixelTests"
-               ReferencedContainer = "container:Submodules/SwiftPixel/SwiftPixel.xcodeproj">
+               ReferencedContainer = "container:Submodules/SwiftAstro/Submodules/SwiftPixel/SwiftPixel.xcodeproj">
             </BuildableReference>
          </TestableReference>
          <TestableReference
@@ -104,7 +104,7 @@
                BlueprintIdentifier = "05F175C32DD8E36300843626"
                BuildableName = "SwiftUtilitiesTests.xctest"
                BlueprintName = "SwiftUtilitiesTests"
-               ReferencedContainer = "container:Submodules/SwiftPixel/Submodules/SwiftUtilities/SwiftUtilities.xcodeproj">
+               ReferencedContainer = "container:Submodules/SwiftAstro/Submodules/SwiftPixel/Submodules/SwiftUtilities/SwiftUtilities.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>

@@ -98,7 +98,7 @@ public class FITSImage: ObservableObject
 
         self.starField = await Task.detached
         {
-            StarDetection.detectStars( data: input.data, properties: input.properties )
+            StarDetection.detectStars( in: input.detectionImage )
         }
         .value
     }

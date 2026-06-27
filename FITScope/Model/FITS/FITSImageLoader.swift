@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Combine
+import SwiftAstro
 import SwiftFITS
 import SwiftUI
 import SwiftUtilities
@@ -41,7 +42,7 @@ public class FITSImageLoader: ObservableObject
     @Published public private( set ) var image: FITSImage?
 
     /// The error from the most recent failed load, or `nil` on success.
-    @Published public private( set ) var error: Error?
+    @Published public private( set ) var error: ( any Swift.Error )?
 
     /// The URL the document was loaded from, retained for metadata.
     private let url: URL
@@ -128,7 +129,18 @@ public class FITSImageLoader: ObservableObject
 
                         let file        = try FITSFile( data: data, options: .lenient )
                         let info        = FITSImageInfo( url: self.url, file: file )
-                        let renderInput = Swift.Result { try FITSImageRenderer.renderInput( from: file.sections ) }
+                        let renderInput = Swift.Result
+                        {
+                            () -> FITSImageRenderer.RenderInput in
+
+                            // Build the detection-ready buffer here, while the
+                            // non-Sendable file is still in scope; only the
+                            // Sendable PixelBuffer crosses back. A decode failure
+                            // must not fail the load, so detection is best-effort.
+                            let detectionImage = try? FITSImageDecoder.detectionImage( from: file )
+
+                            return try FITSImageRenderer.renderInput( from: file.sections, detectionImage: detectionImage )
+                        }
 
                         continuation.resume( returning: ( info: info, renderInput: renderInput ) )
                     }
