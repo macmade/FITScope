@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FITScope — Star Detection Integration</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1d212b;
+    --border: #2a2f3a;
+    --text: #e6e9ef;
+    --muted: #9aa3b2;
+    --accent: #5aa9ff;
+    --accent-soft: #1b3656;
+    --green: #4cd07d;
+    --amber: #f0b429;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; font-size: 15px; }
+  header.page { padding: 36px 40px 28px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, #11151d, #0f1115); }
+  header.page h1 { margin: 0 0 6px; font-size: 27px; letter-spacing: -0.4px; }
+  header.page .sub { color: var(--muted); font-size: 14px; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 40px 80px; }
+  section.block { margin-top: 38px; }
+  h2 { font-size: 20px; margin: 0 0 12px; letter-spacing: -0.2px; }
+  h5 { margin: 16px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); }
+  a { color: var(--accent); }
+  code { font-family: var(--mono); font-size: 0.9em; background: var(--panel-2); padding: 1px 5px; border-radius: 5px; }
+  .grid-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 18px 0; }
+  .meta-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .meta-card h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); }
+  .meta-card p { margin: 0; font-size: 14px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 4px 20px; }
+  .qa { margin: 14px 0; }
+  .qa .q { font-weight: 600; }
+  .qa .a { color: var(--muted); margin: 2px 0 0; }
+  .cap { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.4px; padding: 3px 10px; border-radius: 999px; border: 1px solid transparent; text-transform: uppercase; }
+  .cap-todo { background: rgba(154,163,178,.13); color: var(--muted); border-color: rgba(154,163,178,.30); }
+  .cap-prog { background: rgba(240,180,41,.13); color: var(--amber); border-color: rgba(240,180,41,.35); }
+  .cap-done { background: rgba(76,208,125,.14); color: var(--green); border-color: rgba(76,208,125,.35); }
+  details.ms { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin: 12px 0; overflow: hidden; }
+  details.ms[open] { border-color: #36506f; }
+  details.ms > summary { list-style: none; cursor: pointer; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  details.ms > summary::-webkit-details-marker { display: none; }
+  .ms-id { font-family: var(--mono); font-size: 12px; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 6px; flex: 0 0 auto; }
+  .ms-title { font-weight: 600; flex: 1 1 auto; }
+  .ms-body { padding: 0 16px 16px; border-top: 1px solid var(--border); }
+  ul.tasks { list-style: none; padding-left: 0; margin: 6px 0; }
+  ul.tasks li { padding: 3px 0 3px 26px; position: relative; }
+  ul.tasks li::before { content: "☐"; position: absolute; left: 0; color: var(--muted); }
+  .fieldline { margin: 6px 0; font-size: 14px; }
+  .fieldline .k { color: var(--muted); }
+  .empty { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>FITScope — Star Detection Integration</h1>
+  <div class="sub">Adopt SwiftAstro's new MatchedFilterStarDetector</div>
+</header>
+<div class="wrap">
+
+  <section class="block">
+    <div class="grid-meta">
+      <div class="meta-card"><h4>Generated</h4><p>2026-06-27</p></div>
+      <div class="meta-card"><h4>Source</h4><p>Brainstorming design session (embedded)</p></div>
+      <div class="meta-card"><h4>Repo</h4><p>FITScope</p></div>
+      <div class="meta-card"><h4>Algorithm plan</h4><p>SwiftAstro <code>Docs/agent-plans/2026-06-27-star-detection/</code></p></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Overview</h2>
+    <p>The star-detection algorithm rewrite lives in the SwiftAstro submodule (see the companion plan there). On the FITScope side the change is small: adopt the new <code>MatchedFilterStarDetector</code> as the default, keep the rest of the pipeline (overlay, coordinate mapping, off-main-actor detection) unchanged, and advance the submodule pointer. This plan can only land <strong>after</strong> the SwiftAstro work is committed.</p>
+  </section>
+
+  <section class="block">
+    <h2>Questions &amp; answers</h2>
+    <div class="panel">
+      <div class="qa"><p class="q">Q: Scope of FITScope changes?</p><p class="a">A: Default-detector swap, test update, and submodule pointer bump; the design otherwise leaves the FITScope pipeline untouched.</p></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Notes</h2>
+    <ul class="tasks">
+      <li>Call site: <code>FITScope/Model/StarDetection.swift</code> — <code>detectStars(in:using:)</code> defaults the detector.</li>
+      <li>Detection already runs off the main actor (<code>FITSImage.detectStars()</code> via <code>Task.detached</code>); the added cost doesn't affect UI responsiveness.</li>
+      <li>The overlay (<code>StarsOverlay</code>) and coordinate mapping are verified correct and stay unchanged.</li>
+      <li>Keep <code>FITScope.xcodeproj</code> and any package manifest in sync; build/test via <code>xcodebuild</code>.</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <h2>Milestones</h2>
+
+    <details class="ms" open>
+      <summary><span class="ms-id">F1</span><span class="ms-title">Swap default detector</span><span class="cap cap-todo">Not started</span></summary>
+      <div class="ms-body">
+        <h5>Goal</h5>
+        <p>Use <code>MatchedFilterStarDetector()</code> as the default in <code>StarDetection.detectStars(in:)</code> instead of <code>MomentStarDetector()</code>.</p>
+        <h5>Tasks</h5>
+        <ul class="tasks">
+          <li>Update the default parameter in <code>FITScope/Model/StarDetection.swift</code>.</li>
+          <li>Update <code>FITScopeTests/Model/StarDetectionTests.swift</code> if it pins the old default detector type.</li>
+          <li>Build and test via <code>xcodebuild</code>.</li>
+        </ul>
+        <div class="fieldline"><span class="k">Status:</span> <span class="cap cap-todo">Not started</span></div>
+        <div class="fieldline"><span class="k">Completed:</span> <span class="empty">—</span></div>
+        <h5>Implementation notes</h5><p class="empty">—</p>
+        <h5>Review comments</h5><p class="empty">—</p>
+      </div>
+    </details>
+
+    <details class="ms">
+      <summary><span class="ms-id">F2</span><span class="ms-title">Bump submodule pointer &amp; verify end-to-end</span><span class="cap cap-todo">Not started</span></summary>
+      <div class="ms-body">
+        <h5>Goal</h5>
+        <p>Advance the SwiftAstro submodule to the committed rewrite and confirm detection is correct in the real app on the M42 and M35 frames.</p>
+        <h5>Tasks</h5>
+        <ul class="tasks">
+          <li>Advance the SwiftAstro submodule pointer to the commit containing the new detector (performed by the user).</li>
+          <li>Build FITScope; open M42 and M35; confirm markers land on real stars, the nebula ring is gone, and noise is not circled.</li>
+          <li>Confirm the toolbar toggle / loading state still behave.</li>
+        </ul>
+        <div class="fieldline"><span class="k">Status:</span> <span class="cap cap-todo">Not started</span></div>
+        <div class="fieldline"><span class="k">Completed:</span> <span class="empty">—</span></div>
+        <h5>Implementation notes</h5><p class="empty">—</p>
+        <h5>Review comments</h5><p class="empty">—</p>
+      </div>
+    </details>
+
+  </section>
+
+</div>
+</body>
+</html>
