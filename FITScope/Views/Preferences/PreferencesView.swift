@@ -33,15 +33,6 @@ import SwiftUtilities
 /// environment objects across the tab boundary.
 public struct PreferencesView: View
 {
-    /// The tabs shown in the window, in order.
-    private enum Tab: Hashable
-    {
-        case general
-        case apiKeys
-        case informationPanel
-        case weighting
-    }
-
     /// The shared, persisted preferences. Resolved here — before the `TabView` —
     /// and passed into the tabs explicitly, since a `Settings` scene's `TabView`
     /// does not reliably propagate environment objects to its tab content.
@@ -50,6 +41,10 @@ public struct PreferencesView: View
     /// The shared, Keychain-backed API keys, resolved here and passed down for
     /// the same reason as ``preferences``.
     @EnvironmentObject private var apiKeyStore: APIKeyStore
+
+    /// App-wide coordination, holding the selected tab so a call site outside the
+    /// window (the "no API key" alert) can open Preferences to a specific tab.
+    @EnvironmentObject private var appModel: AppModel
 
     /// The width of the standard, control-light tabs.
     private static let standardWidth: CGFloat = 480
@@ -73,30 +68,30 @@ public struct PreferencesView: View
     /// selected pane with no empty space below.
     public var body: some View
     {
-        TabView
+        TabView( selection: self.$appModel.selectedPreferencesTab )
         {
             GeneralPreferencesView( preferences: self.preferences )
                 .frame( width: Self.standardWidth )
                 .fixedSize( horizontal: false, vertical: true )
                 .tabItem { Label( "General", systemImage: "gearshape" ) }
-                .tag( Tab.general )
+                .tag( PreferencesTab.general )
 
             APIKeysPreferencesView( apiKeyStore: self.apiKeyStore )
                 .frame( width: Self.standardWidth )
                 .fixedSize( horizontal: false, vertical: true )
                 .tabItem { Label( "API Keys", systemImage: "key" ) }
-                .tag( Tab.apiKeys )
+                .tag( PreferencesTab.apiKeys )
 
             InformationPanelPreferencesView( preferences: self.preferences )
                 .frame( width: Self.informationPanelSize.width, height: Self.informationPanelSize.height )
                 .tabItem { Label( "Information Panel", systemImage: "list.bullet.rectangle" ) }
-                .tag( Tab.informationPanel )
+                .tag( PreferencesTab.informationPanel )
 
             WeightingPreferencesView( preferences: self.preferences )
                 .frame( width: Self.weightingWidth )
                 .fixedSize( horizontal: false, vertical: true )
                 .tabItem { Label( "Weighting", systemImage: "scalemass" ) }
-                .tag( Tab.weighting )
+                .tag( PreferencesTab.weighting )
         }
         // The Settings scene has no declarative positioning, so the hosting window
         // is centered when the view first joins it.

@@ -47,6 +47,9 @@ public struct MainWindowView: View
     /// Whether the window is currently the key window.
     @Environment( \.appearsActive ) private var appearsActive
 
+    /// Opens the Settings scene, used by the "no API key" alert's action.
+    @Environment( \.openSettings ) private var openSettings
+
     /// The file URLs to load when the window first appears.
     private let initialURLs: [ URL ]
 
@@ -140,6 +143,25 @@ public struct MainWindowView: View
         // Publish the selected file as the scene's focused object so the File-menu
         // commands (Save As / Export) target and validate against it.
         .focusedSceneObject( self.model.selectedFile )
+        // The "no API key" alert, with an action that opens Settings (the native
+        // SwiftUI way) straight to the API Keys tab. Bound directly to the shared
+        // flag — a single source of truth, so SwiftUI never writes a derived value
+        // back during an update ("publishing changes from within view updates").
+        .alert( "No Astrometry.net API Key", isPresented: self.$appModel.isMissingAPIKeyAlertPresented )
+        {
+            Button( "Open Preferences\u{2026}" )
+            {
+                self.appModel.selectedPreferencesTab = .apiKeys
+
+                self.openSettings()
+            }
+
+            Button( "Cancel", role: .cancel ) {}
+        }
+        message:
+        {
+            Text( "Add your free Astrometry.net API key in Preferences \u{25B8} API Keys, then try plate solving again." )
+        }
         .onOpenURL
         {
             url in self.model.open( urls: [ url ] )

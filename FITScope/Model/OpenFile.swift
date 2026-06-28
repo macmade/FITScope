@@ -82,6 +82,16 @@ public final class OpenFile: ObservableObject, Identifiable
     /// assigned by the owning ``WindowModel`` as files and metrics change.
     @Published public internal( set ) var weight: Double?
 
+    /// The plate-solve result for this file, set once a solve succeeds. It carries
+    /// the field calibration and the WCS the astrometric overlays read. `nil`
+    /// until the file has been successfully plate-solved.
+    @Published public internal( set ) var plateSolve: PlateSolveResult?
+
+    /// Whether a plate solve is currently running for this file. Published so the
+    /// toolbar's plate-solve button can show a live, in-progress state without
+    /// observing the session directly.
+    @Published public internal( set ) var isPlateSolving = false
+
     /// Forwards the loader's change notifications to this object's observers.
     private var loaderObserver: AnyCancellable?
 

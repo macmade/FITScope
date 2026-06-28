@@ -234,6 +234,9 @@ public enum AccessibilityIdentifier
         /// The zoom-percentage readout between the zoom-out and zoom-in buttons.
         public static let zoomReadout = "ImageToolbarView.zoomReadout"
 
+        /// The plate-solve button.
+        public static let plateSolve = "ImageToolbarView.plateSolve"
+
         /// The toggle button for the overlay with the given stable identifier.
         ///
         /// - Parameter overlay: The overlay's stable ``CanvasOverlay/id``.
@@ -242,6 +245,13 @@ public enum AccessibilityIdentifier
         {
             "ImageToolbarView.overlayToggle.\( overlay )"
         }
+    }
+
+    /// Identifiers applied by ``FITScope/PlateSolveResultView``.
+    public enum PlateSolveWindowView
+    {
+        /// The status line (progress label, "Solved", or failure headline).
+        public static let status = "PlateSolveWindowView.status"
     }
 
     /// Identifiers applied by ``FITScope/BrightnessContrastControlView``.

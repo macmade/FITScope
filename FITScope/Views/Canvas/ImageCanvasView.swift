@@ -39,6 +39,15 @@ public struct ImageCanvasView: View
     /// The shared user preferences; drives whether the floating bars auto-hide.
     @EnvironmentObject private var preferences: Preferences
 
+    /// App-wide coordination, used to start and track the plate solve.
+    @EnvironmentObject private var appModel: AppModel
+
+    /// The API-key store, read for the Astrometry.net key when plate solving.
+    @EnvironmentObject private var apiKeyStore: APIKeyStore
+
+    /// Opens the plate-solving results window.
+    @Environment( \.openWindow ) private var openWindow
+
     /// The current magnification.
     @State private var zoom: CGFloat = 1.0
 
@@ -187,13 +196,16 @@ public struct ImageCanvasView: View
                     self.floatingBar
                     {
                         ImageToolbarView(
-                            zoom:         self.zoom,
-                            canZoomOut:   self.canZoomOut,
-                            onFit:        { self.send( .fit ) },
-                            onActualSize: { self.send( .actualSize ) },
-                            onRecenter:   { self.send( .recenter ) },
-                            onZoomIn:     { self.send( .zoomIn ) },
-                            onZoomOut:    { self.send( .zoomOut ) },
+                            zoom:             self.zoom,
+                            canZoomOut:       self.canZoomOut,
+                            onFit:            { self.send( .fit ) },
+                            onActualSize:     { self.send( .actualSize ) },
+                            onRecenter:       { self.send( .recenter ) },
+                            onZoomIn:         { self.send( .zoomIn ) },
+                            onZoomOut:        { self.send( .zoomOut ) },
+                            onPlateSolve:     { self.plateSolve() },
+                            isPlateSolved:    self.file.plateSolve != nil,
+                            isPlateSolving:   self.file.isPlateSolving,
                             overlays:         self.toolbarOverlays,
                             isOverlayEnabled: { self.enabledOverlays.contains( $0 ) },
                             onToggleOverlay:  { self.toggleOverlay( $0 ) }
@@ -360,6 +372,13 @@ public struct ImageCanvasView: View
         {
             self.enabledOverlays.insert( id )
         }
+    }
+
+    /// Starts (or re-opens) a plate solve for the displayed file and shows the
+    /// results window, via the app model's shared entry point.
+    private func plateSolve()
+    {
+        self.appModel.presentPlateSolve( for: self.file, apiKey: self.apiKeyStore.astrometryNetKey, openWindow: self.openWindow )
     }
 
     /// Issues a one-shot canvas command with a fresh token.

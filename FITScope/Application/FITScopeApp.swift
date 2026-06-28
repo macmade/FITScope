@@ -99,6 +99,11 @@ public struct FITScopeApp: App
             {
                 ViewCommands()
             }
+
+            CommandMenu( "Image" )
+            {
+                ImageCommands( appModel: self.appDelegate.appModel, apiKeyStore: self.appDelegate.apiKeyStore )
+            }
         }
 
         WindowGroup( id: "InfoWindow", for: FITSImageInfo.self )
@@ -115,6 +120,15 @@ public struct FITScopeApp: App
             }
         }
         .windowStyle( .titleBar )
+        .restorationBehavior( .disabled )
+
+        WindowGroup( id: "PlateSolveWindow", for: OpenFile.ID.self )
+        {
+            PlateSolveWindowView( fileID: $0.wrappedValue )
+                .environmentObject( self.appDelegate.appModel )
+        }
+        .windowStyle( .titleBar )
+        .windowResizability( .contentSize )
         .restorationBehavior( .disabled )
 
         Window( "Levels", id: "LevelsWindow" )
@@ -152,6 +166,7 @@ public struct FITScopeApp: App
         Settings
         {
             PreferencesView()
+                .environmentObject( self.appDelegate.appModel )
                 .environmentObject( self.appDelegate.preferences )
                 .environmentObject( self.appDelegate.apiKeyStore )
         }

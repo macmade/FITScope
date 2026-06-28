@@ -57,9 +57,16 @@ public struct ImageToolbarButton: View
     /// colour. Used by toggles.
     private let isActive: Bool
 
-    /// Whether the button is showing background work: it is disabled and its icon
-    /// pulses until the work completes.
+    /// Whether the button is showing background work: its icon pulses until the
+    /// work completes (and, unless ``disablesWhileLoading`` is `false`, it is
+    /// disabled).
     private let isLoading: Bool
+
+    /// Whether a ``isLoading`` button is also disabled. `true` for work the button
+    /// can't be re-invoked during (an overlay still computing); `false` when the
+    /// button stays actionable while busy (e.g. a plate solve whose progress
+    /// window can be reopened mid-solve).
+    private let disablesWhileLoading: Bool
 
     /// The action performed on click.
     private let action: () -> Void
@@ -72,18 +79,21 @@ public struct ImageToolbarButton: View
     ///   - identifier:  The stable accessibility identifier.
     ///   - isEnabled:   Whether the button responds to clicks. Defaults to `true`.
     ///   - isActive:    Whether to tint the icon as "on". Defaults to `false`.
-    ///   - isLoading:   Whether to show the disabled, pulsing loading state.
-    ///                  Defaults to `false`.
+    ///   - isLoading:   Whether to show the pulsing loading state. Defaults to
+    ///                  `false`.
+    ///   - disablesWhileLoading: Whether a loading button is also disabled.
+    ///                  Defaults to `true`.
     ///   - action:      The action performed on click.
-    public init( systemImage: String, help: String, identifier: String, isEnabled: Bool = true, isActive: Bool = false, isLoading: Bool = false, action: @escaping () -> Void )
+    public init( systemImage: String, help: String, identifier: String, isEnabled: Bool = true, isActive: Bool = false, isLoading: Bool = false, disablesWhileLoading: Bool = true, action: @escaping () -> Void )
     {
-        self.systemImage = systemImage
-        self.help        = help
-        self.identifier  = identifier
-        self.isEnabled   = isEnabled
-        self.isActive    = isActive
-        self.isLoading   = isLoading
-        self.action      = action
+        self.systemImage          = systemImage
+        self.help                 = help
+        self.identifier           = identifier
+        self.isEnabled            = isEnabled
+        self.isActive             = isActive
+        self.isLoading            = isLoading
+        self.disablesWhileLoading = disablesWhileLoading
+        self.action               = action
     }
 
     /// The view's content.
@@ -97,7 +107,7 @@ public struct ImageToolbarButton: View
                 .symbolEffect( .pulse, options: .repeating, isActive: self.isLoading )
         }
         .help( self.help )
-        .disabled( self.isEnabled == false || self.isLoading )
+        .disabled( self.isEnabled == false || ( self.isLoading && self.disablesWhileLoading ) )
         .accessibilityIdentifier( self.identifier )
 
         // Tint only when active; otherwise inherit the borderless default so an

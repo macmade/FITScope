@@ -50,6 +50,18 @@ public struct ImageToolbarView: View
     /// Called to request a zoom-out step.
     public let onZoomOut: () -> Void
 
+    /// Called to plate-solve the current image, or `nil` when plate solving is
+    /// unavailable (no button is shown then).
+    public let onPlateSolve: ( () -> Void )?
+
+    /// Whether the current image has a successful plate solve, shown as the
+    /// button's active (tinted) state.
+    public let isPlateSolved: Bool
+
+    /// Whether a plate solve is currently running, shown as the button's pulsing
+    /// loading state.
+    public let isPlateSolving: Bool
+
     /// The overlays available for the current image, in toolbar order. Empty when
     /// none apply, in which case no overlay section is shown.
     public let overlays: [ any CanvasOverlay ]
@@ -61,7 +73,7 @@ public struct ImageToolbarView: View
     public let onToggleOverlay: ( String ) -> Void
 
     /// Creates the toolbar.
-    public init( zoom: CGFloat, canZoomOut: Bool, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void, overlays: [ any CanvasOverlay ], isOverlayEnabled: @escaping ( String ) -> Bool, onToggleOverlay: @escaping ( String ) -> Void )
+    public init( zoom: CGFloat, canZoomOut: Bool, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void, onPlateSolve: ( () -> Void )? = nil, isPlateSolved: Bool = false, isPlateSolving: Bool = false, overlays: [ any CanvasOverlay ], isOverlayEnabled: @escaping ( String ) -> Bool, onToggleOverlay: @escaping ( String ) -> Void )
     {
         self.zoom             = zoom
         self.canZoomOut       = canZoomOut
@@ -70,6 +82,9 @@ public struct ImageToolbarView: View
         self.onRecenter       = onRecenter
         self.onZoomIn         = onZoomIn
         self.onZoomOut        = onZoomOut
+        self.onPlateSolve     = onPlateSolve
+        self.isPlateSolved    = isPlateSolved
+        self.isPlateSolving   = isPlateSolving
         self.overlays         = overlays
         self.isOverlayEnabled = isOverlayEnabled
         self.onToggleOverlay  = onToggleOverlay
@@ -97,6 +112,13 @@ public struct ImageToolbarView: View
 
             ImageToolbarButton( systemImage: "arrow.up.left.and.arrow.down.right", help: "Fit the Image to the Window", identifier: AccessibilityIdentifier.ImageToolbarView.fit, action: self.onFit )
             ImageToolbarButton( systemImage: "1.magnifyingglass", help: "Show the Image at Actual Size (100%)", identifier: AccessibilityIdentifier.ImageToolbarView.actualSize, action: self.onActualSize )
+
+            if let onPlateSolve = self.onPlateSolve
+            {
+                Divider().frame( height: 16 )
+
+                PlateSolveToolbarButton( isSolved: self.isPlateSolved, isSolving: self.isPlateSolving, action: onPlateSolve )
+            }
 
             if self.overlays.isEmpty == false
             {

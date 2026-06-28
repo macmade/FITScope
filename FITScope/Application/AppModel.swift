@@ -57,9 +57,94 @@ public final class AppModel: ObservableObject
     /// new window carrying initial URLs.
     public var openWindowWithURLs: ( ( [ URL ] ) -> Void )?
 
+    /// The in-flight or finished plate-solve sessions, keyed by the file they
+    /// solve. The results window resolves the live session for a file from here,
+    /// so the long-running solve outlives the view that started it.
+    @Published public private( set ) var plateSolveSessions: [ OpenFile.ID: PlateSolveSession ] = [ : ]
+
+    /// The Preferences tab to show, bound by ``PreferencesView``'s `TabView` so a
+    /// call site outside the window — the "no API key" alert — can open
+    /// Preferences directly to a specific tab.
+    @Published public var selectedPreferencesTab: PreferencesTab = .general
+
+    /// Whether the "no Astrometry.net API key" alert should be shown. Set when a
+    /// plate solve is attempted with no key stored; the active window presents the
+    /// alert — with an *Open Preferences* action — in SwiftUI.
+    @Published public var isMissingAPIKeyAlertPresented = false
+
     /// Creates an empty app model.
     public init()
     {}
+
+    /// The plate-solve session for a file, or `nil` when none has been started.
+    ///
+    /// - Parameter id: The file's identifier.
+    /// - Returns: The session, if one exists.
+    public func plateSolveSession( for id: OpenFile.ID ) -> PlateSolveSession?
+    {
+        self.plateSolveSessions[ id ]
+    }
+
+    /// Begins a plate solve for a file, returning whether it could be started.
+    ///
+    /// With no API key, the solve cannot run: the user is told where to add one
+    /// and `false` is returned so the caller does not open an empty results
+    /// window. Otherwise a fresh session replaces any prior one for the file (so
+    /// re-solving starts clean), is started, and `true` is returned.
+    ///
+    /// - Parameters:
+    ///   - file:   The file to solve.
+    ///   - apiKey: The Astrometry.net API key.
+    /// - Returns: `true` when a solve was started, `false` when no key is set.
+    public func beginPlateSolve( of file: OpenFile, apiKey: String ) -> Bool
+    {
+        guard apiKey.trimmingCharacters( in: .whitespacesAndNewlines ).isEmpty == false
+        else
+        {
+            self.isMissingAPIKeyAlertPresented = true
+
+            return false
+        }
+
+        let session = PlateSolveSession( file: file, apiKey: apiKey )
+
+        self.plateSolveSessions[ file.id ] = session
+
+        session.start()
+
+        return true
+    }
+
+    /// Shows the plate-solving results window for a file, starting a solve only
+    /// when the file has not been solved (or attempted) yet.
+    ///
+    /// Once a file has a session — whether it is solving, already solved, or
+    /// failed — the trigger simply brings its window forward, showing the previous
+    /// results rather than re-solving; re-solving is an explicit choice from the
+    /// window's *Plate Solve Again* button. The shared entry point for both the
+    /// toolbar button and the *Image* menu command.
+    ///
+    /// - Parameters:
+    ///   - file:       The file to solve.
+    ///   - apiKey:     The Astrometry.net API key.
+    ///   - openWindow: The action that opens the results window.
+    public func presentPlateSolve( for file: OpenFile, apiKey: String, openWindow: OpenWindowAction )
+    {
+        if self.plateSolveSession( for: file.id ) != nil
+        {
+            openWindow( id: "PlateSolveWindow", value: file.id )
+
+            return
+        }
+
+        guard self.beginPlateSolve( of: file, apiKey: apiKey )
+        else
+        {
+            return
+        }
+
+        openWindow( id: "PlateSolveWindow", value: file.id )
+    }
 
     /// Routes URLs to the active window, or opens a new window when none exists.
     ///
