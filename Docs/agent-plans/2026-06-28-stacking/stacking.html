@@ -1,0 +1,180 @@
+<meta charset="utf-8">
+<title>Stacking — Roadmap</title>
+<style>
+    :root {
+        --bg:        #0d1117;
+        --panel:     #161b22;
+        --border:    #2b3440;
+        --text:      #e6edf3;
+        --muted:     #9da7b3;
+        --accent:    #58a6ff;
+        --accent-2:  #7ee787;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin:           0;
+        padding:          2.5rem 1.25rem 4rem;
+        background:       var(--bg);
+        color:            var(--text);
+        font-family:      -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        line-height:      1.6;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+        max-width: 860px;
+        margin:    0 auto;
+    }
+
+    header.doc {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.5rem;
+        margin-bottom:  2rem;
+    }
+
+    h1 {
+        font-size:   2.25rem;
+        margin:      0 0 .35rem;
+        letter-spacing: -0.02em;
+    }
+
+    .meta {
+        color:       var(--muted);
+        font-size:   .9rem;
+    }
+
+    .overview {
+        color:       var(--muted);
+        font-size:   1.02rem;
+        margin:      0 0 2.5rem;
+    }
+
+    h2.section {
+        font-size:    1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color:        var(--accent-2);
+        margin:       0 0 1.25rem;
+    }
+
+    ol.roadmap {
+        list-style:  none;
+        counter-reset: pt;
+        margin:      0;
+        padding:     0;
+    }
+
+    li.point {
+        counter-increment: pt;
+        position:    relative;
+        background:  var(--panel);
+        border:      1px solid var(--border);
+        border-radius: 10px;
+        padding:     1.15rem 1.25rem 1.15rem 3.6rem;
+        margin-bottom: 1rem;
+    }
+
+    li.point::before {
+        content:     counter(pt);
+        position:    absolute;
+        left:        1.1rem;
+        top:         1.15rem;
+        width:       1.7rem;
+        height:      1.7rem;
+        display:     flex;
+        align-items: center;
+        justify-content: center;
+        background:  var(--bg);
+        border:      1px solid var(--accent);
+        color:       var(--accent);
+        border-radius: 50%;
+        font-size:   .85rem;
+        font-weight: 600;
+    }
+
+    li.point h3 {
+        margin:      0 0 .35rem;
+        font-size:   1.12rem;
+        color:       var(--text);
+    }
+
+    li.point p {
+        margin:      0;
+        color:       var(--muted);
+    }
+</style>
+
+<div class="wrap">
+    <header class="doc">
+        <h1>Stacking</h1>
+        <div class="meta">Generated 2026-06-28</div>
+    </header>
+
+    <p class="overview">
+        A roadmap for adding an image-stacking workflow to FITScope. Today FITScope is a
+        FITS viewer; this initiative brings a full astrophotography stacking pipeline —
+        selecting and calibrating frames, weighting and rejecting them, plate-solving,
+        and producing a stacked result — with rich inspection and progress tools along the way.
+    </p>
+
+    <h2 class="section">Roadmap</h2>
+
+    <ol class="roadmap">
+        <li class="point">
+            <h3>Dedicated stacking window</h3>
+            <p>Create a new window that hosts the entire image-stacking workflow, separate from the main viewer.</p>
+        </li>
+        <li class="point">
+            <h3>Frame selection by type</h3>
+            <p>Let the user choose and add frames by their role in the pipeline: dark, bias, flat, dark flat, and light frames.</p>
+        </li>
+        <li class="point">
+            <h3>Image weighting formula</h3>
+            <p>Use the image-weighting formula defined in preferences, with the option to edit or change it just for the current stacking session without altering the global preference.</p>
+        </li>
+        <li class="point">
+            <h3>Basic image info</h3>
+            <p>Display basic information about each image being added to the stack.</p>
+        </li>
+        <li class="point">
+            <h3>Rejection settings</h3>
+            <p>Allow the user to choose the rejection settings used during stacking — both pixel rejection and frame rejection.</p>
+        </li>
+        <li class="point">
+            <h3>Plate-solving settings</h3>
+            <p>Allow the user to configure plate-solving settings and provide hints to guide the solve.</p>
+        </li>
+        <li class="point">
+            <h3>Image statistics graphs</h3>
+            <p>Show image statistics as graphs across the set — weights, star counts, FWHM, HFR, eccentricity, and similar metrics.</p>
+        </li>
+        <li class="point">
+            <h3>Detailed progress view</h3>
+            <p>Provide a detailed progress view that surfaces the stacking steps as they run, including which frames are rejected.</p>
+        </li>
+        <li class="point">
+            <h3>Session groups</h3>
+            <p>Allow creating groups for multiple night sessions, so lights, darks, flats, and other frames can be organized per session.</p>
+        </li>
+        <li class="point">
+            <h3>Destination folder</h3>
+            <p>Let the user choose the destination folder where the stacking output is written.</p>
+        </li>
+        <li class="point">
+            <h3>Open result on completion</h3>
+            <p>When stacking finishes, automatically open the saved stacked result in a new window.</p>
+        </li>
+        <li class="point">
+            <h3>Pre-stack process review</h3>
+            <p>Show the stacking process steps before stacking begins, so they can be reviewed — either as a separate step or as a dedicated view while configuring and adding frames.</p>
+        </li>
+        <li class="point">
+            <h3>Frame browser with blink &amp; exclude</h3>
+            <p>In the statistics view, list all files with a fast preview, and let the user blink between frames and manually exclude individual files from the stack.</p>
+        </li>
+    </ol>
+</div>
