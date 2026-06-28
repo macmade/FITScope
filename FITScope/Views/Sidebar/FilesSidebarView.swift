@@ -81,6 +81,7 @@ public struct FilesSidebarView: View
 
                     OpenFileRowView(
                         file:              file,
+                        isSelected:        file.id == self.model.selectedFileID,
                         onOpenInNewWindow: { self.appModel.openInNewWindow( urls: [ file.url ] ) },
                         onSaveAs:          { self.appModel.saveCopy( of: file ) },
                         onExport:          { self.appModel.exportImage( of: file ) },

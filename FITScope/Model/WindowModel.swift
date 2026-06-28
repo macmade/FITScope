@@ -37,9 +37,36 @@ public final class WindowModel: ObservableObject
     /// The id of the currently selected file, or `nil` when none is selected.
     @Published public var selectedFileID: OpenFile.ID?
 
+    /// The source text of the formula used to weight the open files against one
+    /// another. Defaults to the built-in expression; the UI keeps it in step with
+    /// the user's preference. Changing it recomputes every file's weight.
+    public var weightFormulaSource = WeightFormula.defaultExpression
+    {
+        didSet
+        {
+            guard self.weightFormulaSource != oldValue
+            else
+            {
+                return
+            }
+
+            self.scheduleWeightRecompute()
+        }
+    }
+
     /// Bounds how many files render at once, so opening many files cannot
     /// saturate the CPU or spike memory. Shared by every file in the window.
     private let renderThrottle = RenderThrottle( limit: max( 2, ProcessInfo.processInfo.activeProcessorCount - 2 ) )
+
+    /// Per-file change subscriptions, so the window recomputes weights when a
+    /// file finishes analysis (its metrics arrive asynchronously). Rebuilt
+    /// whenever the file set changes.
+    private var fileObservers: [ AnyCancellable ] = []
+
+    /// Whether a weight recomputation is already queued for the next runloop turn,
+    /// coalescing the many change notifications a load/render pass emits into a
+    /// single recompute.
+    private var isWeightRecomputeScheduled = false
 
     /// Creates an empty window model.
     public init()
@@ -76,6 +103,9 @@ public final class WindowModel: ObservableObject
         {
             self.selectedFileID = newFiles.first?.id
         }
+
+        self.observeFilesForWeighting()
+        self.scheduleWeightRecompute()
     }
 
     /// Closes the given file. If it was selected, selection moves to the nearest
@@ -103,6 +133,9 @@ public final class WindowModel: ObservableObject
 
             self.selectedFileID = fallback?.id
         }
+
+        self.observeFilesForWeighting()
+        self.scheduleWeightRecompute()
     }
 
     /// Moves the given file to the Trash and closes it.
@@ -118,5 +151,73 @@ public final class WindowModel: ObservableObject
         try FileManager.default.trashItem( at: file.url, resultingItemURL: nil )
 
         self.close( file )
+    }
+
+    /// Subscribes to every open file's change notifications, so a file finishing
+    /// its analysis (or any change that affects its metrics) triggers a weight
+    /// recompute. Replaces any previous subscriptions.
+    private func observeFilesForWeighting()
+    {
+        self.fileObservers = self.files.map
+        {
+            file in
+
+            file.objectWillChange.sink
+            {
+                [ weak self ] _ in self?.scheduleWeightRecompute()
+            }
+        }
+    }
+
+    /// Queues a single weight recompute for the next runloop turn, coalescing the
+    /// burst of notifications a load/render/analysis pass emits.
+    private func scheduleWeightRecompute()
+    {
+        guard self.isWeightRecomputeScheduled == false
+        else
+        {
+            return
+        }
+
+        self.isWeightRecomputeScheduled = true
+
+        Task
+        {
+            @MainActor [ weak self ] in
+
+            self?.isWeightRecomputeScheduled = false
+            self?.recomputeWeights()
+        }
+    }
+
+    /// Recomputes every open file's weight from its metrics and the current
+    /// formula, ranking the files against one another.
+    ///
+    /// A file whose weight is unchanged is left untouched, so the recompute
+    /// settles rather than feeding back on itself through the change observers. An
+    /// invalid formula clears every weight.
+    func recomputeWeights()
+    {
+        let metrics = self.files.map { $0.metrics }
+        let weights: [ Double? ]
+
+        if let formula = try? WeightFormula( source: self.weightFormulaSource )
+        {
+            weights = ImageWeighting.weights( for: metrics, using: formula )
+        }
+        else
+        {
+            weights = self.files.map { _ in nil }
+        }
+
+        zip( self.files, weights ).forEach
+        {
+            file, weight in
+
+            if file.weight != weight
+            {
+                file.weight = weight
+            }
+        }
     }
 }

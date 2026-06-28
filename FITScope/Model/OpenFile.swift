@@ -76,6 +76,12 @@ public final class OpenFile: ObservableObject, Identifiable
     /// `nil` before one has been generated.
     @Published public private( set ) var thumbnail: CGImage?
 
+    /// The image's weight relative to the other files open in the same window, or
+    /// `nil` when it cannot be ranked — the image lacks the metrics the formula
+    /// needs, or it is a lone image under a set-wide formula. Computed and
+    /// assigned by the owning ``WindowModel`` as files and metrics change.
+    @Published public internal( set ) var weight: Double?
+
     /// Forwards the loader's change notifications to this object's observers.
     private var loaderObserver: AnyCancellable?
 
@@ -109,6 +115,22 @@ public final class OpenFile: ObservableObject, Identifiable
     public var image: FITSImage?
     {
         self.loader.image
+    }
+
+    /// The image's weighting metrics, derived from star detection and the noise
+    /// estimate. Empty until the image has loaded and been analysed; the input to
+    /// the window's per-image weight computation.
+    public var metrics: ImageWeighting.Metrics
+    {
+        ImageWeighting.metrics( starField: self.image?.starField, signalToNoise: self.image?.signalToNoise )
+    }
+
+    /// The image's ``weight`` formatted for display (one decimal), or `nil` when
+    /// no weight is available. The single source of truth for how a weight reads
+    /// in both the sidebar row pill and the Image Information panel.
+    public var formattedWeight: String?
+    {
+        self.weight.map { String( format: "%.1f", $0 ) }
     }
 
     /// The error from the most recent failed load, or `nil` on success.

@@ -54,6 +54,7 @@ public enum InfoField: String, CaseIterable, Identifiable, Sendable
     case offset
     case sensorTemperature
     case sampling
+    case weight
 
     /// The field's stable identity, matching its persisted raw value.
     public var id: String { self.rawValue }
@@ -81,6 +82,7 @@ public enum InfoField: String, CaseIterable, Identifiable, Sendable
             case .offset:            return "Offset"
             case .sensorTemperature: return "Sensor Temp"
             case .sampling:          return "Sampling"
+            case .weight:            return "Weight"
         }
     }
 
@@ -108,6 +110,7 @@ public enum InfoField: String, CaseIterable, Identifiable, Sendable
             case .offset:            return "slider.horizontal.3"
             case .sensorTemperature: return "thermometer.medium"
             case .sampling:          return "square.grid.3x3"
+            case .weight:            return "scalemass"
         }
     }
 }

@@ -49,6 +49,12 @@ public class FITSImage: ObservableObject
     /// uses the linear sensor values rather than the rendered image.
     @Published public private( set ) var starField: StarField?
 
+    /// The image-wide signal-to-noise estimate, populated asynchronously alongside
+    /// ``starField`` from the same linear detection image. `nil` until detection
+    /// has run, or for a flat frame with no measurable noise. Feeds the per-image
+    /// weight's `SNRWeight` term.
+    @Published public private( set ) var signalToNoise: SignalToNoise?
+
     /// Whether star detection is currently running, so the UI can show progress.
     /// `true` only while ``detectStars()`` is in flight.
     @Published public private( set ) var isDetectingStars = false
@@ -76,11 +82,12 @@ public class FITSImage: ObservableObject
         }
     }
 
-    /// Runs star detection on the image's linear data and publishes the result.
+    /// Runs star detection and noise estimation on the image's linear data and
+    /// publishes the results.
     ///
-    /// The detection itself runs off the main actor; only the published
-    /// assignment happens here. Does nothing when the render input is
-    /// unavailable.
+    /// Both measurements derive from the same linear detection image, so they run
+    /// together in one off-main-actor pass; only the published assignments happen
+    /// here. Does nothing when the render input is unavailable.
     public func detectStars() async
     {
         guard let input = try? self.renderer.renderInputSnapshot()
@@ -96,10 +103,17 @@ public class FITSImage: ObservableObject
             self.isDetectingStars = false
         }
 
-        self.starField = await Task.detached
+        let detectionImage = input.detectionImage
+        let analysis       = await Task.detached
         {
-            StarDetection.detectStars( in: input.detectionImage )
+            (
+                starField:     StarDetection.detectStars( in: detectionImage ),
+                signalToNoise: SignalToNoise.estimate( in: detectionImage )
+            )
         }
         .value
+
+        self.starField     = analysis.starField
+        self.signalToNoise = analysis.signalToNoise
     }
 }

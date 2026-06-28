@@ -31,6 +31,10 @@ public struct OpenFileRowView: View
     /// The file this row represents.
     @ObservedObject private var file: OpenFile
 
+    /// Whether this row is the selected one, so the weight pill can switch to a
+    /// white tint that reads against the selection highlight.
+    private let isSelected: Bool
+
     /// Opens the auxiliary headers window.
     @Environment( \.openWindow ) private var openWindow
 
@@ -63,6 +67,7 @@ public struct OpenFileRowView: View
     ///
     /// - Parameters:
     ///   - file:              The open file to display.
+    ///   - isSelected:        Whether this row is the selected one.
     ///   - onOpenInNewWindow: Called when the user chooses "Open in New Window".
     ///   - onSaveAs:          Called when the user chooses "Save As…".
     ///   - onExport:          Called when the user chooses "Export…".
@@ -71,6 +76,7 @@ public struct OpenFileRowView: View
     ///   - onClose:           Called when the user chooses "Close".
     public init(
         file:              OpenFile,
+        isSelected:        Bool = false,
         onOpenInNewWindow: @escaping () -> Void = {},
         onSaveAs:          @escaping () -> Void = {},
         onExport:          @escaping () -> Void = {},
@@ -80,6 +86,7 @@ public struct OpenFileRowView: View
     )
     {
         self.file              = file
+        self.isSelected        = isSelected
         self.onOpenInNewWindow = onOpenInNewWindow
         self.onSaveAs          = onSaveAs
         self.onExport          = onExport
@@ -137,6 +144,17 @@ public struct OpenFileRowView: View
             }
 
             Spacer( minLength: 0 )
+
+            if let weight = self.file.formattedWeight
+            {
+                Pill(
+                    weight,
+                    tint:              self.isSelected ? .white : .accentColor,
+                    backgroundOpacity: self.isSelected ? 0.25 : 0.15
+                )
+                .help( "Image weight, ranked against the other open files" )
+                .accessibilityIdentifier( AccessibilityIdentifier.OpenFileRowView.weightPill )
+            }
 
             if let warning = self.file.warning
             {

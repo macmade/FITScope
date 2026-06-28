@@ -161,6 +161,30 @@ struct ImageInformationTests
         #expect( summary.rows( for: [ .sampling ] ).isEmpty )
     }
 
+    /// An injected additional value (e.g. the computed weight, which is not a
+    /// header keyword) is emitted as its field's row, in the requested order.
+    @Test
+    func rowsIncludeInjectedAdditionalValues() throws
+    {
+        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+
+        let rows = summary.rows( for: [ .dimensions, .weight ], additionalValues: [ .weight: "75.0" ] )
+
+        #expect( rows.map { $0.field } == [ .dimensions, .weight ] )
+        #expect( rows.first { $0.field == .weight }?.value == "75.0" )
+    }
+
+    /// A field with neither a header value nor an injected value is still omitted.
+    @Test
+    func rowsOmitAFieldWithoutHeaderOrInjectedValue() throws
+    {
+        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+
+        let rows = summary.rows( for: [ .dimensions, .weight ] )
+
+        #expect( rows.map { $0.field } == [ .dimensions ] )
+    }
+
     /// Builds a controlled, in-memory `FITSImageInfo` with a valid 4×4 geometry
     /// and any extra header keywords, so row tests don't depend on the contents
     /// of a bundled fixture.

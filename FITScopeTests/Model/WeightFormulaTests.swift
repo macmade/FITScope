@@ -213,6 +213,51 @@ struct WeightFormulaTests
         #expect( matches.map { $0.name } == [ "FWHM", "SNRWeightMax" ] )
     }
 
+    // MARK: - Referenced variables
+
+    /// A formula reports exactly the variables it mentions, and nothing else.
+    @Test
+    func referencedVariablesListsOnlyUsedVariables() throws
+    {
+        let formula = try WeightFormula( source: "FWHM + 2 * SNRWeightMax" )
+
+        #expect( formula.referencedVariables == [ .fwhm, .snrWeightMax ] )
+    }
+
+    /// Literal-only formulas reference no variables.
+    @Test
+    func referencedVariablesIsEmptyForLiteralFormula() throws
+    {
+        let formula = try WeightFormula( source: "1 + 2 * 3" )
+
+        #expect( formula.referencedVariables.isEmpty )
+    }
+
+    /// A repeated variable is reported once.
+    @Test
+    func referencedVariablesDeduplicates() throws
+    {
+        let formula = try WeightFormula( source: "FWHM + FWHM * FWHM" )
+
+        #expect( formula.referencedVariables == [ .fwhm ] )
+    }
+
+    /// The default formula references the FWHM, eccentricity and SNR-weight
+    /// families (each with its set-wide min/max), but neither HFR nor Stars.
+    @Test
+    func referencedVariablesOfDefaultFormula() throws
+    {
+        let formula  = try WeightFormula( source: WeightFormula.defaultExpression )
+        let expected: Set< WeightFormula.Variable > =
+            [
+                .fwhm, .fwhmMin, .fwhmMax,
+                .eccentricity, .eccentricityMin, .eccentricityMax,
+                .snrWeight, .snrWeightMin, .snrWeightMax,
+            ]
+
+        #expect( formula.referencedVariables == expected )
+    }
+
     // MARK: - Helpers
 
     /// Whether two values are within a tight tolerance, for floating-point

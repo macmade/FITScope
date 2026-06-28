@@ -40,6 +40,10 @@ public struct MainWindowView: View
     /// The shared app model used to route global open actions.
     @EnvironmentObject private var appModel: AppModel
 
+    /// The shared preferences, whose ``Preferences/weightFormula`` drives the
+    /// window's per-image weight computation.
+    @EnvironmentObject private var preferences: Preferences
+
     /// Whether the window is currently the key window.
     @Environment( \.appearsActive ) private var appearsActive
 
@@ -163,6 +167,12 @@ public struct MainWindowView: View
         .onChange( of: self.appearsActive, initial: true )
         {
             _, active in if active { self.appModel.activeModel = self.model }
+        }
+        // Keep the window's weight formula in step with the user's preference, so
+        // editing it re-ranks the open files live.
+        .onChange( of: self.preferences.weightFormula, initial: true )
+        {
+            _, source in self.model.weightFormulaSource = source
         }
         .onDisappear
         {

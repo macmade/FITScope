@@ -248,6 +248,37 @@ public struct WeightFormula
         Self.evaluate( self.root, values )
     }
 
+    /// The set of variables this formula actually references.
+    ///
+    /// Lets a consumer decide which per-image metrics an image must have for the
+    /// formula to be computable, and which set-wide aggregates need preparing.
+    public var referencedVariables: Set< Variable >
+    {
+        Self.variables( in: self.root )
+    }
+
+    /// Collects every variable referenced in a subtree.
+    ///
+    /// - Parameter node: The subtree root.
+    /// - Returns: The variables it references.
+    private static func variables( in node: Node ) -> Set< Variable >
+    {
+        switch node
+        {
+            case .number:
+                return []
+
+            case .variable( let variable ):
+                return [ variable ]
+
+            case .negate( let operand ):
+                return Self.variables( in: operand )
+
+            case .binary( _, let lhs, let rhs ):
+                return Self.variables( in: lhs ).union( Self.variables( in: rhs ) )
+        }
+    }
+
     // MARK: - Editor support
 
     /// Every valid placeholder occurrence in `text`, as its range paired with the

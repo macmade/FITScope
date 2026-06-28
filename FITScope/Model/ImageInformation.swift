@@ -82,9 +82,26 @@ public struct ImageInformation
     /// - Returns: One row per present field, in `fields` order.
     public func rows( for fields: [ InfoField ] ) -> [ Row ]
     {
+        self.rows( for: fields, additionalValues: [ : ] )
+    }
+
+    /// The present-only rows for the given fields, in the given order, with extra
+    /// computed values merged in.
+    ///
+    /// `additionalValues` supplies values for fields not derived from the header —
+    /// notably the per-image weight, which the window computes. An entry there
+    /// takes precedence over any header value for the same field, and a field with
+    /// neither a header nor an injected value is still omitted.
+    ///
+    /// - Parameters:
+    ///   - fields:           The fields to show, in display order.
+    ///   - additionalValues: Computed, non-header values, keyed by field.
+    /// - Returns: One row per present field, in `fields` order.
+    public func rows( for fields: [ InfoField ], additionalValues: [ InfoField: String ] ) -> [ Row ]
+    {
         fields.compactMap
         {
-            field in self.values[ field ].map { Row( field: field, value: $0 ) }
+            field in ( additionalValues[ field ] ?? self.values[ field ] ).map { Row( field: field, value: $0 ) }
         }
     }
 

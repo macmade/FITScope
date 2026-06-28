@@ -84,6 +84,9 @@ public enum AccessibilityIdentifier
     {
         /// A single row in the files sidebar (shared by every row).
         public static let row = "OpenFileRowView.row"
+
+        /// The per-row pill showing the image's computed weight.
+        public static let weightPill = "OpenFileRowView.weightPill"
     }
 
     /// Identifiers applied by ``FITScope/InspectorView``.

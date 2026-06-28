@@ -198,4 +198,48 @@ struct RenderThrottleTests
         throttle.release()
         throttle.release()
     }
+
+    // MARK: - Weighting
+
+    /// After a file finishes analysis, the window computes its weight from the
+    /// gathered metrics and the formula — here a purely per-image formula, so a
+    /// single image is still ranked.
+    @Test
+    @MainActor
+    func computesPerImageWeightFromMetricsAfterAnalysis() async throws
+    {
+        let model = WindowModel()
+
+        model.weightFormulaSource = "Stars + 1"
+        model.open( urls: [ TestFixtures.monoImage ] )
+
+        let file = try #require( model.files.first )
+
+        await file.preparation?.value
+
+        model.recomputeWeights()
+
+        let stars = try #require( file.metrics[ .stars ], "analysis should have produced a star count" )
+
+        #expect( file.weight == stars + 1 )
+    }
+
+    /// The default formula ranks images against the set, so a lone image cannot be
+    /// weighted and its weight stays absent.
+    @Test
+    @MainActor
+    func singleImageHasNoWeightUnderTheDefaultSetWideFormula() async throws
+    {
+        let model = WindowModel()
+
+        model.open( urls: [ TestFixtures.monoImage ] )
+
+        let file = try #require( model.files.first )
+
+        await file.preparation?.value
+
+        model.recomputeWeights()
+
+        #expect( file.weight == nil )
+    }
 }

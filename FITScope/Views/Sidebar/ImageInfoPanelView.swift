@@ -60,7 +60,7 @@ public struct ImageInfoPanelView: View
             {
                 Grid( alignment: .leading, horizontalSpacing: 12, verticalSpacing: 3 )
                 {
-                    ForEach( summary.rows( for: self.visibleFields ), id: \.field )
+                    ForEach( summary.rows( for: self.visibleFields, additionalValues: self.computedValues ), id: \.field )
                     {
                         row in self.row( row )
                     }
@@ -88,6 +88,14 @@ public struct ImageInfoPanelView: View
     private var visibleFields: [ InfoField ]
     {
         self.preferences.infoPanelFields.filter { $0.isVisible }.map { $0.field }
+    }
+
+    /// Values not derived from the header — the computed per-image weight, ranked
+    /// against the other open files — keyed by their field. Empty when no weight
+    /// is available, so the row is then omitted.
+    private var computedValues: [ InfoField: String ]
+    {
+        self.file.formattedWeight.map { [ .weight: $0 ] } ?? [ : ]
     }
 
     /// An icon + label / value grid row.
