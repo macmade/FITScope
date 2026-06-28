@@ -75,7 +75,7 @@
   <div class="container">
     <header>
       <h1>Bugs</h1>
-      <div class="generated">Generated 2026-06-28 &middot; Updated 2026-06-28</div>
+      <div class="generated">Generated 2026-06-28 &middot; Updated 2026-06-29</div>
     </header>
 
     <p class="overview">
@@ -202,6 +202,18 @@
           image. Apply a sensible, consistent alpha across the overlays so they read
           as annotations layered over the image without fully obscuring what they
           mark.
+        </p>
+      </li>
+      <li>
+        <h3>Don&rsquo;t prompt to plate-solve while a solve is already running</h3>
+        <p>
+          Toggling an always-offered overlay (Objects, North indicator, Equatorial
+          Grid) on an image that hasn&rsquo;t been solved presents the &ldquo;Plate
+          Solve&rdquo; alert (<code>isPlateSolvePromptPresented</code> in
+          <code>ImageCanvasView</code>). When a plate solve is already in progress for
+          that image (<code>OpenFile.isPlateSolving</code>), this prompt is redundant:
+          instead of showing the alert, just open the existing plate-solve window so
+          the user can watch the solve&rsquo;s progress.
         </p>
       </li>
     </ol>
