@@ -52,6 +52,56 @@ public struct PlateSolveResult: Sendable
         public let parity: Double?
     }
 
+    /// A catalogue object identified in the solved field, with its position in the
+    /// image, as returned by `jobs/JOBID/annotations`. The position is what the
+    /// objects overlay draws each label at.
+    public struct Annotation: Sendable, Equatable
+    {
+        /// The object's names (a single object can carry several), e.g.
+        /// `["NGC 3628"]`. Usually one entry; the first is shown as the label.
+        public let names: [ String ]
+
+        /// The object's column position, in the solved image's pixel space
+        /// (the Astrometry.net convention: 1-based, origin at the bottom-left).
+        public let pixelX: Double
+
+        /// The object's row position, in the solved image's pixel space
+        /// (1-based, origin at the bottom-left, increasing upward).
+        public let pixelY: Double
+
+        /// The object's annotated radius, in pixels; `0` when the service does not
+        /// provide one (e.g. a point source such as a catalogue star).
+        public let radius: Double
+
+        /// The object's catalogue type (e.g. `"ngc"`, `"ic"`, `"hd"`), or `nil`
+        /// when the service omits it.
+        public let type: String?
+
+        /// The label to show for the object: its first name, or `nil` when it is
+        /// unnamed.
+        public var label: String?
+        {
+            self.names.first
+        }
+
+        /// Creates an annotation.
+        ///
+        /// - Parameters:
+        ///   - names:  The object's names; the first is used as the label.
+        ///   - pixelX: The column position, in solved-image pixel space.
+        ///   - pixelY: The row position, in solved-image pixel space.
+        ///   - radius: The annotated radius, in pixels (`0` when unspecified).
+        ///   - type:   The catalogue type, if any.
+        public init( names: [ String ], pixelX: Double, pixelY: Double, radius: Double, type: String? )
+        {
+            self.names  = names
+            self.pixelX = pixelX
+            self.pixelY = pixelY
+            self.radius = radius
+            self.type   = type
+        }
+    }
+
     /// The Astrometry.net job id that produced this solve.
     public let jobID: Int
 
@@ -60,6 +110,10 @@ public struct PlateSolveResult: Sendable
 
     /// The catalogue objects identified in the field, possibly empty.
     public let objectsInField: [ String ]
+
+    /// The identified objects with their positions in the image, possibly empty —
+    /// the basis for the objects overlay.
+    public let annotations: [ Annotation ]
 
     /// The full world-coordinate system parsed from the solved `wcs.fits`, or
     /// `nil` when it could not be downloaded or parsed.
@@ -75,13 +129,15 @@ public struct PlateSolveResult: Sendable
     ///   - jobID:          The originating job id.
     ///   - calibration:    The field calibration.
     ///   - objectsInField: The identified catalogue objects.
+    ///   - annotations:    The identified objects with their image positions.
     ///   - wcs:            The parsed WCS, if available.
     ///   - resultsURL:     The public results page, if available.
-    public init( jobID: Int, calibration: Calibration, objectsInField: [ String ], wcs: FITSMetadata?, resultsURL: URL? )
+    public init( jobID: Int, calibration: Calibration, objectsInField: [ String ], annotations: [ Annotation ] = [], wcs: FITSMetadata?, resultsURL: URL? )
     {
         self.jobID          = jobID
         self.calibration    = calibration
         self.objectsInField = objectsInField
+        self.annotations    = annotations
         self.wcs            = wcs
         self.resultsURL     = resultsURL
     }

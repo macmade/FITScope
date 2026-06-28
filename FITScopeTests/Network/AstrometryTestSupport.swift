@@ -119,6 +119,17 @@ enum AstrometryFixtures
     /// The catalogue objects identified in a solved field.
     static let objectsInField = Self.data( #"{"objects_in_field": ["NGC 3628", "M 66", "NGC 3627"]}"# )
 
+    /// The annotated objects in a solved field, each with its pixel position,
+    /// radius, catalogue type, and names — the basis for the objects overlay.
+    static let annotations = Self.data(
+        #"""
+        {"annotations": [
+            {"radius": 13.1, "type": "ngc", "names": ["NGC 3628"], "pixelx": 1604.17, "pixely": 1344.04},
+            {"radius": 0.0, "type": "hd", "names": ["HD 98388"], "pixelx": 500.0, "pixely": 200.0}
+        ]}
+        """#
+    )
+
     /// The raw bytes of a real WCS-bearing FITS file, standing in for the
     /// `wcs_file` download. `MonoImage.fits` carries `CRVAL1`/`CRVAL2` and a `CD`
     /// matrix, so parsing it yields a populated ``FITSMetadata``.

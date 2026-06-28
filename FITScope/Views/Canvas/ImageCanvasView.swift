@@ -70,6 +70,11 @@ public struct ImageCanvasView: View
     /// The identifiers of the overlays the user has turned on for this file.
     @State private var enabledOverlays = Set< String >()
 
+    /// Whether the alert proposing a plate solve is shown. Raised when the
+    /// always-offered objects toggle is tapped with no plate-solved objects to
+    /// reveal.
+    @State private var isObjectsPlateSolvePromptPresented = false
+
     /// Whether the floating bars are currently shown.
     @State private var barsVisible = true
 
@@ -146,6 +151,15 @@ public struct ImageCanvasView: View
 
                     self.revealBars()
                 }
+            }
+            .alert( "Identify Objects", isPresented: self.$isObjectsPlateSolvePromptPresented )
+            {
+                Button( "Plate Solve…" ) { self.plateSolve() }
+                Button( "Cancel", role: .cancel ) {}
+            }
+            message:
+            {
+                Text( self.objectsPlateSolvePromptMessage )
             }
     }
 
@@ -344,14 +358,21 @@ public struct ImageCanvasView: View
             // surfaces detection progress through the overlay, so the toolbar shows
             // it generically without knowing about star detection.
             StarsOverlay( stars: self.file.image?.starField?.stars ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, isLoading: self.file.image?.isDetectingStars ?? false ),
+            // The plate-solved objects, registered to image space through the same
+            // committed-render orientation as the stars, so the labels track the
+            // image under rotate/flip. Available only once a solve has identified
+            // objects (``ObjectsOverlay/isAvailable``).
+            ObjectsOverlay( annotations: self.file.plateSolve?.annotations ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity ),
         ]
     }
 
     /// The overlays surfaced in the toolbar: those with something to show, plus
-    /// those still computing their data (shown as an in-progress button).
+    /// those still computing their data (shown as an in-progress button). The
+    /// objects overlay is always offered, even with nothing to show — its toggle
+    /// then proposes a plate solve rather than revealing an empty layer.
     private var toolbarOverlays: [ any CanvasOverlay ]
     {
-        self.overlays.filter { $0.isAvailable || $0.isLoading }
+        self.overlays.filter { $0.isAvailable || $0.isLoading || $0.id == ObjectsOverlay.identifier }
     }
 
     /// The available overlays the user has enabled, drawn back-to-front. A loading
@@ -362,8 +383,18 @@ public struct ImageCanvasView: View
     }
 
     /// Toggles an overlay on or off by identifier.
+    ///
+    /// The always-offered objects toggle is special: with no plate-solved objects
+    /// to reveal it proposes a plate solve instead of switching on an empty layer.
     private func toggleOverlay( _ id: String )
     {
+        if id == ObjectsOverlay.identifier, self.file.plateSolve?.annotations.isEmpty ?? true
+        {
+            self.isObjectsPlateSolvePromptPresented = true
+
+            return
+        }
+
         if self.enabledOverlays.contains( id )
         {
             self.enabledOverlays.remove( id )
@@ -372,6 +403,15 @@ public struct ImageCanvasView: View
         {
             self.enabledOverlays.insert( id )
         }
+    }
+
+    /// The message for the plate-solve prompt, tailored to whether the image has
+    /// been solved (but yielded no objects) or has not been solved at all.
+    private var objectsPlateSolvePromptMessage: String
+    {
+        self.file.plateSolve == nil
+            ? "This image hasn’t been plate-solved yet. Plate solve it to identify and label the objects in its field."
+            : "No catalogue objects were identified in this field. You can run the plate solve again from the results window."
     }
 
     /// Starts (or re-opens) a plate solve for the displayed file and shows the

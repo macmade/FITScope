@@ -151,6 +151,7 @@ struct AstrometryClientTests
                 case "/api/jobs/42":                     return ( 200, index == 0 ? AstrometryFixtures.jobSolving : AstrometryFixtures.jobSuccess )
                 case "/api/jobs/42/calibration":         return ( 200, AstrometryFixtures.calibration )
                 case "/api/jobs/42/objects_in_field":    return ( 200, AstrometryFixtures.objectsInField )
+                case "/api/jobs/42/annotations":         return ( 200, AstrometryFixtures.annotations )
                 case let path? where path.hasPrefix( "/wcs_file/" ): return ( 200, try AstrometryFixtures.wcsFITS )
                 default:                                 throw URLError( .unsupportedURL )
             }
@@ -170,6 +171,9 @@ struct AstrometryClientTests
         #expect( result.objectsInField.contains( "M 66" ) )
         #expect( result.objectsInField.count == 3 )
 
+        #expect( result.annotations.count == 2 )
+        #expect( result.annotations.first?.names == [ "NGC 3628" ] )
+
         #expect( result.resultsURL?.path == "/status/16714" )
 
         let wcs = try #require( result.wcs )
@@ -179,6 +183,30 @@ struct AstrometryClientTests
         let phases = await recorder.phases
 
         #expect( phases == [ .loggingIn, .uploading, .solving ] )
+    }
+
+    /// Reading a solved job's annotations decodes each object's pixel position,
+    /// radius, type, and names — the positions the objects overlay draws at.
+    @Test
+    func annotationsFetchAndMapPixelPositions() async throws
+    {
+        let transport   = MockAstrometryTransport { _, _ in ( 200, AstrometryFixtures.annotations ) }
+        let client      = AstrometryClient( transport: transport, pollInterval: .zero )
+        let annotations = try await client.annotations( jobID: 42 )
+
+        #expect( annotations.count == 2 )
+
+        let first = try #require( annotations.first )
+
+        #expect( first.names == [ "NGC 3628" ] )
+        #expect( abs( first.pixelX - 1604.17 ) < 0.001 )
+        #expect( abs( first.pixelY - 1344.04 ) < 0.001 )
+        #expect( abs( first.radius - 13.1 ) < 0.001 )
+        #expect( first.type == "ngc" )
+
+        let request = try #require( await transport.requests.first )
+
+        #expect( request.url?.path == "/api/jobs/42/annotations" )
     }
 
     /// A job that reports `failure` makes the solve throw, so a failed solve is

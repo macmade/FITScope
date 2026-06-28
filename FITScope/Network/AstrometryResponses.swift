@@ -105,4 +105,32 @@ enum AstrometryResponse
             case objects = "objects_in_field"
         }
     }
+
+    /// The `jobs/JOBID/annotations` response: the identified objects, each with
+    /// its pixel position in the solved image.
+    struct Annotations: Decodable
+    {
+        /// A single annotated object's position, size, type, and names. Field
+        /// names match the service's wire format.
+        struct Annotation: Decodable
+        {
+            /// The object's annotated radius, in pixels (`0` for a point source).
+            let radius: Double
+
+            /// The catalogue type (e.g. `"ngc"`, `"ic"`, `"hd"`), if present.
+            let type: String?
+
+            /// The object's names; usually a single entry.
+            let names: [ String ]
+
+            /// The column position, in solved-image pixel space.
+            let pixelx: Double
+
+            /// The row position, in solved-image pixel space.
+            let pixely: Double
+        }
+
+        /// The annotated objects in the field.
+        let annotations: [ Annotation ]
+    }
 }

@@ -119,9 +119,10 @@ public actor AstrometryClient
 
         let calibration = try await self.calibration( jobID: jobID )
         let objects     = ( try? await self.objectsInField( jobID: jobID ) ) ?? []
+        let annotations = ( try? await self.annotations( jobID: jobID ) ) ?? []
         let wcs         = ( try? await self.wcsMetadata( jobID: jobID ) ) ?? nil
 
-        return PlateSolveResult( jobID: jobID, calibration: calibration, objectsInField: objects, wcs: wcs, resultsURL: self.resultsURL( submissionID: submissionID ) )
+        return PlateSolveResult( jobID: jobID, calibration: calibration, objectsInField: objects, annotations: annotations, wcs: wcs, resultsURL: self.resultsURL( submissionID: submissionID ) )
     }
 
     // MARK: - Individual operations
@@ -245,6 +246,25 @@ public actor AstrometryClient
         let response: AstrometryResponse.ObjectsInField = try await self.decoded( URLRequest( url: url ) )
 
         return response.objects
+    }
+
+    /// Reads the annotated objects of a solved field — each with its pixel
+    /// position — and maps them to ``PlateSolveResult/Annotation`` values for the
+    /// objects overlay.
+    public func annotations( jobID: Int ) async throws -> [ PlateSolveResult.Annotation ]
+    {
+        guard let url = self.apiEndpoint( "jobs/\( jobID )/annotations" )
+        else
+        {
+            throw AstrometryError.invalidResponse
+        }
+
+        let response: AstrometryResponse.Annotations = try await self.decoded( URLRequest( url: url ) )
+
+        return response.annotations.map
+        {
+            PlateSolveResult.Annotation( names: $0.names, pixelX: $0.pixelx, pixelY: $0.pixely, radius: $0.radius, type: $0.type )
+        }
     }
 
     /// Downloads a solved job's `wcs.fits` and parses it into a ``FITSMetadata``,
