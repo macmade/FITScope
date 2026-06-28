@@ -77,6 +77,9 @@ public enum AccessibilityIdentifier
 
         /// The "open files" (+) button in the sidebar header.
         public static let addButton = "FilesSidebarView.addButton"
+
+        /// The sort menu in the sidebar header.
+        public static let sortMenu = "FilesSidebarView.sortMenu"
     }
 
     /// Identifiers applied by ``FITScope/OpenFileRowView``.

@@ -168,6 +168,9 @@
 		9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7410133087261AF83595054 /* ImageInformation.swift */; };
 		FE01A0010000000000000002 /* WeightFormula.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE01A0010000000000000001 /* WeightFormula.swift */; };
 		5A516E0150000000000000B1 /* ImageWeighting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A516E0150000000000000B2 /* ImageWeighting.swift */; };
+		5A516E0150000000000000C2 /* FileSortable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A516E0150000000000000C1 /* FileSortable.swift */; };
+		5A516E0150000000000000C4 /* FileSortKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A516E0150000000000000C3 /* FileSortKey.swift */; };
+		5A516E0150000000000000C6 /* FileSortKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A516E0150000000000000C5 /* FileSortKeyTests.swift */; };
 		9A3A3D353F14A85800BD349D /* StatisticsFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0752B6126A583839BB8F8BEF /* StatisticsFormatTests.swift */; };
 		A043D5D47F28AF202E84461C /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF3765F1937F36620A92317F /* MainWindowView.swift */; };
 		A88DD46D272944AD847BC0FD /* StarsOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEE209DF99F410FA6950C91 /* StarsOverlayTests.swift */; };
@@ -474,6 +477,7 @@
 		C07659F02B1A39E7821ED5BE /* ImageInformationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInformationTests.swift; sourceTree = "<group>"; };
 		FE01A0020000000000000001 /* WeightFormulaTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeightFormulaTests.swift; sourceTree = "<group>"; };
 		5A516E0150000000000000B4 /* ImageWeightingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageWeightingTests.swift; sourceTree = "<group>"; };
+		5A516E0150000000000000C5 /* FileSortKeyTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FileSortKeyTests.swift; sourceTree = "<group>"; };
 		C6DBC1DF1230AE2C0E3EE031 /* FrameOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FrameOverlay.swift; sourceTree = "<group>"; };
 		C7D3D9131B43725B5D03FCFA /* CanvasGeometry.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasGeometry.swift; sourceTree = "<group>"; };
 		C9BD5E1A3FC040B4E14E8824 /* HistogramViewOptions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramViewOptions.swift; sourceTree = "<group>"; };
@@ -485,6 +489,8 @@
 		E7410133087261AF83595054 /* ImageInformation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInformation.swift; sourceTree = "<group>"; };
 		FE01A0010000000000000001 /* WeightFormula.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightFormula.swift; sourceTree = "<group>"; };
 		5A516E0150000000000000B2 /* ImageWeighting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageWeighting.swift; sourceTree = "<group>"; };
+		5A516E0150000000000000C1 /* FileSortable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSortable.swift; sourceTree = "<group>"; };
+		5A516E0150000000000000C3 /* FileSortKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSortKey.swift; sourceTree = "<group>"; };
 		EB9DD79B3B4350B42B48B2B2 /* SegmentedControlView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SegmentedControlView.swift; sourceTree = "<group>"; };
 		FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFileTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -795,6 +801,8 @@
 				E0A86A0DF44489494DEF2C5C /* StarDetection.swift */,
 				FE01A0010000000000000001 /* WeightFormula.swift */,
 				5A516E0150000000000000B2 /* ImageWeighting.swift */,
+				5A516E0150000000000000C1 /* FileSortable.swift */,
+				5A516E0150000000000000C3 /* FileSortKey.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -959,6 +967,7 @@
 				002C1D9E4346F9D0ADBFF793 /* StarDetectionTests.swift */,
 				FE01A0020000000000000001 /* WeightFormulaTests.swift */,
 				5A516E0150000000000000B4 /* ImageWeightingTests.swift */,
+				5A516E0150000000000000C5 /* FileSortKeyTests.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -1515,6 +1524,8 @@
 				9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */,
 				FE01A0010000000000000002 /* WeightFormula.swift in Sources */,
 				5A516E0150000000000000B1 /* ImageWeighting.swift in Sources */,
+				5A516E0150000000000000C2 /* FileSortable.swift in Sources */,
+				5A516E0150000000000000C4 /* FileSortKey.swift in Sources */,
 				05FB1000000000000000F102 /* InfoField.swift in Sources */,
 				B3478104EBCB8EB1B9C44998 /* ImageInfoPanelView.swift in Sources */,
 				0DCE0490AEA79DFE7A0171AE /* AppModel.swift in Sources */,
@@ -1575,6 +1586,7 @@
 				18168279CF74754A2213F80E /* ImageInformationTests.swift in Sources */,
 				FE01A0020000000000000002 /* WeightFormulaTests.swift in Sources */,
 				5A516E0150000000000000B3 /* ImageWeightingTests.swift in Sources */,
+				5A516E0150000000000000C6 /* FileSortKeyTests.swift in Sources */,
 				05FB1000000000000000F202 /* InfoFieldTests.swift in Sources */,
 				4D40EC938ECB07A3AB919772 /* DropAcceptanceTests.swift in Sources */,
 				DAE7CCB9CC877AD2ECC8C933 /* CanvasGeometryTests.swift in Sources */,

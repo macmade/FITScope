@@ -37,6 +37,13 @@ public final class WindowModel: ObservableObject
     /// The id of the currently selected file, or `nil` when none is selected.
     @Published public var selectedFileID: OpenFile.ID?
 
+    /// The key the sidebar list is sorted by. The files keep their opened order
+    /// internally; ``sortedFiles`` derives the displayed order from this key.
+    @Published public var sortKey: FileSortKey = .opened
+
+    /// Whether the sort is ascending (smallest / A-first) or descending.
+    @Published public var sortAscending = true
+
     /// The source text of the formula used to weight the open files against one
     /// another. Defaults to the built-in expression; the UI keeps it in step with
     /// the user's preference. Changing it recomputes every file's weight.
@@ -76,6 +83,14 @@ public final class WindowModel: ObservableObject
     public var selectedFile: OpenFile?
     {
         self.files.first { $0.id == self.selectedFileID }
+    }
+
+    /// The open files in the order the sidebar should display them, derived from
+    /// ``sortKey`` and ``sortAscending``. Recomputed on demand, so it reflects
+    /// metrics and weights as they arrive asynchronously after a file loads.
+    public var sortedFiles: [ OpenFile ]
+    {
+        self.sortKey.sorted( self.files, ascending: self.sortAscending )
     }
 
     /// Opens the given URLs, appending one ``OpenFile`` per URL. If nothing was

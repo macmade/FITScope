@@ -31,9 +31,13 @@ public struct OpenFileRowView: View
     /// The file this row represents.
     @ObservedObject private var file: OpenFile
 
-    /// Whether this row is the selected one, so the weight pill can switch to a
-    /// white tint that reads against the selection highlight.
+    /// Whether this row is the selected one, so the pill can switch to a white
+    /// tint that reads against the selection highlight.
     private let isSelected: Bool
+
+    /// The key the list is sorted by, which the pill reflects: a metric key shows
+    /// that metric's value, the other keys show the weight.
+    private let sortKey: FileSortKey
 
     /// Opens the auxiliary headers window.
     @Environment( \.openWindow ) private var openWindow
@@ -68,6 +72,7 @@ public struct OpenFileRowView: View
     /// - Parameters:
     ///   - file:              The open file to display.
     ///   - isSelected:        Whether this row is the selected one.
+    ///   - sortKey:           The key the list is sorted by, reflected by the pill.
     ///   - onOpenInNewWindow: Called when the user chooses "Open in New Window".
     ///   - onSaveAs:          Called when the user chooses "Save As…".
     ///   - onExport:          Called when the user chooses "Export…".
@@ -77,6 +82,7 @@ public struct OpenFileRowView: View
     public init(
         file:              OpenFile,
         isSelected:        Bool = false,
+        sortKey:           FileSortKey = .opened,
         onOpenInNewWindow: @escaping () -> Void = {},
         onSaveAs:          @escaping () -> Void = {},
         onExport:          @escaping () -> Void = {},
@@ -87,6 +93,7 @@ public struct OpenFileRowView: View
     {
         self.file              = file
         self.isSelected        = isSelected
+        self.sortKey           = sortKey
         self.onOpenInNewWindow = onOpenInNewWindow
         self.onSaveAs          = onSaveAs
         self.onExport          = onExport
@@ -145,14 +152,14 @@ public struct OpenFileRowView: View
 
             Spacer( minLength: 0 )
 
-            if let weight = self.file.formattedWeight
+            if let pill = self.sortKey.pillText( for: self.file, formattedWeight: self.file.formattedWeight )
             {
                 Pill(
-                    weight,
+                    pill,
                     tint:              self.isSelected ? .white : .accentColor,
                     backgroundOpacity: self.isSelected ? 0.25 : 0.15
                 )
-                .help( "Image weight, ranked against the other open files" )
+                .help( self.sortKey.pillTooltip )
                 .accessibilityIdentifier( AccessibilityIdentifier.OpenFileRowView.weightPill )
             }
 

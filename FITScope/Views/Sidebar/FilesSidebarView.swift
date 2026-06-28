@@ -61,6 +61,8 @@ public struct FilesSidebarView: View
 
                 Spacer()
 
+                self.sortMenu
+
                 Button( action: self.runOpenPanel )
                 {
                     Image( systemName: "plus" )
@@ -75,13 +77,14 @@ public struct FilesSidebarView: View
 
             List( selection: self.selectionBinding )
             {
-                ForEach( self.model.files )
+                ForEach( self.model.sortedFiles )
                 {
                     file in
 
                     OpenFileRowView(
                         file:              file,
                         isSelected:        file.id == self.model.selectedFileID,
+                        sortKey:           self.model.sortKey,
                         onOpenInNewWindow: { self.appModel.openInNewWindow( urls: [ file.url ] ) },
                         onSaveAs:          { self.appModel.saveCopy( of: file ) },
                         onExport:          { self.appModel.exportImage( of: file ) },
@@ -102,6 +105,39 @@ public struct FilesSidebarView: View
                 ImageInfoPanelView( file: selected )
             }
         }
+    }
+
+    /// The sort menu: a key picker and an ascending/descending picker, driving the
+    /// window model's sort state.
+    private var sortMenu: some View
+    {
+        Menu
+        {
+            Picker( "Sort By", selection: self.$model.sortKey )
+            {
+                ForEach( FileSortKey.allCases )
+                {
+                    key in Text( key.title ).tag( key )
+                }
+            }
+            .pickerStyle( .inline )
+
+            Picker( "Order", selection: self.$model.sortAscending )
+            {
+                Text( "Ascending" ).tag( true )
+                Text( "Descending" ).tag( false )
+            }
+            .pickerStyle( .inline )
+        }
+        label:
+        {
+            Image( systemName: "arrow.up.arrow.down" )
+        }
+        .menuStyle( .borderlessButton )
+        .menuIndicator( .hidden )
+        .fixedSize()
+        .help( "Sort Files" )
+        .accessibilityIdentifier( AccessibilityIdentifier.FilesSidebarView.sortMenu )
     }
 
     /// The List's selection binding, which writes the model's selection on the

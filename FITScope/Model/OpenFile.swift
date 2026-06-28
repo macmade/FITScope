@@ -348,3 +348,8 @@ public final class OpenFile: ObservableObject, Identifiable
         return context.makeImage()
     }
 }
+
+/// An open file is sortable in the sidebar: its display name, weight and metrics
+/// already satisfy ``FileSortable``.
+extension OpenFile: FileSortable
+{}

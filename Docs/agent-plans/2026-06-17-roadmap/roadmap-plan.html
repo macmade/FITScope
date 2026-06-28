@@ -1354,8 +1354,8 @@
       </div>
     </details>
 
-    <details class="ms" id="M5.6">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.6</span><span class="ms-title">Sort the file list (name, FWHM, HFR, eccentricity, weight, …)</span><span class="ms-badges"></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+    <details class="ms completed" id="M5.6">
+      <summary><input type="checkbox" class="ms-check" checked><span class="ms-id">M5.6</span><span class="ms-title">Sort the file list (name, FWHM, HFR, eccentricity, weight, …)</span><span class="ms-badges"></span><span class="ms-status status-done">Completed &middot; 2026-06-28</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>Let the user sort images by name and by the computed metrics.</p>
         <h5>Scope / changes</h5><ul><li>A sort control in the sidebar header; sort the window model's file list by the chosen key (handle missing metrics gracefully).</li></ul>
@@ -1364,6 +1364,22 @@
         <h5>Acceptance</h5><ul><li>List reorders correctly per selected key/direction.</li></ul>
         <h5>Dependencies</h5><p class="dep">Depends on M5.1, M5.5 for metric keys.</p>
         <h5>Commit</h5><span class="commit">feat: sort the file list by name and astro metrics</span>
+        <div class="callout"><strong>Implementation notes — implemented &amp; unit-verified (TDD, red→green); awaiting maintainer review.</strong>
+          <ul>
+            <li><strong>Derived, not destructive (design decision).</strong> Sorting does <em>not</em> reorder <code>WindowModel.files</code>; instead a computed <code>WindowModel.sortedFiles</code> derives the displayed order from two new <code>@Published</code> properties, <code>sortKey: FileSortKey</code> and <code>sortAscending: Bool</code>. Two reasons: (a) the opened order is preserved as the natural default and remains available, and the existing close-fallback (nearest remaining by index) keeps operating on opened order; (b) <strong>crucially</strong>, metrics and weights arrive <em>asynchronously</em> after a file loads — a computed property re-derives on each render, so the list re-sorts itself as values appear, with no extra observation wiring. The sidebar's <code>List</code> now iterates <code>model.sortedFiles</code>.</li>
+            <li><strong><code>FileSortKey</code> — the sort logic (new <code>FITScope/Model/FileSortKey.swift</code>).</strong> A <code>String</code>/<code>CaseIterable</code>/<code>Identifiable</code> enum with cases <code>opened</code> (default), <code>name</code>, <code>weight</code>, <code>fwhm</code>, <code>hfr</code>, <code>eccentricity</code>, <code>stars</code>, <code>snrWeight</code>, each with a display <code>title</code>. <code>sorted(_:ascending:)</code>: <code>opened</code> keeps natural order (reversed when descending); <code>name</code> compares case-/locale-insensitively; the numeric keys order by value, with a <strong>missing value always sorting last in both directions</strong> (so absent metrics never intersperse with present ones), and equal values — and the trailing valueless files — kept <strong>stable</strong> by name then opened position. The comparator is a proper strict-weak ordering (verified for the nil/equal/index cases).</li>
+            <li><strong><code>FileSortable</code> protocol (new <code>FITScope/Model/FileSortable.swift</code>).</strong> Exposes <code>displayName</code>, <code>weight</code>, <code>metrics</code> — exactly what the sort keys read — so the logic is unit-testable against lightweight stubs. <code>@MainActor</code>, because its only real conformer (<code>OpenFile</code>, via a one-line extension) exposes these as main-actor state under Swift 6 strict concurrency.</li>
+            <li><strong>UI.</strong> A sort <code>Menu</code> (SF Symbol <code>arrow.up.arrow.down</code>, borderless, hidden indicator) sits in the sidebar header beside the “+” button: an inline <code>Picker</code> for the key and an inline Ascending/Descending <code>Picker</code>, both bound to the model. New accessibility id <code>FilesSidebarView.sortMenu</code>.</li>
+            <li><strong>TDD.</strong> 6 <code>FileSortKeyTests</code> written first against a <code>StubFile</code>: opened identity/reverse, case-insensitive name, weight with nils last, a metric (FWHM) with nils last in both directions, nils-stay-last-when-descending, and equal-values-break-ties-by-name.</li>
+            <li><strong>Verified here:</strong> <code>FITScopeTests/FileSortKeyTests</code> (9, incl. 3 pill-text tests) and <code>FITScopeTests/WindowModelTests</code> (7) pass via <code>xcodebuild</code> on macOS; the full FITScope scheme builds (the test build compiles the app + test targets, including the changed view). The live look (menu in the header, list re-ordering on key/direction changes, re-sort as metrics arrive) is left for the maintainer's eyes (GUI not available here). UI tests were not run in this environment.</li>
+            <li><strong>Pill reflects the sort key (review fix).</strong> The sidebar pill no longer always shows the weight: when a metric key is selected (FWHM, HFR, eccentricity, stars, SNR weight) it shows that metric's value for the row, formatted per metric (integer star counts; two decimals for FWHM/HFR/eccentricity; one for SNR weight); for a file lacking the selected metric the pill is hidden. For the keys not backed by a metric (Order Opened, Name, Weight) it keeps showing the weight. The pill's tooltip follows suit, reusing each metric's <code>WeightFormula.Variable.tooltip</code>. See Review comments.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review comments.</strong>
+          <ul>
+            <li><strong>The capsule should display the value of the selected metric.</strong> When sorting by FWHM, Stars, etc., the sidebar pill should show that number — not the weight — so the values being sorted on are visible at a glance. Applied: the pill now shows the selected metric's value (formatted per metric, hidden when the file lacks it) and falls back to the weight for the non-metric keys (Order Opened, Name, Weight); the tooltip changes to match.</li>
+          </ul>
+        </div>
       </div>
     </details>
 
