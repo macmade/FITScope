@@ -62,10 +62,13 @@ public protocol CanvasOverlay
     /// - Parameters:
     ///   - context:       The graphics context, in the canvas's top-left
     ///                    coordinate space.
+    ///   - canvasSize:    The on-screen size of the canvas (the viewport). Most
+    ///                    overlays ignore it; a screen-anchored overlay (e.g. the
+    ///                    scale bar) uses it to stay within the visible area.
     ///   - imageSize:     The displayed image's pixel dimensions.
     ///   - displayedRect: The on-screen rectangle the image occupies; map
     ///                    image-space points into it with ``CanvasGeometry``.
-    func draw( in context: inout GraphicsContext, imageSize: CGSize, displayedRect: CGRect )
+    func draw( in context: inout GraphicsContext, canvasSize: CGSize, imageSize: CGSize, displayedRect: CGRect )
 }
 
 public extension CanvasOverlay

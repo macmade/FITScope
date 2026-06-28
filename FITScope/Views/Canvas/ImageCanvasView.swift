@@ -363,6 +363,11 @@ public struct ImageCanvasView: View
             // image under rotate/flip. Available only once a solve has identified
             // objects (``ObjectsOverlay/isAvailable``).
             ObjectsOverlay( annotations: self.file.plateSolve?.annotations ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity ),
+            // The plate scale prefers the plate solve's calibration (most accurate)
+            // and falls back to the value derived from the file's header. Available
+            // only when one of them yields a scale, so the toolbar hides the toggle
+            // when the field of view is unknown.
+            ScaleBarOverlay( pixelScale: self.file.plateSolve?.calibration.pixscale ?? self.file.image?.info.pixelScale ),
         ]
     }
 

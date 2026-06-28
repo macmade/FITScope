@@ -75,6 +75,27 @@ struct ImageInformationTests
     }
 
     @Test
+    func pixelScaleIsDerivedFromHeaderGeometry() throws
+    {
+        let url  = TestFixtures.monoImage
+        let file = try FITSFile( url: url, options: .lenient )
+        let info = FITSImageInfo( url: url, file: file )
+
+        let scale = try #require( info.pixelScale, "a file with a WCS / CD matrix yields a pixel scale" )
+
+        #expect( scale > 0 )
+    }
+
+    @Test
+    func pixelScaleIsNilWithoutGeometry() throws
+    {
+        let url  = URL( fileURLWithPath: "/tmp/none.fits" )
+        let info = FITSImageInfo( url: url, sections: [] )
+
+        #expect( info.pixelScale == nil )
+    }
+
+    @Test
     func absentFieldsAreOmittedFromRows() throws
     {
         let url  = TestFixtures.monoImage

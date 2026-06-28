@@ -1468,8 +1468,8 @@
       </div>
     </details>
 
-    <details class="ms" id="M5.9">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.9</span><span class="ms-title">Measurements overlay (scale bar)</span><span class="ms-badges"></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+    <details class="ms completed" id="M5.9">
+      <summary><input type="checkbox" class="ms-check" checked><span class="ms-id">M5.9</span><span class="ms-title">Measurements overlay (scale bar)</span><span class="ms-badges"></span><span class="ms-status status-done">Completed &middot; 2026-06-28</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>Show a measurement/scale bar (e.g. a degree/arcmin bar from pixel scale) bottom-right when enough info exists.</p>
         <h5>Scope / changes</h5><ul><li>Compute a sensible bar length from pixel scale/focal length; draw on the overlay.</li></ul>
@@ -1478,6 +1478,24 @@
         <h5>Acceptance</h5><ul><li>Scale bar renders with correct labeling; hidden when scale unknown.</li></ul>
         <h5>Dependencies</h5><p class="dep">Depends on M5.0.</p>
         <h5>Commit</h5><span class="commit">feat: add a measurement scale-bar overlay</span>
+        <h5>Review comments</h5>
+        <ul>
+          <li>The bar should sit on the image, not in the empty viewport area beside it. Insets from the right/bottom edges are fine, optionally leaving room for the floating bar.</li>
+          <li>When zoomed in, the bar's right edge sits exactly on the border with no margin — always leave a margin on the right.</li>
+          <li>Still too close when zoomed in (the bar nearly touches the vertical scrollbar that appears) — needs a more generous right inset.</li>
+        </ul>
+        <h5>Implementation notes</h5>
+        <div class="callout"><strong>Implemented with TDD; awaiting review. Full unit suite green; UI tests not executed (harness automation-mode limitation, as in M5.7).</strong>
+          <ul>
+            <li><strong>Overlay.</strong> New <code>ScaleBarOverlay: CanvasOverlay</code> (id <code>"scale"</code>, title <em>Scale Bar</em>, SF&nbsp;Symbol <code>ruler</code>) draws a labelled measurement bar in the bottom-right with end ticks, its length tracking the zoom. It gates on <code>isAvailable</code> (a positive pixel scale), so the toolbar toggle is hidden when the field of view is unknown — matching the acceptance.</li>
+            <li><strong>Review fix — anchor to the image, not the empty viewport.</strong> The first pass anchored the bar to the viewport corner, so for an image smaller than the pane it landed in the black area beside the picture. It now anchors to the <em>visible image rectangle</em> — the image's displayed rect clipped to the viewport — so the bar sits on the picture when the image is smaller than the pane and on the visible portion when zoomed in past the edges, and never drifts into empty space or off-screen. A larger bottom inset keeps it clear of the floating status bar.</li>
+            <li><strong>Review fix — reliable margins via the canvas size.</strong> The viewport clip was first read from the graphics context's <code>clipBoundingRect</code>, which did not actually bound to the visible pane, so when zoomed in the bar hugged the right edge with no margin. The <code>CanvasOverlay.draw</code> protocol now also receives the canvas size (the real viewport), passed by <code>CanvasOverlayLayer</code> from the <code>Canvas</code> closure; the scale bar clips the image rect to that and insets from the right edge (and the bottom), so a margin is always left. The other overlays ignore the new parameter. The right inset was then made more generous (36&nbsp;pt; bottom 56&nbsp;pt) so that, when zoomed in, the bar clears the vertical scroller that appears along the right edge instead of nearly touching it.</li>
+            <li><strong>Nice-value selection (the tested core).</strong> A pure <code>ScaleBarOverlay.measurement(pixelScale:displayScale:maxLength:)</code> converts the allowed on-screen width into an angular span and picks the largest nice round value that fits, from a ladder of 1/2/5/10/15/30″, 1/2/5/10/20/30′, 1/2/5/10°. It formats the label in the right unit (″ / ′ / °) and returns the bar's on-screen length; it returns <code>nil</code> for a non-positive scale or when even the smallest bar would overflow (extreme zoom-in). So the bar fills as much of the allowed width as a round value permits and its label updates as you zoom.</li>
+            <li><strong>Pixel-scale source.</strong> New <code>FITSImageInfo.pixelScale</code> reuses <code>FITSMetadata</code>'s unit-aware derivation (CDELT → CD matrix → focal length + pixel size) over the file's header. <code>ImageCanvasView</code> prefers the plate solve's calibration <code>pixscale</code> when present (most accurate) and falls back to that header value — so the bar works on any image with focal-length/pixel-size metadata (e.g. the Seestar files) and sharpens after a solve.</li>
+            <li><strong>Tests (TDD, written first).</strong> New <code>ScaleBarOverlayTests</code> cover availability gating, the stable id, the arc-second / arc-minute / degree label and length selection for known scales, and the two <code>nil</code> cases; new <code>FITSImageInfo.pixelScale</code> tests cover the header-derived value and the no-geometry <code>nil</code>. The drawing is exercised like the other overlays (not unit-tested directly), and the canvas wiring is view code the project doesn't unit-test.</li>
+            <li><strong>Verified.</strong> Full unit suite green — <strong>FITScopeTests 268</strong> (+11), SwiftFITS&nbsp;156, SwiftUtilities&nbsp;77, SwiftAstro&nbsp;37, SwiftPixel&nbsp;248; <code>TEST&nbsp;SUCCEEDED</code>. The 2 new files were added to <span class="file">project.pbxproj</span> via the Ruby <code>xcodeproj</code> gem and validated with <code>plutil -lint</code>. Worth a visual check that the bar reads a sensible length/label across zoom and sits cleanly in the corner.</li>
+          </ul>
+        </div>
       </div>
     </details>
 

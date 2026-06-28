@@ -61,11 +61,11 @@ public struct CanvasOverlayLayer: View
     {
         Canvas
         {
-            context, _ in
+            context, size in
 
             for overlay in self.overlays
             {
-                overlay.draw( in: &context, imageSize: self.imageSize, displayedRect: self.displayedRect )
+                overlay.draw( in: &context, canvasSize: size, imageSize: self.imageSize, displayedRect: self.displayedRect )
             }
         }
         .allowsHitTesting( false )

@@ -51,7 +51,7 @@ public struct FrameOverlay: CanvasOverlay
     public init()
     {}
 
-    public func draw( in context: inout GraphicsContext, imageSize: CGSize, displayedRect: CGRect )
+    public func draw( in context: inout GraphicsContext, canvasSize: CGSize, imageSize: CGSize, displayedRect: CGRect )
     {
         guard imageSize.width > 0, imageSize.height > 0
         else

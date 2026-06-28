@@ -143,9 +143,11 @@
 		1B8A22E86CD946413A1C30D9 /* OpenFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */; };
 		1E9E33C8743D787B7D1F00C8 /* KeychainStoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2073F9F5E1312BB0D0FDA63 /* KeychainStoring.swift */; };
 		1ED9E2EDDC7585655A55E63C /* PixelValueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD699731BC20D77496B1C9AA /* PixelValueTests.swift */; };
+		21119A804F11C06003EF388B /* ScaleBarOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DC192E7780C67C2D23EFA7B /* ScaleBarOverlayTests.swift */; };
 		2BE02C14A93DFE42D6FC798C /* PlateSolveToolbarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B4D5CF1AA92231B4FCA5B6 /* PlateSolveToolbarButton.swift */; };
 		2D8702C0C4F8BCD0EB3272DA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BEAE300CD214042135F55D9 /* AppDelegate.swift */; };
 		2E7A93F657C7AEF7849F52EE /* PlateSolveSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC493C1AF9D9DEA5E9D32E5 /* PlateSolveSession.swift */; };
+		3026B9E1B670B76D48734860 /* ScaleBarOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA98C89BB0BEA4A64910562 /* ScaleBarOverlay.swift */; };
 		3099EBF0657F94AB1C2C273A /* CanvasOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07F8042EA7350A5A850DCE85 /* CanvasOverlay.swift */; };
 		3247F84189D2AF56CCDECE73 /* AstrometryClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46FF085F9376167DDD0A9FD7 /* AstrometryClient.swift */; };
 		382F7DF73F52BD55C45092C9 /* DropAcceptance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 017FF3966AE1E425A510642E /* DropAcceptance.swift */; };
@@ -468,6 +470,7 @@
 		1CDEBA7E46E766BCABAF5462 /* CanvasGeometryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasGeometryTests.swift; sourceTree = "<group>"; };
 		209B69186583B9C65F810C23 /* HistogramMode.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramMode.swift; sourceTree = "<group>"; };
 		22D6641B378926115E450672 /* WindowContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowContent.swift; sourceTree = "<group>"; };
+		2DC192E7780C67C2D23EFA7B /* ScaleBarOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaleBarOverlayTests.swift; sourceTree = "<group>"; };
 		2DF5F41CCB06024918FD83D1 /* AstrometryClientTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AstrometryClientTests.swift; sourceTree = "<group>"; };
 		3B9C0D4280A594EAC752F3F4 /* FlowLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
 		3BEAE300CD214042135F55D9 /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -517,6 +520,7 @@
 		CBC493C1AF9D9DEA5E9D32E5 /* PlateSolveSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveSession.swift; sourceTree = "<group>"; };
 		D6F768D0B5B05753212F21BA /* ImageInfoPanelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInfoPanelView.swift; sourceTree = "<group>"; };
 		DA145A75999011CAF0371633 /* PlateSolveHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveHeaderView.swift; sourceTree = "<group>"; };
+		DAA98C89BB0BEA4A64910562 /* ScaleBarOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaleBarOverlay.swift; sourceTree = "<group>"; };
 		DAEE209DF99F410FA6950C91 /* StarsOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarsOverlayTests.swift; sourceTree = "<group>"; };
 		DC1CD2FCA750D764101AF3BE /* PlateSolveObjectsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveObjectsView.swift; sourceTree = "<group>"; };
 		DE5E278538EB67DBA2577A14 /* InspectorPlaceholderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InspectorPlaceholderView.swift; sourceTree = "<group>"; };
@@ -1179,6 +1183,7 @@
 			children = (
 				DAEE209DF99F410FA6950C91 /* StarsOverlayTests.swift */,
 				9B077522E455E19CF61F335A /* ObjectsOverlayTests.swift */,
+				2DC192E7780C67C2D23EFA7B /* ScaleBarOverlayTests.swift */,
 			);
 			path = Overlays;
 			sourceTree = "<group>";
@@ -1300,6 +1305,7 @@
 				C6DBC1DF1230AE2C0E3EE031 /* FrameOverlay.swift */,
 				BDD8757733A94F59A15A76F8 /* StarsOverlay.swift */,
 				0568BCD519879F0E48946139 /* ObjectsOverlay.swift */,
+				DAA98C89BB0BEA4A64910562 /* ScaleBarOverlay.swift */,
 			);
 			path = Overlays;
 			sourceTree = "<group>";
@@ -1656,6 +1662,7 @@
 				936FAAA367BADF804D22EC43 /* PlateSolveObjectsView.swift in Sources */,
 				2BE02C14A93DFE42D6FC798C /* PlateSolveToolbarButton.swift in Sources */,
 				9DCAAECAE4890CCDEBDC265F /* ObjectsOverlay.swift in Sources */,
+				3026B9E1B670B76D48734860 /* ScaleBarOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1703,6 +1710,7 @@
 				6EF419627CCE3666D397E62D /* AstrometryClientTests.swift in Sources */,
 				16A94F1D0484478989461CEA /* PlateSolveSessionTests.swift in Sources */,
 				7EBA7A151826541146E7EFF5 /* ObjectsOverlayTests.swift in Sources */,
+				21119A804F11C06003EF388B /* ScaleBarOverlayTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
