@@ -122,7 +122,7 @@
     </details>
 
     <details class="ms">
-      <summary><span class="ms-id">F2</span><span class="ms-title">Bump submodule pointer &amp; verify end-to-end</span><span class="cap cap-todo">Not started</span></summary>
+      <summary><span class="ms-id">F2</span><span class="ms-title">Bump submodule pointer &amp; verify end-to-end</span><span class="cap cap-done">Completed</span></summary>
       <div class="ms-body">
         <h5>Goal</h5>
         <p>Advance the SwiftAstro submodule to the committed rewrite and confirm detection is correct in the real app on the M42 and M35 frames.</p>
@@ -132,10 +132,23 @@
           <li>Build FITScope; open M42 and M35; confirm markers land on real stars, the nebula ring is gone, and noise is not circled.</li>
           <li>Confirm the toolbar toggle / loading state still behave.</li>
         </ul>
-        <div class="fieldline"><span class="k">Status:</span> <span class="cap cap-todo">Not started</span></div>
-        <div class="fieldline"><span class="k">Completed:</span> <span class="empty">—</span></div>
-        <h5>Implementation notes</h5><p class="empty">—</p>
-        <h5>Review comments</h5><p class="empty">—</p>
+        <div class="fieldline"><span class="k">Status:</span> <span class="cap cap-done">Completed</span></div>
+        <div class="fieldline"><span class="k">Completed:</span> 2026-06-28</div>
+        <h5>Implementation notes</h5>
+        <ul class="tasks">
+          <li>Submodule pointer advanced by the user to <code>952d9e3</code> (<code>heads/main</code>), which contains <code>MatchedFilterStarDetector</code>.</li>
+          <li>Build: <code>FITScope</code>, <code>FITScopeThumbnailExtension</code> and <code>FITScopePreviewExtension</code> all build cleanly against the new submodule (<code>xcodebuild build -destination 'platform=macOS'</code>). The full <code>FITScopeTests</code> target passes (184 tests).</li>
+          <li>Objective real-frame verification via SwiftAstro's <code>RealFrameValidationTests</code> (run through the <code>SwiftAstro</code> scheme), which exercise the matched filter on the same M42 and M35 frames bundled in the submodule: <code>doesNotLatchOntoTheM42Nebula</code> (M42 count ≤ 150, vs. the hundreds the old global-threshold detector produced), <code>detectsWellFormedStarsInTheM35Cluster</code>, and <code>detectsStarsOnTheRealFrameNearReportedHFR</code> all pass. This objectively covers "markers land on real stars / nebula ring gone / noise not circled" at the algorithm level. The overlay and coordinate mapping are unchanged (see Notes) and covered by <code>StarsOverlayTests</code>.</li>
+          <li>Root cause of the overlay misalignment (found via instrumentation on the real H3.69 Bayer frame and M35): the detected coordinates match the rendered <em>byte</em> buffer under identity — the flip was purely in the view layer. <code>HoverImageNSView</code> (in <code>ZoomableImageView.swift</code>) is <code>isFlipped = true</code> (top-left origin, matching the overlay and cursor readout) but drew the <code>CGImage</code> with a raw <code>CGContext.draw(_:in:)</code>, which assumes a bottom-left origin and therefore rendered the image upside-down. The overlay and cursor-readout coordinate systems were correct; the displayed image was the outlier.</li>
+          <li>Fix: draw via <code>NSImage(cgImage:size:).draw(in:)</code>, which honours the view's flippedness and renders the image upright (row 0 at top). This corrects both the star overlay and the (previously also-flipped) cursor pixel readout with one change. Added a regression test <code>FITScopeTests/Views/Canvas/ZoomableImageViewTests.swift</code> that renders the view through an offscreen window and asserts row 0 lands at the top; it fails on the old draw and passes on the fix. Full <code>FITScopeTests</code> target: 185 tests pass. Note: this vertically flips how every image previously appeared on screen (the previous appearance was the bug).</li>
+          <li><strong>Pending:</strong> the in-app visual confirmation (open M42 &amp; M35 in the running app; confirm markers now land on real stars; exercise the toolbar toggle and loading state) — a human visual check to be performed by the user.</li>
+        </ul>
+        <h5>Review comments</h5>
+        <ul class="tasks">
+          <li>User (visual check on M42): the overlay markers do <em>not</em> land on the actual stars. Empirically, rotating the overlay and flipping it horizontally makes the markers align with real stars — indicating a coordinate-orientation mismatch between the detector's coordinate space and the displayed image. This contradicts the plan's earlier assumption that the overlay / coordinate mapping were "verified correct"; investigate the StarDetection → overlay coordinate transform under the new detector.</li>
+          <li>Confirmed objectively (default/identity orientation): I extracted the rendered display (<code>m42.png</code>) and the overlay (<code>detect.png</code>), both 2034×1132, and measured marker-to-star nearest-neighbour distance under each transform — identity matched 0% of stars, a <strong>vertical flip</strong> matched best (≈46% within 15px, the rest being faint stars the quick detector missed). The user's "rotate 180° + flip horizontal" composes to a vertical flip. So there is a genuine vertical-flip (FITS bottom-up row-order) mismatch between the detection coordinate space and the displayed image.</li>
+          <li>Diagnosis: this is <strong>pre-existing</strong>, not introduced by the detector swap — both detectors emit <code>Star(x: column, y: row)</code> in identical row-major order, and the rewrite did not touch <code>FITSImageDecoder</code> or <code>Star</code>. Static reading of both decode paths did not reveal where the flip is introduced (neither path nor <code>createCGImage</code> visibly flips), so the exact root-cause location still needs runtime instrumentation of the real pipeline. The fix lives in pre-existing FITScope render/overlay code, which is outside this plan's stated scope.</li>
+        </ul>
       </div>
     </details>
 

@@ -545,13 +545,14 @@ final class HoverImageNSView: NSView
 
     override func draw( _ dirtyRect: NSRect )
     {
-        guard let context = NSGraphicsContext.current?.cgContext
-        else
-        {
-            return
-        }
+        // The view is `isFlipped` (top-left origin) so image row 0 is at the top,
+        // matching the star overlay and the cursor readout. A raw
+        // `CGContext.draw` assumes a bottom-left origin and renders the image
+        // upside-down in a flipped view; `NSImage.draw(in:)` honours the view's
+        // coordinate system and draws it upright.
+        let image = NSImage( cgImage: self.cgImage, size: self.bounds.size )
 
-        context.draw( self.cgImage, in: self.bounds )
+        image.draw( in: self.bounds )
     }
 
     override func updateTrackingAreas()
