@@ -120,6 +120,47 @@
           detection stretch decision.
         </p>
       </li>
+      <li>
+        <h3>Make API keys preferences view larger</h3>
+        <p>
+          The API Keys tab in the Preferences window
+          (<code>APIKeysPreferencesView</code>) is too cramped. Enlarge the view so
+          the API key fields have enough room to be read and edited comfortably.
+        </p>
+      </li>
+      <li>
+        <h3>Verify whether MainMenu.xib is needed for a SwiftUI app</h3>
+        <p>
+          The project still ships <code>Base.lproj/MainMenu.xib</code>, wired up through
+          the <code>NSMainNibFile</code> key in <code>Info.plist</code>, even though the
+          app uses the SwiftUI <code>@main App</code> lifecycle
+          (<code>FITScopeApp</code>). Confirm whether this nib is actually required, and
+          if not, remove the xib and its <code>Info.plist</code> reference to drop the
+          dead AppKit scaffolding.
+        </p>
+      </li>
+      <li>
+        <h3>Flesh out the Image menu</h3>
+        <p>
+          The new <em>Image</em> menu (<code>ImageCommands</code>) currently exposes only
+          the <em>Plate Solve&hellip;</em> action, while the other image actions live solely
+          in the floating canvas toolbar (<code>ImageToolbarView</code>) with no menu
+          equivalents or keyboard shortcuts. Add the rest of those actions to the menu so
+          they are discoverable and keyboard-accessible: the zoom controls (Zoom In, Zoom
+          Out, Actual Size at 100%, Fit to Window, Recenter) with standard shortcuts, and
+          the canvas overlay toggles (such as &ldquo;Show Stars&rdquo;).
+        </p>
+      </li>
+      <li>
+        <h3>Sidebar sort button doesn&rsquo;t match the add button</h3>
+        <p>
+          In the files sidebar header (<code>FilesSidebarView</code>), the sort control
+          (the <code>arrow.up.arrow.down</code> menu) renders with a larger icon and a
+          different color than the adjacent <code>+</code> (add files) button. The two
+          should match: same icon size and same tint so the header controls look
+          consistent.
+        </p>
+      </li>
     </ol>
   </div>
 </body>
