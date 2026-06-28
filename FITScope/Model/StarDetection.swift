@@ -40,10 +40,11 @@ public enum StarDetection
     /// - Parameters:
     ///   - image:    The detection-ready single-channel linear image, or `nil`
     ///               when none is available (detection is then skipped).
-    ///   - detector: The detector to use; defaults to ``MomentStarDetector``.
+    ///   - detector: The detector to use; defaults to
+    ///               ``MatchedFilterStarDetector``.
     /// - Returns: The detected stars and their aggregate metrics, or `nil` when
     ///   no image is given or detection fails.
-    public static func detectStars( in image: PixelBuffer?, using detector: any StarDetecting = MomentStarDetector() ) -> StarField?
+    public static func detectStars( in image: PixelBuffer?, using detector: any StarDetecting = MatchedFilterStarDetector() ) -> StarField?
     {
         guard let image
         else

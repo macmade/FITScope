@@ -98,7 +98,7 @@
     <h2>Milestones</h2>
 
     <details class="ms" open>
-      <summary><span class="ms-id">F1</span><span class="ms-title">Swap default detector</span><span class="cap cap-todo">Not started</span></summary>
+      <summary><span class="ms-id">F1</span><span class="ms-title">Swap default detector</span><span class="cap cap-done">Completed</span></summary>
       <div class="ms-body">
         <h5>Goal</h5>
         <p>Use <code>MatchedFilterStarDetector()</code> as the default in <code>StarDetection.detectStars(in:)</code> instead of <code>MomentStarDetector()</code>.</p>
@@ -108,9 +108,15 @@
           <li>Update <code>FITScopeTests/Model/StarDetectionTests.swift</code> if it pins the old default detector type.</li>
           <li>Build and test via <code>xcodebuild</code>.</li>
         </ul>
-        <div class="fieldline"><span class="k">Status:</span> <span class="cap cap-todo">Not started</span></div>
-        <div class="fieldline"><span class="k">Completed:</span> <span class="empty">—</span></div>
-        <h5>Implementation notes</h5><p class="empty">—</p>
+        <div class="fieldline"><span class="k">Status:</span> <span class="cap cap-done">Completed</span></div>
+        <div class="fieldline"><span class="k">Completed:</span> 2026-06-28</div>
+        <h5>Implementation notes</h5>
+        <ul class="tasks">
+          <li>Changed the default detector in <code>FITScope/Model/StarDetection.swift</code>: <code>detectStars(in:using:)</code> now defaults <code>detector</code> to <code>MatchedFilterStarDetector()</code> instead of <code>MomentStarDetector()</code> (its initializer is fully defaulted, so the swap is a one-line change). Updated the doc comment to point at <code>MatchedFilterStarDetector</code>.</li>
+          <li>The test did not pin the old detector <em>type</em>, but its fixture was incompatible with the new default: the old <code>starImage</code> built a flat, noiseless bright square, and the matched filter returns an empty field for an image with no measurable noise. Replaced it with a file-private <code>SyntheticStarField</code> helper (Gaussian star + deterministic seeded noise, mirroring SwiftAstro's test helper, which is not importable from <code>SwiftAstroTests</code>). <code>detectsStarsInImage()</code> now plants a σ=2 Gaussian star on a noisy background.</li>
+          <li>TDD note: a coordinator-level test cannot produce a meaningful red for this change. I first tried a nebulosity-rejection test (star planted on a strong gradient, expecting exactly one detection) as a discriminator, but (a) the old <code>MomentStarDetector</code> default <em>also</em> passed it, so it was not a discriminator, and (b) after the swap it failed with <code>count == 0</code> — the matched filter dropped even the real star because a strong gradient inflates the global noise estimate. Detecting a star buried in strong nebulosity is not a documented/tested guarantee of the algorithm, so asserting it was wrong. I removed that test (and the unused gradient helper) rather than tune a brittle fixture against SwiftAstro internals.</li>
+          <li>Verified via <code>xcodebuild test -scheme FITScope -destination 'platform=macOS'</code>: the full <code>FITScopeTests</code> target passes — 184 tests in 31 suites — with the new default.</li>
+        </ul>
         <h5>Review comments</h5><p class="empty">—</p>
       </div>
     </details>
