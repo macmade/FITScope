@@ -1531,8 +1531,8 @@
       </div>
     </details>
 
-    <details class="ms" id="M5.11">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.11</span><span class="ms-title">North indicator overlay + toggle</span><span class="ms-badges"></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+    <details class="ms completed" id="M5.11">
+      <summary><input type="checkbox" class="ms-check" checked><span class="ms-id">M5.11</span><span class="ms-title">North indicator overlay + toggle</span><span class="ms-badges"></span><span class="ms-status status-done">Completed &middot; 2026-06-28</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>Show a north arrow (top-right) when orientation (WCS/CROTA) is known; toggle from the toolbar.</p>
         <h5>Scope / changes</h5><ul><li>Derive north direction from WCS; draw an arrow + E/N labels.</li></ul>
@@ -1541,6 +1541,24 @@
         <h5>Acceptance</h5><ul><li>Arrow points correctly; hidden when orientation unknown.</li></ul>
         <h5>Dependencies</h5><p class="dep">Depends on M5.0 (and benefits from M5.7's WCS).</p>
         <h5>Commit</h5><span class="commit">feat: add a north-direction overlay</span>
+        <div class="callout"><strong>Implementation notes — implemented with TDD; awaiting in-app visual confirmation on a real plate-solved frame.</strong>
+          <ul>
+            <li><strong>New <code>NorthOverlay</code> (<code>FITScope/Views/Overlays/NorthOverlay.swift</code>), a <code>CanvasOverlay</code>.</strong> Derives north/east from the WCS linear transform: it reads the <code>CD</code> matrix when all four elements are present, otherwise synthesises one from the standard AIPS <code>CDELT</code> + <code>CROTA2</code> form. Inverting the matrix gives the pixel-space directions of increasing declination (north) and right ascension (east). Like the scale bar it is screen-anchored (top-right corner), but its arrows turn with the image: the source-space directions are mapped through the committed-render <code>Orientation</code> (the same one the stars/objects overlays use), reusing the renderer's mirror-then-rotate linear map.</li>
+            <li><strong>Coordinate convention.</strong> The directions are expressed in FITScope's <em>source-display</em> space — column → x (right), row → y (down), data row 0 at the top — the same convention the objects overlay was empirically verified against. This is the opposite of the conventional bottom-up sky display, so a north-up sky field (CDELT1&lt;0, CDELT2&gt;0) renders with north pointing <em>down</em> and east <em>left</em> until the user flips the image. Anchoring to the objects-overlay convention keeps the arrow consistent with the object labels rather than inventing a separate frame.</li>
+            <li><strong>Wiring.</strong> Added to <code>ImageCanvasView.overlays</code> after the scale bar. WCS source prefers the plate solve's parsed WCS (<code>file.plateSolve?.wcs</code>) and falls back to the file header (new <code>FITSImageInfo.metadata</code> accessor); orientation comes from <code>renderer.result?.orientation</code>. Gated by <code>isAvailable</code> (true only when the WCS yields an orientation), so the toolbar toggle is hidden when north is unknown — satisfying the "hidden when orientation unknown" acceptance criterion.</li>
+            <li><strong>DRY.</strong> Extracted <code>FITSImageInfo.metadata</code> (header keywords → <code>FITSMetadata</code>) and rewrote <code>pixelScale</code> to reuse it, since the north overlay needs the same header-derived WCS.</li>
+            <li><strong>TDD.</strong> Wrote <code>FITScopeTests/Views/Overlays/NorthOverlayTests.swift</code> first (9 tests, all red on a missing type), then implemented to green: availability gating (no WCS / no orientation / CD present), stable id, the standard-sky north-down/east-left result, rotation and horizontal-flip tracking, the CDELT+CROTA2 fallback, and a CROTA2=90° rotation. Verified via <code>xcodebuild test</code>: the full <code>FITScopeTests</code> target passes — <strong>281 tests in 41 suites</strong> — and the app + both QuickLook extensions build cleanly.</li>
+            <li><strong>Revision (review round 1).</strong> (1) <em>Toolbar clearance:</em> the compass overlapped the floating top toolbar — raised <code>marginTop</code> to 104 (and trimmed the arms to 26/16&nbsp;pt) so the centre and its arms/labels clear the toolbar band in any arrow direction. (2) <em>Always-offered, shared prompt:</em> the north toggle now behaves like the objects toggle — always shown in the toolbar even with no orientation, and tapped without a WCS it proposes a plate solve. Rather than duplicating the alert, the objects prompt was generalised into one shared prompt: <code>isObjectsPlateSolvePromptPresented</code> → <code>isPlateSolvePromptPresented</code>, the alert title <em>Identify Objects</em> → <em>Plate Solve</em>, the message neutralised to cover both overlays, and the "always offered" set + the no-data→prompt branch in <code>toggleOverlay</code> now key off a shared <code>alwaysOfferedOverlayIDs</code> ({objects, north}) and the overlay's own <code>isAvailable</code>. A NINA file that already carries a WCS still toggles straight on (no prompt); the prompt appears only when no orientation is known. Added <code>NorthOverlay.identifier</code> to mirror <code>ObjectsOverlay</code>. Full <code>FITScopeTests</code> still green (281 tests); app + extensions build.</li>
+            <li><strong>Pending (human visual check):</strong> open a plate-solved frame (e.g. M42/M35), toggle the compass, and confirm the arrow points to true north, clears the toolbar, and turns correctly as the image is rotated/flipped — the same kind of on-frame confirmation the star-detection milestone needed, since the sky-orientation convention can only be confirmed end-to-end against a real frame.</li>
+          </ul>
+        </div>
+        <h5>Review comments</h5>
+        <div class="callout"><strong>Review round 1 (maintainer).</strong>
+          <ul>
+            <li><strong>Leave room for the floating toolbar.</strong> The compass overlapped the floating top toolbar (see screenshot) — increase the top inset so the compass clears the toolbar band.</li>
+            <li><strong>Behave like the objects marker.</strong> Since a north indicator needs a plate solve (a WCS), the toggle should be <em>always visible</em> like the plate-solved-objects toggle, and tapping it with no orientation available should propose a plate solve. <strong>Do not duplicate the alert</strong> — reuse the existing objects plate-solve prompt rather than adding a second one.</li>
+          </ul>
+        </div>
       </div>
     </details>
 

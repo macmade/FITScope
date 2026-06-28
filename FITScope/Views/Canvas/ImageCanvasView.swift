@@ -70,10 +70,11 @@ public struct ImageCanvasView: View
     /// The identifiers of the overlays the user has turned on for this file.
     @State private var enabledOverlays = Set< String >()
 
-    /// Whether the alert proposing a plate solve is shown. Raised when the
-    /// always-offered objects toggle is tapped with no plate-solved objects to
-    /// reveal.
-    @State private var isObjectsPlateSolvePromptPresented = false
+    /// Whether the alert proposing a plate solve is shown. Raised when an
+    /// always-offered, solve-dependent toggle (the plate-solved objects or the
+    /// north indicator) is tapped with nothing to reveal. The two share this one
+    /// prompt rather than each carrying its own.
+    @State private var isPlateSolvePromptPresented = false
 
     /// Whether the floating bars are currently shown.
     @State private var barsVisible = true
@@ -152,14 +153,14 @@ public struct ImageCanvasView: View
                     self.revealBars()
                 }
             }
-            .alert( "Identify Objects", isPresented: self.$isObjectsPlateSolvePromptPresented )
+            .alert( "Plate Solve", isPresented: self.$isPlateSolvePromptPresented )
             {
                 Button( "Plate Solve…" ) { self.plateSolve() }
                 Button( "Cancel", role: .cancel ) {}
             }
             message:
             {
-                Text( self.objectsPlateSolvePromptMessage )
+                Text( self.plateSolvePromptMessage )
             }
     }
 
@@ -370,16 +371,28 @@ public struct ImageCanvasView: View
             // only when one of them yields a scale, so the toolbar hides the toggle
             // when the field of view is unknown.
             ScaleBarOverlay( pixelScale: self.file.plateSolve?.calibration.pixscale ?? self.file.image?.info.pixelScale ),
+            // The north / east compass, derived from the WCS — the plate solve's
+            // (most authoritative) when present, else the file header's. Mapped
+            // through the same committed-render orientation as the stars and
+            // objects, so it turns with the image. Like the objects toggle it is
+            // always offered: tapped without a known orientation, it proposes a
+            // plate solve rather than revealing nothing (see `toolbarOverlays`).
+            NorthOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity ),
         ]
     }
 
+    /// The identifiers of the always-offered, solve-dependent overlays: those whose
+    /// toggle is shown even with nothing to reveal, proposing a plate solve when
+    /// tapped without data. Both the objects and the north overlay behave this way.
+    private static let alwaysOfferedOverlayIDs: Set< String > = [ ObjectsOverlay.identifier, NorthOverlay.identifier ]
+
     /// The overlays surfaced in the toolbar: those with something to show, plus
-    /// those still computing their data (shown as an in-progress button). The
-    /// objects overlay is always offered, even with nothing to show — its toggle
-    /// then proposes a plate solve rather than revealing an empty layer.
+    /// those still computing their data (shown as an in-progress button), plus the
+    /// always-offered, solve-dependent toggles — which propose a plate solve rather
+    /// than revealing an empty layer.
     private var toolbarOverlays: [ any CanvasOverlay ]
     {
-        self.overlays.filter { $0.isAvailable || $0.isLoading || $0.id == ObjectsOverlay.identifier }
+        self.overlays.filter { $0.isAvailable || $0.isLoading || Self.alwaysOfferedOverlayIDs.contains( $0.id ) }
     }
 
     /// The available overlays the user has enabled, drawn back-to-front. A loading
@@ -391,13 +404,15 @@ public struct ImageCanvasView: View
 
     /// Toggles an overlay on or off by identifier.
     ///
-    /// The always-offered objects toggle is special: with no plate-solved objects
-    /// to reveal it proposes a plate solve instead of switching on an empty layer.
+    /// The always-offered, solve-dependent toggles (objects and north) are special:
+    /// when tapped with nothing to reveal — no plate-solved objects, or no known
+    /// orientation — they propose a plate solve instead of switching on an empty
+    /// layer, sharing the one prompt.
     private func toggleOverlay( _ id: String )
     {
-        if id == ObjectsOverlay.identifier, self.file.plateSolve?.annotations.isEmpty ?? true
+        if Self.alwaysOfferedOverlayIDs.contains( id ), self.overlays.first( where: { $0.id == id } )?.isAvailable != true
         {
-            self.isObjectsPlateSolvePromptPresented = true
+            self.isPlateSolvePromptPresented = true
 
             return
         }
@@ -412,13 +427,14 @@ public struct ImageCanvasView: View
         }
     }
 
-    /// The message for the plate-solve prompt, tailored to whether the image has
-    /// been solved (but yielded no objects) or has not been solved at all.
-    private var objectsPlateSolvePromptMessage: String
+    /// The message for the shared plate-solve prompt, tailored to whether the image
+    /// has been solved (but yielded nothing for the tapped overlay) or has not been
+    /// solved at all.
+    private var plateSolvePromptMessage: String
     {
         self.file.plateSolve == nil
-            ? "This image hasn’t been plate-solved yet. Plate solve it to identify and label the objects in its field."
-            : "No catalogue objects were identified in this field. You can run the plate solve again from the results window."
+            ? "This image hasn’t been plate-solved yet. Plate solve it to map its field — labelling the objects in view and showing the sky orientation."
+            : "The plate solve didn’t provide what this overlay needs. You can run the plate solve again from the results window."
     }
 
     /// Starts (or re-opens) a plate solve for the displayed file and shows the

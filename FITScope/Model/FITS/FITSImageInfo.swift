@@ -79,16 +79,25 @@ public struct FITSImageInfo: Codable, Hashable
         }
     }
 
-    /// The image's plate scale, in arc-seconds per pixel, or `nil` when it cannot
-    /// be derived. Reuses ``FITSMetadata``'s unit-aware derivation (CDELT → CD
-    /// matrix → focal length + pixel size) over this snapshot's header keywords.
-    public var pixelScale: Double?
+    /// The file's header keywords as a queryable ``FITSMetadata``, built from every
+    /// section's properties (the primary header and any extensions, in file order,
+    /// so the first occurrence of a keyword wins). The values are carried as
+    /// strings; ``FITSMetadata``'s accessors parse them on demand.
+    public var metadata: FITSMetadata
     {
         let properties = self.sections.flatMap { $0.properties }.map
         {
             FITSPropertySnapshot( name: $0.name, value: .string( $0.value ) )
         }
 
-        return FITSMetadata( properties: properties ).pixelScale
+        return FITSMetadata( properties: properties )
+    }
+
+    /// The image's plate scale, in arc-seconds per pixel, or `nil` when it cannot
+    /// be derived. Reuses ``FITSMetadata``'s unit-aware derivation (CDELT → CD
+    /// matrix → focal length + pixel size) over this snapshot's header keywords.
+    public var pixelScale: Double?
+    {
+        self.metadata.pixelScale
     }
 }

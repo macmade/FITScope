@@ -172,6 +172,7 @@
 		7B543E85E898ADF392FE8ACB /* AstrometryTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847C8768478977166B540620 /* AstrometryTransport.swift */; };
 		7D9F3B0B9F33E7D25CEB613F /* AstrometryTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86ADBDCAF1E7598A4CC5DEDD /* AstrometryTestSupport.swift */; };
 		7EBA7A151826541146E7EFF5 /* ObjectsOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B077522E455E19CF61F335A /* ObjectsOverlayTests.swift */; };
+		428DF3B93E22083E09214995 /* NorthOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 799F647F7C536FA5329F2F55 /* NorthOverlayTests.swift */; };
 		80F6BE024AFD3E3A53297130 /* PlateSolveCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0606C4BF587DBB4AD119358A /* PlateSolveCalibrationView.swift */; };
 		8744872E66793145935DFB12 /* AstrometryResponses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C38E95C136002F0B9047230 /* AstrometryResponses.swift */; };
 		8883C39B7FD3BD8B2E8035DD /* FilesSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA256D7D36DCB17FA81958C /* FilesSidebarView.swift */; };
@@ -182,6 +183,7 @@
 		9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7410133087261AF83595054 /* ImageInformation.swift */; };
 		9A3A3D353F14A85800BD349D /* StatisticsFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0752B6126A583839BB8F8BEF /* StatisticsFormatTests.swift */; };
 		9DCAAECAE4890CCDEBDC265F /* ObjectsOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0568BCD519879F0E48946139 /* ObjectsOverlay.swift */; };
+		924C500405D583CA6C43F45B /* NorthOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DA1F380366A0478FB5293C1 /* NorthOverlay.swift */; };
 		A043D5D47F28AF202E84461C /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF3765F1937F36620A92317F /* MainWindowView.swift */; };
 		A4B7F72827EB5946B7D329AC /* PlateSolveResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B503A40CF3A57D863C1304 /* PlateSolveResult.swift */; };
 		A88DD46D272944AD847BC0FD /* StarsOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEE209DF99F410FA6950C91 /* StarsOverlayTests.swift */; };
@@ -308,6 +310,7 @@
 		053BEABB2DDDDDA900EF0C79 /* FITScopeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FITScopeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		053C2E742DF6EE3200DA637A /* Slider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Slider.swift; sourceTree = "<group>"; };
 		0568BCD519879F0E48946139 /* ObjectsOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ObjectsOverlay.swift; sourceTree = "<group>"; };
+		1DA1F380366A0478FB5293C1 /* NorthOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NorthOverlay.swift; sourceTree = "<group>"; };
 		056E5C002DDF0E8B003254C7 /* CODE_OF_CONDUCT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CODE_OF_CONDUCT.md; sourceTree = "<group>"; };
 		056E5C012DDF0E8B003254C7 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		056E5C022DDF0E8B003254C7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -503,6 +506,7 @@
 		9478E5443F0419FE8102A162 /* PlateSolveResultView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveResultView.swift; sourceTree = "<group>"; };
 		9696A9D7B24CC9A58998C7AC /* OpenFile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFile.swift; sourceTree = "<group>"; };
 		9B077522E455E19CF61F335A /* ObjectsOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ObjectsOverlayTests.swift; sourceTree = "<group>"; };
+		799F647F7C536FA5329F2F55 /* NorthOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NorthOverlayTests.swift; sourceTree = "<group>"; };
 		9D7E39AB2783ACE444D01AA1 /* InspectorColumnView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InspectorColumnView.swift; sourceTree = "<group>"; };
 		A0750384B9B00F3AF15C9AFC /* StatusBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatusBarView.swift; sourceTree = "<group>"; };
 		A18478C6716CEEB19F032F3F /* PlateSolveSessionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveSessionTests.swift; sourceTree = "<group>"; };
@@ -1185,6 +1189,7 @@
 			children = (
 				DAEE209DF99F410FA6950C91 /* StarsOverlayTests.swift */,
 				9B077522E455E19CF61F335A /* ObjectsOverlayTests.swift */,
+				799F647F7C536FA5329F2F55 /* NorthOverlayTests.swift */,
 				2DC192E7780C67C2D23EFA7B /* ScaleBarOverlayTests.swift */,
 				0C5D104F82BB5EF35C693E8E /* ReticleOverlayTests.swift */,
 			);
@@ -1307,6 +1312,7 @@
 				481FAC322DE74C3A02E83F40 /* CanvasOverlayLayer.swift */,
 				BDD8757733A94F59A15A76F8 /* StarsOverlay.swift */,
 				0568BCD519879F0E48946139 /* ObjectsOverlay.swift */,
+				1DA1F380366A0478FB5293C1 /* NorthOverlay.swift */,
 				DAA98C89BB0BEA4A64910562 /* ScaleBarOverlay.swift */,
 				6EC3FF3263CBF035678ABD2E /* ReticleOverlay.swift */,
 			);
@@ -1664,6 +1670,7 @@
 				936FAAA367BADF804D22EC43 /* PlateSolveObjectsView.swift in Sources */,
 				2BE02C14A93DFE42D6FC798C /* PlateSolveToolbarButton.swift in Sources */,
 				9DCAAECAE4890CCDEBDC265F /* ObjectsOverlay.swift in Sources */,
+				924C500405D583CA6C43F45B /* NorthOverlay.swift in Sources */,
 				3026B9E1B670B76D48734860 /* ScaleBarOverlay.swift in Sources */,
 				CE312491C00DF749AC73C4B0 /* ReticleOverlay.swift in Sources */,
 			);
@@ -1713,6 +1720,7 @@
 				6EF419627CCE3666D397E62D /* AstrometryClientTests.swift in Sources */,
 				16A94F1D0484478989461CEA /* PlateSolveSessionTests.swift in Sources */,
 				7EBA7A151826541146E7EFF5 /* ObjectsOverlayTests.swift in Sources */,
+				428DF3B93E22083E09214995 /* NorthOverlayTests.swift in Sources */,
 				21119A804F11C06003EF388B /* ScaleBarOverlayTests.swift in Sources */,
 				4C535A3C6EFB551F5B5A49F3 /* ReticleOverlayTests.swift in Sources */,
 			);
