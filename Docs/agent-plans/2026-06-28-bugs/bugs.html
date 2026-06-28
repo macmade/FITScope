@@ -75,7 +75,7 @@
   <div class="container">
     <header>
       <h1>Bugs</h1>
-      <div class="generated">Generated 2026-06-28</div>
+      <div class="generated">Generated 2026-06-28 &middot; Updated 2026-06-28</div>
     </header>
 
     <p class="overview">
@@ -159,6 +159,49 @@
           different color than the adjacent <code>+</code> (add files) button. The two
           should match: same icon size and same tint so the header controls look
           consistent.
+        </p>
+      </li>
+      <li>
+        <h3>Overlays are laggy when resizing the window</h3>
+        <p>
+          The canvas overlays drawn by <code>CanvasOverlayLayer</code> (stars, objects,
+          frame, scale bar) lag behind the image while the window is being resized,
+          instead of tracking the displayed image smoothly. Make the overlays redraw in
+          step with the resize so they stay registered to the image without visible lag.
+        </p>
+      </li>
+      <li>
+        <h3>Close the plate-solve window when its image is closed</h3>
+        <p>
+          The plate-solve results live in a dedicated window
+          (<code>PlateSolveWindowView</code>, the <code>PlateSolveWindow</code>
+          <code>WindowGroup</code>) keyed to an open file&rsquo;s ID. When the user closes
+          an image, any plate-solve window opened for that image should be dismissed
+          automatically, rather than being left behind referencing a file that is no
+          longer open.
+        </p>
+      </li>
+      <li>
+        <h3>Bring the open panel to front when reactivating the app</h3>
+        <p>
+          The Open panel is presented modally (<code>NSOpenPanel.runModal()</code> in
+          <code>AppModel.runOpenPanel()</code> and <code>FilesSidebarView</code>). When
+          the panel is open and the app is sent to the background, reactivating the app
+          should bring the open panel back to the front rather than leaving it buried or
+          unreachable. Also consider Spaces support, so activating the app behaves
+          sensibly when the panel lives on a different Space.
+        </p>
+      </li>
+      <li>
+        <h3>Give overlays a consistent semi-transparent alpha</h3>
+        <p>
+          The canvas overlays (<code>CanvasOverlay</code> implementations such as
+          <code>StarsOverlay</code>, <code>ObjectsOverlay</code>,
+          <code>FrameOverlay</code> and <code>ScaleBarOverlay</code>) draw with
+          hard-coded, mostly opaque colours, so they can sit heavily on top of the
+          image. Apply a sensible, consistent alpha across the overlays so they read
+          as annotations layered over the image without fully obscuring what they
+          mark.
         </p>
       </li>
     </ol>
