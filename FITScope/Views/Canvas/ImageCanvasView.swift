@@ -378,13 +378,19 @@ public struct ImageCanvasView: View
             // always offered: tapped without a known orientation, it proposes a
             // plate solve rather than revealing nothing (see `toolbarOverlays`).
             NorthOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity ),
+            // The RA/Dec coordinate grid, projected from the same WCS (plate solve
+            // preferred, else the file header) through the committed-render
+            // orientation. Available only when a WCS projection can be built, so the
+            // toolbar hides the toggle when the field has no usable WCS.
+            EquatorialGridOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity ),
         ]
     }
 
     /// The identifiers of the always-offered, solve-dependent overlays: those whose
     /// toggle is shown even with nothing to reveal, proposing a plate solve when
-    /// tapped without data. Both the objects and the north overlay behave this way.
-    private static let alwaysOfferedOverlayIDs: Set< String > = [ ObjectsOverlay.identifier, NorthOverlay.identifier ]
+    /// tapped without data. The objects, north, and equatorial-grid overlays all
+    /// behave this way.
+    private static let alwaysOfferedOverlayIDs: Set< String > = [ ObjectsOverlay.identifier, NorthOverlay.identifier, EquatorialGridOverlay.identifier ]
 
     /// The overlays surfaced in the toolbar: those with something to show, plus
     /// those still computing their data (shown as an in-progress button), plus the

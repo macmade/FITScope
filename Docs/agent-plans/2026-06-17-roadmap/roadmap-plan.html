@@ -1562,8 +1562,8 @@
       </div>
     </details>
 
-    <details class="ms" id="M5.12">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.12</span><span class="ms-title">Equatorial grid overlay + toggle</span><span class="ms-badges"></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+    <details class="ms completed" id="M5.12">
+      <summary><input type="checkbox" class="ms-check" checked><span class="ms-id">M5.12</span><span class="ms-title">Equatorial grid overlay + toggle</span><span class="ms-badges"></span><span class="ms-status status-done">Completed &middot; 2026-06-29</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>Draw an RA/DEC grid when WCS + pixel scale are available; toggle from the toolbar.</p>
         <h5>Scope / changes</h5><ul><li>Compute grid lines in sky coordinates and project to image space; label RA/DEC.</li></ul>
@@ -1572,6 +1572,32 @@
         <h5>Acceptance</h5><ul><li>Grid aligns with the field; hidden without WCS.</li></ul>
         <h5>Dependencies</h5><p class="dep">Depends on M5.0; needs WCS (header or M5.7).</p>
         <h5>Commit</h5><span class="commit">feat: add an equatorial (ra/dec) grid overlay</span>
+        <div class="callout"><strong>Implementation notes — implemented with TDD; awaiting in-app visual confirmation on a real plate-solved frame.</strong>
+          <ul>
+            <li><strong>New shared <code>WCSProjection</code> (<code>FITScope/Model/FITS/WCSProjection.swift</code>).</strong> A pure, tested gnomonic (TAN) projection between sky coordinates and FITScope's source-display pixel space, built from <code>CRVAL</code>, <code>CRPIX</code>, and the <code>CD</code> matrix (or the <code>CDELT</code> + <code>CROTA2</code> fallback). Provides <code>sourcePixel(ra:dec:)</code> (sky → 0-based source pixel, <code>nil</code> on the far hemisphere), <code>sky(forSourceX:y:)</code> (the inverse), and <code>sourceDirections()</code> (north/east unit vectors). 8 unit tests: reference-point round-trip, rising-Dec→increasing-y (FITScope shows row 0 at top), rising-RA→left, the far-hemisphere guard, sky/pixel round-trip, and the CDELT+CROTA2 build.</li>
+            <li><strong>DRY — consolidated the CD-matrix logic.</strong> The <code>CD</code>/<code>CDELT</code>+<code>CROTA2</code> construction (and the inverse) now lives once on <code>WCSProjection</code> (<code>CDMatrix</code> + <code>cdMatrix(metadata:)</code>). <code>NorthOverlay</code> was refactored to use it (its private <code>LinearTransform</code>/<code>linearTransform</code> removed); its public surface and all 9 of its tests are unchanged and still green.</li>
+            <li><strong>New <code>EquatorialGridOverlay</code> (<code>FITScope/Views/Overlays/EquatorialGridOverlay.swift</code>), a <code>CanvasOverlay</code>.</strong> Estimates the field's sky bounds by deprojecting points sampled along the four image edges (capturing TAN curvature, with RA measured relative to the reference so a 0°/360° straddle stays continuous); snaps to a nice sexagesimal step sized to the field; then draws meridians of constant RA and parallels of constant Dec by sampling each line in sky space, projecting through <code>WCSProjection</code>, mapping through the committed-render orientation (same mirror-then-rotate as the stars/objects overlays), clipping to the image bounds, and stroking the polyline. Labels follow your choice — RA in <code>h&nbsp;m</code> (e.g. <code>5h 35m</code>), Dec in <code>±D°M′</code> (e.g. <code>-5°24′</code>) — at a precision matching the step, placed at each line's left-most (Dec) / bottom-most (RA) on-screen point.</li>
+            <li><strong>Wiring.</strong> Added to <code>ImageCanvasView.overlays</code> after the north overlay (id <code>grid</code>, SF Symbol <code>grid</code>). WCS source prefers the plate solve's parsed WCS and falls back to the file header (<code>FITSImageInfo.metadata</code>); orientation from <code>renderer.result?.orientation</code>. Gated by <code>isAvailable</code> (a projection could be built), so the toggle is hidden without a usable WCS — the "hidden without WCS" acceptance criterion. (Unlike the north/objects toggles this one is <em>not</em> always-offered, matching the plan's "hidden without WCS"; revisit at review if you'd prefer it to prompt a plate solve too.)</li>
+            <li><strong>TDD.</strong> Tests written first (red on missing types), then green: <code>WCSProjectionTests</code> (8) for the projection core, and <code>EquatorialGridOverlayTests</code> (14) for availability gating, the nice-step selection, and the RA/Dec sexagesimal formatting at three precisions. Verified via <code>xcodebuild test</code>: full <code>FITScopeTests</code> target passes — <strong>303 tests in 43 suites</strong> — and the app + both QuickLook extensions build cleanly.</li>
+            <li><strong>Revision (review round 1).</strong> (1) <em>Always-offered, shared prompt:</em> the grid now behaves exactly like the north/objects toggles — added <code>EquatorialGridOverlay.identifier</code> and included it in <code>ImageCanvasView.alwaysOfferedOverlayIDs</code>, so the toggle is always shown and, tapped without a WCS, raises the shared plate-solve prompt. (This reverses the earlier "hidden without WCS" choice.) (2) <em>Aligned labels:</em> RA labels were staggered (each sat where its meridian exited the frame). They now align to a shared bottom <em>baseline</em> (placed at the column each meridian crosses it), and Dec labels to a shared left <em>gutter</em> (at the height each parallel crosses it); a line that doesn't cross its gutter/baseline is left unlabelled. (3) <em>Toolbar room:</em> labels are clamped into a frame whose top inset (56&nbsp;pt) clears the floating toolbar and whose bottom inset (60&nbsp;pt) clears the status &amp; scale bars. Full <code>FITScopeTests</code> still green (303 tests); app + extensions build.</li>
+            <li><strong>Revision (review round 2).</strong> (1) <em>Code style:</em> aligned the type colons in the tight <code>CGFloat</code>/<code>Double</code> struct blocks (<code>LabelFrame</code>, <code>FieldBounds</code>) to match the <code>ReticleOverlay</code> convention. (2) <em>Label collision:</em> a Dec label could land on the RA baseline row in the bottom-left and overlap an RA label — the declination gutter now stops a 22&nbsp;pt gap above the baseline (<code>labelBaselineGap</code>), so the two label rows are always vertically separated. Full <code>FITScopeTests</code> still green (303 tests); app + extensions build.</li>
+            <li><strong>Pending (human visual check):</strong> open a plate-solved frame, toggle the grid, and confirm the lines align with the field, the labels are aligned, non-overlapping, and read correctly (and clear the toolbar), including under rotate/flip — the on-frame confirmation that the projection conventions are right end-to-end.</li>
+          </ul>
+        </div>
+        <h5>Review comments</h5>
+        <div class="callout"><strong>Review round 1 (maintainer).</strong>
+          <ul>
+            <li><strong>Make the grid toggle behave like north/objects.</strong> Always visible, and tapped with no WCS it should propose a plate solve (the shared prompt) — do it the same way as the north overlay. (This overrides my earlier "hidden without WCS" choice.)</li>
+            <li><strong>Bottom (RA) labels are not aligned.</strong> They were staggered, each sitting where its meridian exited the frame. Align them to a common baseline (and the Dec labels to a common left gutter).</li>
+            <li><strong>Leave room for the floating toolbar</strong>, as with the north overlay — keep labels out of the toolbar band.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 2 (maintainer).</strong>
+          <ul>
+            <li><strong>Code alignment (CGFloat).</strong> Align the type colons in the tight <code>CGFloat</code> struct blocks, per the <code>ReticleOverlay</code> convention. Fixed: <code>LabelFrame</code> (and <code>FieldBounds</code>) colons now align. (The doc-comment-separated static constants follow the other, single-space house style and were left as-is.)</li>
+            <li><strong>Labels collide.</strong> A declination label and a right-ascension label overlapped in the bottom-left corner. Fixed by stopping the declination gutter a fixed gap (22&nbsp;pt) above the RA baseline, so the two label rows are always vertically separated.</li>
+          </ul>
+        </div>
       </div>
     </details>
 

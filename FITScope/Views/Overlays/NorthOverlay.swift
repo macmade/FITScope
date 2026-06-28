@@ -99,16 +99,6 @@ public struct NorthOverlay: CanvasOverlay
 
     // MARK: - WCS derivation
 
-    /// The four elements of the WCS linear transform (`CD` matrix), read directly
-    /// from the `CD` keywords or synthesised from the `CDELT` + `CROTA2` form.
-    private struct LinearTransform
-    {
-        let cd11: Double
-        let cd12: Double
-        let cd21: Double
-        let cd22: Double
-    }
-
     /// The on-screen compass for a WCS, mapped through a display orientation.
     ///
     /// Derives the source-space directions of north and east from the WCS, then
@@ -145,13 +135,13 @@ public struct NorthOverlay: CanvasOverlay
     /// - Returns: The source-space compass, or `nil`.
     public static func sourceCompass( wcs: FITSMetadata? ) -> Compass?
     {
-        guard let wcs, let cd = Self.linearTransform( wcs: wcs )
+        guard let wcs, let cd = WCSProjection.cdMatrix( metadata: wcs )
         else
         {
             return nil
         }
 
-        let determinant = ( cd.cd11 * cd.cd22 ) - ( cd.cd12 * cd.cd21 )
+        let determinant = cd.determinant
 
         guard determinant != 0,
               let north = Self.normalized( CGVector( dx: -cd.cd12 / determinant, dy:  cd.cd11 / determinant ) ),
@@ -189,35 +179,6 @@ public struct NorthOverlay: CanvasOverlay
             case .counterClockwise90: return CGVector( dx: mirroredY,  dy: -mirroredX )
             @unknown default:         return CGVector( dx: mirroredX,  dy: mirroredY )
         }
-    }
-
-    /// The WCS linear transform: the `CD` matrix when all four elements are
-    /// present, otherwise the standard AIPS `CDELT` + `CROTA2` synthesis.
-    ///
-    /// - Parameter wcs: The world-coordinate system.
-    /// - Returns: The transform, or `nil` when neither form is available.
-    private static func linearTransform( wcs: FITSMetadata ) -> LinearTransform?
-    {
-        if let cd11 = wcs.cd1_1, let cd12 = wcs.cd1_2, let cd21 = wcs.cd2_1, let cd22 = wcs.cd2_2
-        {
-            return LinearTransform( cd11: cd11, cd12: cd12, cd21: cd21, cd22: cd22 )
-        }
-
-        guard let cdelt1 = wcs.cdelt1, let cdelt2 = wcs.cdelt2
-        else
-        {
-            return nil
-        }
-
-        // CROTA2 is the rotation of the second axis; absent, the axes are aligned.
-        let rotation = ( wcs.crota2 ?? 0 ) * .pi / 180
-
-        return LinearTransform(
-            cd11:  cdelt1 * cos( rotation ),
-            cd12: -cdelt2 * sin( rotation ),
-            cd21:  cdelt1 * sin( rotation ),
-            cd22:  cdelt2 * cos( rotation )
-        )
     }
 
     /// The unit vector in the direction of `vector`, or `nil` when it has no
