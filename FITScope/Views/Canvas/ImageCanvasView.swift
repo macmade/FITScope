@@ -351,7 +351,9 @@ public struct ImageCanvasView: View
     private var overlays: [ any CanvasOverlay ]
     {
         [
-            FrameOverlay(),
+            // Frames the image and marks its centre (border + crosshair + rings),
+            // always available and registered to the image so it tracks zoom/pan.
+            ReticleOverlay(),
             // The orientation comes from the committed render result, not the live
             // adjustment, so the markers reorient together with the image rather
             // than jumping ahead while a rotation is still rendering. `isLoading`

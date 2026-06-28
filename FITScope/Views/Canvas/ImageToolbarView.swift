@@ -148,7 +148,7 @@ public struct ImageToolbarView: View
 
 #Preview
 {
-    ImageToolbarView( zoom: 1.0, canZoomOut: true, onFit: {}, onActualSize: {}, onRecenter: {}, onZoomIn: {}, onZoomOut: {}, overlays: [ FrameOverlay() ], isOverlayEnabled: { _ in false }, onToggleOverlay: { _ in } )
+    ImageToolbarView( zoom: 1.0, canZoomOut: true, onFit: {}, onActualSize: {}, onRecenter: {}, onZoomIn: {}, onZoomOut: {}, overlays: [ ReticleOverlay() ], isOverlayEnabled: { _ in false }, onToggleOverlay: { _ in } )
         .padding()
         .background( .black )
 }

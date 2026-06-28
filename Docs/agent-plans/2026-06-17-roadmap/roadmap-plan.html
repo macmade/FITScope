@@ -1499,8 +1499,8 @@
       </div>
     </details>
 
-    <details class="ms" id="M5.10">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.10</span><span class="ms-title">Center reticle overlay + toggle</span><span class="ms-badges"></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+    <details class="ms completed" id="M5.10">
+      <summary><input type="checkbox" class="ms-check" checked><span class="ms-id">M5.10</span><span class="ms-title">Center reticle overlay + toggle</span><span class="ms-badges"></span><span class="ms-status status-done">Completed &middot; 2026-06-28</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>A center reticle overlay, toggled from the toolbar.</p>
         <h5>Scope / changes</h5><ul><li>Draw a crosshair at image center; always available toggle.</li></ul>
@@ -1509,6 +1509,25 @@
         <h5>Acceptance</h5><ul><li>Reticle centers correctly across zoom/pan.</li></ul>
         <h5>Dependencies</h5><p class="dep">Depends on M5.0.</p>
         <h5>Commit</h5><span class="commit">feat: add a center reticle overlay</span>
+        <h5>Review comments</h5>
+        <ul>
+          <li>We don't need both the frame and the reticle as separate overlays — merge them into one (keep the reticle's icon), drawing the frame in the same colour. Use a larger reticle: a full crosshair spanning the image plus concentric centre rings (per the reference image).</li>
+          <li>The crosshair shouldn't reach the border — close, but not touching. Replicate the reference reticle design: graduated concentric rings with a tight central bullseye.</li>
+          <li>Make the reticle smaller with more space to the border — replicate NINA's crosshair: a fixed, centred crosshair whose arms stop well short of the edges, with graduated rings and a tiny central bullseye.</li>
+          <li>The crosshair must NOT run through the centre. The four arms stop at the inner rings, leaving a clear central gap (rings only in the middle); the arms cross the outer ring on their way in.</li>
+        </ul>
+        <h5>Implementation notes</h5>
+        <div class="callout"><strong>Implemented with TDD; awaiting review. Full unit suite green; UI tests not executed (harness automation-mode limitation, as in M5.7).</strong>
+          <ul>
+            <li><strong>Overlay (consolidated, per review).</strong> <code>ReticleOverlay: CanvasOverlay</code> (id <code>"reticle"</code>, title <em>Reticle</em>, SF&nbsp;Symbol <code>plus.viewfinder</code>) draws the image border, a fixed centred crosshair modelled on NINA's, and concentric rings — a tight central bullseye plus graduated outer rings — all in one colour (the frame's yellow). It replaces the separate frame and centre overlays. It is <code>isAvailable = true</code> always — every image has a frame and a centre — so the toggle is always offered.</li>
+            <li><strong>Sizing (NINA proportions) &amp; scaling.</strong> Six rings, encoded by intent rather than as opaque numbers (measured from NINA): an inner <em>bullseye that doubles each ring</em> (<code>5, 10, 20</code> — fine resolution for precise centring) and three <em>evenly-spaced outer rings</em> (<code>46, 88, 130</code> — regular reference marks for framing), normalised so the outer ring is 1/8 of the frame (final fractions ≈ <code>0.0048 / 0.0096 / 0.0192 / 0.0442 / 0.0846 / 0.125</code>). The border comes from the displayed rectangle and the centre is mapped through <code>CanvasGeometry.viewPoint</code>, so the whole reticle scales with the picture and stays registered to it across zoom and pan.</li>
+            <li><strong>Crosshair with an open centre (the key fix).</strong> The four arms do <em>not</em> run through the centre: each goes from the second ring (<code>0.085</code>) outward to a fixed tip (<code>0.35</code>), so it crosses the outer ring on the way in and stops short of the middle — leaving the centre to the small ring and bullseye alone, exactly as in NINA's reticle. (The earlier version drew a continuous cross through the centre, which was the mismatch.)</li>
+            <li><strong>Frame overlay removed.</strong> <code>FrameOverlay</code> was dropped from <code>ImageCanvasView.overlays</code> and the <code>ImageToolbarView</code> preview (now using <code>ReticleOverlay</code>), and — at the maintainer's request — <span class="file">FrameOverlay.swift</span> was deleted along with its <span class="file">project.pbxproj</span> reference (no remaining references; suite still green).</li>
+            <li><strong>Toggle.</strong> No <code>ImageToolbarView</code> change was needed: the toolbar already renders a toggle for every overlay in <code>ImageCanvasView.overlays</code>, so the reticle gets its toggle (a11y id <code>ImageToolbarView.overlayToggle.reticle</code>) and the on/off enable handling for free.</li>
+            <li><strong>Tests (TDD, written first).</strong> <code>ReticleOverlayTests</code> cover the always-available gate, the stable id, the not-loading state, and that the centre is the image midpoint. The drawing is registered through the already-tested <code>CanvasGeometry</code> / displayed rectangle, so it is not unit-tested directly.</li>
+            <li><strong>Verified.</strong> Full unit suite green — <strong>FITScopeTests 272</strong> (+4), SwiftFITS&nbsp;156, SwiftUtilities&nbsp;77, SwiftAstro&nbsp;37, SwiftPixel&nbsp;248; <code>TEST&nbsp;SUCCEEDED</code>. The 2 new files were added to <span class="file">project.pbxproj</span> via the Ruby <code>xcodeproj</code> gem and validated with <code>plutil -lint</code>. Worth a visual check that the reticle sits dead-centre and the rings/crosshair scale cleanly across zoom and pan.</li>
+          </ul>
+        </div>
       </div>
     </details>
 
