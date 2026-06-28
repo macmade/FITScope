@@ -187,7 +187,7 @@ struct FITSMetadataTests
         )
 
         #expect( try #require( metadata.latitude  ).isApproximately(  46.2, tolerance: 1e-9 ) )
-        #expect( try #require( metadata.longitude ).isApproximately(  -6.15, tolerance: 1e-9 ) )
+        #expect( try #require( metadata.longitude ).isApproximately( -6.15, tolerance: 1e-9 ) )
         #expect( metadata.elevation == 410 )
     }
 
@@ -244,6 +244,56 @@ struct FITSMetadataTests
         let expected = 206.265 * 3.76 / 530
 
         #expect( try #require( metadata.pixelScale ).isApproximately( expected, tolerance: 1e-6 ) )
+    }
+
+    // MARK: - Sampling classification
+
+    /// Below the 0.67″/px lower bound the image is over-sampled; the bound itself
+    /// is inside the well-sampled band.
+    @Test
+    func samplingClassifiesOverSampledBelowTheLowerBound()
+    {
+        #expect( FITSMetadata.Sampling( pixelScale: 0.50 ) == .overSampled )
+        #expect( FITSMetadata.Sampling( pixelScale: 0.66 ) == .overSampled )
+        #expect( FITSMetadata.Sampling( pixelScale: 0.67 ) == .wellSampled )
+    }
+
+    /// Between 0.67″/px and 2.0″/px, inclusive, the image is well sampled.
+    @Test
+    func samplingClassifiesWellSampledWithinTheBand()
+    {
+        #expect( FITSMetadata.Sampling( pixelScale: 0.67 ) == .wellSampled )
+        #expect( FITSMetadata.Sampling( pixelScale: 1.50 ) == .wellSampled )
+        #expect( FITSMetadata.Sampling( pixelScale: 2.00 ) == .wellSampled )
+    }
+
+    /// Above the 2.0″/px upper bound the image is under-sampled; the bound itself
+    /// is inside the well-sampled band.
+    @Test
+    func samplingClassifiesUnderSampledAboveTheUpperBound()
+    {
+        #expect( FITSMetadata.Sampling( pixelScale: 2.00 ) == .wellSampled )
+        #expect( FITSMetadata.Sampling( pixelScale: 2.01 ) == .underSampled )
+        #expect( FITSMetadata.Sampling( pixelScale: 3.60 ) == .underSampled )
+    }
+
+    /// With no derivable pixel scale there is no sampling classification.
+    @Test
+    func samplingIsNilWhenPixelScaleUnavailable()
+    {
+        let metadata = Self.metadata( [ ( "NAXIS", .integer( 2 ) ) ] )
+
+        #expect( metadata.sampling == nil )
+    }
+
+    /// The classification follows the derived pixel scale — 0.0005°/px = 1.8″/px,
+    /// which is well sampled.
+    @Test
+    func samplingFollowsTheDerivedPixelScale()
+    {
+        let metadata = Self.metadata( [ ( "CDELT2", .float( 0.0005 ) ) ] )
+
+        #expect( metadata.sampling == .wellSampled )
     }
 
     // MARK: - Helpers

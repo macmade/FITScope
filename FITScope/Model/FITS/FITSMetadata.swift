@@ -35,6 +35,62 @@ import SwiftFITS
 /// — display formatting would round them to six.
 public struct FITSMetadata: Sendable
 {
+    /// How well the image is spatially sampled, derived from its plate scale.
+    ///
+    /// With no per-image seeing measurement, the classification compares the
+    /// pixel scale against a fixed band grounded in the Nyquist criterion for
+    /// typical seeing (sampling at ~2–3 pixels across the seeing FWHM): below
+    /// ``lowerBound`` (0.67″/px) the image resolves finer than good seeing
+    /// warrants (over-sampled); above ``upperBound`` (2.0″/px) it under-samples
+    /// even poor seeing; in between it is well sampled across typical conditions.
+    public enum Sampling: Sendable
+    {
+        /// Pixel scale below ``lowerBound`` — finer than typical seeing warrants.
+        case overSampled
+
+        /// Pixel scale within ``lowerBound``…``upperBound`` (inclusive).
+        case wellSampled
+
+        /// Pixel scale above ``upperBound`` — too coarse for typical seeing.
+        case underSampled
+
+        /// The lower edge of the well-sampled band, in arc-seconds per pixel.
+        public static let lowerBound = 0.67
+
+        /// The upper edge of the well-sampled band, in arc-seconds per pixel.
+        public static let upperBound = 2.0
+
+        /// Classifies a plate scale against the well-sampled band.
+        ///
+        /// - Parameter pixelScale: The plate scale, in arc-seconds per pixel.
+        public init( pixelScale: Double )
+        {
+            if pixelScale < Self.lowerBound
+            {
+                self = .overSampled
+            }
+            else if pixelScale > Self.upperBound
+            {
+                self = .underSampled
+            }
+            else
+            {
+                self = .wellSampled
+            }
+        }
+
+        /// A short, human-readable label for the classification.
+        public var label: String
+        {
+            switch self
+            {
+                case .overSampled:  return "Over-sampled"
+                case .wellSampled:  return "Well sampled"
+                case .underSampled: return "Under-sampled"
+            }
+        }
+    }
+
     /// The header values, keyed by upper-cased keyword name. The first
     /// occurrence of a repeated keyword wins.
     private let values: [ String: FITSValue ]
@@ -45,7 +101,7 @@ public struct FITSMetadata: Sendable
     /// - Parameter properties: The header property snapshots to read.
     public init( properties: [ FITSPropertySnapshot ] )
     {
-        var values: [ String: FITSValue ] = [:]
+        var values: [ String: FITSValue ] = [ : ]
 
         for property in properties
         {
@@ -190,6 +246,15 @@ public struct FITSMetadata: Sendable
         }
 
         return nil
+    }
+
+    /// How well the image is sampled, classified from its ``pixelScale``.
+    ///
+    /// `nil` when no plate scale can be derived, so callers can omit the field
+    /// rather than show an unfounded classification.
+    public var sampling: Sampling?
+    {
+        self.pixelScale.map { Sampling( pixelScale: $0 ) }
     }
 
     // MARK: - Value lookups

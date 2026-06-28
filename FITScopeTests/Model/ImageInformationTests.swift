@@ -138,6 +138,29 @@ struct ImageInformationTests
         #expect( rows == [ .init( field: .object, value: "M31" ), .init( field: .exposure, value: "30 s" ) ] )
     }
 
+    /// The sampling row pairs the computed pixel scale with its classification —
+    /// `CDELT2 = 0.0005°/px` is 1.80″/px, which is well sampled.
+    @Test
+    func samplingRowShowsScaleAndClassification() throws
+    {
+        let info    = try Self.makeInfo( keywords: [ ( "CDELT2", "0.0005" ) ] )
+        let summary = try #require( ImageInformation( info: info ) )
+
+        let rows = summary.rows( for: [ .sampling ] )
+
+        #expect( rows == [ .init( field: .sampling, value: "1.80″/px · Well sampled" ) ] )
+    }
+
+    /// With no derivable pixel scale, the sampling row is omitted — the panel
+    /// never shows an empty placeholder.
+    @Test
+    func samplingRowIsOmittedWhenPixelScaleUnavailable() throws
+    {
+        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+
+        #expect( summary.rows( for: [ .sampling ] ).isEmpty )
+    }
+
     /// Builds a controlled, in-memory `FITSImageInfo` with a valid 4×4 geometry
     /// and any extra header keywords, so row tests don't depend on the contents
     /// of a bundled fixture.

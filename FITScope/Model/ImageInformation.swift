@@ -155,6 +155,21 @@ public struct ImageInformation
         add( .offset,            [ "OFFSET", "BLKLEVEL" ] )
         add( .sensorTemperature, [ "CCD-TEMP" ] )
 
+        // The plate scale and its sampling classification reuse FITSMetadata's
+        // unit-aware derivation (CDELT → CD matrix → focal length + pixel size)
+        // rather than re-implementing it here. The display strings carry enough
+        // precision for a value shown to two decimals.
+        let metadata = FITSMetadata(
+            properties: properties.map { FITSPropertySnapshot( name: $0.name, value: .string( $0.value ) ) }
+        )
+
+        if let scale = metadata.pixelScale, let sampling = metadata.sampling
+        {
+            let formatted = String( format: "%.2f", scale )
+
+            values[ .sampling ] = "\( formatted )″/px · \( sampling.label )"
+        }
+
         self.values = values
     }
 }

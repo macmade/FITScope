@@ -1255,8 +1255,8 @@
       </div>
     </details>
 
-    <details class="ms" id="M5.3">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.3</span><span class="ms-title">Sampling info + under/over-sampling detection</span><span class="ms-badges"></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+    <details class="ms completed" id="M5.3">
+      <summary><input type="checkbox" class="ms-check" checked><span class="ms-id">M5.3</span><span class="ms-title">Sampling info + under/over-sampling detection</span><span class="ms-badges"></span><span class="ms-status status-done">Completed &middot; 2026-06-28</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>If pixel scale (or focal length + pixel size) is available, compute sampling and flag under/over-sampling in the info panel.</p>
         <h5>Scope / changes</h5><ul><li>Compute arcsec/pixel and compare against typical seeing-based sampling guidance; surface a status in the info panel.</li></ul>
@@ -1265,6 +1265,16 @@
         <h5>Acceptance</h5><ul><li>Sampling line appears when computable, with a correct classification.</li></ul>
         <h5>Dependencies</h5><p class="dep">Depends on M5.0; integrates with M2.3.</p>
         <h5>Commit</h5><span class="commit">feat: compute sampling and flag under/over-sampling</span>
+        <div class="callout"><strong>Implementation notes — done &amp; verified at the unit level (TDD, red→green watched); completed 2026-06-28, maintainer-reviewed. Live look at the running panel left to the maintainer (GUI not available here).</strong>
+          <ul>
+            <li><strong>Classification grounded in the Nyquist criterion (decided with the maintainer).</strong> With no per-image seeing/FWHM measurement, sampling is classified against a fixed plate-scale band derived from Nyquist for typical seeing (~2–3 px across the seeing FWHM): <strong>over-sampled below 0.67″/px</strong> (finer than good ~2″ seeing warrants, 2″ ÷ 3), <strong>well sampled 0.67–2.0″/px inclusive</strong>, <strong>under-sampled above 2.0″/px</strong> (coarser than poor seeing, ~4″ ÷ 2 critical Nyquist). The 0.67–2.0″/px band is the commonly published "acceptable across typical conditions" range. The measured-FWHM (per-image, detector-coupled) approach was considered and set aside to keep M5.3 pixel-scale-only as the milestone framed it.</li>
+            <li><strong><code>FITSMetadata.Sampling</code> — pure, the unit-tested core.</strong> A nested <code>Sampling</code> enum (<code>overSampled</code>/<code>wellSampled</code>/<code>underSampled</code>) with an <code>init(pixelScale:)</code> classifier, public <code>lowerBound</code>/<code>upperBound</code> constants (0.67 / 2.0), and a <code>label</code> ("Over-sampled" / "Well sampled" / "Under-sampled"). A new <code>FITSMetadata.sampling: Sampling?</code> maps the existing <code>pixelScale</code> (CDELT → CD matrix → focal length + pixel size — reused, not re-derived) through the classifier, returning <code>nil</code> when no scale is derivable so the field is simply omitted.</li>
+            <li><strong>Info panel via a new <code>InfoField.sampling</code>.</strong> Added the <code>sampling</code> case (label "Sampling", SF Symbol <code>square.grid.3x3</code> — verified resolvable by the existing <code>everyFieldHasAResolvableSystemImage</code> test). <code>ImageInformation</code> builds a <code>FITSMetadata</code> from the (display-string) header properties — adequate precision for a two-decimal value — and emits one row formatted <code>"1.80″/px · Well sampled"</code> (value · verdict, the maintainer's chosen format), omitting it when no scale is derivable.</li>
+            <li><strong>No UI or Preferences code change needed.</strong> <code>ImageInfoPanelView</code> renders <code>InfoField</code> rows generically and the Preferences editor lists fields generically; <code>Preferences.reconcileInfoPanelFields</code> already appends any newly-added field (visible) to a stored configuration, so <code>.sampling</code> surfaces automatically in both the panel and the editor, including for users with an existing saved field order.</li>
+            <li><strong>TDD.</strong> 7 new tests written and watched to fail first (compile-level red — the new API did not exist — the only red available for brand-new Swift symbols): 5 in <code>FITSMetadataTests</code> (the three band classifications incl. the inclusive 0.67/2.0 boundaries, nil when no scale, and classification following a derived CDELT scale) and 2 in <code>ImageInformationTests</code> (the formatted row, and omission when no scale).</li>
+            <li><strong>Verified here:</strong> <code>FITScopeTests</code> <strong>192/192</strong> in 32 suites (186 prior + 6 — the SF-symbol test count is unchanged), and the full scheme <strong>builds</strong> (app + both QuickLook extensions). Live confirmation that the row reads well in the running panel is left for the maintainer's eyes (the GUI isn't available here).</li>
+          </ul>
+        </div>
       </div>
     </details>
 
