@@ -33,9 +33,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
     /// The shared app model, also injected into the SwiftUI environment.
     public let appModel = AppModel()
 
+    /// The launch argument that makes the app back its preferences with an
+    /// isolated, wiped-on-launch defaults suite, so UI tests never read or mutate
+    /// the real user preferences.
+    public static let isolatedPreferencesArgument = "-uiTestingIsolatedDefaults"
+
     /// The app's persisted user preferences, injected into the SwiftUI
     /// environment so the windows and the Preferences scene share one store.
-    public let preferences = Preferences()
+    public let preferences = AppDelegate.makePreferences()
 
     /// The app's secure, Keychain-backed API keys, injected into the SwiftUI
     /// environment so the windows and the Preferences scene share one store.
@@ -44,6 +49,30 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
     /// Whether a Finder/Dock open already delivered files, so the launch panel
     /// is not presented on top of a window that is opening.
     private var didOpenFilesAtLaunch = false
+
+    /// Builds the preferences store.
+    ///
+    /// Under ``isolatedPreferencesArgument`` (set by the UI-test launcher) the
+    /// store is backed by a private defaults suite that is wiped on launch, so a
+    /// UI test run neither reads from nor writes to the real user preferences.
+    /// Otherwise the standard user defaults are used.
+    ///
+    /// - Returns: The preferences store to use for this launch.
+    private static func makePreferences() -> Preferences
+    {
+        guard ProcessInfo.processInfo.arguments.contains( Self.isolatedPreferencesArgument )
+        else
+        {
+            return Preferences()
+        }
+
+        let suiteName = "com.xs-labs.FITScope.uitests"
+        let defaults  = UserDefaults( suiteName: suiteName ) ?? .standard
+
+        defaults.removePersistentDomain( forName: suiteName )
+
+        return Preferences( defaults: defaults )
+    }
 
     /// Whether the app is hosting a test bundle. When tests run, the app must
     /// not present the modal Open panel at launch: it would block the main

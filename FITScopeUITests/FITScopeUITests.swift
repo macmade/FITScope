@@ -1455,4 +1455,43 @@ final class FITScopeUITests: XCTestCase
 
         XCTAssertTrue( fit.waitForNonExistence( timeout: 5 ), "The floating toolbar did not auto-hide after re-enabling auto-hide." )
     }
+
+    /// The Weighting tab of Preferences shows the weight-formula editor, its live
+    /// validation message, the clickable keyword palette and the Restore Default
+    /// button; clicking a keyword pill inserts into the editor. Driven by
+    /// cancelling the launch panel, since Preferences is file-independent.
+    @MainActor
+    func testWeightingPreferencesShowsFormulaEditorAndPills() throws
+    {
+        let app = UITestSupport.launchApp()
+
+        UITestSupport.dismissLaunchPanel( in: app )
+
+        app.typeKey( ",", modifierFlags: .command )
+
+        let weightingTab = app.buttons[ "Weighting" ]
+
+        XCTAssertTrue( weightingTab.waitForExistence( timeout: 10 ), "The Preferences window did not open." )
+
+        weightingTab.click()
+
+        // The editor surfaces as a text view; the validation message, reset button
+        // and keyword pills are identified controls.
+        let editor     = app.textViews.firstMatch
+        let validation = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.weightFormulaValidationMessage )
+        let reset      = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.weightFormulaResetButton )
+        let pill       = app.buttons[ "FWHM" ]
+
+        XCTAssertTrue( editor.waitForExistence( timeout: 10 ),     "The weight-formula editor did not appear on the Weighting tab." )
+        XCTAssertTrue( validation.waitForExistence( timeout: 10 ), "The validation message did not appear on the Weighting tab." )
+        XCTAssertTrue( reset.waitForExistence( timeout: 10 ),      "The Restore Default button did not appear on the Weighting tab." )
+        XCTAssertTrue( pill.waitForExistence( timeout: 10 ),       "The FWHM keyword pill did not appear on the Weighting tab." )
+
+        // A pill click inserts its keyword — the editor remains present and usable.
+        pill.click()
+
+        XCTAssertTrue( editor.exists, "The editor disappeared after inserting a keyword." )
+
+        app.typeKey( "w", modifierFlags: .command )
+    }
 }

@@ -23,13 +23,14 @@
  ******************************************************************************/
 
 import SwiftUI
+import SwiftUtilities
 
 /// The content of the Preferences (Settings) window: a tabbed surface composing
 /// one component view per section.
 ///
-/// The General and API Keys tabs carry real settings; the Information Panel and
-/// Astro tabs are placeholders. Each tab is its own view and is given the shared
-/// stores it needs explicitly.
+/// Each tab is its own view and is given the shared stores it needs explicitly,
+/// because a `Settings` scene's `TabView` does not reliably propagate
+/// environment objects across the tab boundary.
 public struct PreferencesView: View
 {
     /// The tabs shown in the window, in order.
@@ -38,7 +39,7 @@ public struct PreferencesView: View
         case general
         case apiKeys
         case informationPanel
-        case astro
+        case weighting
     }
 
     /// The shared, persisted preferences. Resolved here — before the `TabView` —
@@ -50,31 +51,55 @@ public struct PreferencesView: View
     /// the same reason as ``preferences``.
     @EnvironmentObject private var apiKeyStore: APIKeyStore
 
+    /// The width of the standard, control-light tabs.
+    private static let standardWidth: CGFloat = 480
+
+    /// The width of the Weighting tab, which needs more room for the formula
+    /// editor and the placeholder palette.
+    private static let weightingWidth: CGFloat = 560
+
+    /// The size of the Information Panel tab, whose reorderable list is meant to
+    /// fill a fixed area rather than size to its rows.
+    private static let informationPanelSize = CGSize( width: 480, height: 360 )
+
     /// Creates the preferences view.
     public init()
     {}
 
     /// The view's content.
+    ///
+    /// The form-based tabs are given a fixed width and sized to their content
+    /// height (`fixedSize`), so the `.contentSize` Settings window adapts to the
+    /// selected pane with no empty space below.
     public var body: some View
     {
         TabView
         {
             GeneralPreferencesView( preferences: self.preferences )
+                .frame( width: Self.standardWidth )
+                .fixedSize( horizontal: false, vertical: true )
                 .tabItem { Label( "General", systemImage: "gearshape" ) }
                 .tag( Tab.general )
 
             APIKeysPreferencesView( apiKeyStore: self.apiKeyStore )
+                .frame( width: Self.standardWidth )
+                .fixedSize( horizontal: false, vertical: true )
                 .tabItem { Label( "API Keys", systemImage: "key" ) }
                 .tag( Tab.apiKeys )
 
             InformationPanelPreferencesView( preferences: self.preferences )
+                .frame( width: Self.informationPanelSize.width, height: Self.informationPanelSize.height )
                 .tabItem { Label( "Information Panel", systemImage: "list.bullet.rectangle" ) }
                 .tag( Tab.informationPanel )
 
-            PreferencesPlaceholderView( "Astro", systemImage: "sparkles" )
-                .tabItem { Label( "Astro", systemImage: "sparkles" ) }
-                .tag( Tab.astro )
+            WeightingPreferencesView( preferences: self.preferences )
+                .frame( width: Self.weightingWidth )
+                .fixedSize( horizontal: false, vertical: true )
+                .tabItem { Label( "Weighting", systemImage: "scalemass" ) }
+                .tag( Tab.weighting )
         }
-        .frame( width: 480, height: 360 )
+        // The Settings scene has no declarative positioning, so the hosting window
+        // is centered when the view first joins it.
+        .background( WindowAccessor { $0.center() } )
     }
 }

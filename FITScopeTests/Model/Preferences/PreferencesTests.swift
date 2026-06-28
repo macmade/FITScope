@@ -218,6 +218,42 @@ struct PreferencesTests
         #expect( reloaded.infoPanelFields == preferences.infoPanelFields )
     }
 
+    /// With nothing stored, the weight formula is the default expression, and
+    /// that default is itself a valid, parseable formula.
+    @Test
+    @MainActor
+    func defaultsToTheDefaultWeightFormula() throws
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.weightFormula == WeightFormula.defaultExpression )
+        #expect( throws: Never.self ) { try WeightFormula( source: preferences.weightFormula ) }
+    }
+
+    /// An edited weight formula is written to the store and read back by a fresh
+    /// instance — including an invalid one, so the user's in-progress text is
+    /// never lost (validity is surfaced separately, in the editor).
+    @Test
+    @MainActor
+    func persistsWeightFormulaChangesAcrossInstances()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        preferences.weightFormula = "1 / FWHM ("
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.weightFormula == "1 / FWHM (" )
+    }
+
     /// Writes a raw `infoPanelFields` payload — `(fieldRawValue, visible)` pairs,
     /// JSON-encoded under the persisted key — directly into the store, to seed
     /// the reconciliation tests with partial or stale configurations.

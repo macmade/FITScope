@@ -68,12 +68,17 @@ enum UITestSupport
 
     /// Launches a fresh instance of the app under test.
     ///
+    /// The app is launched with an argument that backs its preferences with an
+    /// isolated, wiped-on-launch defaults suite, so the suite never reads from nor
+    /// writes to the user's real preferences.
+    ///
     /// - Returns: The launched application proxy.
     @MainActor
     static func launchApp() -> XCUIApplication
     {
         let app = XCUIApplication()
 
+        app.launchArguments.append( "-uiTestingIsolatedDefaults" )
         app.launch()
 
         return app

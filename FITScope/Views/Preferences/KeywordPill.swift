@@ -24,48 +24,52 @@
 
 import SwiftUI
 
-/// A placeholder tab for a Preferences section that is not yet available.
-public struct PreferencesPlaceholderView: View
+/// A tappable pill for one placeholder keyword, used in the Astro preferences
+/// palette. Its tint matches the inline keyword pills in the formula editor, so
+/// the palette reads as the same vocabulary.
+public struct KeywordPill: View
 {
-    /// The section's name.
-    private let title: String
+    /// The keyword shown and inserted.
+    private let keyword: String
 
-    /// The SF Symbol shown above the message.
-    private let systemImage: String
+    /// The tooltip describing what the keyword represents.
+    private let tooltip: String
 
-    /// Creates a placeholder tab.
+    /// The action run when the pill is clicked.
+    private let action: () -> Void
+
+    /// Creates a keyword pill.
     ///
     /// - Parameters:
-    ///   - title:       The section's name.
-    ///   - systemImage: The SF Symbol shown above the message.
-    public init( _ title: String, systemImage: String )
+    ///   - keyword: The keyword to show and insert.
+    ///   - tooltip: A description of what the keyword represents.
+    ///   - action:  The action run on click.
+    public init( _ keyword: String, tooltip: String, action: @escaping () -> Void )
     {
-        self.title       = title
-        self.systemImage = systemImage
+        self.keyword = keyword
+        self.tooltip = tooltip
+        self.action  = action
     }
 
     /// The view's content.
     public var body: some View
     {
-        VStack( spacing: 10 )
+        Button( action: self.action )
         {
-            Image( systemName: self.systemImage )
-                .font( .system( size: 34 ) )
-                .foregroundStyle( .secondary )
-
-            Text( self.title )
-                .font( .headline )
-
-            Text( "Coming soon." )
-                .font( .subheadline )
-                .foregroundStyle( .secondary )
+            Text( self.keyword )
+                .font( .system( .caption, design: .monospaced ) )
+                .padding( .horizontal, 8 )
+                .padding( .vertical, 3 )
+                .background( Capsule().fill( Color( nsColor: PillTint.background ) ) )
+                .foregroundStyle( Color( nsColor: PillTint.foreground ) )
         }
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
+        .buttonStyle( .plain )
+        .help( self.tooltip )
     }
 }
 
 #Preview
 {
-    PreferencesPlaceholderView( "Information Panel", systemImage: "list.bullet.rectangle" )
-        .frame( width: 480, height: 260 )
+    KeywordPill( "FWHMMin", tooltip: "Smallest image FWHM across all open images." ) {}
+        .padding()
 }

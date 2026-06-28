@@ -65,6 +65,7 @@ public final class Preferences: ObservableObject
         static let autoHideFloatingBars = "autoHideFloatingBars"
         static let confirmMoveToTrash   = "confirmMoveToTrash"
         static let infoPanelFields      = "infoPanelFields"
+        static let weightFormula        = "weightFormula"
     }
 
     /// The persisted shape of one field setting: the field's stable raw value and
@@ -110,6 +111,17 @@ public final class Preferences: ObservableObject
         didSet { self.defaults.set( Self.encode( self.infoPanelFields ), forKey: Key.infoPanelFields ) }
     }
 
+    /// The user's image-weight formula, as raw text (see ``WeightFormula``).
+    ///
+    /// Defaults to ``WeightFormula/defaultExpression``. The raw text is persisted
+    /// on every change — including a syntactically invalid one — so in-progress
+    /// edits are never lost; the editor validates it live and consumers parse it
+    /// through ``WeightFormula`` before use.
+    @Published public var weightFormula: String
+    {
+        didSet { self.defaults.set( self.weightFormula, forKey: Key.weightFormula ) }
+    }
+
     /// Creates the store, seeding each setting from `defaults` or its default
     /// value when nothing has been stored yet.
     ///
@@ -124,6 +136,14 @@ public final class Preferences: ObservableObject
         self.autoHideFloatingBars = ( defaults.object( forKey: Key.autoHideFloatingBars ) as? Bool ) ?? true
         self.confirmMoveToTrash   = ( defaults.object( forKey: Key.confirmMoveToTrash ) as? Bool ) ?? true
         self.infoPanelFields      = Self.decodeInfoPanelFields( defaults.data( forKey: Key.infoPanelFields ) )
+        self.weightFormula        = defaults.string( forKey: Key.weightFormula ) ?? WeightFormula.defaultExpression
+    }
+
+    /// Restores ``weightFormula`` to the default expression, discarding the user's
+    /// edits.
+    public func resetWeightFormula()
+    {
+        self.weightFormula = WeightFormula.defaultExpression
     }
 
     /// Restores ``infoPanelFields`` to the default — every field visible, in

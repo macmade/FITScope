@@ -424,5 +424,18 @@ public enum AccessibilityIdentifier
         /// The button that restores the information-panel fields to their
         /// defaults in the Information Panel tab.
         public static let informationPanelResetButton = "PreferencesView.informationPanelResetButton"
+
+        /// The Weighting tab's content.
+        public static let weightingTab = "PreferencesView.weightingTab"
+
+        /// The image-weight formula editor in the Weighting tab.
+        public static let weightFormulaEditor = "PreferencesView.weightFormulaEditor"
+
+        /// The live validation message below the weight-formula editor.
+        public static let weightFormulaValidationMessage = "PreferencesView.weightFormulaValidationMessage"
+
+        /// The button that restores the weight formula to its default in the
+        /// Weighting tab.
+        public static let weightFormulaResetButton = "PreferencesView.weightFormulaResetButton"
     }
 }
