@@ -194,6 +194,8 @@
   .status-done { background: rgba(76,208,125,.14); color: var(--green); border-color: rgba(76,208,125,.40); }
   .status-prog { background: rgba(240,180,41,.14); color: var(--amber); border-color: rgba(240,180,41,.40); }
   .status-todo { background: rgba(154,163,178,.14); color: var(--muted); border-color: rgba(154,163,178,.35); }
+  .status-cancel { background: rgba(229,83,75,.12); color: #e5534b; border-color: rgba(229,83,75,.40); }
+  .ms.cancelled .ms-title { text-decoration: line-through; opacity: .7; }
 </style>
 </head>
 <body>
@@ -1808,8 +1810,8 @@
       </div>
     </details>
 
-    <details class="ms" id="M5.16">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.16</span><span class="ms-title">Bortle scale in info panel</span><span class="ms-badges"><span class="badge b-network">Network/API</span></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+    <details class="ms cancelled" id="M5.16">
+      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.16</span><span class="ms-title">Bortle scale in info panel</span><span class="ms-badges"><span class="badge b-network">Network/API</span></span><span class="ms-status status-cancel">Cancelled &middot; 2026-06-30</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>When GPS exists, show the Bortle/light-pollution class in the info panel if retrievable from a public API.</p>
         <h5>Scope / changes</h5>
@@ -1819,11 +1821,24 @@
         <h5>Acceptance</h5><ul><li>Bortle value appears when retrievable; absent otherwise.</li></ul>
         <h5>Dependencies</h5><p class="dep">Depends on M5.0; may need a key (Preferences).</p>
         <h5>Commit</h5><span class="commit">feat: show the bortle light-pollution class for located images</span>
+        <div class="callout"><strong>Cancelled — no suitable public API exists (2026-06-30).</strong>
+          <ul>
+            <li><strong>Finding.</strong> The milestone was conditional ("if retrievable from a public API"). Research (verified against live sources, not memory) found <em>no free, keyless, self-service</em> light-pollution / Bortle API for point queries:
+              <ul>
+                <li><strong><code>lightpollutionmap.info</code></strong> (World Atlas 2015 + VIIRS) exposes a <code>QueryRaster</code> point endpoint, but it now returns <em>"Invalid or missing authentication. Please request a key for API use."</em> The key is obtained by <strong>emailing the owner</strong> (typically after a donation), ~500 requests/day, commercial terms unspecified — not self-service, and a single embedded key cannot ship in open-source code.</li>
+                <li>Its official help documents only large GeoTIFF <strong>file downloads</strong>, no query API.</li>
+                <li><code>lightpollutionmap.app</code> and the NOAA VIIRS viewers expose <strong>no API</strong>, only an interactive map / coordinate deep-links.</li>
+                <li>The underlying World Atlas 2015 raster is downloadable but is a hundreds-of-MB GeoTIFF — impractical to bundle.</li>
+              </ul>
+            </li>
+            <li><strong>Decision (maintainer).</strong> Cancel the milestone. Consistent with rejecting the paid/keyed weather path in M5.15 (this is worse — an emailed, non-self-service key), the feature isn't worth the friction, and no keyless source is available. No code was written. The remaining viable routes if revisited later: a user-supplied <code>lightpollutionmap.info</code> key in Preferences, or bundling a downsampled offline light-pollution raster (licence permitting).</li>
+          </ul>
+        </div>
       </div>
     </details>
 
-    <details class="ms" id="M5.17">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.17</span><span class="ms-title">Similar images on AstroBin</span><span class="ms-badges"><span class="badge b-network">Network/API</span></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+    <details class="ms cancelled" id="M5.17">
+      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.17</span><span class="ms-title">Similar images on AstroBin</span><span class="ms-badges"><span class="badge b-network">Network/API</span></span><span class="ms-status status-cancel">Cancelled &middot; 2026-06-30</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>Offer "find similar images on AstroBin" using coordinates, if a GET-based query is possible — from the file context menu and/or toolbar.</p>
         <h5>Scope / changes</h5>
@@ -1833,6 +1848,17 @@
         <h5>Acceptance</h5><ul><li>Action opens a relevant AstroBin search when coordinates exist.</li></ul>
         <h5>Dependencies</h5><p class="dep">Depends on M5.0.</p>
         <h5>Commit</h5><span class="commit">feat: link to similar astrobin images by coordinates</span>
+        <div class="callout"><strong>Cancelled — coordinate search is paid-gated and only a brittle private URL format (2026-06-30).</strong>
+          <ul>
+            <li><strong>Findings (verified against live AstroBin).</strong>
+              <ul>
+                <li><strong>Coordinate (RA/Dec) search is an AstroBin <em>Ultimate</em> (paid) subscription feature</strong> per the advanced-search feature page — so a coordinate query would not work for free/anonymous users, the same paywall friction rejected in M5.15.</li>
+                <li>The search is a single-page app at <code>app.astrobin.com/search</code> whose query lives in a <code>p</code> parameter that is <strong>base64( zlib( MessagePack-string( query-string ) ) )</strong>. Decoding a sample gave the inner form <code>coords={"raCenter":…,"decCenter":…,"radius":…}&amp;text={…}</code> — so it <em>is</em> encodable, but it is an <strong>undocumented, compressed internal wire format, not a public API</strong>: an AstroBin frontend update can change the serialization and silently break every link. (AstroBin's documented REST API needs a key.) The <code>raCenter</code> unit was also ambiguous in the sample (≈1261.66, not a normal 0–360° RA), so correct values aren't guaranteed without reverse-engineering their frontend.</li>
+              </ul>
+            </li>
+            <li><strong>Decision (maintainer).</strong> Cancel. Building a feature on a paywalled, undocumented, compressed internal URL format is too brittle and too gated to be worth it. No code was written. If revisited: AstroBin's official REST API (with a user key) or a target-name (free text) search would be more robust starting points.</li>
+          </ul>
+        </div>
       </div>
     </details>
 
