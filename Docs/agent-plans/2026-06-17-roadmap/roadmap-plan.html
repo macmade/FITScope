@@ -1899,7 +1899,7 @@
     </details>
 
     <details class="ms" id="M5.19">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.19</span><span class="ms-title">Recommend additional astrophotography features</span><span class="ms-badges"><span class="badge b-eval">Evaluation</span></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+      <summary><input type="checkbox" class="ms-check" checked><span class="ms-id">M5.19</span><span class="ms-title">Recommend additional astrophotography features</span><span class="ms-badges"><span class="badge b-eval">Evaluation</span></span><span class="ms-status status-done">Completed &middot; 2026-06-30</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>Produce a short written set of recommended extra features (the roadmap explicitly asks for this).</p>
         <h5>Scope / changes</h5>
@@ -1907,6 +1907,32 @@
         <h5>Key files</h5><ul><li>Proposal doc.</li></ul>
         <h5>Acceptance</h5><ul><li>A prioritized recommendation list with rough effort.</li></ul>
         <h5>Commit</h5><span class="commit">docs: recommend additional astrophotography features</span>
+        <div class="callout"><strong>Implementation notes — evaluation done &amp; recorded.</strong> Following the established pattern for evaluation milestones (M4.6–M4.10), the recommendation is delivered in the conversation and recorded inline here rather than as a standalone repo doc; the maintainer decides whether a committed doc is wanted. The shortlist is grounded in the current feature set so it avoids redundancy and reuses existing seams.
+          <p style="margin:8px 0 4px;"><strong>Already present (so excluded from new work):</strong> per-image FWHM / HFR / eccentricity / star-count / SNR weight (<span class="file">SwiftAstro</span> <code>MatchedFilterStarDetector</code> + <code>SignalToNoise</code>), the weight formula, per-image weight, file-list sort by metric, the histogram + <code>HistogramStatistics</code> (median/MAD available), parametric stretches (<code>Processors.Stretch</code>: log / arcsinh / sigmoid — <em>manual</em> parameters only), levels/curves/white-balance, plate solving + WCS, the overlay stack (<span class="file">Views/Overlays/*</span>), GPS map, moon phase, weather, and TSV/CSV header export.</p>
+          <p style="margin:8px 0 4px;"><strong>Prioritized recommendation (rough effort):</strong></p>
+          <ul>
+            <li><strong>Tier&nbsp;1 — do next; small, highest leverage.</strong>
+              <ul>
+                <li><strong>Histogram-based auto-stretch (STF).</strong> A one-click screen-transfer stretch that derives the midtones-transfer parameters from the image statistics (PixInsight-style: shadow clip ≈ median − 2.8·MAD, target background ≈ 0.25) instead of the user hand-tuning <code>arcsinh</code>/<code>sigmoid</code>. All the pieces exist: <code>HistogramStatistics</code> already yields median/MAD, and <code>Processors.Stretch</code> / <code>Levels</code> (midtone gamma) provide the transfer. View-only by default (does not alter exported pixels). <em>Effort: small, ~1–2 milestones; mostly SwiftPixel + an inspector toggle/preset.</em> This is the single biggest day-to-day viewing win.</li>
+                <li><strong>Subframe rejection from weights.</strong> The app already scores and sorts subframes; add an explicit accept/reject decision — an absolute or sigma-clipped threshold over the open set — that marks rejected rows in the sidebar and can export a keep/reject list (reusing the TSV/CSV path). Pure app layer over <code>ImageWeighting</code> + <code>FileSortable</code>. <em>Effort: small–medium, ~1–2 milestones.</em></li>
+              </ul>
+            </li>
+            <li><strong>Tier&nbsp;2 — strong fit; medium.</strong>
+              <ul>
+                <li><strong>SNR &amp; star-count (and FWHM/HFR) trend across a session.</strong> Every metric is already computed per file; plot metric vs. acquisition order or <code>DATE-OBS</code> with Swift Charts to spot focus/seeing drift and clouds. Builds on the same Swift Charts direction chosen for the NAXIS=1 evaluation. <em>Effort: medium, ~2 milestones.</em></li>
+                <li><strong>Sky-quality / background indicator from background ADU.</strong> The robust sky background is already estimated during star detection (and via <code>HistogramStatistics</code>); surface it as a relative light-pollution / sky-brightness read-out in the info panel. This partially recovers the cancelled Bortle intent (M5.16) but derived from the image itself, no network. <em>Caveat:</em> an absolute mag/arcsec² needs calibration (exposure, gain, pixel scale, zero-point) that FITS may not carry, so scope to a relative/uncalibrated indicator. <em>Effort: small–medium, ~1–2 milestones.</em></li>
+              </ul>
+            </li>
+            <li><strong>Tier&nbsp;3 — larger; own plan.</strong>
+              <ul>
+                <li><strong>Blink / compare mode.</strong> Cycle (or A/B) through the already-open files at a shared zoom/pan to catch satellites, clouds and movement. Reuses <code>ImageCanvasView</code> + <code>OpenFile</code>; the real work is synchronizing the viewport across files plus a playback control. <em>Effort: medium, ~2–3 milestones.</em></li>
+                <li><strong>Background / gradient extraction (DBE/ABE-class).</strong> Model the sky background with a low-order polynomial/spline over star-masked sample regions and subtract it. High value but a genuine <em>processing</em> feature (modifies pixels) that belongs in SwiftPixel and is algorithmically involved (sample placement, robust fit, star masking via the existing detector). <em>Effort: large, ~4–6 milestones; warrants its own plan.</em></li>
+              </ul>
+            </li>
+            <li><strong>No-go for now.</strong> <strong>Annotated mosaics</strong> — requires multi-frame registration/stitching the app doesn't do; that's a full imaging-pipeline feature, out of scope for a viewer. Revisit only as a separate large plan if mosaicking is ever in goals.</li>
+          </ul>
+          <p style="margin:8px 0 0;"><strong>Suggested sequencing:</strong> STF → subframe rejection → session-trend chart → sky-quality indicator, then evaluate blink/compare and background extraction as their own plans.</p>
+        </div>
       </div>
     </details>
   </section>
