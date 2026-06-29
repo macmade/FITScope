@@ -91,6 +91,28 @@ public struct FITSMetadata: Sendable
         }
     }
 
+    /// A geographic coordinate pair — the observing site's latitude and
+    /// longitude, in decimal degrees.
+    public struct Coordinate: Equatable, Sendable
+    {
+        /// The latitude, in decimal degrees (positive north).
+        public let latitude: Double
+
+        /// The longitude, in decimal degrees (positive east).
+        public let longitude: Double
+
+        /// Creates a coordinate.
+        ///
+        /// - Parameters:
+        ///   - latitude:  The latitude, in decimal degrees.
+        ///   - longitude: The longitude, in decimal degrees.
+        public init( latitude: Double, longitude: Double )
+        {
+            self.latitude  = latitude
+            self.longitude = longitude
+        }
+    }
+
     /// The header values, keyed by upper-cased keyword name. The first
     /// occurrence of a repeated keyword wins.
     private let values: [ String: FITSValue ]
@@ -213,6 +235,20 @@ public struct FITSMetadata: Sendable
     /// The observing site longitude (`SITELONG`), in decimal degrees, sign-aware;
     /// accepts sexagesimal or decimal.
     public var longitude: Double? { self.angle( "SITELONG" ) }
+
+    /// The observing site's geographic coordinate, present only when both the
+    /// ``latitude`` (`SITELAT`) and ``longitude`` (`SITELONG`) are available — so
+    /// callers can show a location only for images that actually carry one.
+    public var coordinate: Coordinate?
+    {
+        guard let latitude = self.latitude, let longitude = self.longitude
+        else
+        {
+            return nil
+        }
+
+        return Coordinate( latitude: latitude, longitude: longitude )
+    }
 
     /// The observing site elevation (`SITEELEV`), in metres.
     public var elevation: Double? { self.double( "SITEELEV" ) }

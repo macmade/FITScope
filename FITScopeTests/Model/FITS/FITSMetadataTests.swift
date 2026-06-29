@@ -191,6 +191,51 @@ struct FITSMetadataTests
         #expect( metadata.elevation == 410 )
     }
 
+    /// The combined coordinate is present only when both the latitude and the
+    /// longitude are available, carrying each through unchanged.
+    @Test
+    func coordinateCombinesLatitudeAndLongitude() throws
+    {
+        let metadata = Self.metadata(
+            [
+                ( "SITELAT",  .string( "46 12 00" ) ),
+                ( "SITELONG", .string( "-6 09 00" ) ),
+            ]
+        )
+
+        let coordinate = try #require( metadata.coordinate )
+
+        #expect( coordinate.latitude.isApproximately(  46.2, tolerance: 1e-9 ) )
+        #expect( coordinate.longitude.isApproximately( -6.15, tolerance: 1e-9 ) )
+    }
+
+    /// With no longitude there is no coordinate, even when a latitude is present.
+    @Test
+    func coordinateIsNilWhenLongitudeMissing()
+    {
+        let metadata = Self.metadata( [ ( "SITELAT", .float( 46.2 ) ) ] )
+
+        #expect( metadata.coordinate == nil )
+    }
+
+    /// With no latitude there is no coordinate, even when a longitude is present.
+    @Test
+    func coordinateIsNilWhenLatitudeMissing()
+    {
+        let metadata = Self.metadata( [ ( "SITELONG", .float( -6.15 ) ) ] )
+
+        #expect( metadata.coordinate == nil )
+    }
+
+    /// With neither coordinate keyword there is no coordinate.
+    @Test
+    func coordinateIsNilWhenBothMissing()
+    {
+        let metadata = Self.metadata( [ ( "NAXIS", .integer( 2 ) ) ] )
+
+        #expect( metadata.coordinate == nil )
+    }
+
     // MARK: - Focal length
 
     @Test

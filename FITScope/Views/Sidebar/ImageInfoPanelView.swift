@@ -66,6 +66,11 @@ public struct ImageInfoPanelView: View
                     }
                 }
 
+                // Given more height than the content needs (few fields), this
+                // keeps the fields at the top and pushes the button to the bottom;
+                // with many fields it collapses and the button follows the grid.
+                Spacer( minLength: 0 )
+
                 Button( "View Full FITS Headers" )
                 {
                     self.openWindow( id: "InfoWindow", value: info )
@@ -78,6 +83,8 @@ public struct ImageInfoPanelView: View
                 Text( "No information available." )
                     .font( .system( size: 10 ) )
                     .foregroundStyle( .tertiary )
+
+                Spacer( minLength: 0 )
             }
         }
         .padding( 14 )

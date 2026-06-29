@@ -371,6 +371,28 @@ public enum AccessibilityIdentifier
         public static let viewHeadersButton = "ImageInfoPanelView.viewHeadersButton"
     }
 
+    /// Identifiers applied by ``FITScope/ImageInfoTabView`` (the info-panel tab
+    /// host below the file list).
+    public enum ImageInfoTabView
+    {
+        /// The tab container.
+        public static let container = "ImageInfoTabView.container"
+
+        /// The segmented control switching between the Info and Map tabs, shown
+        /// only when the image carries coordinates.
+        public static let tabs = "ImageInfoTabView.tabs"
+
+        /// The button that opens the capture location in the Maps app.
+        public static let openInMapsButton = "ImageInfoTabView.openInMapsButton"
+    }
+
+    /// Identifiers applied by ``FITScope/LocationMapView``.
+    public enum LocationMapView
+    {
+        /// The map showing the capture location.
+        public static let map = "LocationMapView.map"
+    }
+
     /// Identifiers applied by ``FITScope/InfoView`` (the FITS headers window).
     public enum InfoView
     {

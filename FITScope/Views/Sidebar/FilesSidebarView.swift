@@ -102,7 +102,7 @@ public struct FilesSidebarView: View
             {
                 Divider()
 
-                ImageInfoPanelView( file: selected )
+                ImageInfoTabView( file: selected )
             }
         }
     }
