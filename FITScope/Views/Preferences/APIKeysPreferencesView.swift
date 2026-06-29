@@ -57,14 +57,6 @@ public struct APIKeysPreferencesView: View
                     identifier:  AccessibilityIdentifier.PreferencesView.astrometryNetKeyField,
                     help:        "Your Astrometry.net API key, used for plate solving."
                 )
-
-                APIKeyFieldView(
-                    "OpenWeatherMap",
-                    systemImage: "cloud.sun",
-                    key:         self.$apiKeyStore.openWeatherMapKey,
-                    identifier:  AccessibilityIdentifier.PreferencesView.openWeatherMapKeyField,
-                    help:        "Your OpenWeatherMap API key, used to fetch weather data."
-                )
             }
             header:
             {

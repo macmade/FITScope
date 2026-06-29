@@ -1372,10 +1372,8 @@ final class FITScopeUITests: XCTestCase
         app.buttons[ "API Keys" ].click()
 
         let astrometry = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.astrometryNetKeyField )
-        let weather    = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.openWeatherMapKeyField )
 
         XCTAssertTrue( astrometry.waitForExistence( timeout: 10 ), "The Astrometry.net key field did not appear on the API Keys tab." )
-        XCTAssertTrue( weather.waitForExistence( timeout: 10 ),    "The OpenWeatherMap key field did not appear on the API Keys tab." )
 
         app.typeKey( "w", modifierFlags: .command )
     }

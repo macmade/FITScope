@@ -400,6 +400,16 @@ public enum AccessibilityIdentifier
         public static let icon = "MoonPhaseView.icon"
     }
 
+    /// Identifiers applied by ``FITScope/WeatherView``.
+    public enum WeatherView
+    {
+        /// The weather tab's container.
+        public static let container = "WeatherView.container"
+
+        /// The condition symbol.
+        public static let icon = "WeatherView.icon"
+    }
+
     /// Identifiers applied by ``FITScope/InfoView`` (the FITS headers window).
     public enum InfoView
     {
@@ -455,9 +465,6 @@ public enum AccessibilityIdentifier
 
         /// The Astrometry.net API-key secure field in the API Keys tab.
         public static let astrometryNetKeyField = "PreferencesView.astrometryNetKeyField"
-
-        /// The OpenWeatherMap API-key secure field in the API Keys tab.
-        public static let openWeatherMapKeyField = "PreferencesView.openWeatherMapKeyField"
 
         /// The Information Panel tab's content.
         public static let informationPanelTab = "PreferencesView.informationPanelTab"

@@ -25,15 +25,14 @@
 import MapKit
 import SwiftUI
 
-/// The info-panel tab host shown below the file list: the Image Information grid
-/// in its first tab, plus a Map tab when the selected image carries observing
-/// site coordinates.
+/// The info-panel tab host shown below the file list: the Image Information grid,
+/// the capture Location, the Moon phase and the historical Weather, one per tab.
 ///
-/// It is the shared host for the per-image context views; further tabs (e.g.
-/// moon phase, weather) join here as their data becomes available, each shown
-/// only when the image actually carries the information it needs. The tabs use
-/// the same segmented control as the histogram section, and both views are kept
-/// laid out together so switching between them never resizes the panel.
+/// It is the shared host for the per-image context views. The Location, Moon and
+/// Weather tabs are always offered; each owns its own empty/error state and shows
+/// a placeholder when the image lacks the data it needs. The tabs use the same
+/// segmented control as the histogram section, and all views are kept laid out
+/// together so switching between them never resizes the panel.
 public struct ImageInfoTabView: View
 {
     /// The tabs the host can show.
@@ -48,6 +47,9 @@ public struct ImageInfoTabView: View
         /// The capture's lunar phase.
         case moon
 
+        /// The capture's historical weather.
+        case weather
+
         /// The segmented-control label for the tab.
         var title: String
         {
@@ -56,6 +58,7 @@ public struct ImageInfoTabView: View
                 case .info:     return "Info"
                 case .location: return "Location"
                 case .moon:     return "Moon"
+                case .weather:  return "Weather"
             }
         }
     }
@@ -82,7 +85,7 @@ public struct ImageInfoTabView: View
     {
         VStack( spacing: 10 )
         {
-            SegmentedControlView( selection: self.$tab, values: [ .info, .location, .moon ], title: { $0.title }, icon: { self.icon( for: $0 ) } )
+            SegmentedControlView( selection: self.$tab, values: [ .info, .location, .moon, .weather ], title: { $0.title }, icon: { self.icon( for: $0 ) } )
                 .padding( .horizontal, 14 )
                 .padding( .top, 12 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.tabs )
@@ -137,6 +140,13 @@ public struct ImageInfoTabView: View
                 .opacity( self.tab == .moon ? 1 : 0 )
                 .allowsHitTesting( self.tab == .moon )
                 .accessibilityHidden( self.tab != .moon )
+
+            WeatherView( coordinate: self.coordinate, date: self.observationDate, isActive: self.tab == .weather )
+                .padding( .horizontal, 14 )
+                .padding( .bottom, 14 )
+                .opacity( self.tab == .weather ? 1 : 0 )
+                .allowsHitTesting( self.tab == .weather )
+                .accessibilityHidden( self.tab != .weather )
         }
         .frame( height: self.contentHeight )
         .background( self.heightProbe )
@@ -172,6 +182,7 @@ public struct ImageInfoTabView: View
             case .info:     return "info.circle"
             case .location: return "mappin.and.ellipse"
             case .moon:     return self.observationDate.map { MoonPhase( date: $0 ).phase.systemImageName } ?? "moon"
+            case .weather:  return "cloud.sun"
         }
     }
 
