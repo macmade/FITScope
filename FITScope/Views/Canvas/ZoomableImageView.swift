@@ -84,6 +84,7 @@ public struct ZoomableImageView: NSViewRepresentable
         scrollView.maxMagnification     = 40.0
         scrollView.hasHorizontalScroller = true
         scrollView.hasVerticalScroller   = true
+        scrollView.autohidesScrollers    = true
         scrollView.backgroundColor       = .black
         scrollView.contentView.postsBoundsChangedNotifications = true
 
