@@ -51,6 +51,25 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
     /// The keyword's comment, or `""` when absent.
     public let comment: String
 
+    /// Builds a display property directly from its display strings, for tests,
+    /// previews and serialization fixtures.
+    ///
+    /// - Parameters:
+    ///   - index:   The property's position within its section.
+    ///   - name:    The keyword name.
+    ///   - kind:    The value-type description.
+    ///   - value:   The display value (`""` when absent).
+    ///   - comment: The comment (`""` when absent).
+    public init( index: Int, name: String, kind: String, value: String, comment: String )
+    {
+        self.index   = index
+        self.name    = name
+        self.kind    = kind
+        self.value   = value
+        self.comment = comment
+        self.id      = "\( index )-\( name )-\( kind )-\( value.isEmpty ? "<nil>" : value )-\( comment.isEmpty ? "<nil>" : comment )"
+    }
+
     /// Builds a display property from a parsed header property.
     ///
     /// - Parameters:

@@ -181,6 +181,7 @@
 		6EF419627CCE3666D397E62D /* AstrometryClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DF5F41CCB06024918FD83D1 /* AstrometryClientTests.swift */; };
 		71A010338BF16A00B98556CB /* OpenMeteoClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FD59DBA32F275D80213F313 /* OpenMeteoClient.swift */; };
 		73471F6671C722655FD0059F /* CanvasCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88704186886B49150B293572 /* CanvasCommand.swift */; };
+		76B54F287C11C6DE09907894 /* HeaderExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D628DF4A1EE6FDEB030831 /* HeaderExport.swift */; };
 		7B543E85E898ADF392FE8ACB /* AstrometryTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847C8768478977166B540620 /* AstrometryTransport.swift */; };
 		7D9F3B0B9F33E7D25CEB613F /* AstrometryTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86ADBDCAF1E7598A4CC5DEDD /* AstrometryTestSupport.swift */; };
 		7EBA7A151826541146E7EFF5 /* ObjectsOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B077522E455E19CF61F335A /* ObjectsOverlayTests.swift */; };
@@ -205,6 +206,7 @@
 		A4B7F72827EB5946B7D329AC /* PlateSolveResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B503A40CF3A57D863C1304 /* PlateSolveResult.swift */; };
 		A88DD46D272944AD847BC0FD /* StarsOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEE209DF99F410FA6950C91 /* StarsOverlayTests.swift */; };
 		AE429B193507E2CB21017180 /* StatusMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C561A20BFECBF8335B6A8AF /* StatusMessageView.swift */; };
+		B24204D4CA2C31CA9D54C333 /* HeaderExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276C7888FA0EFF9C2F111112 /* HeaderExportTests.swift */; };
 		B3478104EBCB8EB1B9C44998 /* ImageInfoPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6F768D0B5B05753212F21BA /* ImageInfoPanelView.swift */; };
 		B386E03B0E5A1FE92DF77CCD /* ImageInfoTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A15B5C28550566FCCF1C81 /* ImageInfoTabView.swift */; };
 		B4A60AECE9E9B801F5300A69 /* InspectorPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE5E278538EB67DBA2577A14 /* InspectorPlaceholderView.swift */; };
@@ -492,6 +494,7 @@
 		0C5D104F82BB5EF35C693E8E /* ReticleOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReticleOverlayTests.swift; sourceTree = "<group>"; };
 		0E6A0CA25BD529178F2F9432 /* CursorReadout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CursorReadout.swift; sourceTree = "<group>"; };
 		0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowModelTests.swift; sourceTree = "<group>"; };
+		10D628DF4A1EE6FDEB030831 /* HeaderExport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeaderExport.swift; sourceTree = "<group>"; };
 		15A76B7A5EE76FA883E623C6 /* MoonPhase.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhase.swift; sourceTree = "<group>"; };
 		175E0226186A86808584BD3B /* MoonPhaseView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseView.swift; sourceTree = "<group>"; };
 		1805AA8818E2418AA78360ED /* ViewCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewCommands.swift; sourceTree = "<group>"; };
@@ -502,6 +505,7 @@
 		20678C2224440A7F70B42B87 /* WCSProjectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WCSProjectionTests.swift; sourceTree = "<group>"; };
 		209B69186583B9C65F810C23 /* HistogramMode.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramMode.swift; sourceTree = "<group>"; };
 		22D6641B378926115E450672 /* WindowContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowContent.swift; sourceTree = "<group>"; };
+		276C7888FA0EFF9C2F111112 /* HeaderExportTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeaderExportTests.swift; sourceTree = "<group>"; };
 		2DC192E7780C67C2D23EFA7B /* ScaleBarOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaleBarOverlayTests.swift; sourceTree = "<group>"; };
 		2DF5F41CCB06024918FD83D1 /* AstrometryClientTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AstrometryClientTests.swift; sourceTree = "<group>"; };
 		2FD59DBA32F275D80213F313 /* OpenMeteoClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoClient.swift; sourceTree = "<group>"; };
@@ -900,6 +904,7 @@
 				5A516E0150000000000000C1 /* FileSortable.swift */,
 				5A516E0150000000000000C3 /* FileSortKey.swift */,
 				15A76B7A5EE76FA883E623C6 /* MoonPhase.swift */,
+				10D628DF4A1EE6FDEB030831 /* HeaderExport.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -1069,6 +1074,7 @@
 				5A516E0150000000000000B4 /* ImageWeightingTests.swift */,
 				5A516E0150000000000000C5 /* FileSortKeyTests.swift */,
 				A96803DD5818B6BF04A14656 /* MoonPhaseTests.swift */,
+				276C7888FA0EFF9C2F111112 /* HeaderExportTests.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -1766,6 +1772,7 @@
 				96EA446873D37147B8016912 /* OpenMeteoError.swift in Sources */,
 				E770176E5321635244B36577 /* OpenMeteoResponses.swift in Sources */,
 				71A010338BF16A00B98556CB /* OpenMeteoClient.swift in Sources */,
+				76B54F287C11C6DE09907894 /* HeaderExport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1824,6 +1831,7 @@
 				4783C1A3F58CA4341CD69ED0 /* WeatherConditionsTests.swift in Sources */,
 				D3894C950C0D9EBDB32183D3 /* OpenMeteoTestSupport.swift in Sources */,
 				1DCF6D64417A668327789986 /* OpenMeteoClientTests.swift in Sources */,
+				B24204D4CA2C31CA9D54C333 /* HeaderExportTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

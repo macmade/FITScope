@@ -423,6 +423,9 @@ public enum AccessibilityIdentifier
 
         /// The section picker.
         public static let sectionPicker = "InfoView.sectionPicker"
+
+        /// The button that exports the headers to CSV/TSV.
+        public static let exportButton = "InfoView.exportButton"
     }
 
     /// Identifiers applied by ``FITScope/MainWindowView``.

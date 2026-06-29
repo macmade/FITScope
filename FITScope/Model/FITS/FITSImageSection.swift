@@ -42,6 +42,21 @@ public struct FITSImageSection: Codable, Hashable, Identifiable
     /// The section's header keywords, as display properties.
     public let properties: [ FITSImageProperty ]
 
+    /// Builds a section snapshot directly from its parts, for tests, previews and
+    /// serialization fixtures.
+    ///
+    /// - Parameters:
+    ///   - index:      The section's position within the file.
+    ///   - title:      The display title.
+    ///   - properties: The section's display properties.
+    public init( index: Int, title: String, properties: [ FITSImageProperty ] )
+    {
+        self.id         = "\( index )-\( title )"
+        self.index      = index
+        self.title      = title
+        self.properties = properties
+    }
+
     /// Builds a section snapshot, succeeding only for header and extension
     /// sections.
     ///

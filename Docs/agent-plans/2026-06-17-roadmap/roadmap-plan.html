@@ -1862,8 +1862,8 @@
       </div>
     </details>
 
-    <details class="ms" id="M5.18">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.18</span><span class="ms-title">Export FITS headers to TSV/CSV</span><span class="ms-badges"></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+    <details class="ms completed" id="M5.18">
+      <summary><input type="checkbox" class="ms-check" checked><span class="ms-id">M5.18</span><span class="ms-title">Export FITS headers to TSV/CSV</span><span class="ms-badges"></span><span class="ms-status status-done">Completed &middot; 2026-06-30</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>Export the FITS headers as TSV or CSV from the headers window.</p>
         <h5>Scope / changes</h5><ul><li>Serialize the parsed properties (keyword/value/comment) to TSV/CSV via a save panel; button in the headers window.</li></ul>
@@ -1871,6 +1871,30 @@
         <h5>Tests</h5><ul><li>Unit: export escapes/encodes fields correctly for both formats.</li></ul>
         <h5>Acceptance</h5><ul><li>Exported file opens cleanly in a spreadsheet with correct columns.</li></ul>
         <h5>Commit</h5><span class="commit">feat: export fits headers to tsv or csv</span>
+        <div class="callout"><strong>Implementation notes — implemented with TDD; awaiting in-app confirmation of the Export button and a saved file.</strong>
+          <ul>
+            <li><strong>New <code>HeaderExport</code></strong> (<code>FITScope/Model/HeaderExport.swift</code>): a pure, testable serializer. <code>export(_ info: FITSImageInfo, as: Format)</code> emits a delimited table; <code>Format</code> is <code>.csv</code>/<code>.tsv</code> carrying the field/row separators, file extension and <code>UTType</code> (<code>.commaSeparatedText</code>/<code>.tabSeparatedText</code>), plus <code>Format.from(url:)</code> to pick the format from the chosen file's extension.</li>
+            <li><strong>Columns (decision).</strong> The export mirrors the on-screen headers table — <em>Index, Name, Kind, Value, Comment</em> — and prepends a <em>Section</em> column so a multi-HDU file (primary header + extensions) stays unambiguous. <strong>All sections are exported</strong> (not just the one currently shown in the picker), since "export the FITS headers" reads as the whole file; for the common single-HDU image the Section column is simply constant.</li>
+            <li><strong>Escaping (the unit-tested core).</strong> CSV follows <strong>RFC 4180</strong>: a field containing a comma, double quote, CR or LF is wrapped in double quotes with embedded quotes doubled; rows are CRLF-separated. TSV has no quoting standard, so embedded tabs and line breaks are replaced with single spaces; rows are LF-separated.</li>
+            <li><strong>UI.</strong> Added an <strong>"Export…"</strong> button to <code>InfoView</code>'s bottom bar (beside the section picker and search field). It calls the existing <code>AppModel.runSavePanel(suggestedName:contentTypes:)</code> with both content types (so the save panel shows a CSV/TSV format popup), names the file <code>&lt;image&gt;-headers</code>, writes the serialized text as UTF-8, and surfaces any write failure via <code>AppModel.presentFailureAlert</code>. Accessibility id <code>InfoView.exportButton</code>.</li>
+            <li><strong>Testability.</strong> Added public memberwise inits to <code>FITSImageProperty</code> (<code>index/name/kind/value/comment</code>) and <code>FITSImageSection</code> (<code>index/title/properties</code>), mirroring the existing <code>FITSImageInfo.init(url:sections:)</code> "for tests and previews" — so the export is unit-tested without parsing a real FITS file. Non-breaking additions.</li>
+            <li><strong>TDD.</strong> Wrote <code>HeaderExportTests</code> first (red on the missing type), then green: CSV quoting (comma / embedded quote / newline), TSV tab &amp; newline (incl. CRLF) replacement, row joining per format, and full-export integration (header row, all sections with their titles, and the correct CRLF/LF row separators). Verified via <code>xcodebuild</code>: full <code>FITScopeTests</code> — <strong>348 tests in 49 suites</strong> — all green; the app builds clean under <code>-warnings-as-errors</code>.</li>
+            <li><strong>Revision (review round 1) — format &amp; scope selection (later superseded).</strong> The save panel offered no format choice (two <code>allowedContentTypes</code> alone didn't surface a format popup). First attempt added a save-panel <strong>accessory view</strong> (<code>HeaderExportOptionsView</code> + <code>HeaderExportOptions</code>) with Format and Sections pickers, mirroring the image exporter — and <code>HeaderExport</code> gained an <code>export(_ sections:as:)</code> overload so the displayed section can be exported alone. (The accessory was dropped in round 2, below; the <code>export(_ sections:as:)</code> overload stays.)</li>
+            <li><strong>Revision (review round 2) — replaced the accessory with a menu.</strong> The accessory's SwiftUI controls weren't reliably clickable in the save panel (and the scope picker was hidden for single-section files), so it didn't work in practice. Removed <code>HeaderExportOptionsView</code>/<code>HeaderExportOptions</code> and the accessory entirely. The "Export…" control is now a SwiftUI <code>Menu</code> in the headers window: for a multi-section file it lists <em>Displayed Section as CSV/TSV</em> and <em>All Sections as CSV/TSV</em>; a single-section file just lists <em>As CSV</em> / <em>As TSV</em>. Each item opens a plain save panel for the chosen format (fixed extension) and writes — clickable, and the choices are always visible. Full <code>FITScopeTests</code> green (<strong>349 tests in 49 suites</strong>); builds clean under <code>-warnings-as-errors</code>.</li>
+          </ul>
+        </div>
+        <h5>Review comments</h5>
+        <div class="callout"><strong>Review round 1 (maintainer).</strong>
+          <ul>
+            <li><strong>The save panel doesn't allow format selection</strong> (CSV vs TSV).</li>
+            <li><strong>Add an option to export only the displayed section or all sections.</strong></li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 2 (maintainer).</strong>
+          <ul>
+            <li><strong>The accessory only showed the format picker and wasn't clickable.</strong> "It's a simple feature, please make it work." (Resolved by switching to a menu.)</li>
+          </ul>
+        </div>
       </div>
     </details>
 

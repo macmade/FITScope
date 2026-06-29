@@ -74,6 +74,8 @@ public struct InfoView: View
                     _ in
                 }
                 .accessibilityIdentifier( AccessibilityIdentifier.InfoView.searchField )
+
+                self.exportMenu
             }
             .padding()
         }
@@ -106,6 +108,68 @@ public struct InfoView: View
             {
                 $0.localizedCaseInsensitiveContains( text )
             }
+        }
+    }
+
+    /// The export menu: a format choice per scope. The displayed-section options
+    /// appear only when the file has more than one section (otherwise the displayed
+    /// section is the whole file).
+    private var exportMenu: some View
+    {
+        Menu( "Export…" )
+        {
+            if self.info.sections.count > 1
+            {
+                Button( "Displayed Section as CSV" ) { self.export( sections: self.displayedSections, format: .csv ) }
+                Button( "Displayed Section as TSV" ) { self.export( sections: self.displayedSections, format: .tsv ) }
+
+                Divider()
+
+                Button( "All Sections as CSV" ) { self.export( sections: self.info.sections, format: .csv ) }
+                Button( "All Sections as TSV" ) { self.export( sections: self.info.sections, format: .tsv ) }
+            }
+            else
+            {
+                Button( "As CSV" ) { self.export( sections: self.info.sections, format: .csv ) }
+                Button( "As TSV" ) { self.export( sections: self.info.sections, format: .tsv ) }
+            }
+        }
+        .fixedSize()
+        .accessibilityIdentifier( AccessibilityIdentifier.InfoView.exportButton )
+    }
+
+    /// The sections currently shown in the picker (a single section).
+    private var displayedSections: [ FITSImageSection ]
+    {
+        self.info.sections.filter { $0.index == self.selectedSection }
+    }
+
+    /// Exports the given sections to a CSV or TSV file the user chooses, in a save
+    /// panel for the chosen format (so the extension is fixed). A cancelled panel is
+    /// a no-op; a write failure is surfaced in an alert rather than failing silently.
+    ///
+    /// - Parameters:
+    ///   - sections: The sections to serialize.
+    ///   - format:   The output format.
+    private func export( sections: [ FITSImageSection ], format: HeaderExport.Format )
+    {
+        let suggestedName = "\( self.info.url.deletingPathExtension().lastPathComponent )-headers"
+
+        guard let destination = AppModel.runSavePanel( suggestedName: suggestedName, contentTypes: [ format.contentType ] )
+        else
+        {
+            return
+        }
+
+        let content = HeaderExport.export( sections, as: format )
+
+        do
+        {
+            try Data( content.utf8 ).write( to: destination )
+        }
+        catch
+        {
+            AppModel.presentFailureAlert( "Could not export the FITS headers.", error: error )
         }
     }
 }
