@@ -92,7 +92,6 @@ public struct ImageInfoTabView: View
 
             self.tabbedContent
         }
-        .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.container )
     }
 
     /// The measured natural height of the Image Information content (its ideal
@@ -156,11 +155,18 @@ public struct ImageInfoTabView: View
     /// and measured. It sits in the visible area's background so it is laid out at
     /// the same width but never influences the area's size — only reports the
     /// content height into ``infoContentHeight``.
+    ///
+    /// It is removed from the accessibility tree: being a second copy of the panel,
+    /// it would otherwise duplicate every identifier inside it (e.g. the "View Full
+    /// FITS Headers" button), so a UI test resolving an identifier could match this
+    /// non-interactive probe instead of the visible panel. `.hidden()` alone does
+    /// not exclude it, so `.accessibilityHidden(true)` is applied explicitly.
     private var heightProbe: some View
     {
         ImageInfoPanelView( file: self.file )
             .fixedSize( horizontal: false, vertical: true )
             .hidden()
+            .accessibilityHidden( true )
             .onGeometryChange( for: Double.self, of: { $0.size.height }, action: { self.infoContentHeight = $0 } )
     }
 

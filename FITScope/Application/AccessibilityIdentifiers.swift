@@ -375,11 +375,13 @@ public enum AccessibilityIdentifier
     /// host below the file list).
     public enum ImageInfoTabView
     {
-        /// The tab container.
-        public static let container = "ImageInfoTabView.container"
-
-        /// The segmented control switching between the Info, Location and Moon
-        /// tabs.
+        /// The segmented control switching between the Info, Location, Moon and
+        /// Weather tabs.
+        ///
+        /// No container-level identifier is applied to the tab host's root: a
+        /// container `accessibilityIdentifier` propagates to every descendant
+        /// element, which would override the identifiers the inner views set (e.g.
+        /// the Info panel's "View Full FITS Headers" button), so it is omitted.
         public static let tabs = "ImageInfoTabView.tabs"
     }
 
