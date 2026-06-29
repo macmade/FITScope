@@ -41,17 +41,24 @@ public struct SegmentedControlView< Value: Hashable >: View
     /// The label shown for a value.
     private let title: ( Value ) -> String
 
+    /// The SF Symbol shown before the label for a value, or `nil` for no icon.
+    /// Evaluated on each render, so it may vary with state (e.g. a live icon).
+    private let icon: ( Value ) -> String?
+
     /// Creates a segmented control.
     ///
     /// - Parameters:
     ///   - selection: A binding to the selected value.
     ///   - values:    The selectable values, in display order.
     ///   - title:     The label shown for a value.
-    public init( selection: Binding< Value >, values: [ Value ], title: @escaping ( Value ) -> String )
+    ///   - icon:      The SF Symbol shown before the label, or `nil` for none.
+    ///                Defaults to no icon.
+    public init( selection: Binding< Value >, values: [ Value ], title: @escaping ( Value ) -> String, icon: @escaping ( Value ) -> String? = { _ in nil } )
     {
         self._selection = selection
         self.values     = values
         self.title      = title
+        self.icon       = icon
     }
 
     /// The view's content.
@@ -84,19 +91,29 @@ public struct SegmentedControlView< Value: Hashable >: View
         }
         label:
         {
-            Text( self.title( value ) )
-                .font( .system( size: 11, weight: isSelected ? .semibold : .regular ) )
-                .foregroundStyle( isSelected ? Color.primary : Color.secondary )
-                .frame( maxWidth: .infinity )
-                .padding( .vertical, 3 )
-                .contentShape( Rectangle() )
-                .background
+            HStack( spacing: 4 )
+            {
+                if let icon = self.icon( value )
                 {
-                    if isSelected
-                    {
-                        RoundedRectangle( cornerRadius: 5 ).fill( Color.gray.opacity( 0.4 ) )
-                    }
+                    Image( systemName: icon )
                 }
+
+                Text( self.title( value ) )
+            }
+            .font( .system( size: 11, weight: isSelected ? .semibold : .regular ) )
+            .foregroundStyle( isSelected ? Color.primary : Color.secondary )
+            .lineLimit( 1 )
+            .truncationMode( .tail )
+            .frame( maxWidth: .infinity )
+            .padding( .vertical, 3 )
+            .contentShape( Rectangle() )
+            .background
+            {
+                if isSelected
+                {
+                    RoundedRectangle( cornerRadius: 5 ).fill( Color.gray.opacity( 0.4 ) )
+                }
+            }
         }
         .buttonStyle( .plain )
     }

@@ -378,12 +378,9 @@ public enum AccessibilityIdentifier
         /// The tab container.
         public static let container = "ImageInfoTabView.container"
 
-        /// The segmented control switching between the Info and Map tabs, shown
-        /// only when the image carries coordinates.
+        /// The segmented control switching between the Info, Location and Moon
+        /// tabs.
         public static let tabs = "ImageInfoTabView.tabs"
-
-        /// The button that opens the capture location in the Maps app.
-        public static let openInMapsButton = "ImageInfoTabView.openInMapsButton"
     }
 
     /// Identifiers applied by ``FITScope/LocationMapView``.
@@ -391,6 +388,16 @@ public enum AccessibilityIdentifier
     {
         /// The map showing the capture location.
         public static let map = "LocationMapView.map"
+
+        /// The button that opens the capture location in the Maps app.
+        public static let openInMapsButton = "LocationMapView.openInMapsButton"
+    }
+
+    /// Identifiers applied by ``FITScope/MoonPhaseView``.
+    public enum MoonPhaseView
+    {
+        /// The large lunar-phase symbol.
+        public static let icon = "MoonPhaseView.icon"
     }
 
     /// Identifiers applied by ``FITScope/InfoView`` (the FITS headers window).

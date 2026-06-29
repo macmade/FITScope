@@ -25,9 +25,10 @@
 import SwiftUI
 
 /// A centred icon-and-text placeholder filling its container over an opaque
-/// material — shown in the Map tab when there is nothing to map: no GPS
-/// coordinates, or a map that failed to load (an error or no connection).
-public struct MapStatusView: View
+/// material — shown in a tab when there is nothing to present: no GPS
+/// coordinates or a failed map (Location), no capture date (Moon), and similar
+/// empty or unavailable states.
+public struct StatusMessageView: View
 {
     /// The SF Symbol shown above the title.
     private let systemImage: String
@@ -79,6 +80,6 @@ public struct MapStatusView: View
 
 #Preview
 {
-    MapStatusView( systemImage: "location.slash", title: "No Location Data", message: "This image has no GPS coordinates." )
+    StatusMessageView( systemImage: "location.slash", title: "No Location Data", message: "This image has no GPS coordinates." )
         .frame( width: 260, height: 200 )
 }

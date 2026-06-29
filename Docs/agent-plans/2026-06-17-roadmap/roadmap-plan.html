@@ -1666,8 +1666,8 @@
       </div>
     </details>
 
-    <details class="ms" id="M5.14">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M5.14</span><span class="ms-title">Moon phase view + info-panel icon</span><span class="ms-badges"></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+    <details class="ms completed" id="M5.14">
+      <summary><input type="checkbox" class="ms-check" checked><span class="ms-id">M5.14</span><span class="ms-title">Moon phase view + info-panel icon</span><span class="ms-badges"></span><span class="ms-status status-done">Completed &middot; 2026-06-29</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>When the date is available, show the moon phase (computed locally) in a tab and an icon in the info panel.</p>
         <h5>Scope / changes</h5><ul><li>Compute lunar phase from DATE-OBS (local astronomical formula — no API needed); render phase + illumination; info-panel icon.</li></ul>
@@ -1676,6 +1676,77 @@
         <h5>Acceptance</h5><ul><li>Phase shown for dated images; icon in info panel.</li></ul>
         <h5>Dependencies</h5><p class="dep">Depends on M5.0/M5.13 (tab host).</p>
         <h5>Commit</h5><span class="commit">feat: show the moon phase for dated images</span>
+        <div class="callout"><strong>Implementation notes — implemented with TDD; awaiting in-app visual confirmation of the Moon tab.</strong>
+          <ul>
+            <li><strong>Scope decision (maintainer) — no info-panel icon.</strong> The original scope had both a Moon tab and a moon icon/field in the Image Information panel. On review the maintainer noted this should mirror the Location tab, whose info (lat/long) lives in the tab, not the info panel — so the moon phase lives <em>only</em> in the Moon tab and no <code>InfoField</code>/info-panel row was added. (Deviation from the plan's "icon in info panel" acceptance line, by decision.)</li>
+            <li><strong>New <code>MoonPhase</code> model</strong> (<code>FITScope/Model/MoonPhase.swift</code>): a pure, <code>Sendable</code> local computation — no API. Converts the date to a Julian Date, counts days since a reference new moon (2000-01-06 18:14 UTC, JD 2451550.2597) and reduces modulo the mean synodic month (29.530588853 d) to a cycle <code>fraction</code>; derives <code>age</code> (days), <code>illumination</code> = (1 − cos 2π·fraction)/2, and the nearest of eight named <code>Phase</code> cases (snapping to the closest eighth). Each <code>Phase</code> carries a display <code>name</code> and an <code>moonphase.*</code> SF Symbol. This is the standard "mean phase" approximation (ignores orbital eccentricity, so an exact phase instant can be a few hours off) — ample for labelling a capture.</li>
+            <li><strong>New <code>MoonPhaseView</code></strong> (<code>FITScope/Views/Sidebar/MoonPhaseView.swift</code>): the large phase symbol, the phase name, and "<em>NN% illuminated</em>", filling the tab over a material; has a <code>#Preview</code>.</li>
+            <li><strong>Tab host.</strong> Added a third <em>Moon</em> tab to <code>ImageInfoTabView</code> (Info | Location | Moon), always offered like Location. With a <code>DATE-OBS</code> (read via <code>FITSMetadata.observationDate</code>) it shows <code>MoonPhaseView</code>; without one it shows a <code>MapStatusView</code> "No Date" placeholder (<code>calendar</code> icon). It shares the same framed area and the measured height, so it never resizes the panel. Files placed in <code>Views/Sidebar/</code> beside the other tab views (the plan suggested <code>Views/Info/</code>; no such folder exists).</li>
+            <li><strong>TDD.</strong> Wrote <code>MoonPhaseTests</code> first (red on the missing type), then green: the known 2024 new (Jan&nbsp;11), first-quarter (Jan&nbsp;18) and full (Jan&nbsp;25) moons classify correctly with illumination within tolerance; the reference epoch is a new moon; derived values stay in range across a lunation; and every phase has a name and a resolvable SF Symbol. Verified via <code>xcodebuild</code>: full <code>FITScopeTests</code> — <strong>319 tests in 45 suites</strong> — and the full scheme builds.</li>
+            <li><strong>Revision (review round 1) — tab icons.</strong> Extended the shared <code>SegmentedControlView</code> with an optional, per-render <code>icon: (Value) -> String?</code> closure (defaulting to none, so the histogram's text-only use is unchanged); the segment now lays out the SF Symbol before the label in an <code>HStack</code>, with <code>lineLimit(1)</code> + <code>minimumScaleFactor(0.75)</code> so the three labels fit the sidebar width. The tab host supplies icons via <code>icon(for:)</code>: <em>Info</em> → <code>info.circle</code>, <em>Location</em> → <code>mappin.and.ellipse</code>, <em>Moon</em> → the current phase's <code>moonphase.*</code> symbol when the image has a date, else a generic <code>moon</code> (so the Moon tab's icon tracks the live phase). Full <code>FITScopeTests</code> still green (319); full scheme builds.</li>
+            <li><strong>Revision (review rounds 2 &amp; 3).</strong> Enlarged the phase symbol in the Moon tab (44&nbsp;→&nbsp;76&nbsp;pt). Added the capture date beneath the illumination, formatted in UTC (the zone <code>DATE-OBS</code> is recorded in), e.g. <code>2024-01-25 17:54 UTC</code>. <code>MoonPhaseView</code> now takes the <code>date</code> directly (computing the phase internally) so it can show both the phase and the date; the tab host passes <code>MoonPhaseView( date: )</code>. Full <code>FITScopeTests</code> still green (319); full scheme builds.</li>
+            <li><strong>Revision (review round 4).</strong> Made the phase symbol <code>resizable().scaledToFit()</code> filling the space above the labels, instead of a fixed point size — so it is as large as the tab allows (and grows when the info area is taller) without risking a clip at the minimum height. Full scheme builds.</li>
+            <li><strong>Revision (review round 5).</strong> Reverted the resizable phase symbol — it was too big and pushed the labels out of their centred layout. Back to a fixed point size, centred, at 92&nbsp;pt (a moderate increase over the original 76). Full scheme builds.</li>
+            <li><strong>Revision (review round 6).</strong> Dropped <code>minimumScaleFactor</code> from <code>SegmentedControlView</code> — it shrank each segment's label independently, so the tabs rendered at different text sizes. Labels now stay at the fixed 11&nbsp;pt and truncate with a tail ellipsis (<code>lineLimit(1)</code> + <code>truncationMode(.tail)</code>) when they don't fit. Full scheme builds.</li>
+            <li><strong>Revision (review round 7) — drawn moon disc.</strong> Replaced the flat SF Symbol in the Moon tab with a new <code>MoonPhaseDisc</code> (<code>FITScope/Views/Sidebar/MoonPhaseDisc.swift</code>) that draws the illuminated region bounded by the lit limb (a semicircle — right while waxing, left while waning) joined to the terminator (a half-ellipse whose horizontal radius is <code>radius·cos(2π·fraction)</code>, signed so it bulges away from the lit side for a crescent and across the centre for a gibbous), sampled as a polygon (pure <code>nonisolated</code> path helpers) to avoid arc-direction pitfalls. <em>Then (maintainer added a vector asset):</em> instead of a flat-coloured disc, it now renders the real full-moon image — the <code>Moon</code> PDF in <code>Assets.xcassets</code> (set to <em>Preserve Vector Data</em>) — clipped to a circle, with the <strong>unlit</strong> region (the complement, <code>shadowPath</code>) overlaid as a dim, slightly translucent black (0.88, faint "earthshine") and a small blur on the terminator so the shadow edge is soft while the limb stays crisp. The small tab icon keeps the crisp SF Symbol. <code>MoonPhaseDiscTests</code> verify the lit region covers the disc at full moon and sits on the correct half at the quarters, and the shadow covers the disc at new moon / sits opposite at the first quarter. Verified via <code>xcodebuild</code>: full <code>FITScopeTests</code> — <strong>324 tests in 46 suites</strong> — and the full scheme builds.</li>
+            <li><strong>Revision (review round 10).</strong> Moved <code>StatusMessageView</code> from <code>Views/Sidebar/</code> to <code>Views/Controls/</code> (file + <code>project.pbxproj</code> group) since it is a generic reusable control, alongside <code>SegmentedControlView</code>/<code>BannerView</code>/<code>Pill</code>. Removed the now-trivial <code>locationTab</code>/<code>moonTab</code> private vars — the two views are instantiated directly in the <code>ZStack</code> with their padding and tab toggles. Full <code>FITScopeTests</code> green (324); full scheme builds.</li>
+            <li><strong>Revision (review round 9) — tab views own their states.</strong> Moved all data-presence / error handling into the tab content views so <code>ImageInfoTabView</code> no longer branches. <code>LocationMapView</code> now takes an <strong>optional</strong> coordinate and owns everything Location: the "No Location Data" placeholder (nil), and — when present — the map card (with its loading indicator and offline "Map Unavailable" message), the lat/long rows, and the "Open in Maps" button (the <code>openInMaps</code> helper and its accessibility id moved here too). <code>MoonPhaseView</code> takes an <strong>optional</strong> date and owns the "No Date" placeholder as well as the phase card. <code>ImageInfoTabView.locationTab</code>/<code>moonTab</code> are now just <code>LocationMapView( coordinate: )</code> / <code>MoonPhaseView( date: )</code> with padding; the inline <code>StatusMessageView</code> branches and the <code>openInMaps</code> func were removed from the host. Full <code>FITScopeTests</code> green (324); full scheme builds. (<code>LocationMapView</code> now does more than a map — happy to rename it, e.g. <code>LocationView</code>, if you'd like.)</li>
+            <li><strong>Revision (review round 8).</strong> Renamed <code>MapStatusView</code> → <code>StatusMessageView</code> (file and type) now that it is shared by the Location and Moon tabs (and the offline map overlay); its doc comment was generalised and all call sites + the <code>project.pbxproj</code> reference updated (<code>plutil -lint</code> clean). It stays in <code>Views/Sidebar/</code> — happy to move it to <code>Views/Controls/</code> if you'd prefer it grouped with the other reusable controls. Full <code>FITScopeTests</code> green (324); full scheme builds.</li>
+            <li><strong>Confirmed by maintainer ("Looks good").</strong> The Moon tab (drawn moon disc with the dynamic shadow over the full-moon asset, phase name, illumination and capture date), the per-tab icons (live phase on the Moon tab), the ellipsis-truncating tab labels, and the encapsulated empty/error states were all verified in-app.</li>
+          </ul>
+        </div>
+        <h5>Review comments</h5>
+        <div class="callout"><strong>Review round 1 (maintainer).</strong>
+          <ul>
+            <li><strong>Add icons to the tabs.</strong> The segmented-control tabs should carry icons; the Moon tab's icon should be the current phase shape when a date is available, otherwise a generic moon icon.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 2 (maintainer).</strong>
+          <ul>
+            <li><strong>Make the moon larger</strong> in the Moon tab.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 3 (maintainer).</strong>
+          <ul>
+            <li><strong>Show the capture date</strong> in the Moon view.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 4 (maintainer).</strong>
+          <ul>
+            <li><strong>Increase the moon size further.</strong></li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 5 (maintainer).</strong>
+          <ul>
+            <li><strong>Revert the resizable moon</strong> — it was way too big and changed the alignment. Keep a fixed size (centered), just larger than the original.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 6 (maintainer).</strong>
+          <ul>
+            <li><strong>Tab labels should crop with an ellipsis, not resize.</strong> The per-segment text shrinks to fit instead of truncating, so the tabs end up at different sizes.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 7 (maintainer).</strong>
+          <ul>
+            <li><strong>The large moon needs a better design.</strong> The flat SF Symbol isn't very nice; draw a proper illuminated moon disc instead.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 8 (maintainer).</strong>
+          <ul>
+            <li><strong>Rename <code>MapStatusView</code>.</strong> It is now shared between the Location (Map) and Moon tabs, so its map-specific name no longer fits.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 9 (maintainer).</strong>
+          <ul>
+            <li><strong>Move the empty/error handling into the tab views.</strong> <code>LocationMapView</code> and <code>MoonPhaseView</code> should handle all their states themselves — including "no data available" — and show the status view, so <code>ImageInfoTabView</code> doesn't branch on the data.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Review round 10 (maintainer).</strong>
+          <ul>
+            <li><strong>Move <code>StatusMessageView</code> to <code>Views/Controls</code></strong> now that it is generic.</li>
+            <li><strong>Remove the <code>locationTab</code>/<code>moonTab</code> private vars</strong> — no longer needed.</li>
+          </ul>
+        </div>
       </div>
     </details>
 

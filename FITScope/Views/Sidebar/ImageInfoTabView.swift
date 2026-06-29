@@ -45,6 +45,9 @@ public struct ImageInfoTabView: View
         /// The capture-location map and coordinates.
         case location
 
+        /// The capture's lunar phase.
+        case moon
+
         /// The segmented-control label for the tab.
         var title: String
         {
@@ -52,6 +55,7 @@ public struct ImageInfoTabView: View
             {
                 case .info:     return "Info"
                 case .location: return "Location"
+                case .moon:     return "Moon"
             }
         }
     }
@@ -71,13 +75,14 @@ public struct ImageInfoTabView: View
     }
 
     /// The view's content: a segmented control switching between the Image
-    /// Information grid and the Location tab. The Location tab is always offered;
-    /// when the image has no coordinates it shows a placeholder instead of a map.
+    /// Information grid, the Location tab and the Moon tab. The Location and Moon
+    /// tabs are always offered; when the image lacks the data they need they show
+    /// a placeholder instead.
     public var body: some View
     {
         VStack( spacing: 10 )
         {
-            SegmentedControlView( selection: self.$tab, values: [ .info, .location ], title: { $0.title } )
+            SegmentedControlView( selection: self.$tab, values: [ .info, .location, .moon ], title: { $0.title }, icon: { self.icon( for: $0 ) } )
                 .padding( .horizontal, 14 )
                 .padding( .top, 12 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.tabs )
@@ -117,10 +122,21 @@ public struct ImageInfoTabView: View
                 .opacity( self.tab == .info ? 1 : 0 )
                 .accessibilityHidden( self.tab != .info )
 
-            self.locationTab
+            // LocationMapView and MoonPhaseView own their own empty/error states,
+            // so the host just supplies the (optional) data.
+            LocationMapView( coordinate: self.coordinate )
+                .padding( .horizontal, 14 )
+                .padding( .bottom, 14 )
                 .opacity( self.tab == .location ? 1 : 0 )
                 .allowsHitTesting( self.tab == .location )
                 .accessibilityHidden( self.tab != .location )
+
+            MoonPhaseView( date: self.observationDate )
+                .padding( .horizontal, 14 )
+                .padding( .bottom, 14 )
+                .opacity( self.tab == .moon ? 1 : 0 )
+                .allowsHitTesting( self.tab == .moon )
+                .accessibilityHidden( self.tab != .moon )
         }
         .frame( height: self.contentHeight )
         .background( self.heightProbe )
@@ -138,55 +154,25 @@ public struct ImageInfoTabView: View
             .onGeometryChange( for: Double.self, of: { $0.size.height }, action: { self.infoContentHeight = $0 } )
     }
 
-    /// The Location tab: the map (with the coordinate shown beneath it) when the
-    /// image carries coordinates, otherwise a "no location" placeholder. The map
-    /// area is framed identically in both cases so switching images doesn't shift
-    /// it.
-    private var locationTab: some View
+    /// The selected image's capture date (`DATE-OBS`), or `nil` when absent.
+    private var observationDate: Date?
     {
-        VStack( spacing: 10 )
-        {
-            Group
-            {
-                if let coordinate = self.coordinate
-                {
-                    LocationMapView( coordinate: coordinate )
-                }
-                else
-                {
-                    MapStatusView( systemImage: "location.slash", title: "No Location Data", message: "This image has no GPS coordinates." )
-                }
-            }
-            .frame( maxWidth: .infinity, maxHeight: .infinity )
-            .clipShape( RoundedRectangle( cornerRadius: 10 ) )
-            .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
-
-            if let coordinate = self.coordinate
-            {
-                LocationInfoView( latitude: coordinate.latitude, longitude: coordinate.longitude )
-
-                Button( "Open in Maps" )
-                {
-                    self.openInMaps( coordinate )
-                }
-                .frame( maxWidth: .infinity )
-                .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.openInMapsButton )
-            }
-        }
-        .padding( .horizontal, 14 )
-        .padding( .bottom, 14 )
+        self.file.image?.info.metadata.observationDate
     }
 
-    /// Opens the capture location in the Maps app, dropping a named pin at the
-    /// coordinate.
+    /// The SF Symbol for a tab. The Moon tab uses the current phase shape when the
+    /// image carries a date, otherwise a generic moon; the others are fixed.
     ///
-    /// - Parameter coordinate: The location to show in Maps.
-    private func openInMaps( _ coordinate: CLLocationCoordinate2D )
+    /// - Parameter tab: The tab to icon.
+    /// - Returns: The SF Symbol name.
+    private func icon( for tab: Tab ) -> String
     {
-        let mapItem  = MKMapItem( placemark: MKPlacemark( coordinate: coordinate ) )
-        mapItem.name = "Capture Location"
-
-        mapItem.openInMaps()
+        switch tab
+        {
+            case .info:     return "info.circle"
+            case .location: return "mappin.and.ellipse"
+            case .moon:     return self.observationDate.map { MoonPhase( date: $0 ).phase.systemImageName } ?? "moon"
+        }
     }
 
     /// The selected image's capture location as a MapKit coordinate, or `nil`
