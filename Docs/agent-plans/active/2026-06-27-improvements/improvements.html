@@ -143,36 +143,8 @@
 
         <ol class="roadmap">
             <li>
-                <h3>Verify light mode appearance</h3>
-                <p>Check how the app looks in light mode and fix any contrast, color, or layout issues so it is on par with dark mode.</p>
-            </li>
-            <li>
                 <h3>Prioritize selected file for rendering</h3>
                 <p>When a file is selected, give it priority in the rendering pipeline so the image the user is looking at is processed first.</p>
-            </li>
-            <li>
-                <h3>Gamma &mdash; remove the on/off switch</h3>
-                <p>The gamma control does not need an enable switch: a value of 1 is already a no-op, so it can be the default with no separate toggle.</p>
-            </li>
-            <li>
-                <h3>Info view &mdash; no wrap, ellipsis with tooltips</h3>
-                <p>Stop wrapping long values in the info view; truncate them with an ellipsis and show the full value in a tooltip on hover.</p>
-            </li>
-            <li>
-                <h3>Review order of processors</h3>
-                <p>Revisit the order in which image processors are applied in the rendering pipeline to make sure it is correct and produces the expected result.</p>
-            </li>
-            <li>
-                <h3>Review order of controls in inspector</h3>
-                <p>Revisit the order of the controls shown in the inspector so it follows a logical, intuitive workflow.</p>
-            </li>
-            <li>
-                <h3>Gamma vs. levels gamma &mdash; do we need both?</h3>
-                <p>Evaluate whether the standalone gamma correction and the gamma (midtone) adjustment inside levels are redundant, and decide whether to keep both.</p>
-            </li>
-            <li>
-                <h3>Curves and levels windows &mdash; sizes and positions</h3>
-                <p>Review and refine the default sizes and on-screen positions of the curves and levels windows, and how they are persisted.</p>
             </li>
             <li>
                 <h3>Visible planets in info view (letters)</h3>
@@ -211,28 +183,12 @@
                 <p>Add a color balance control acting on shadows (low), midtones (mid), and highlights (high).</p>
             </li>
             <li>
-                <h3>Histogram backdrop on curves?</h3>
-                <p>Consider drawing a histogram backdrop behind the curves editor, as is already done in the levels editor.</p>
-            </li>
-            <li>
                 <h3>Before/after slider on image</h3>
                 <p>Add a before/after comparison slider over the image to compare the original and the processed result.</p>
             </li>
             <li>
-                <h3>Info panel &mdash; selectable labels</h3>
-                <p>Make the labels in the information panel selectable so their text can be copied.</p>
-            </li>
-            <li>
                 <h3>Star detection info presentation</h3>
                 <p>Decide how to present star detection information &mdash; inline/overlay, in the info panel, or in a dedicated section.</p>
-            </li>
-            <li>
-                <h3>Ensure debouncing with image renderer</h3>
-                <p>Make sure rendering requests are properly debounced so rapid control changes do not trigger redundant renders.</p>
-            </li>
-            <li>
-                <h3>Regroup levels and curves into one control</h3>
-                <p>Levels and curves currently sit on separate lines; regroup them inside a single control with both buttons on the same line.</p>
             </li>
             <li>
                 <h3>Include AstroTools</h3>
@@ -253,18 +209,6 @@
             <li>
                 <h3>Include YouplaBoum</h3>
                 <p>Import the standalone <a href="https://github.com/macmade/YouplaBoum">YouplaBoum</a> app for quickly culling and rejecting pictures &mdash; similar to Blink in PixInsight &mdash; as a separate tool/window.</p>
-            </li>
-            <li>
-                <h3>Sidebar &mdash; indicate files with adjustments</h3>
-                <p>Show a marker in the sidebar file list for files that have adjustments applied, so it is clear at a glance which images have been edited.</p>
-            </li>
-            <li>
-                <h3>Warn before losing adjustments on window close</h3>
-                <p>When closing a window where adjustments have been made, prompt the user to confirm &mdash; warning that the adjustments will be lost &mdash; before discarding them.</p>
-            </li>
-            <li>
-                <h3>Remember last window size</h3>
-                <p>Persist the main window's size between launches so it reopens at the dimensions the user last left it.</p>
             </li>
             <li>
                 <h3>Local plate solving with GAIA data</h3>
