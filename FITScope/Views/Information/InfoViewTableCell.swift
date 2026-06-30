@@ -38,12 +38,31 @@ public struct InfoViewTableCell: View
     /// The foreground shape style (e.g. `.primary`, `.secondary`).
     public let style: any ShapeStyle
 
+    /// Whether to render in a monospaced font, so columns of fixed-format FITS
+    /// values (index, keyword name, value) align cleanly.
+    public let monospaced: Bool
+
+    /// Creates a table cell.
+    ///
+    /// - Parameters:
+    ///   - value:      The text to display.
+    ///   - size:       The font point size.
+    ///   - style:      The foreground shape style.
+    ///   - monospaced: Whether to use a monospaced font. Defaults to `false`.
+    public init( value: String, size: Double, style: any ShapeStyle, monospaced: Bool = false )
+    {
+        self.value      = value
+        self.size       = size
+        self.style      = style
+        self.monospaced = monospaced
+    }
+
     /// The view's content.
     public var body: some View
     {
         Text( self.value )
             .foregroundStyle( self.style )
-            .font( .system( size: self.size ) )
+            .font( .system( size: self.size, design: self.monospaced ? .monospaced : .default ) )
     }
 }
 

@@ -52,34 +52,43 @@ public struct InfoViewTable: View
         {
             TableColumn( "Index", value: \.index )
             {
-                InfoViewTableCell( value: "\( $0.index )", size: 10, style: .secondary )
+                InfoViewTableCell( value: "\( $0.index )", size: 11, style: .secondary, monospaced: true )
             }
             .width( min: 20, ideal: 55, max: 1000 )
 
             TableColumn( "Name", value: \.name )
             {
-                InfoViewTableCell( value: $0.name, size: 10, style: .primary )
+                InfoViewTableCell( value: $0.name, size: 11, style: .primary, monospaced: true )
             }
             .width( min: 20, ideal: 70, max: 1000 )
 
             TableColumn( "Kind", value: \.kind )
             {
-                InfoViewTableCell( value: $0.kind, size: 10, style: .secondary )
+                property in
+
+                let isSelected = self.selectedProperties.contains( property.id )
+
+                Pill(
+                    property.kind,
+                    tint:              isSelected ? .white : Self.color( forKind: property.kind ),
+                    backgroundOpacity: isSelected ? 0.25 : 0.15
+                )
             }
-            .width( min: 20, ideal: 70, max: 1000 )
+            .width( min: 20, ideal: 80, max: 1000 )
 
             TableColumn( "Value", value: \.value )
             {
-                InfoViewTableCell( value: $0.value, size: 10, style: .primary )
+                InfoViewTableCell( value: $0.value, size: 11, style: .primary, monospaced: true )
             }
             .width( min: 20, ideal: 150, max: 1000 )
 
             TableColumn( "Comment", value: \.comment )
             {
-                InfoViewTableCell( value: $0.comment, size: 10, style: .secondary )
+                InfoViewTableCell( value: $0.comment, size: 11, style: .secondary )
             }
             .width( min: 20, ideal: 150, max: 1000 )
         }
+        .tableStyle( .inset( alternatesRowBackgrounds: true ) )
         .onChange( of: sortOrder )
         {
             _, order in self.sortedProperties = self.properties.sorted( using: order )
@@ -91,6 +100,27 @@ public struct InfoViewTable: View
         .onAppear
         {
             self.sortedProperties = self.properties.sorted( using: self.sortOrder )
+        }
+    }
+
+    /// The capsule tint for a value-type kind, so each kind reads at a glance.
+    ///
+    /// The kind strings are the `description`s of SwiftFITS' `FITSValue.Kind`
+    /// (`"Logical"`, `"Integer"`, `"Float"`, `"String"`, `"Undefined"`,
+    /// `"Unknown"`). Undefined, Unknown and any unrecognized kind share a neutral
+    /// grey.
+    ///
+    /// - Parameter kind: The value-type description.
+    /// - Returns: The pill tint for that kind.
+    nonisolated static func color( forKind kind: String ) -> Color
+    {
+        switch kind
+        {
+            case "Logical": return .green
+            case "Integer": return .blue
+            case "Float":   return .purple
+            case "String":  return .orange
+            default:        return .gray
         }
     }
 }

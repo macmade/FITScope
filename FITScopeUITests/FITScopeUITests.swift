@@ -352,9 +352,11 @@ final class FITScopeUITests: XCTestCase
 
         let searchField = UITestSupport.element( app, AccessibilityIdentifier.InfoView.searchField )
         let table       = UITestSupport.element( app, AccessibilityIdentifier.InfoView.table )
+        let count       = UITestSupport.element( app, AccessibilityIdentifier.InfoView.keywordCount )
 
         XCTAssertTrue( searchField.waitForExistence( timeout: 10 ), "The headers window's search field did not appear." )
         XCTAssertTrue( table.exists, "The headers window's keyword table did not appear." )
+        XCTAssertTrue( count.exists, "The headers window's keyword-count summary did not appear." )
     }
 
     /// The inspector's Levels button opens the Levels editor window, which shows

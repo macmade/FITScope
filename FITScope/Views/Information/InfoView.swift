@@ -24,6 +24,7 @@
 
 import SwiftFITS
 import SwiftUI
+import SwiftUtilities
 
 /// The properties window: a header-keyword table with a section picker and a
 /// search field that filters the visible keywords.
@@ -38,52 +39,95 @@ public struct InfoView: View
     /// The current search query used to filter keywords.
     @State private var searchText      = ""
 
-    /// The view's content.
+    /// The view's content: the keyword table (or an error placeholder) above a
+    /// bottom bar carrying the section picker, search field, keyword count and
+    /// export menu.
     public var body: some View
     {
-        VStack( spacing: 0 )
+        let section  = self.currentSection
+        let filtered = section.map { Self.filter( properties: $0.properties, text: self.searchText ) } ?? []
+
+        return VStack( spacing: 0 )
         {
-            if let section = self.info.sections.first( where: { $0.index == self.selectedSection } )
+            Group
             {
-                InfoViewTable( properties: Self.filter( properties: section.properties, text: self.searchText ) )
-                    .accessibilityIdentifier( AccessibilityIdentifier.InfoView.table )
+                if section != nil
+                {
+                    InfoViewTable( properties: filtered )
+                        .accessibilityIdentifier( AccessibilityIdentifier.InfoView.table )
+                }
+                else
+                {
+                    ErrorView( title: "No section selected", message: nil )
+                        .padding()
+                }
             }
-            else
-            {
-                ErrorView( title: "No section selected", message: nil )
-                    .padding()
-            }
+            .frame( maxWidth: .infinity, maxHeight: .infinity )
 
             Divider()
 
-            HStack
-            {
-                Picker( "Section:", selection: $selectedSection )
-                {
-                    ForEach( self.info.sections )
-                    {
-                        Text( $0.title ).tag( $0.index )
-                    }
-                }
-                .labelsHidden()
-                .fixedSize()
-                .accessibilityIdentifier( AccessibilityIdentifier.InfoView.sectionPicker )
-
-                SearchField( text: $searchText )
-                {
-                    _ in
-                }
-                .accessibilityIdentifier( AccessibilityIdentifier.InfoView.searchField )
-
-                self.exportMenu
-            }
-            .padding()
+            self.bottomBar( shown: filtered.count, total: section?.properties.count ?? 0 )
         }
         .frame( minWidth: 600, minHeight: 500 )
         .onChange( of: self.selectedSection )
         {
             _, _ in self.searchText = ""
         }
+        // Open centered on screen, like the app's other windows.
+        .background( WindowAccessor { $0.center() } )
+    }
+
+    /// The section currently selected in the picker, if any.
+    private var currentSection: FITSImageSection?
+    {
+        self.info.sections.first { $0.index == self.selectedSection }
+    }
+
+    /// The bottom bar: the section picker, a prominent search field, the keyword
+    /// count and the export menu.
+    ///
+    /// - Parameters:
+    ///   - shown: The number of keywords currently visible (after filtering).
+    ///   - total: The number of keywords in the section.
+    /// - Returns: The bottom bar.
+    private func bottomBar( shown: Int, total: Int ) -> some View
+    {
+        HStack( spacing: 12 )
+        {
+            self.sectionPicker
+
+            SearchField( text: $searchText )
+            {
+                _ in
+            }
+            .accessibilityIdentifier( AccessibilityIdentifier.InfoView.searchField )
+
+            Text( Self.countLabel( shown: shown, total: total ) )
+                .font( .callout )
+                .foregroundStyle( .secondary )
+                .lineLimit( 1 )
+                .fixedSize()
+                .accessibilityIdentifier( AccessibilityIdentifier.InfoView.keywordCount )
+
+            self.exportMenu
+        }
+        .padding( .horizontal, 12 )
+        .padding( .vertical, 10 )
+    }
+
+    /// The section picker.
+    private var sectionPicker: some View
+    {
+        Picker( "Section:", selection: $selectedSection )
+        {
+            ForEach( self.info.sections )
+            {
+                Text( $0.title ).tag( $0.index )
+            }
+        }
+        .labelsHidden()
+        .fixedSize()
+        .accessibilityIdentifier( AccessibilityIdentifier.InfoView.sectionPicker )
     }
 
     /// Filters properties to those whose name, kind, value or comment contains
@@ -93,7 +137,7 @@ public struct InfoView: View
     ///   - properties: The properties to filter.
     ///   - text:       The search query; an empty query returns all properties.
     /// - Returns: The matching properties.
-    public static func filter( properties: [ FITSImageProperty ], text: String ) -> [ FITSImageProperty ]
+    public nonisolated static func filter( properties: [ FITSImageProperty ], text: String ) -> [ FITSImageProperty ]
     {
         if text.isEmpty
         {
@@ -109,6 +153,29 @@ public struct InfoView: View
                 $0.localizedCaseInsensitiveContains( text )
             }
         }
+    }
+
+    /// Builds the keyword-count summary text.
+    ///
+    /// When nothing is filtered out (`shown == total`) it reads as a plain total
+    /// (e.g. `"142 keywords"`); while a search is narrowing the list it reads as
+    /// the shown-of-total form (e.g. `"12 of 142 keywords"`). The noun is
+    /// pluralized on the total in both forms.
+    ///
+    /// - Parameters:
+    ///   - shown: The number of keywords currently visible.
+    ///   - total: The number of keywords in the section.
+    /// - Returns: The summary string.
+    public nonisolated static func countLabel( shown: Int, total: Int ) -> String
+    {
+        let noun = total == 1 ? "keyword" : "keywords"
+
+        if shown == total
+        {
+            return "\( total ) \( noun )"
+        }
+
+        return "\( shown ) of \( total ) \( noun )"
     }
 
     /// The export menu: a format choice per scope. The displayed-section options

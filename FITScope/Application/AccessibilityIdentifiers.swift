@@ -421,6 +421,9 @@ public enum AccessibilityIdentifier
         /// The keyword search field.
         public static let searchField = "InfoView.searchField"
 
+        /// The keyword-count summary shown in the bottom bar.
+        public static let keywordCount = "InfoView.keywordCount"
+
         /// The section picker.
         public static let sectionPicker = "InfoView.sectionPicker"
 
