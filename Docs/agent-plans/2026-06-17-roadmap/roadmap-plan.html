@@ -209,11 +209,11 @@
 
   <section class="block intro">
     <h2 class="phase">Overview</h2>
-    <p class="lead">This plan converts the roadmap into <strong>~60 milestones</strong> across 8 phases. Each milestone is scoped to a single, self-contained pull request / commit, with explicit files, submodule impact, tests, acceptance criteria, and a suggested commit message. Phases follow the roadmap's stated ordering: <em>issues before features, optimization last</em>, and tests first.</p>
+    <p class="lead">This plan converts the roadmap into milestones across 7 phases. Each milestone is scoped to a single, self-contained pull request / commit, with explicit files, submodule impact, tests, acceptance criteria, and a suggested commit message. Phases follow the roadmap's stated ordering: <em>issues before features</em>, and tests first.</p>
 
     <h2 class="phase" style="margin-top:34px;">Notes</h2>
     <div class="grid-meta">
-      <div class="meta-card"><h4>Coverage</h4><p>Entire roadmap (§1–§5), fully detailed.</p></div>
+      <div class="meta-card"><h4>Coverage</h4><p>Entire roadmap (§1–§3), fully detailed.</p></div>
       <div class="meta-card"><h4>UI tests</h4><p>Lightweight smoke suite + accessibility-ID / launch-fixture test hooks.</p></div>
       <div class="meta-card"><h4>Astro code</h4><p>New dedicated submodule (created manually by the maintainer before implementation).</p></div>
       <div class="meta-card"><h4>API features</h4><p>Preferences + Keychain key storage built first; network features as full milestones.</p></div>
@@ -1939,7 +1939,7 @@
 
   <!-- ============================ PHASE 6 ============================ -->
   <section class="block">
-    <h2 class="phase"><span class="pid">Phase 6</span> — Miscellaneous <span style="font-size:13px;color:var(--muted)">(Roadmap §3.4, §4)</span></h2>
+    <h2 class="phase"><span class="pid">Phase 6</span> — Miscellaneous <span style="font-size:13px;color:var(--muted)">(Roadmap §3.4)</span></h2>
     <p class="phase-note">Polish and project hygiene.</p>
 
     <details class="ms" id="M6.1">
@@ -1990,53 +1990,6 @@
       </div>
     </details>
 
-    <details class="ms" id="M6.3">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M6.3</span><span class="ms-title">Improve the README</span><span class="ms-badges"></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
-      <div class="ms-body">
-        <h5>Goal</h5><p>Make the README more commercial with screenshot placeholders.</p>
-        <h5>Scope / changes</h5><ul><li>Rewrite intro/feature highlights; add screenshot placeholder sections; keep build/licensing info.</li></ul>
-        <h5>Key files</h5><ul><li><span class="file">README.md</span></li></ul>
-        <h5>Tests</h5><ul><li>N/A.</li></ul>
-        <h5>Acceptance</h5><ul><li>README reads as a product page with screenshot slots.</li></ul>
-        <h5>Commit</h5><span class="commit">docs: make the readme more commercial with screenshot placeholders</span>
-      </div>
-    </details>
-  </section>
-
-  <!-- ============================ PHASE 7 ============================ -->
-  <section class="block">
-    <h2 class="phase"><span class="pid">Phase 7</span> — Optimization <span style="font-size:13px;color:var(--muted)">(Roadmap §5)</span></h2>
-    <p class="phase-note">Done last, once everything else is stable. Both milestones live in SwiftPixel.</p>
-
-    <details class="ms" id="M7.1">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M7.1</span><span class="ms-title">SwiftPixel algorithm review</span><span class="ms-badges"><span class="badge b-eval">Evaluation</span><span class="badge b-swiftpixel">SwiftPixel</span></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
-      <div class="ms-body">
-        <h5>Goal</h5><p>Review every SwiftPixel algorithm: verify correctness, propose better implementations/algorithms, flag any that don't make sense.</p>
-        <h5>Scope / changes</h5>
-        <ul><li><span class="badge b-eval">Evaluation</span> Written audit per processor (stretch, gamma, invert, normalize, scale, debayer bilinear/VNG, mono→RGB, white balance, histogram) + correctness checks against references; recommend changes as follow-up milestones.</li></ul>
-        <h5>Key files</h5><ul><li>Audit doc referencing <span class="file">Submodules/SwiftPixel/SwiftPixel/Processors/*</span>, <span class="file">Histogram.swift</span></li></ul>
-        <h5>Tests</h5><ul><li>Where bugs are found, add failing tests first (TDD) before the fix milestone.</li></ul>
-        <h5>Acceptance</h5><ul><li>An audit with a prioritized list of correctness/quality changes.</li></ul>
-        <h5>Commit</h5><span class="commit">docs: audit swiftpixel algorithms</span>
-      </div>
-    </details>
-
-    <details class="ms" id="M7.2">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M7.2</span><span class="ms-title">Metal acceleration for SwiftPixel</span><span class="ms-badges"><span class="badge b-swiftpixel">SwiftPixel</span></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
-      <div class="ms-body">
-        <h5>Goal</h5><p>Accelerate the hot processors with Metal kernels (currently pure CPU/Accelerate).</p>
-        <h5>Scope / changes</h5>
-        <ul>
-          <li><span class="badge b-swiftpixel">SwiftPixel</span> Introduce a Metal path (kernels + a GPU buffer bridge) for the most expensive stages (e.g. debayer VNG, stretch, white balance), with a CPU fallback when Metal is unavailable.</li>
-          <li>Best split into a small sub-series: GPU scaffolding/fallback first, then one processor per follow-up commit.</li>
-        </ul>
-        <h5>Key files</h5><ul><li><span class="file">Submodules/SwiftPixel/SwiftPixel/</span> (new Metal sources + kernels), <span class="file">PixelPipeline.swift</span></li></ul>
-        <h5>Tests</h5><ul><li>GPU vs CPU output parity within tolerance for each ported processor.</li></ul>
-        <h5>Acceptance</h5><ul><li>Measurable speedup on large images with identical (within tolerance) output; clean CPU fallback.</li></ul>
-        <h5>Dependencies</h5><p class="dep">After M7.1; sequenced last.</p>
-        <h5>Commit</h5><span class="commit">perf: accelerate swiftpixel processors with metal kernels</span>
-      </div>
-    </details>
   </section>
 
   <!-- ============================ APPENDIX ============================ -->
@@ -2044,7 +1997,7 @@
     <h2 class="phase">Appendix — Submodule impact &amp; open sign-offs</h2>
     <table class="keys">
       <tr><th>Submodule</th><th>Status</th><th>Milestones</th></tr>
-      <tr><td>SwiftPixel</td><td>Approved for processing &amp; histogram work</td><td>M1.8, M3.1–M3.6, M7.1, M7.2</td></tr>
+      <tr><td>SwiftPixel</td><td>Approved for processing &amp; histogram work</td><td>M1.8, M3.1–M3.6</td></tr>
       <tr><td>Astro (new)</td><td>Created manually by maintainer before implementation</td><td>M5.1 (+ overlays/metrics that consume it)</td></tr>
       <tr><td>SwiftFITS</td><td>No changes planned; any need surfaced during evaluation requires sign-off</td><td>M4.8 (possible), M4.9 (possible)</td></tr>
       <tr><td>SwiftUtilities</td><td>Used as-is (GitHubUpdater)</td><td>M6.2</td></tr>
@@ -2058,7 +2011,7 @@
       </table>
     </div>
     <div class="callout">
-      <strong>Suggested execution order.</strong> Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7. Within Phase 5, do M5.0 first; network features (M5.7, M5.15, M5.16, M5.17) require Phase 2 to be complete.
+      <strong>Suggested execution order.</strong> Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6. Within Phase 5, do M5.0 first; network features (M5.7, M5.15, M5.16, M5.17) require Phase 2 to be complete.
     </div>
   </section>
 
