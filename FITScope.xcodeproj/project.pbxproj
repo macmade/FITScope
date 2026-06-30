@@ -89,7 +89,6 @@
 		05DC79A92DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits in Resources */ = {isa = PBXBuildFile; fileRef = 05DC79A82DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits */; };
 		05FB0B02000000000000FB02 /* BannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB0B01000000000000FB01 /* BannerView.swift */; };
 		05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A0E1 /* AppModelTests.swift */; };
-		D6356B42DB94E8CAD3027923 /* AppUpdaterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */; };
 		05FB1000000000000000B002 /* FITSTestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A002 /* FITSTestData.swift */; };
 		05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A003 /* ImageProcessorTests.swift */; };
 		05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A004 /* FITSImageRendererTests.swift */; };
@@ -102,6 +101,8 @@
 		05FB1000000000000000B00B /* FITSImageLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A00B /* FITSImageLoaderTests.swift */; };
 		05FB1000000000000000B00C /* SliderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A00C /* SliderTests.swift */; };
 		05FB1000000000000000B00D /* PreviewHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A00D /* PreviewHelperTests.swift */; };
+		05FB1000000000000000C202 /* InfoViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000C201 /* InfoViewTests.swift */; };
+		05FB1000000000000000C204 /* InfoViewTableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000C203 /* InfoViewTableTests.swift */; };
 		05FB1000000000000000D102 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000D101 /* Preferences.swift */; };
 		05FB1000000000000000D202 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000D201 /* PreferencesView.swift */; };
 		05FB1000000000000000D302 /* PreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000D301 /* PreferencesTests.swift */; };
@@ -132,7 +133,6 @@
 		0AC10000000000000000F005 /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F004 /* UITestSupport.swift */; };
 		0B8F6AE680E1526BC19F3E4A /* StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0750384B9B00F3AF15C9AFC /* StatusBarView.swift */; };
 		0DCE0490AEA79DFE7A0171AE /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77051EA6E847507556D8B2B0 /* AppModel.swift */; };
-		E7B81EF94F4D952CFB809D7A /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1BE1B06CB1ADF17E538E40 /* AppUpdater.swift */; };
 		0E5DD39F0AAB39B1610489D5 /* DebayerModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00D623443776E3C8CE7D5534 /* DebayerModeTests.swift */; };
 		11439DEF8CB5862DC678A28E /* InspectorColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D7E39AB2783ACE444D01AA1 /* InspectorColumnView.swift */; };
 		12D1CA8C4330A87062BA764E /* StarDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002C1D9E4346F9D0ADBFF793 /* StarDetectionTests.swift */; };
@@ -180,8 +180,6 @@
 		6A1572CF23B612DB37F852EC /* CanvasGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D3D9131B43725B5D03FCFA /* CanvasGeometry.swift */; };
 		6AEF32A8FE8675F975E8F5BC /* MoonPhaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A96803DD5818B6BF04A14656 /* MoonPhaseTests.swift */; };
 		6C479C2FA028C5ADED59EDBA /* LocationInfoViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3079567CE7B6AC8339AA61C2 /* LocationInfoViewTests.swift */; };
-		05FB1000000000000000C202 /* InfoViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000C201 /* InfoViewTests.swift */; };
-		05FB1000000000000000C204 /* InfoViewTableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000C203 /* InfoViewTableTests.swift */; };
 		6EF419627CCE3666D397E62D /* AstrometryClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DF5F41CCB06024918FD83D1 /* AstrometryClientTests.swift */; };
 		71A010338BF16A00B98556CB /* OpenMeteoClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FD59DBA32F275D80213F313 /* OpenMeteoClient.swift */; };
 		73471F6671C722655FD0059F /* CanvasCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88704186886B49150B293572 /* CanvasCommand.swift */; };
@@ -224,6 +222,7 @@
 		CE312491C00DF749AC73C4B0 /* ReticleOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EC3FF3263CBF035678ABD2E /* ReticleOverlay.swift */; };
 		CF406BDBF61CFF66E429EF84 /* ImageCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D60429E4049D1D16B5EBDE /* ImageCommands.swift */; };
 		D3894C950C0D9EBDB32183D3 /* OpenMeteoTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557C23367A8D2C87E82A3696 /* OpenMeteoTestSupport.swift */; };
+		D6356B42DB94E8CAD3027923 /* AppUpdaterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */; };
 		D770733A040513E32E810C9D /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
 		D7759AC4A9EEF7D16F0DEAE0 /* PlateSolveResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9478E5443F0419FE8102A162 /* PlateSolveResultView.swift */; };
 		DAE7CCB9CC877AD2ECC8C933 /* CanvasGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CDEBA7E46E766BCABAF5462 /* CanvasGeometryTests.swift */; };
@@ -234,6 +233,7 @@
 		E424449E15EC66BDD94C2CB4 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B9C0D4280A594EAC752F3F4 /* FlowLayout.swift */; };
 		E770176E5321635244B36577 /* OpenMeteoResponses.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4348EFC31827F94E1D002E5 /* OpenMeteoResponses.swift */; };
 		E79B56F2683FA70FC52D6AFA /* InspectorSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0378BAF85DE48F0D74A2DFCC /* InspectorSectionView.swift */; };
+		E7B81EF94F4D952CFB809D7A /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1BE1B06CB1ADF17E538E40 /* AppUpdater.swift */; };
 		EDA8C3FD25FFC3542CACB017 /* FITSMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59AF90C07BCB7472F4490908 /* FITSMetadata.swift */; };
 		FA14C3E0E2CE2FF26A71FF1B /* HistogramViewOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9BD5E1A3FC040B4E14E8824 /* HistogramViewOptions.swift */; };
 		FB5814672B1E4C298DB21E2A /* ViewCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1805AA8818E2418AA78360ED /* ViewCommands.swift */; };
@@ -463,7 +463,8 @@
 		05FB1000000000000000A00C /* SliderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A00D /* PreviewHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewHelperTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A0E1 /* AppModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
-		AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUpdaterTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000C201 /* InfoViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InfoViewTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000C203 /* InfoViewTableTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InfoViewTableTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000D101 /* Preferences.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		05FB1000000000000000D201 /* PreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		05FB1000000000000000D301 /* PreferencesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreferencesTests.swift; sourceTree = "<group>"; };
@@ -511,12 +512,11 @@
 		209B69186583B9C65F810C23 /* HistogramMode.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramMode.swift; sourceTree = "<group>"; };
 		22D6641B378926115E450672 /* WindowContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowContent.swift; sourceTree = "<group>"; };
 		276C7888FA0EFF9C2F111112 /* HeaderExportTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeaderExportTests.swift; sourceTree = "<group>"; };
+		2D1BE1B06CB1ADF17E538E40 /* AppUpdater.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		2DC192E7780C67C2D23EFA7B /* ScaleBarOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaleBarOverlayTests.swift; sourceTree = "<group>"; };
 		2DF5F41CCB06024918FD83D1 /* AstrometryClientTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AstrometryClientTests.swift; sourceTree = "<group>"; };
 		2FD59DBA32F275D80213F313 /* OpenMeteoClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoClient.swift; sourceTree = "<group>"; };
 		3079567CE7B6AC8339AA61C2 /* LocationInfoViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LocationInfoViewTests.swift; sourceTree = "<group>"; };
-		05FB1000000000000000C201 /* InfoViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InfoViewTests.swift; sourceTree = "<group>"; };
-		05FB1000000000000000C203 /* InfoViewTableTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InfoViewTableTests.swift; sourceTree = "<group>"; };
 		37A6023D1148AA3BC889366A /* WeatherConditionsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeatherConditionsTests.swift; sourceTree = "<group>"; };
 		3B9C0D4280A594EAC752F3F4 /* FlowLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
 		3BEAE300CD214042135F55D9 /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -543,7 +543,6 @@
 		641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CursorReadoutTests.swift; sourceTree = "<group>"; };
 		6EC3FF3263CBF035678ABD2E /* ReticleOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReticleOverlay.swift; sourceTree = "<group>"; };
 		77051EA6E847507556D8B2B0 /* AppModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
-		2D1BE1B06CB1ADF17E538E40 /* AppUpdater.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		799F647F7C536FA5329F2F55 /* NorthOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NorthOverlayTests.swift; sourceTree = "<group>"; };
 		7C686F7A99DA48AB69336E13 /* StatisticsFormat.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatisticsFormat.swift; sourceTree = "<group>"; };
 		8344C5B19AE3FABC172CB8B1 /* EquatorialGridOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EquatorialGridOverlay.swift; sourceTree = "<group>"; };
@@ -565,6 +564,7 @@
 		A660D5D46BE16501558BFAEB /* LocationMapRepresentable.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LocationMapRepresentable.swift; sourceTree = "<group>"; };
 		A8D5C2CDF6BE5D61F992E63B /* FITSMetadataTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FITSMetadataTests.swift; sourceTree = "<group>"; };
 		A96803DD5818B6BF04A14656 /* MoonPhaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseTests.swift; sourceTree = "<group>"; };
+		AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUpdaterTests.swift; sourceTree = "<group>"; };
 		AFBDAF375886651EAEF634B1 /* DropAcceptanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DropAcceptanceTests.swift; sourceTree = "<group>"; };
 		B2073F9F5E1312BB0D0FDA63 /* KeychainStoring.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeychainStoring.swift; sourceTree = "<group>"; };
 		B7D60429E4049D1D16B5EBDE /* ImageCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCommands.swift; sourceTree = "<group>"; };
@@ -1101,15 +1101,6 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		05FB1000000000000000C200 /* Information */ = {
-			isa = PBXGroup;
-			children = (
-				05FB1000000000000000C201 /* InfoViewTests.swift */,
-				05FB1000000000000000C203 /* InfoViewTableTests.swift */,
-			);
-			path = Information;
-			sourceTree = "<group>";
-		};
 		05FB1000000000000000C005 /* ImageControls */ = {
 			isa = PBXGroup;
 			children = (
@@ -1121,6 +1112,15 @@
 				0752B6126A583839BB8F8BEF /* StatisticsFormatTests.swift */,
 			);
 			path = ImageControls;
+			sourceTree = "<group>";
+		};
+		05FB1000000000000000C200 /* Information */ = {
+			isa = PBXGroup;
+			children = (
+				05FB1000000000000000C201 /* InfoViewTests.swift */,
+				05FB1000000000000000C203 /* InfoViewTableTests.swift */,
+			);
+			path = Information;
 			sourceTree = "<group>";
 		};
 		05FB1000000000000000D001 /* Helpers */ = {
@@ -1177,7 +1177,6 @@
 				0606C4BF587DBB4AD119358A /* PlateSolveCalibrationView.swift */,
 				DC1CD2FCA750D764101AF3BE /* PlateSolveObjectsView.swift */,
 			);
-			name = PlateSolve;
 			path = PlateSolve;
 			sourceTree = "<group>";
 		};
@@ -1214,7 +1213,6 @@
 				557C23367A8D2C87E82A3696 /* OpenMeteoTestSupport.swift */,
 				C9BFF85ED213EDE5AA875A74 /* OpenMeteoClientTests.swift */,
 			);
-			name = Network;
 			path = Network;
 			sourceTree = "<group>";
 		};
@@ -1325,7 +1323,6 @@
 				3079567CE7B6AC8339AA61C2 /* LocationInfoViewTests.swift */,
 				8AE099AFB1D8E2318FF1E09B /* MoonPhaseDiscTests.swift */,
 			);
-			name = Sidebar;
 			path = Sidebar;
 			sourceTree = "<group>";
 		};
@@ -1355,7 +1352,6 @@
 				F4348EFC31827F94E1D002E5 /* OpenMeteoResponses.swift */,
 				2FD59DBA32F275D80213F313 /* OpenMeteoClient.swift */,
 			);
-			name = Network;
 			path = Network;
 			sourceTree = "<group>";
 		};
@@ -1490,6 +1486,7 @@
 				05B189C22FEAE7930056553A /* Sources */,
 				05B189C32FEAE7930056553A /* Frameworks */,
 				05B189C42FEAE7930056553A /* Resources */,
+				052104512FF3ACFD0089C911 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -1642,6 +1639,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		052104512FF3ACFD0089C911 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Set the bundle version (CFBundleVersion) to the number of commits in the repository.\n\nif ! command -v git >/dev/null 2>&1 ; then\n    echo \"warning: git not found; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\ncount=$(git -C \"$SRCROOT\" rev-list --count HEAD 2>/dev/null)\n\nif [ -z \"$count\" ] ; then\n    echo \"warning: not a git repository; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\nplist=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\n\nif [ ! -f \"$plist\" ] ; then\n    echo \"warning: $plist not found; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $count\" \"$plist\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string $count\" \"$plist\"\n\necho \"Set CFBundleVersion to $count\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		053BEA9E2DDDDDA800EF0C79 /* Sources */ = {
