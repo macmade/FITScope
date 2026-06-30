@@ -93,6 +93,11 @@ public struct FITScopeApp: App
                 {
                     Text( "About \( Bundle.main.title )..." )
                 }
+
+                Button( "Check for Updates\u{2026}" )
+                {
+                    AppUpdater().checkForUpdates()
+                }
             }
 
             CommandGroup( after: CommandGroupPlacement.sidebar )

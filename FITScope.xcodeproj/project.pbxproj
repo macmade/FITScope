@@ -89,6 +89,7 @@
 		05DC79A92DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits in Resources */ = {isa = PBXBuildFile; fileRef = 05DC79A82DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits */; };
 		05FB0B02000000000000FB02 /* BannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB0B01000000000000FB01 /* BannerView.swift */; };
 		05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A0E1 /* AppModelTests.swift */; };
+		D6356B42DB94E8CAD3027923 /* AppUpdaterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */; };
 		05FB1000000000000000B002 /* FITSTestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A002 /* FITSTestData.swift */; };
 		05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A003 /* ImageProcessorTests.swift */; };
 		05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A004 /* FITSImageRendererTests.swift */; };
@@ -131,6 +132,7 @@
 		0AC10000000000000000F005 /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F004 /* UITestSupport.swift */; };
 		0B8F6AE680E1526BC19F3E4A /* StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0750384B9B00F3AF15C9AFC /* StatusBarView.swift */; };
 		0DCE0490AEA79DFE7A0171AE /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77051EA6E847507556D8B2B0 /* AppModel.swift */; };
+		E7B81EF94F4D952CFB809D7A /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1BE1B06CB1ADF17E538E40 /* AppUpdater.swift */; };
 		0E5DD39F0AAB39B1610489D5 /* DebayerModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00D623443776E3C8CE7D5534 /* DebayerModeTests.swift */; };
 		11439DEF8CB5862DC678A28E /* InspectorColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D7E39AB2783ACE444D01AA1 /* InspectorColumnView.swift */; };
 		12D1CA8C4330A87062BA764E /* StarDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002C1D9E4346F9D0ADBFF793 /* StarDetectionTests.swift */; };
@@ -461,6 +463,7 @@
 		05FB1000000000000000A00C /* SliderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A00D /* PreviewHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewHelperTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A0E1 /* AppModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
+		AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUpdaterTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000D101 /* Preferences.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		05FB1000000000000000D201 /* PreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		05FB1000000000000000D301 /* PreferencesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreferencesTests.swift; sourceTree = "<group>"; };
@@ -540,6 +543,7 @@
 		641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CursorReadoutTests.swift; sourceTree = "<group>"; };
 		6EC3FF3263CBF035678ABD2E /* ReticleOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReticleOverlay.swift; sourceTree = "<group>"; };
 		77051EA6E847507556D8B2B0 /* AppModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		2D1BE1B06CB1ADF17E538E40 /* AppUpdater.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		799F647F7C536FA5329F2F55 /* NorthOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NorthOverlayTests.swift; sourceTree = "<group>"; };
 		7C686F7A99DA48AB69336E13 /* StatisticsFormat.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatisticsFormat.swift; sourceTree = "<group>"; };
 		8344C5B19AE3FABC172CB8B1 /* EquatorialGridOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EquatorialGridOverlay.swift; sourceTree = "<group>"; };
@@ -1013,6 +1017,7 @@
 				05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */,
 				DF3765F1937F36620A92317F /* MainWindowView.swift */,
 				77051EA6E847507556D8B2B0 /* AppModel.swift */,
+				2D1BE1B06CB1ADF17E538E40 /* AppUpdater.swift */,
 				3BEAE300CD214042135F55D9 /* AppDelegate.swift */,
 				0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */,
 				22D6641B378926115E450672 /* WindowContent.swift */,
@@ -1249,6 +1254,7 @@
 			isa = PBXGroup;
 			children = (
 				05FB1000000000000000A0E1 /* AppModelTests.swift */,
+				AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */,
 			);
 			path = Application;
 			sourceTree = "<group>";
@@ -1730,6 +1736,7 @@
 				05FB1000000000000000F102 /* InfoField.swift in Sources */,
 				B3478104EBCB8EB1B9C44998 /* ImageInfoPanelView.swift in Sources */,
 				0DCE0490AEA79DFE7A0171AE /* AppModel.swift in Sources */,
+				E7B81EF94F4D952CFB809D7A /* AppUpdater.swift in Sources */,
 				2D8702C0C4F8BCD0EB3272DA /* AppDelegate.swift in Sources */,
 				0AC10000000000000000F002 /* AccessibilityIdentifiers.swift in Sources */,
 				FB5814672B1E4C298DB21E2A /* ViewCommands.swift in Sources */,
@@ -1813,6 +1820,7 @@
 				1B8A22E86CD946413A1C30D9 /* OpenFileTests.swift in Sources */,
 				52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */,
 				05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */,
+				D6356B42DB94E8CAD3027923 /* AppUpdaterTests.swift in Sources */,
 				05FB1000000000000000D302 /* PreferencesTests.swift in Sources */,
 				05FB1000000000000000E202 /* APIKeyStoreTests.swift in Sources */,
 				1ED9E2EDDC7585655A55E63C /* PixelValueTests.swift in Sources */,

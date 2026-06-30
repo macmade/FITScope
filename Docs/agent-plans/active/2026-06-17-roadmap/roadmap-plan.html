@@ -1979,7 +1979,7 @@
     </details>
 
     <details class="ms" id="M6.2">
-      <summary><input type="checkbox" class="ms-check"><span class="ms-id">M6.2</span><span class="ms-title">Check for Updates (GitHubUpdater)</span><span class="ms-badges"></span><span class="ms-status status-todo">Not started</span><span class="chev">▸</span></summary>
+      <summary><input type="checkbox" class="ms-check" checked><span class="ms-id">M6.2</span><span class="ms-title">Check for Updates (GitHubUpdater)</span><span class="ms-badges"></span><span class="ms-status status-done">Completed &middot; 2026-06-30</span><span class="chev">▸</span></summary>
       <div class="ms-body">
         <h5>Goal</h5><p>Add a "Check for Updates" menu item using <code>GitHubUpdater</code> from SwiftUtilities.</p>
         <h5>Scope / changes</h5><ul><li>Wire the existing updater (already available transitively via SwiftPixel's SwiftUtilities) into a menu command; configure the repo.</li></ul>
@@ -1987,6 +1987,21 @@
         <h5>Tests</h5><ul><li>Manual; verify the menu action triggers the updater.</li></ul>
         <h5>Acceptance</h5><ul><li>Menu item checks GitHub releases and prompts appropriately.</li></ul>
         <h5>Commit</h5><span class="commit">feat: add check for updates via githubupdater</span>
+        <div class="callout"><strong>Review comments.</strong>
+          <ul>
+            <li><strong>Also check for updates in the background after launch, 5&nbsp;seconds in.</strong> In addition to the manual menu item, run a silent update check shortly after the app finishes launching (a 5-second delay), surfacing an alert only when a newer version is available.</li>
+          </ul>
+        </div>
+        <div class="callout"><strong>Implementation notes — implemented &amp; verified here (unit tests + build); the live menu action and alerts need the maintainer's eyes (GUI not visible here).</strong>
+          <ul>
+            <li><strong>Thin coordinator.</strong> New <code>FITScope/Application/AppUpdater.swift</code> — a small <code>struct AppUpdater</code> that wraps SwiftUtilities' <code>GitHubUpdater</code>. It carries an <code>owner</code>/<code>repository</code> pair, defaulting to <code>AppUpdater.defaultOwner</code> (<code>"macmade"</code>) / <code>AppUpdater.defaultRepository</code> (<code>"FITScope"</code>) — taken from the <code>origin</code> remote <code>github.com/macmade/FITScope</code>. <code>makeUpdater()</code> builds the (failable) <code>GitHubUpdater</code>; the <code>@MainActor checkForUpdates()</code> calls its AppKit <code>checkForUpdates()</code>, which runs the check off-main and presents a modal alert for <em>every</em> outcome (up-to-date, update available, failure). One type per file; explicit init with defaults is the DI seam for tests.</li>
+            <li><strong>Menu wiring.</strong> A <em>Check for Updates…</em> <code>Button</code> was added to <code>FITScopeApp.swift</code> in the existing <code>CommandGroup( replacing: .appInfo )</code>, directly under the custom <em>About</em> item — the conventional macOS app-menu placement. Its action is <code>AppUpdater().checkForUpdates()</code>. No accessibility identifier: menu commands in this project carry none (matching the histogram view-options menu items, which tests drive by title), and this milestone's tests are manual.</li>
+            <li><strong>TDD.</strong> 3 <code>AppUpdaterTests</code> written first (red — <code>AppUpdater</code> didn't exist): defaults are <code>macmade</code>/<code>FITScope</code>; a custom owner/repository propagates to the built <code>GitHubUpdater</code> and yields <code>https://api.github.com/repos/octocat/Hello-World/releases?per_page=100</code>; the default updater targets <code>…/repos/macmade/FITScope/releases?per_page=100</code>. The tests assert the repository wiring (the only app-owned logic) — the release-checking/version-comparison/alert behaviour is already covered by SwiftUtilities' own suite.</li>
+            <li><strong>Project wiring.</strong> Both new files were added to <code>project.pbxproj</code> by scripted edits (the project uses explicit file references, not synchronized groups): <code>AppUpdater.swift</code> into the app target's <em>Application</em> group + Sources phase, <code>AppUpdaterTests.swift</code> into the test target's <em>Application</em> group + Sources phase. <code>plutil -lint</code> clean.</li>
+            <li><strong>Automatic background check after launch (review fix).</strong> Per the maintainer, the app now also checks for updates on its own shortly after launch. <code>AppUpdater</code> gained an <code>@MainActor checkForUpdatesInBackground()</code> that delegates to <code>GitHubUpdater/checkForUpdatesInBackground()</code> — a <em>silent</em> check that alerts only when a newer version is available (no "up-to-date"/error nag on every run). <code>AppDelegate.applicationDidFinishLaunching</code> schedules it via <code>DispatchQueue.main.asyncAfter</code> with a named <code>backgroundUpdateCheckDelay</code> constant (<strong>5 s</strong>), placed <em>after</em> the existing <code>isRunningTests</code> guard so unit/UI-test runs never fire a network check. The 5-second delay keeps the check off the critical launch path so it never competes with presenting the first window. See Review comments.</li>
+            <li><strong>Verified here:</strong> the full <code>FITScopeTests</code> suite is <strong>367/367</strong> (364 prior + 3 new) via <code>xcodebuild</code>, and the full FITScope scheme <strong>builds</strong> (app + both QuickLook extensions). The menu item, the automatic launch-time check, the network round-trip to GitHub, and the resulting alerts are left for the maintainer to exercise — the GUI is not visible here.</li>
+          </ul>
+        </div>
       </div>
     </details>
 

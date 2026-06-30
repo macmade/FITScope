@@ -50,6 +50,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
     /// is not presented on top of a window that is opening.
     private var didOpenFilesAtLaunch = false
 
+    /// How long after launch the automatic, silent update check runs, in
+    /// seconds. The short delay keeps the check off the critical launch path so
+    /// it never competes with presenting the first window.
+    private static let backgroundUpdateCheckDelay: TimeInterval = 5
+
     /// Builds the preferences store.
     ///
     /// Under ``isolatedPreferencesArgument`` (set by the UI-test launcher) the
@@ -94,6 +99,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
         else
         {
             return
+        }
+
+        DispatchQueue.main.asyncAfter( deadline: .now() + Self.backgroundUpdateCheckDelay )
+        {
+            AppUpdater().checkForUpdatesInBackground()
         }
 
         DispatchQueue.main.async
