@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Improvements</title>
+    <title>New Features</title>
     <style>
         :root {
             --bg:        #0f1117;
@@ -129,62 +129,51 @@
 <body>
     <div class="container">
         <header>
-            <h1>Improvements</h1>
-            <div class="meta">Generated &mdash; 2026-06-29</div>
+            <h1>New Features</h1>
+            <div class="meta">Generated &mdash; 2026-06-30</div>
         </header>
 
         <p class="overview">
-            A working list of improvements for FITScope, the macOS FITS image viewer.
-            The points span the rendering pipeline, the inspector's image-processing
-            controls, the information panels, and new image-adjustment features.
+            New features planned for FITScope, the macOS FITS image viewer.
+            These span additional image-processing adjustments, an offline
+            plate-solving path, and the integration of several standalone
+            astrophotography tools into FITScope.
         </p>
 
         <h2>Roadmap</h2>
 
         <ol class="roadmap">
             <li>
-                <h3>Prioritize selected file for rendering</h3>
-                <p>When a file is selected, give it priority in the rendering pipeline so the image the user is looking at is processed first.</p>
+                <h3>Denoise</h3>
+                <p>Add a denoise image-processing adjustment.</p>
             </li>
             <li>
-                <h3>Visible planets in info view (letters)</h3>
-                <p>Show which planets are visible in the information view, identified by their letters.</p>
+                <h3>Sharpen</h3>
+                <p>Add a sharpen image-processing adjustment.</p>
             </li>
             <li>
-                <h3>Sunsets and sunrises (civil, nautical, astronomical)</h3>
-                <p>Display sunrise and sunset times, including the civil, nautical, and astronomical twilight phases.</p>
+                <h3>Local plate solving with GAIA data</h3>
+                <p>Add an offline plate-solving path backed by a GAIA-derived star catalog that can be downloaded from Preferences. When the catalog is installed, solve locally against it; when it is not, keep using nova.astrometry.net as today. If the local GAIA solve fails, fall back to nova as well.</p>
             </li>
             <li>
-                <h3>Reset on inspector controls (cross button?)</h3>
-                <p>Add a way to reset individual inspector controls to their default value &mdash; possibly via a small clear/cross button on each control.</p>
+                <h3>Include AstroTools</h3>
+                <p>Bring the astrophotography computation tools from the standalone <a href="https://github.com/macmade/AstroTools">AstroTools</a> app &mdash; HFR to arc seconds, exposure-time equivalence, magnification, and similar calculations &mdash; into FITScope as an extra tool/window.</p>
             </li>
             <li>
-                <h3>&ldquo;Open in&rdquo; menu (original and processed)</h3>
-                <p>Add an &ldquo;Open With&rdquo; menu to open the image in an external application, for both the original FITS file and the processed/rendered image.</p>
+                <h3>Include GroupPictures</h3>
+                <p>Import the standalone <a href="https://github.com/macmade/GroupPictures">GroupPictures</a> app to organize pictures on the filesystem, grouping them by date, exposure, ISO, or other keywords, as a separate tool/window.</p>
             </li>
             <li>
-                <h3>Window toolbar?</h3>
-                <p>Investigate whether it is worth adding a proper window toolbar to surface some of the controls.</p>
+                <h3>Include MovieGenerator</h3>
+                <p>Import the standalone <a href="https://github.com/macmade/MovieGenerator">MovieGenerator</a> app to generate timelapses and movies from sequences of still images, as a separate tool/window.</p>
             </li>
             <li>
-                <h3>Add hue to saturation</h3>
-                <p>Extend the saturation control with a hue adjustment.</p>
+                <h3>Include PhotoConverter</h3>
+                <p>Import the standalone <a href="https://github.com/macmade/PhotoConverter">PhotoConverter</a> app to batch convert images between formats (PNG, JPEG, TIFF, RAW, &hellip;) inside FITScope, as a separate tool/window.</p>
             </li>
             <li>
-                <h3>Color balance (low, mid, high)</h3>
-                <p>Add a color balance control acting on shadows (low), midtones (mid), and highlights (high).</p>
-            </li>
-            <li>
-                <h3>Before/after slider on image</h3>
-                <p>Add a before/after comparison slider over the image to compare the original and the processed result.</p>
-            </li>
-            <li>
-                <h3>Star detection info presentation</h3>
-                <p>Decide how to present star detection information &mdash; inline/overlay, in the info panel, or in a dedicated section.</p>
-            </li>
-            <li>
-                <h3>Overlay customization in Preferences</h3>
-                <p>Add a Preferences tab for customizing the overlays, letting the user define the color and opacity of each overlay individually.</p>
+                <h3>Include YouplaBoum</h3>
+                <p>Import the standalone <a href="https://github.com/macmade/YouplaBoum">YouplaBoum</a> app for quickly culling and rejecting pictures &mdash; similar to Blink in PixInsight &mdash; as a separate tool/window.</p>
             </li>
         </ol>
 

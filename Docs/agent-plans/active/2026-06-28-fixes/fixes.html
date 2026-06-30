@@ -75,7 +75,7 @@
   <div class="container">
     <header>
       <h1>Fixes</h1>
-      <div class="generated">Generated 2026-06-28 &middot; Updated 2026-06-29</div>
+      <div class="generated">Generated 2026-06-28 &middot; Updated 2026-06-30</div>
     </header>
 
     <p class="overview">
@@ -315,6 +315,18 @@
         <p>
           Persist the main window's size between launches so it reopens at the
           dimensions the user last left it.
+        </p>
+      </li>
+      <li>
+        <h3>Larger default window and sidebar width</h3>
+        <p>
+          Increase the default window size and the default sidebar width in
+          <code>MainWindowView</code> &mdash; the sidebar
+          (<code>.navigationSplitViewColumnWidth( min: 200, ideal: 215, max: 320 )</code>)
+          and the window (<code>.frame( minWidth: 900, minHeight: 600 )</code>) currently
+          open fairly small. While doing so, review the sidebar&rsquo;s min/max column
+          widths and the window&rsquo;s minimum/maximum size so the chosen defaults sit
+          sensibly within the allowed range.
         </p>
       </li>
     </ol>
