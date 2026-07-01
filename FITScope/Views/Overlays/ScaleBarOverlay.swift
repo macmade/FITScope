@@ -80,7 +80,7 @@ public struct ScaleBarOverlay: CanvasOverlay
         ]
 
     /// The colour of the bar and its label.
-    private static let color = Color.white.opacity( 0.9 )
+    private static let color = Color.white.opacity( CanvasOverlayStyle.alpha )
 
     /// The on-screen stroke width.
     private static let lineWidth: CGFloat = 1.5

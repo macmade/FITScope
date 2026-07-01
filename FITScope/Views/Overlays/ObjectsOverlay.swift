@@ -74,7 +74,7 @@ public struct ObjectsOverlay: CanvasOverlay
     }
 
     /// The marker and label colour.
-    private static let color = Color.cyan.opacity( 0.9 )
+    private static let color = Color.cyan.opacity( CanvasOverlayStyle.alpha )
 
     /// The on-screen stroke width, kept constant across zoom.
     private static let lineWidth: CGFloat = 1.5

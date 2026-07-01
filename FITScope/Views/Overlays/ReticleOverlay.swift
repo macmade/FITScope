@@ -50,7 +50,7 @@ public struct ReticleOverlay: CanvasOverlay
 
     /// The reticle colour, shared by the border, crosshair, and rings (the frame's
     /// colour, so the consolidated overlay keeps the familiar frame look).
-    private static let color = Color.yellow.opacity( 0.8 )
+    private static let color = Color.yellow.opacity( CanvasOverlayStyle.alpha )
 
     /// The on-screen stroke width, kept constant across zoom.
     private static let lineWidth: CGFloat = 1

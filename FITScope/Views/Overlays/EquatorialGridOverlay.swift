@@ -212,10 +212,12 @@ public struct EquatorialGridOverlay: CanvasOverlay
     // MARK: - Drawing
 
     /// The grid-line colour — faint, so the grid sits behind the image content.
-    private static let lineColor = Color.white.opacity( 0.28 )
+    /// Uses the shared secondary alpha, keeping the lines de-emphasised beneath the
+    /// brighter labels while tracking the overlays' single source of truth.
+    private static let lineColor = Color.white.opacity( CanvasOverlayStyle.secondaryAlpha )
 
-    /// The label colour.
-    private static let labelColor = Color.white.opacity( 0.65 )
+    /// The label colour, at the shared overlay alpha.
+    private static let labelColor = Color.white.opacity( CanvasOverlayStyle.alpha )
 
     /// The on-screen stroke width, kept constant across zoom.
     private static let lineWidth: CGFloat = 0.75

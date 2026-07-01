@@ -202,7 +202,7 @@ public struct NorthOverlay: CanvasOverlay
     // MARK: - Drawing
 
     /// The compass colour.
-    private static let color = Color.white.opacity( 0.9 )
+    private static let color = Color.white.opacity( CanvasOverlayStyle.alpha )
 
     /// The on-screen stroke width.
     private static let lineWidth: CGFloat = 1.5

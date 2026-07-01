@@ -98,7 +98,7 @@ public struct StarsOverlay: CanvasOverlay
     }
 
     /// The marker colour.
-    private static let color = Color.green.opacity( 0.9 )
+    private static let color = Color.green.opacity( CanvasOverlayStyle.alpha )
 
     /// The on-screen stroke width, kept constant across zoom.
     private static let lineWidth: CGFloat = 1.5

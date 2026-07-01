@@ -254,7 +254,12 @@
             </ul>
             <p>TDD: added <code>StarsOverlay</code> tests (no warning before detection; warns after a fruitless run; no warning when stars found; no warning while still loading) and a <code>ReticleOverlay</code> test for the protocol default of <code>nil</code>. All 19 tests in the two suites pass; the full app target builds.</p>
           </div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>Instead of tinting the whole icon yellow, add a small warning badge icon on top of the overlay's icon.</li>
+              <li>Position the warning badge at the bottom-right corner of the icon rather than the top-trailing corner.</li>
+            </ul>
+          </div>
         </li>
 
         <li class="milestone">
@@ -278,22 +283,28 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Give overlays a consistent semi-transparent alpha</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Give overlays a consistent semi-transparent alpha</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Apply a sensible, consistent alpha across the canvas overlays so they read as annotations layered over the image rather than sitting heavily on top with hard-coded, mostly opaque colors.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Confirm the full set of overlay implementations (<code>StarsOverlay</code>, <code>ObjectsOverlay</code>, <code>ScaleBarOverlay</code>, and the "frame" overlay — see Notes discrepancy).</li>
-            <li>Decide on a single shared alpha value/convention (ideally centralized so it is not duplicated per overlay).</li>
-            <li>Apply the consistent alpha across all overlays, replacing hard-coded opaque colors.</li>
-            <li>Verify legibility over both bright and dark image regions.</li>
+            <li class="done">Confirm the full set of overlay implementations (<code>StarsOverlay</code>, <code>ObjectsOverlay</code>, <code>ScaleBarOverlay</code>, and the "frame" overlay — see Notes discrepancy).</li>
+            <li class="done">Decide on a single shared alpha value/convention (ideally centralized so it is not duplicated per overlay).</li>
+            <li class="done">Apply the consistent alpha across all overlays, replacing hard-coded opaque colors.</li>
+            <li class="done">Verify legibility over both bright and dark image regions.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-01</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>FrameOverlay discrepancy resolved:</strong> there is no <code>FrameOverlay</code> type; the "frame" the source referred to is <code>ReticleOverlay</code> (it draws the image border + centre crosshair + rings). The full overlay set is Reticle, Stars, Objects, ScaleBar, North, EquatorialGrid.</p>
+            <p>Before: each overlay hard-coded its own alpha — Reticle <code>yellow</code> 0.8; Stars <code>green</code> 0.9; Objects <code>cyan</code> 0.9; ScaleBar / North <code>white</code> 0.9; grid <code>white</code> 0.28 lines / 0.65 labels. The 0.8–0.9 values sat too heavily on the image.</p>
+            <p>Approach (values chosen by maintainer): shared alpha <strong>0.7</strong>; grid stays two-tier with labels at the shared alpha and lines at <code>alpha × 0.4</code> (≈0.28, matching the old faint lines).</p>
             <ul>
-              <li>Instead of tinting the whole icon yellow, add a small warning badge icon on top of the overlay's icon.</li>
-              <li>Position the warning badge at the bottom-right corner of the icon rather than the top-trailing corner.</li>
+              <li>New <code>CanvasOverlayStyle</code> enum (<code>FITScope/Views/Overlays/CanvasOverlayStyle.swift</code>) — single source of truth: <code>alpha = 0.7</code> and <code>secondaryAlpha = alpha × 0.4</code>. Added to the Xcode project (FITScope target) via the <code>xcodeproj</code> gem, since the project uses explicit file references (no synchronized groups).</li>
+              <li>Reticle, Stars, Objects, ScaleBar, North now use <code>Color.…opacity( CanvasOverlayStyle.alpha )</code>.</li>
+              <li>EquatorialGrid: labels → <code>alpha</code>, lines → <code>secondaryAlpha</code>, keeping its faint-lines / brighter-labels hierarchy while tracking the shared constant.</li>
             </ul>
+            <p>TDD: new <code>CanvasOverlayStyleTests</code> (also added to the FITScopeTests target) asserting <code>alpha == 0.7</code>, <code>secondaryAlpha == alpha × 0.4</code>, and <code>secondaryAlpha &lt; alpha</code>. All selected overlay suites pass; the app target builds. (Overlay colours are <code>private static</code>, matching the existing convention of not unit-testing them directly — the shared constant carries the coverage.)</p>
+            <p><strong>Needs a quick visual check</strong> (the plan's last task): confirm legibility over both bright and dark image regions.</p>
           </div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
         </li>
 
       </ol>

@@ -132,6 +132,7 @@
 		0AC10000000000000000F003 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */; };
 		0AC10000000000000000F005 /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F004 /* UITestSupport.swift */; };
 		0B8F6AE680E1526BC19F3E4A /* StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0750384B9B00F3AF15C9AFC /* StatusBarView.swift */; };
+		0CEEF32A7D5262CA32ADE85F /* CanvasOverlayStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F02EA5AA79E7AB973E861807 /* CanvasOverlayStyleTests.swift */; };
 		0DCE0490AEA79DFE7A0171AE /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77051EA6E847507556D8B2B0 /* AppModel.swift */; };
 		0E5DD39F0AAB39B1610489D5 /* DebayerModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00D623443776E3C8CE7D5534 /* DebayerModeTests.swift */; };
 		11439DEF8CB5862DC678A28E /* InspectorColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D7E39AB2783ACE444D01AA1 /* InspectorColumnView.swift */; };
@@ -222,6 +223,7 @@
 		CE312491C00DF749AC73C4B0 /* ReticleOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EC3FF3263CBF035678ABD2E /* ReticleOverlay.swift */; };
 		CF406BDBF61CFF66E429EF84 /* ImageCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D60429E4049D1D16B5EBDE /* ImageCommands.swift */; };
 		D3894C950C0D9EBDB32183D3 /* OpenMeteoTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557C23367A8D2C87E82A3696 /* OpenMeteoTestSupport.swift */; };
+		D41BBF135486BBEF8024EA39 /* CanvasOverlayStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2AB1D6E380EBFBEB8E9F768 /* CanvasOverlayStyle.swift */; };
 		D6356B42DB94E8CAD3027923 /* AppUpdaterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */; };
 		D770733A040513E32E810C9D /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
 		D7759AC4A9EEF7D16F0DEAE0 /* PlateSolveResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9478E5443F0419FE8102A162 /* PlateSolveResultView.swift */; };
@@ -579,6 +581,7 @@
 		C9BD5E1A3FC040B4E14E8824 /* HistogramViewOptions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramViewOptions.swift; sourceTree = "<group>"; };
 		C9BFF85ED213EDE5AA875A74 /* OpenMeteoClientTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoClientTests.swift; sourceTree = "<group>"; };
 		CBC493C1AF9D9DEA5E9D32E5 /* PlateSolveSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveSession.swift; sourceTree = "<group>"; };
+		D2AB1D6E380EBFBEB8E9F768 /* CanvasOverlayStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasOverlayStyle.swift; sourceTree = "<group>"; };
 		D6F768D0B5B05753212F21BA /* ImageInfoPanelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInfoPanelView.swift; sourceTree = "<group>"; };
 		D7BFE397E63A8A20A58F030E /* LocationMapView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LocationMapView.swift; sourceTree = "<group>"; };
 		DA145A75999011CAF0371633 /* PlateSolveHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveHeaderView.swift; sourceTree = "<group>"; };
@@ -590,6 +593,7 @@
 		E0A86A0DF44489494DEF2C5C /* StarDetection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarDetection.swift; sourceTree = "<group>"; };
 		E7410133087261AF83595054 /* ImageInformation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInformation.swift; sourceTree = "<group>"; };
 		EB9DD79B3B4350B42B48B2B2 /* SegmentedControlView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SegmentedControlView.swift; sourceTree = "<group>"; };
+		F02EA5AA79E7AB973E861807 /* CanvasOverlayStyleTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasOverlayStyleTests.swift; sourceTree = "<group>"; };
 		F4348EFC31827F94E1D002E5 /* OpenMeteoResponses.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoResponses.swift; sourceTree = "<group>"; };
 		F5A15B5C28550566FCCF1C81 /* ImageInfoTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInfoTabView.swift; sourceTree = "<group>"; };
 		FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFileTests.swift; sourceTree = "<group>"; };
@@ -1277,6 +1281,7 @@
 				1BF0E28B558FF0EC25A4F530 /* EquatorialGridOverlayTests.swift */,
 				2DC192E7780C67C2D23EFA7B /* ScaleBarOverlayTests.swift */,
 				0C5D104F82BB5EF35C693E8E /* ReticleOverlayTests.swift */,
+				F02EA5AA79E7AB973E861807 /* CanvasOverlayStyleTests.swift */,
 			);
 			path = Overlays;
 			sourceTree = "<group>";
@@ -1415,6 +1420,7 @@
 				8344C5B19AE3FABC172CB8B1 /* EquatorialGridOverlay.swift */,
 				DAA98C89BB0BEA4A64910562 /* ScaleBarOverlay.swift */,
 				6EC3FF3263CBF035678ABD2E /* ReticleOverlay.swift */,
+				D2AB1D6E380EBFBEB8E9F768 /* CanvasOverlayStyle.swift */,
 			);
 			path = Overlays;
 			sourceTree = "<group>";
@@ -1812,6 +1818,7 @@
 				E770176E5321635244B36577 /* OpenMeteoResponses.swift in Sources */,
 				71A010338BF16A00B98556CB /* OpenMeteoClient.swift in Sources */,
 				76B54F287C11C6DE09907894 /* HeaderExport.swift in Sources */,
+				D41BBF135486BBEF8024EA39 /* CanvasOverlayStyle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1874,6 +1881,7 @@
 				B24204D4CA2C31CA9D54C333 /* HeaderExportTests.swift in Sources */,
 				05FB1000000000000000C202 /* InfoViewTests.swift in Sources */,
 				05FB1000000000000000C204 /* InfoViewTableTests.swift in Sources */,
+				0CEEF32A7D5262CA32ADE85F /* CanvasOverlayStyleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
