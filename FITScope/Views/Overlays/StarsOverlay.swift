@@ -52,17 +52,26 @@ public struct StarsOverlay: CanvasOverlay
     /// state until ``isAvailable`` becomes true (or detection finds nothing).
     public let isLoading: Bool
 
+    /// Whether star detection has finished running at least once for this image.
+    /// Distinguishes "detection not yet run" (no toggle, no warning) from "ran and
+    /// found nothing" (toggle kept, warning shown) — since both leave ``stars``
+    /// empty.
+    private let hasDetectedStars: Bool
+
     /// Creates the overlay for the given detected stars.
     ///
     /// - Parameters:
-    ///   - stars:       The detected stars, in source-image pixel coordinates.
-    ///   - orientation: The orientation applied to the displayed image.
-    ///   - isLoading:   Whether detection is still running. Defaults to `false`.
-    public init( stars: [ Star ], orientation: Processors.Orient.Orientation = .identity, isLoading: Bool = false )
+    ///   - stars:            The detected stars, in source-image pixel coordinates.
+    ///   - orientation:      The orientation applied to the displayed image.
+    ///   - isLoading:        Whether detection is still running. Defaults to `false`.
+    ///   - hasDetectedStars: Whether detection has finished running at least once.
+    ///                       Defaults to `false`.
+    public init( stars: [ Star ], orientation: Processors.Orient.Orientation = .identity, isLoading: Bool = false, hasDetectedStars: Bool = false )
     {
-        self.stars       = stars
-        self.orientation = orientation
-        self.isLoading   = isLoading
+        self.stars            = stars
+        self.orientation      = orientation
+        self.isLoading        = isLoading
+        self.hasDetectedStars = hasDetectedStars
     }
 
     public let id              = "stars"
@@ -72,6 +81,20 @@ public struct StarsOverlay: CanvasOverlay
     public var isAvailable: Bool
     {
         self.stars.isEmpty == false
+    }
+
+    public var warning: String?
+    {
+        // Only once detection has actually run and returned nothing: while it is
+        // still loading the toolbar shows progress, and before it runs the toggle
+        // is simply not offered.
+        guard self.hasDetectedStars, self.stars.isEmpty, self.isLoading == false
+        else
+        {
+            return nil
+        }
+
+        return "Star detection ran on this image but didn’t find any stars."
     }
 
     /// The marker colour.

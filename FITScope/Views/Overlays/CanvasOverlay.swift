@@ -57,6 +57,14 @@ public protocol CanvasOverlay
     /// knowing what any particular overlay computes. Defaults to `false`.
     var isLoading: Bool { get }
 
+    /// A warning message for an overlay that has finished computing but has nothing
+    /// to show — e.g. star detection ran yet found no stars. When non-`nil`, the
+    /// toolbar keeps the overlay's toggle visible (so the user learns the work ran)
+    /// and, on tap, presents this message instead of switching on an empty layer.
+    /// `nil` when there is nothing to warn about. Defaults to `nil`, so the toolbar
+    /// handles warnings generically without knowing what any overlay computes.
+    var warning: String? { get }
+
     /// Draws the overlay into the canvas.
     ///
     /// - Parameters:
@@ -78,5 +86,12 @@ public extension CanvasOverlay
     var isLoading: Bool
     {
         false
+    }
+
+    /// Overlays with nothing to warn about report `nil`; a data-driven overlay
+    /// overrides this to surface a warning once it has run and found nothing.
+    var warning: String?
+    {
+        nil
     }
 }

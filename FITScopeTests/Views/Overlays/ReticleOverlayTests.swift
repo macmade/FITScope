@@ -47,6 +47,14 @@ struct ReticleOverlayTests
     }
 
     @Test
+    func hasNoWarningByDefault() throws
+    {
+        // An overlay that does not opt into a warning inherits the protocol default
+        // of `nil`, so the toolbar shows no warning affordance for it.
+        #expect( ReticleOverlay().warning == nil )
+    }
+
+    @Test
     func hasAStableNonDisplayIdentifier() throws
     {
         #expect( ReticleOverlay().id == "reticle" )

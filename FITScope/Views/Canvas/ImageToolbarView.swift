@@ -131,7 +131,10 @@ public struct ImageToolbarView: View
                 {
                     overlay in
 
-                    ImageToolbarButton( systemImage: overlay.systemImageName, help: overlay.title, identifier: AccessibilityIdentifier.ImageToolbarView.overlayToggle( overlay.id ), isActive: self.isOverlayEnabled( overlay.id ), isLoading: overlay.isLoading )
+                    // A warning overlay ran but found nothing: tint it and surface the
+                    // warning as its tooltip, so the toolbar handles warnings
+                    // generically without knowing what any overlay computes.
+                    ImageToolbarButton( systemImage: overlay.systemImageName, help: overlay.warning ?? overlay.title, identifier: AccessibilityIdentifier.ImageToolbarView.overlayToggle( overlay.id ), isActive: self.isOverlayEnabled( overlay.id ), isLoading: overlay.isLoading, isWarning: overlay.warning != nil )
                     {
                         self.onToggleOverlay( overlay.id )
                     }

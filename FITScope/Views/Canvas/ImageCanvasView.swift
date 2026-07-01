@@ -76,6 +76,17 @@ public struct ImageCanvasView: View
     /// prompt rather than each carrying its own.
     @State private var isPlateSolvePromptPresented = false
 
+    /// Whether the overlay warning alert is shown. Raised when an overlay carrying a
+    /// ``CanvasOverlay/warning`` (star detection ran but found nothing) is tapped,
+    /// so the user sees why the toggle reveals nothing.
+    @State private var isOverlayWarningPresented = false
+
+    /// The title of the overlay warning alert — the tapped overlay's title.
+    @State private var overlayWarningTitle = ""
+
+    /// The message of the overlay warning alert — the tapped overlay's warning.
+    @State private var overlayWarningMessage = ""
+
     /// Whether the floating bars are currently shown.
     @State private var barsVisible = true
 
@@ -161,6 +172,14 @@ public struct ImageCanvasView: View
             message:
             {
                 Text( self.plateSolvePromptMessage )
+            }
+            .alert( self.overlayWarningTitle, isPresented: self.$isOverlayWarningPresented )
+            {
+                Button( "OK", role: .cancel ) {}
+            }
+            message:
+            {
+                Text( self.overlayWarningMessage )
             }
     }
 
@@ -360,7 +379,7 @@ public struct ImageCanvasView: View
             // than jumping ahead while a rotation is still rendering. `isLoading`
             // surfaces detection progress through the overlay, so the toolbar shows
             // it generically without knowing about star detection.
-            StarsOverlay( stars: self.file.image?.starField?.stars ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, isLoading: self.file.image?.isDetectingStars ?? false ),
+            StarsOverlay( stars: self.file.image?.starField?.stars ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, isLoading: self.file.image?.isDetectingStars ?? false, hasDetectedStars: self.file.image?.hasDetectedStars ?? false ),
             // The plate-solved objects, registered to image space through the same
             // committed-render orientation as the stars, so the labels track the
             // image under rotate/flip. Available only once a solve has identified
@@ -393,12 +412,13 @@ public struct ImageCanvasView: View
     private static let alwaysOfferedOverlayIDs: Set< String > = [ ObjectsOverlay.identifier, NorthOverlay.identifier, EquatorialGridOverlay.identifier ]
 
     /// The overlays surfaced in the toolbar: those with something to show, plus
-    /// those still computing their data (shown as an in-progress button), plus the
-    /// always-offered, solve-dependent toggles — which propose a plate solve rather
-    /// than revealing an empty layer.
+    /// those still computing their data (shown as an in-progress button), plus those
+    /// carrying a warning (kept visible so the user learns their work ran but found
+    /// nothing), plus the always-offered, solve-dependent toggles — which propose a
+    /// plate solve rather than revealing an empty layer.
     private var toolbarOverlays: [ any CanvasOverlay ]
     {
-        self.overlays.filter { $0.isAvailable || $0.isLoading || Self.alwaysOfferedOverlayIDs.contains( $0.id ) }
+        self.overlays.filter { $0.isAvailable || $0.isLoading || $0.warning != nil || Self.alwaysOfferedOverlayIDs.contains( $0.id ) }
     }
 
     /// The available overlays the user has enabled, drawn back-to-front. A loading
@@ -410,13 +430,24 @@ public struct ImageCanvasView: View
 
     /// Toggles an overlay on or off by identifier.
     ///
-    /// The always-offered, solve-dependent toggles (objects and north) are special:
-    /// when tapped with nothing to reveal — no plate-solved objects, or no known
-    /// orientation — they propose a plate solve instead of switching on an empty
-    /// layer, sharing the one prompt.
+    /// Two kinds of overlay never simply switch on when tapped with nothing to
+    /// reveal. An overlay carrying a ``CanvasOverlay/warning`` (star detection ran
+    /// but found nothing) presents that warning. The always-offered, solve-dependent
+    /// toggles (objects and north) instead propose a plate solve, sharing one prompt.
     private func toggleOverlay( _ id: String )
     {
-        if Self.alwaysOfferedOverlayIDs.contains( id ), self.overlays.first( where: { $0.id == id } )?.isAvailable != true
+        let overlay = self.overlays.first { $0.id == id }
+
+        if let warning = overlay?.warning, overlay?.isAvailable != true
+        {
+            self.overlayWarningTitle     = overlay?.title ?? ""
+            self.overlayWarningMessage   = warning
+            self.isOverlayWarningPresented = true
+
+            return
+        }
+
+        if Self.alwaysOfferedOverlayIDs.contains( id ), overlay?.isAvailable != true
         {
             self.isPlateSolvePromptPresented = true
 

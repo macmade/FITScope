@@ -59,6 +59,11 @@ public class FITSImage: ObservableObject
     /// `true` only while ``detectStars()`` is in flight.
     @Published public private( set ) var isDetectingStars = false
 
+    /// Whether star detection has finished running at least once. Lets the UI tell
+    /// "detection hasn't run" from "detection ran and found nothing" — both leave
+    /// ``starField`` empty — so the stars overlay can warn about the latter.
+    @Published public private( set ) var hasDetectedStars = false
+
     /// The image's histogram view options, kept here so each file retains its own
     /// histogram display choices across selection changes.
     public let histogramOptions = HistogramViewOptions()
@@ -101,6 +106,7 @@ public class FITSImage: ObservableObject
         defer
         {
             self.isDetectingStars = false
+            self.hasDetectedStars = true
         }
 
         let detectionImage = input.detectionImage

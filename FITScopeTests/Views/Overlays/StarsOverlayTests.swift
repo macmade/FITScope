@@ -78,6 +78,37 @@ struct StarsOverlayTests
     }
 
     @Test
+    func doesNotWarnBeforeDetectionRuns() throws
+    {
+        // With no stars and detection not yet run, there is nothing to warn about:
+        // the overlay is simply not offered rather than flagged.
+        #expect( StarsOverlay( stars: [] ).warning == nil )
+    }
+
+    @Test
+    func warnsWhenDetectionRanWithNoStars() throws
+    {
+        // Detection completed and found nothing: keep the toggle visible and surface
+        // a warning so the user learns detection ran rather than silently vanishing.
+        #expect( StarsOverlay( stars: [], hasDetectedStars: true ).warning != nil )
+    }
+
+    @Test
+    func doesNotWarnWhenStarsWereDetected() throws
+    {
+        // Stars were found, so the overlay has something to show — no warning.
+        #expect( StarsOverlay( stars: [ Self.star( hfr: 3 ) ], hasDetectedStars: true ).warning == nil )
+    }
+
+    @Test
+    func doesNotWarnWhileStillDetecting() throws
+    {
+        // While detection is in flight the toolbar shows the loading state; a
+        // "found nothing" warning would be premature, so none is reported yet.
+        #expect( StarsOverlay( stars: [], isLoading: true, hasDetectedStars: true ).warning == nil )
+    }
+
+    @Test
     func markerRadiusTracksTheStarSizeOnScreen() throws
     {
         // Above the floor, the on-screen radius is the half-flux radius scaled by
@@ -87,7 +118,7 @@ struct StarsOverlayTests
     }
 
     @Test
-    func markerRadiusClampsToAMinimumWhenZoomedOut()throws
+    func markerRadiusClampsToAMinimumWhenZoomedOut() throws
     {
         // A small star at a low magnification would shrink below visibility; clamp
         // to the on-screen minimum so the marker stays seen.

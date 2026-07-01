@@ -62,6 +62,12 @@ public struct ImageToolbarButton: View
     /// disabled).
     private let isLoading: Bool
 
+    /// Whether the button flags a warning: a small warning badge is drawn on the
+    /// icon's bottom-trailing corner to signal that its overlay ran but has nothing
+    /// to show, while the glyph keeps its normal appearance. The tooltip carries the
+    /// detail.
+    private let isWarning: Bool
+
     /// Whether a ``isLoading`` button is also disabled. `true` for work the button
     /// can't be re-invoked during (an overlay still computing); `false` when the
     /// button stays actionable while busy (e.g. a plate solve whose progress
@@ -81,10 +87,12 @@ public struct ImageToolbarButton: View
     ///   - isActive:    Whether to tint the icon as "on". Defaults to `false`.
     ///   - isLoading:   Whether to show the pulsing loading state. Defaults to
     ///                  `false`.
+    ///   - isWarning:   Whether to tint the icon with the warning colour. Defaults
+    ///                  to `false`.
     ///   - disablesWhileLoading: Whether a loading button is also disabled.
     ///                  Defaults to `true`.
     ///   - action:      The action performed on click.
-    public init( systemImage: String, help: String, identifier: String, isEnabled: Bool = true, isActive: Bool = false, isLoading: Bool = false, disablesWhileLoading: Bool = true, action: @escaping () -> Void )
+    public init( systemImage: String, help: String, identifier: String, isEnabled: Bool = true, isActive: Bool = false, isLoading: Bool = false, isWarning: Bool = false, disablesWhileLoading: Bool = true, action: @escaping () -> Void )
     {
         self.systemImage          = systemImage
         self.help                 = help
@@ -92,6 +100,7 @@ public struct ImageToolbarButton: View
         self.isEnabled            = isEnabled
         self.isActive             = isActive
         self.isLoading            = isLoading
+        self.isWarning            = isWarning
         self.disablesWhileLoading = disablesWhileLoading
         self.action               = action
     }
@@ -103,6 +112,22 @@ public struct ImageToolbarButton: View
         {
             Image( systemName: self.systemImage )
                 .frame( width: 26, height: 24 )
+                // A small warning badge sits on the icon's bottom-trailing corner
+                // rather than recolouring the whole glyph, so the button keeps its
+                // normal appearance while flagging that its overlay ran but found
+                // nothing. Multicolour renders the standard yellow triangle with a
+                // dark mark, so it stays legible over the toolbar's translucent
+                // material.
+                .overlay( alignment: .bottomTrailing )
+                {
+                    if self.isWarning
+                    {
+                        Image( systemName: "exclamationmark.triangle.fill" )
+                            .symbolRenderingMode( .multicolor )
+                            .font( .system( size: 9 ) )
+                            .offset( x: 3, y: 2 )
+                    }
+                }
                 .contentShape( Rectangle() )
                 .symbolEffect( .pulse, options: .repeating, isActive: self.isLoading )
         }
@@ -132,6 +157,7 @@ public struct ImageToolbarButton: View
         ImageToolbarButton( systemImage: "minus",    help: "Disabled", identifier: "preview.disabled", isEnabled: false, action: {} )
         ImageToolbarButton( systemImage: "sparkles", help: "Active",   identifier: "preview.active",   isActive: true,   action: {} )
         ImageToolbarButton( systemImage: "sparkles", help: "Loading",  identifier: "preview.loading",  isLoading: true,  action: {} )
+        ImageToolbarButton( systemImage: "sparkles", help: "Warning",  identifier: "preview.warning",  isWarning: true,  action: {} )
     }
     .buttonStyle( .borderless )
     .padding()

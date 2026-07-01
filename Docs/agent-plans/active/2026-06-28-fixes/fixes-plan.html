@@ -231,16 +231,29 @@
       <ol class="milestones" start="1">
 
         <li class="milestone">
-          <div class="m-head"><h4>Warn when no stars are detected</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Warn when no stars are detected</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Keep the "Show stars" overlay toggle visible even when detection finds nothing, and surface a warning so the user knows detection ran but found no stars — instead of the control silently disappearing.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Locate where the "Show stars" toggle visibility is gated on the star count (likely <code>ImageCanvasView</code> / toolbar / overlay model).</li>
-            <li>Keep the toggle visible when zero stars are detected; distinguish "not yet run" from "ran, found none".</li>
-            <li>Add a clear warning (e.g. badge, tooltip, or inline message) communicating that detection found no stars.</li>
-            <li>Verify behavior for both states (no stars vs. some stars) and add/adjust a SwiftUI preview.</li>
+            <li class="done">Locate where the "Show stars" toggle visibility is gated on the star count (likely <code>ImageCanvasView</code> / toolbar / overlay model).</li>
+            <li class="done">Keep the toggle visible when zero stars are detected; distinguish "not yet run" from "ran, found none".</li>
+            <li class="done">Add a clear warning (e.g. badge, tooltip, or inline message) communicating that detection found no stars.</li>
+            <li class="done">Verify behavior for both states (no stars vs. some stars) and add/adjust a SwiftUI preview.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-01</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p>Root cause: <code>StarsOverlay.isAvailable</code> was <code>false</code> and <code>isLoading</code> <code>false</code> once detection ran and found nothing, and stars aren't in <code>alwaysOfferedOverlayIDs</code>, so <code>toolbarOverlays</code> dropped the toggle. Also, <code>starField</code> is <code>nil</code> both before detection runs and after a fruitless run, so the two states were indistinguishable.</p>
+            <p>Approach (confirmed with maintainer): a <em>generic</em> warning member on the overlay protocol rather than stars-specific code, matching the existing "the toolbar knows nothing overlay-specific" philosophy (as with <code>isLoading</code>).</p>
+            <ul>
+              <li><code>CanvasOverlay</code>: added <code>var warning: String?</code> with a protocol-extension default of <code>nil</code>. When non-nil, the toolbar keeps the toggle visible and, on tap, presents the message.</li>
+              <li><code>FITSImage</code>: added <code>@Published private(set) var hasDetectedStars</code>, set to <code>true</code> in the <code>detectStars()</code> <code>defer</code> (so it also covers the detector-failure edge case where <code>starField</code> stays nil). This distinguishes "not yet run" from "ran, found none".</li>
+              <li><code>StarsOverlay</code>: added a <code>hasDetectedStars</code> init parameter; <code>warning</code> returns a message only when detection has run, found no stars, and is not currently loading.</li>
+              <li><code>ImageCanvasView</code>: passes <code>hasDetectedStars</code> into the overlay; <code>toolbarOverlays</code> now also keeps overlays with <code>warning != nil</code>; <code>toggleOverlay</code> presents an alert (title = overlay title, message = warning) when a warned, unavailable overlay is tapped — mirroring the existing plate-solve prompt. Added <code>isOverlayWarningPresented</code>/title/message state and a second <code>.alert</code>.</li>
+              <li><code>ImageToolbarButton</code>: added an <code>isWarning</code> flag; preview gains a warning example.</li>
+              <li>Per review: replaced the whole-icon yellow tint with a small warning badge (<code>exclamationmark.triangle.fill</code>, multicolour, ~9pt) drawn on the icon's bottom-trailing corner, so the glyph keeps its normal appearance while still flagging the "found nothing" state. The active/accent tint logic is back to its original form.</li>
+              <li><code>ImageToolbarView</code>: passes the warning through as the button's tooltip (<code>overlay.warning ?? overlay.title</code>) and sets <code>isWarning</code>.</li>
+            </ul>
+            <p>TDD: added <code>StarsOverlay</code> tests (no warning before detection; warns after a fruitless run; no warning when stars found; no warning while still loading) and a <code>ReticleOverlay</code> test for the protocol default of <code>nil</code>. All 19 tests in the two suites pass; the full app target builds.</p>
+          </div>
           <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
         </li>
 
@@ -269,7 +282,12 @@
           </ul></div>
           <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
           <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>Instead of tinting the whole icon yellow, add a small warning badge icon on top of the overlay's icon.</li>
+              <li>Position the warning badge at the bottom-right corner of the icon rather than the top-trailing corner.</li>
+            </ul>
+          </div>
         </li>
 
       </ol>
