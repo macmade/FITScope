@@ -50,6 +50,10 @@ public struct MainWindowView: View
     /// Opens the Settings scene, used by the "no API key" alert's action.
     @Environment( \.openSettings ) private var openSettings
 
+    /// Dismisses a window by id/value, used to close a file's plate-solve results
+    /// window when the file itself is closed.
+    @Environment( \.dismissWindow ) private var dismissWindow
+
     /// The file URLs to load when the window first appears.
     private let initialURLs: [ URL ]
 
@@ -172,6 +176,21 @@ public struct MainWindowView: View
         }
         .onAppear
         {
+            // When a file is closed, dismiss its plate-solve results window and end
+            // its solve, so the window is never left behind referencing a
+            // no-longer-open file. Captured explicitly (not the whole view) since
+            // the closure outlives this call, and set before any file can close.
+            let appModel = self.appModel
+            let dismiss  = self.dismissWindow
+
+            self.model.onFileClosed =
+            {
+                id in
+
+                appModel.endPlateSolve( for: id )
+                dismiss( id: "PlateSolveWindow", value: id )
+            }
+
             guard self.model.files.isEmpty, self.initialURLs.isEmpty == false
             else
             {

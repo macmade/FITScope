@@ -150,4 +150,34 @@ struct AppModelTests
         #expect( second.files.count == 1, "files open into the window that became active after the previous one closed" )
         #expect( first.files.isEmpty, "the closed window receives nothing" )
     }
+
+    @Test
+    func endingAPlateSolveIsSafeWithNoSession() throws
+    {
+        let app  = AppModel()
+        let file = OpenFile( url: self.url )
+
+        // No solve was ever started for the file, so there is nothing to end; the
+        // call must be a harmless no-op.
+        app.endPlateSolve( for: file.id )
+
+        #expect( app.plateSolveSessions.isEmpty )
+    }
+
+    @Test
+    func endingAPlateSolveCancelsAndForgetsTheSession() throws
+    {
+        let app    = AppModel()
+        let client = AstrometryClient( transport: MockAstrometryTransport { _, _ in throw URLError( .cancelled ) } )
+        let file   = OpenFile( url: TestFixtures.monoImage )
+
+        #expect( app.beginPlateSolve( of: file, apiKey: "key", client: client ) )
+        #expect( app.plateSolveSession( for: file.id ) != nil )
+
+        // Closing the file ends its solve: the session is cancelled and forgotten,
+        // so nothing is left referencing the no-longer-open file.
+        app.endPlateSolve( for: file.id )
+
+        #expect( app.plateSolveSession( for: file.id ) == nil )
+    }
 }

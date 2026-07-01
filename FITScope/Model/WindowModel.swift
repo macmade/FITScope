@@ -41,6 +41,13 @@ public final class WindowModel: ObservableObject
     /// internally; ``sortedFiles`` derives the displayed order from this key.
     @Published public var sortKey: FileSortKey = .opened
 
+    /// Called with a file's identifier right after it is closed, so the window's
+    /// host can tear down anything keyed to that file — dismissing its plate-solve
+    /// results window and ending its solve. Set by the hosting view, since the
+    /// dismiss action lives in SwiftUI's environment. Not observed, so setting it
+    /// never triggers a view update.
+    public var onFileClosed: ( ( OpenFile.ID ) -> Void )?
+
     /// Whether the sort is ascending (smallest / A-first) or descending.
     @Published public var sortAscending = true
 
@@ -151,6 +158,11 @@ public final class WindowModel: ObservableObject
 
         self.observeFilesForWeighting()
         self.scheduleWeightRecompute()
+
+        // The single choke point for closing a file (``trash(_:)`` funnels through
+        // here too), so the host tears down the file's plate-solve window and solve
+        // whichever way it was closed.
+        self.onFileClosed?( file.id )
     }
 
     /// Moves the given file to the Trash and closes it.

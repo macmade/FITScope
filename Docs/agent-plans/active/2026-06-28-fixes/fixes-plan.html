@@ -316,16 +316,26 @@
       <ol class="milestones" start="4">
 
         <li class="milestone">
-          <div class="m-head"><h4>Close the plate-solve window when its image is closed</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Close the plate-solve window when its image is closed</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Automatically dismiss any plate-solve window (<code>PlateSolveWindowView</code> / the <code>PlateSolveWindow</code> <code>WindowGroup</code>) opened for a file when that file is closed, instead of leaving it behind referencing a no-longer-open file.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Trace how the plate-solve window is keyed to an open file's ID and how files are closed.</li>
-            <li>On file close, dismiss the matching plate-solve window (e.g. via <code>dismissWindow</code>/window-id correlation, or by observing the file set).</li>
-            <li>Handle edge cases: multiple files, window already closed, solve in progress.</li>
-            <li>Verify closing the image reliably closes its plate-solve window.</li>
+            <li class="done">Trace how the plate-solve window is keyed to an open file's ID and how files are closed.</li>
+            <li class="done">On file close, dismiss the matching plate-solve window (e.g. via <code>dismissWindow</code>/window-id correlation, or by observing the file set).</li>
+            <li class="done">Handle edge cases: multiple files, window already closed, solve in progress.</li>
+            <li class="done">Verify closing the image reliably closes its plate-solve window.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-01</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p>How it's keyed: the results window is a <code>WindowGroup( id: "PlateSolveWindow", for: OpenFile.ID.self )</code>, and the live session lives in <code>AppModel.plateSolveSessions[ file.id ]</code>. Files close through a single choke point: <code>WindowModel.close(_:)</code> (<code>trash(_:)</code> funnels through it too). File IDs are unique per window (each window makes its own <code>OpenFile</code>s), so dismissing by <code>file.id</code> is unambiguous.</p>
+            <ul>
+              <li><code>WindowModel</code>: added an <code>onFileClosed: ( ( OpenFile.ID ) -> Void )?</code> callback (plain, not <code>@Published</code>) invoked at the end of <code>close(_:)</code> — the one choke point, so both Close and Move-to-Trash trigger it.</li>
+              <li><code>AppModel</code>: added <code>endPlateSolve( for: )</code> — cancels an in-flight solve (<code>PlateSolveSession.cancel()</code>) and removes the session; a no-op when there is no session. Also made <code>beginPlateSolve</code> take an injectable <code>client</code> (default live) so the teardown is unit-testable without network.</li>
+              <li><code>MainWindowView</code>: owns the <code>WindowModel</code> and the <code>dismissWindow</code> environment action, so it wires <code>model.onFileClosed</code> (in <code>onAppear</code>, before any close) to <code>appModel.endPlateSolve(for:)</code> + <code>dismissWindow(id: "PlateSolveWindow", value: id)</code>. The callback captures <code>appModel</code>/<code>dismiss</code> explicitly rather than the whole view.</li>
+            </ul>
+            <p>Edge cases: multiple files → keyed by unique id; window already closed → <code>dismissWindow</code> is a harmless no-op; solve in progress → the session is cancelled so a closed file wastes no more network. Design choice (flagged for review): closing a file both dismisses the window <em>and</em> ends its solve/session, rather than leaving the session around, since the file is gone.</p>
+            <p>TDD: <code>WindowModelTests.closingAFileNotifiesWithItsID</code> (close fires the callback with the right id); <code>AppModelTests</code> — ending a solve with no session is a safe no-op, and ending one cancels + forgets the session (via a mock-transport client). All 378 unit tests pass; the app builds.</p>
+            <p><strong>Needs a quick interactive check</strong> (the plan's last task): open a file, start a plate solve, then close the image and confirm its results window closes; repeat with a solve still in progress.</p>
+          </div>
           <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
         </li>
 

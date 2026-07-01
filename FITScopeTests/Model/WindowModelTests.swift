@@ -85,6 +85,26 @@ struct WindowModelTests
 
     @Test
     @MainActor
+    func closingAFileNotifiesWithItsID() throws
+    {
+        let model = WindowModel()
+
+        model.open( urls: self.fixtureURLs )
+
+        let closed        = try #require( model.selectedFile )
+        var notifiedIDs: [ OpenFile.ID ] = []
+
+        model.onFileClosed = { notifiedIDs.append( $0 ) }
+
+        model.close( closed )
+
+        // The host wires this to dismiss the file's plate-solve window and end its
+        // solve, so closing an image never leaves that window behind.
+        #expect( notifiedIDs == [ closed.id ] )
+    }
+
+    @Test
+    @MainActor
     func closingLastFileClearsSelection() throws
     {
         let model = WindowModel()

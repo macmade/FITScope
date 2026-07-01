@@ -95,8 +95,10 @@ public final class AppModel: ObservableObject
     /// - Parameters:
     ///   - file:   The file to solve.
     ///   - apiKey: The Astrometry.net API key.
+    ///   - client: The Astrometry.net client to use. Defaults to a live client;
+    ///             tests inject one backed by a mock transport.
     /// - Returns: `true` when a solve was started, `false` when no key is set.
-    public func beginPlateSolve( of file: OpenFile, apiKey: String ) -> Bool
+    public func beginPlateSolve( of file: OpenFile, apiKey: String, client: AstrometryClient = AstrometryClient() ) -> Bool
     {
         guard apiKey.trimmingCharacters( in: .whitespacesAndNewlines ).isEmpty == false
         else
@@ -106,13 +108,32 @@ public final class AppModel: ObservableObject
             return false
         }
 
-        let session = PlateSolveSession( file: file, apiKey: apiKey )
+        let session = PlateSolveSession( file: file, apiKey: apiKey, client: client )
 
         self.plateSolveSessions[ file.id ] = session
 
         session.start()
 
         return true
+    }
+
+    /// Ends the plate solve for a file: cancels any in-flight solve and forgets the
+    /// session, so a closed file leaves nothing behind. Safe to call for a file
+    /// that has no session. The results window keyed to the file is dismissed
+    /// separately by the caller, since that needs SwiftUI's dismiss action.
+    ///
+    /// - Parameter id: The file's identifier.
+    public func endPlateSolve( for id: OpenFile.ID )
+    {
+        guard let session = self.plateSolveSessions[ id ]
+        else
+        {
+            return
+        }
+
+        session.cancel()
+
+        self.plateSolveSessions[ id ] = nil
     }
 
     /// Shows the plate-solving results window for a file, starting a solve only
