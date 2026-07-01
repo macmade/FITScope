@@ -204,10 +204,15 @@ public struct ZoomableImageView: NSViewRepresentable
         ///
         /// The geometry is read now — from the document view's bounds converted up
         /// through the magnifying clip view, then flipped from the scroll view's
-        /// bottom-left space to the overlay's top-left space — but the SwiftUI
-        /// write is deferred to the next run-loop turn, for the same reason as
-        /// ``reportZoom(_:)``.
-        private func reportDisplayedImageRect()
+        /// bottom-left space to the overlay's top-left space.
+        ///
+        /// - Parameter deferred: Whether to defer the SwiftUI write to the next
+        ///   run-loop turn (for the same reason as ``reportZoom(_:)``: the caller
+        ///   runs inside SwiftUI's update pass). Live AppKit callbacks — resize and
+        ///   magnification — pass `false` so the overlays are re-registered in the
+        ///   same pass as the image and track it without lag; the update-pass
+        ///   callers keep the default `true`.
+        private func reportDisplayedImageRect( deferred: Bool = true )
         {
             guard let scrollView = self.scrollView,
                   let documentView = scrollView.documentView
@@ -227,6 +232,14 @@ public struct ZoomableImageView: NSViewRepresentable
                 ? inScroll
                 : CGRect( x: inScroll.minX, y: scrollView.bounds.height - inScroll.maxY, width: inScroll.width, height: inScroll.height )
 
+            guard deferred
+            else
+            {
+                self.parent.onDisplayedImageRectChange( rect )
+
+                return
+            }
+
             DispatchQueue.main.async { self.parent.onDisplayedImageRectChange( rect ) }
         }
 
@@ -242,7 +255,11 @@ public struct ZoomableImageView: NSViewRepresentable
             self.reportZoom( scrollView.magnification )
 
             self.publishZoomOutAvailability()
-            self.reportDisplayedImageRect()
+
+            // A live magnify (pinch / scroll-wheel zoom) fires outside SwiftUI's
+            // update pass, so report synchronously to keep the overlays locked to
+            // the image throughout the gesture.
+            self.reportDisplayedImageRect( deferred: false )
         }
 
         /// Recomputes the fit magnification and the scroll view's minimum
@@ -360,7 +377,12 @@ public struct ZoomableImageView: NSViewRepresentable
             }
 
             self.publishZoomOutAvailability()
-            self.reportDisplayedImageRect()
+
+            // A live window resize drives this through AppKit's frame-change
+            // notification, outside SwiftUI's update pass, so report synchronously:
+            // the overlays are re-registered in the same pass as the image and
+            // track it without the one-turn lag the deferred write introduced.
+            self.reportDisplayedImageRect( deferred: false )
         }
 
         /// Forces a fresh fit, used when a genuinely new image is displayed.

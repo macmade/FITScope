@@ -258,16 +258,22 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Overlays are laggy when resizing the window</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Overlays are laggy when resizing the window</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Make the canvas overlays (stars, objects, frame, scale bar) drawn by <code>CanvasOverlayLayer</code> redraw in step with the image during a window resize, so they stay registered to the displayed image without visible lag.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Investigate how <code>CanvasOverlayLayer</code> tracks the displayed image geometry and when it redraws relative to resize events.</li>
-            <li>Identify the source of lag (e.g. animation/implicit layer actions, layout timing, separate update path from the image).</li>
-            <li>Synchronize overlay redraw with the image during live resize (disable implicit CA animations if applicable; update on the same layout pass).</li>
-            <li>Verify overlays track smoothly while resizing at different zoom levels.</li>
+            <li class="done">Investigate how <code>CanvasOverlayLayer</code> tracks the displayed image geometry and when it redraws relative to resize events.</li>
+            <li class="done">Identify the source of lag (e.g. animation/implicit layer actions, layout timing, separate update path from the image).</li>
+            <li class="done">Synchronize overlay redraw with the image during live resize (disable implicit CA animations if applicable; update on the same layout pass).</li>
+            <li class="done">Verify overlays track smoothly while resizing at different zoom levels.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-01</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p>Not an implicit-CA-animation issue (the overlays are a SwiftUI <code>Canvas</code>, not a <code>CALayer</code>). Root cause: <code>CanvasOverlayLayer</code> draws from <code>ImageCanvasView</code>'s <code>displayedImageRect</code> <code>@State</code>. <code>ZoomableImageView.Coordinator.reportDisplayedImageRect()</code> reads the rect synchronously from the AppKit scroll view but wrote it to SwiftUI via <code>DispatchQueue.main.async</code> — one run-loop turn late. During a live resize the AppKit image view redraws every frame, so the overlay's rect trailed it by a turn: the lag.</p>
+            <p>Why the deferral existed (commit <code>a176f8e</code>): a synchronous write of observed state while the coordinator runs inside SwiftUI's update pass triggers "Publishing changes from within view updates". The cited case is switching files (image change → <code>updateNSView</code> → re-fit → report).</p>
+            <p>Approach (chosen by maintainer — try the low-risk fix first, then check for warnings; fall back to AppKit-drawn overlays if the warning returns): added a <code>deferred: Bool = true</code> parameter to <code>reportDisplayedImageRect(deferred:)</code>. The live AppKit-notification callers — <code>clipBoundsChanged</code> (resize) and <code>magnificationChanged</code> (pinch / scroll-wheel zoom), which fire outside the update pass — now report synchronously (<code>deferred: false</code>), so the overlays re-register in the same pass as the image. The update-pass callers (<code>fit()</code> from <code>makeNSView</code>/re-fit, <code>apply(command:)</code>) keep the deferred write, so the known file-switch warning path is unchanged.</p>
+            <p><strong>Verification status (honest):</strong> the app builds. I could <em>not</em> automate the runtime warning check here: driving a window resize needs Accessibility permission the terminal lacks, and <code>open -a FITScope</code> launched the installed <code>/Applications</code> release build rather than the debug build. This needs an interactive check: open a file, switch files, and resize the window at a few zoom levels while watching the Xcode console for "Publishing changes from within view updates" and confirming the overlays track the image. If the warning reappears, switch to the AppKit-drawn-overlay approach.</p>
+            <p>Maintainer verified interactively: overlays track the image during resize and no "Publishing changes from within view updates" warning appeared, so the low-risk fix held and the AppKit fallback was not needed.</p>
+          </div>
           <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
         </li>
 
