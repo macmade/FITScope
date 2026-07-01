@@ -152,6 +152,35 @@ struct OpenFileTests
 
     @Test
     @MainActor
+    func thumbnailIsRegeneratedWhenTheRenderResultChanges() async throws
+    {
+        let file     = OpenFile( url: TestFixtures.monoImage )
+        let throttle = RenderThrottle( limit: 2 )
+
+        file.prepare( throttle: throttle )
+
+        await file.preparation?.value
+        await file.thumbnailTask?.value
+
+        let initial = try #require( file.thumbnail, "prepare must produce an initial thumbnail" )
+
+        // Change an adjustment that alters the rendered pixels, then re-render:
+        // the thumbnail must be regenerated to reflect the new processing rather
+        // than staying at the originally rendered version.
+        let renderer = try #require( file.image?.renderer )
+
+        renderer.adjustments.invert = true
+
+        await renderer.render()
+        await file.thumbnailTask?.value
+
+        let updated = try #require( file.thumbnail )
+
+        #expect( updated !== initial, "a new render result must regenerate the sidebar thumbnail" )
+    }
+
+    @Test
+    @MainActor
     func prepareIsIdempotent() async throws
     {
         let file     = OpenFile( url: TestFixtures.monoImage )

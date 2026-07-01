@@ -162,4 +162,32 @@ struct ImageAdjustmentsTests
         #expect( adjustments.settings == ImageProcessor.Settings() )
         #expect( adjustments.orientation.isIdentity )
     }
+
+    /// `hasAdjustments` reports whether any value deviates from the pipeline
+    /// defaults, so the sidebar can mark files whose image has been edited.
+    @Test
+    @MainActor
+    func hasAdjustmentsTracksDeviationFromDefaults()
+    {
+        let adjustments = ImageAdjustments()
+
+        // A freshly created set renders the file as captured, so it has no
+        // adjustments.
+        #expect( adjustments.hasAdjustments == false )
+
+        // A simple value change away from the defaults counts as an adjustment.
+        adjustments.brightness = 0.3
+
+        #expect( adjustments.hasAdjustments )
+
+        // Resetting clears the flag again.
+        adjustments.reset()
+
+        #expect( adjustments.hasAdjustments == false )
+
+        // A non-value pipeline stage (orientation) counts too.
+        adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
+
+        #expect( adjustments.hasAdjustments )
+    }
 }

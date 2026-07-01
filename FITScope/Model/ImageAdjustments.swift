@@ -116,6 +116,18 @@ public final class ImageAdjustments: ObservableObject
         self.orientation      = defaults.orientation
     }
 
+    /// Whether any adjustment deviates from the pipeline defaults, i.e. the image
+    /// is no longer rendered exactly as captured.
+    ///
+    /// Compares the current ``settings`` snapshot to a default one rather than
+    /// tracking a separate flag, so it can never drift out of sync with the
+    /// individual values and automatically covers every field the settings
+    /// encode. Drives the sidebar's "edited" marker.
+    public var hasAdjustments: Bool
+    {
+        self.settings != ImageProcessor.Settings()
+    }
+
     /// A `Sendable` snapshot of the current adjustments, safe to hand to the
     /// render pipeline across the concurrency boundary.
     public var settings: ImageProcessor.Settings

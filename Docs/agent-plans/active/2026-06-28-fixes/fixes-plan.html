@@ -444,17 +444,39 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Sidebar — indicate files with adjustments</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Sidebar — indicate files with adjustments</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Show a marker in the sidebar file list for files that have adjustments applied, so it is clear at a glance which images have been edited.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Determine how "has adjustments" is represented on the file/model (reuse existing state if available).</li>
-            <li>Add an unobtrusive marker (e.g. dot/badge/icon) to each sidebar row when the file has adjustments.</li>
-            <li>Ensure the marker updates live as adjustments are added/removed.</li>
-            <li>Verify appearance and add/adjust the sidebar preview.</li>
+            <li class="done">Determine how "has adjustments" is represented on the file/model (reuse existing state if available).</li>
+            <li class="done">Add an unobtrusive marker (e.g. dot/badge/icon) to each sidebar row when the file has adjustments.</li>
+            <li class="done">Ensure the marker updates live as adjustments are added/removed.</li>
+            <li class="done">Verify appearance and add/adjust the sidebar preview.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-01</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>How "has adjustments" is derived (reused existing state, no new flag).</strong> The adjustment values already live in one place — <code>ImageAdjustments</code> on <code>renderer.adjustments</code> — and it already exposes a <code>Sendable</code> <code>settings</code> snapshot plus a <code>reset()</code> proven (in M6's test) to satisfy <code>settings == ImageProcessor.Settings()</code>. So rather than tracking a separate "edited" flag that could drift, I added a computed <code>ImageAdjustments.hasAdjustments</code> = <code>settings != ImageProcessor.Settings()</code>. <code>ImageProcessor.Settings</code> is <code>Equatable</code> and its default init matches the adjustment defaults (normalize <code>.minMax</code>, debayer <code>.auto</code>, etc.), so any deviation from "as captured" — including a rotation/flip (orientation) — reads as an adjustment, and it can never omit a field as the settings grow.</p>
+            <ul>
+              <li><code>ImageAdjustments</code>: new computed <code>hasAdjustments</code> (documented; single source of truth).</li>
+              <li><code>OpenFileRowView</code>: private <code>hasAdjustments</code> accessor reading <code>file.image?.renderer.adjustments.hasAdjustments ?? false</code> (the same deep-chain style the row already uses for <code>file.image?.renderer.result</code>), and, when true, an unobtrusive trailing marker — a small (<code>size: 11</code>), <code>.secondary</code>-tinted <code>slider.horizontal.3</code> glyph (the app's adjustments symbol) with a <code>help</code> tooltip, placed just before the existing warning icon, mirroring that icon's pattern.</li>
+              <li><code>AccessibilityIdentifiers</code>: added <code>OpenFileRowView.adjustedMarker</code>, consistent with the existing <code>weightPill</code> id.</li>
+            </ul>
+            <p><strong>Live updates.</strong> The row observes <code>OpenFile</code>, and every adjustment path (inspector controls, plus <code>FITSImage.resetAdjustments()</code>/<code>toggleInvert()</code>/orientation) calls <code>renderer.scheduleReRender()</code>. A re-render toggles <code>renderer.isRendering</code>, whose <code>objectWillChange</code> already propagates renderer → <code>FITSImage</code> → loader → <code>OpenFile</code> (the same channel that drives the row's existing progress spinner), so the row re-runs and re-reads <code>hasAdjustments</code>. No new observation wiring — and nothing written mid-<code>body</code>, so no "publishing changes from within view updates" hazard.</p>
+            <p><strong>TDD.</strong> Wrote <code>ImageAdjustmentsTests.hasAdjustmentsTracksDeviationFromDefaults</code> first (fresh set → <code>false</code>; a brightness change → <code>true</code>; <code>reset()</code> → <code>false</code>; an orientation change → <code>true</code>) and watched it fail to compile (no <code>hasAdjustments</code>) before adding the property. Full suite green: 390 tests in 54 suites pass; the app builds.</p>
+            <p><strong>No preview added.</strong> <code>OpenFileRowView</code> never had a <code>#Preview</code>, and nothing in the repo previews an <code>OpenFile</code>: it needs a real file URL and loads/renders asynchronously, so a preview can't show a loaded image with adjustments (same limitation as <code>FilesSidebarView</code> in M7). Rather than fabricate a hollow preview, I left it out; the marker's appearance still needs a quick interactive check.</p>
+            <p><strong>Review round — thumbnails reflect processing.</strong> The sidebar thumbnail was generated once in <code>prepare()</code> and never refreshed, so it stayed at the first render even after adjustments. Fixed by making the thumbnail a derived product of the render result rather than a one-shot: <code>OpenFile</code> now observes the current renderer's <code>@Published result</code> and regenerates the (small, cached) thumbnail on every committed render.</p>
+            <ul>
+              <li><strong>Observation.</strong> A <code>thumbnailObserver</code> built in <code>init</code> maps <code>loader.$image</code> to the loaded image's <code>renderer.$result</code> and <code>switchToLatest()</code>, so it follows the image as it appears and again after a reload. <code>$result</code> only fires on a <em>successful</em> commit, so a failed render (bad adjustment) keeps the last good thumbnail — matching how the row's warning logic already treats a retained good result.</li>
+              <li><strong>Regeneration.</strong> Each committed result calls <code>regenerateThumbnail()</code>, which cancels any in-flight regeneration and starts a new <code>thumbnailTask</code>; <code>makeThumbnail</code> gained a <code>Task.isCancelled</code> guard before it assigns, so a regeneration superseded mid-resize can't overwrite a newer thumbnail. Renders are already debounced (150 ms), so regenerations are naturally throttled, and the cached 64 px thumbnail avoids holding a full-resolution image per row.</li>
+              <li><strong>No duplication.</strong> <code>prepare()</code> no longer calls <code>makeThumbnail</code> directly; the initial render's commit drives the same observer, and <code>prepare()</code> just awaits <code>thumbnailTask</code> so a prepared file still has its thumbnail ready. Nothing is written mid-<code>body</code>; the regeneration runs in a model-owned task, off the view-update pass.</li>
+            </ul>
+            <p><strong>TDD (this round).</strong> Added <code>OpenFileTests.thumbnailIsRegeneratedWhenTheRenderResultChanges</code>: prepare a real fixture, capture the thumbnail, flip <code>invert</code>, re-render, await the regeneration, and assert a new thumbnail instance replaced the old one. Watched it fail to compile (no <code>thumbnailTask</code>) before implementing. Full suite green: 391 tests in 54 suites pass; the app builds.</p>
+            <p><strong>Needs a quick visual check</strong> (the plan's last task): open a file, make an adjustment (e.g. drag brightness, rotate, or Invert), and confirm both the sidebar row's <em>marker</em> appears <em>and</em> its <em>thumbnail</em> updates to match the processed image; reset and confirm the marker disappears and the thumbnail returns to the as-captured look; check the marker reads well in light and dark appearance and doesn't crowd the pill/warning.</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>The sidebar thumbnails should also reflect processing changes — when an image's adjustments change, its list-view thumbnail should update to match the newly rendered image, not stay at the originally rendered version.</li>
+            </ul>
+          </div>
         </li>
 
       </ol>

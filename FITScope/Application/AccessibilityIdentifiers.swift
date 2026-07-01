@@ -90,6 +90,9 @@ public enum AccessibilityIdentifier
 
         /// The per-row pill showing the image's computed weight.
         public static let weightPill = "OpenFileRowView.weightPill"
+
+        /// The per-row marker shown when the file's image has adjustments applied.
+        public static let adjustedMarker = "OpenFileRowView.adjustedMarker"
     }
 
     /// Identifiers applied by ``FITScope/InspectorView``.

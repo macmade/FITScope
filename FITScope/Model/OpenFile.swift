@@ -95,9 +95,19 @@ public final class OpenFile: ObservableObject, Identifiable
     /// Forwards the loader's change notifications to this object's observers.
     private var loaderObserver: AnyCancellable?
 
+    /// Regenerates the thumbnail whenever the current renderer commits a new
+    /// result, so the sidebar thumbnail tracks the file's processing. Follows the
+    /// loaded image across a reload via `switchToLatest`.
+    private var thumbnailObserver: AnyCancellable?
+
     /// The in-flight (or finished) load → render → thumbnail work, owned by the
     /// model rather than any view. `nil` until ``prepare(throttle:)`` is called.
     private( set ) var preparation: Task< Void, Never >?
+
+    /// The in-flight thumbnail (re)generation, cancelled when a newer render
+    /// result supersedes it so the latest result always wins. Internal so the
+    /// preparation and tests can await the current thumbnail settling.
+    private( set ) var thumbnailTask: Task< Void, Never >?
 
     /// The longest-side pixel size of the generated sidebar thumbnail.
     private static let thumbnailDimension = 64
@@ -113,6 +123,30 @@ public final class OpenFile: ObservableObject, Identifiable
         {
             [ weak self ] _ in self?.objectWillChange.send()
         }
+
+        // Regenerate the thumbnail on every committed render result, switching to
+        // the loaded image's renderer as it appears (and again after a reload).
+        // `$result` only fires on a successful commit, so a failed render keeps
+        // the last good thumbnail.
+        self.thumbnailObserver = self.loader.$image
+            .map
+            {
+                image -> AnyPublisher< FITSImageRenderer.Result?, Never > in
+
+                guard let renderer = image?.renderer
+                else
+                {
+                    return Empty( completeImmediately: false ).eraseToAnyPublisher()
+                }
+
+                return renderer.$result.eraseToAnyPublisher()
+            }
+            .switchToLatest()
+            .compactMap { $0 }
+            .sink
+            {
+                [ weak self ] _ in self?.regenerateThumbnail()
+            }
     }
 
     /// The file name shown in the sidebar and window title.
@@ -263,7 +297,28 @@ public final class OpenFile: ObservableObject, Identifiable
             await self.load()
             await self.image?.renderer.render()
             await self.image?.detectStars()
-            await self.makeThumbnail( maxDimension: Self.thumbnailDimension )
+
+            // The render commit above drives the thumbnail through
+            // ``thumbnailObserver``; wait for that regeneration so the prepared
+            // file has its sidebar thumbnail ready, without a second render.
+            await self.thumbnailTask?.value
+        }
+    }
+
+    /// Regenerates the sidebar thumbnail from the current render result,
+    /// cancelling any regeneration still in flight so the newest result wins.
+    ///
+    /// Driven by ``thumbnailObserver`` on every committed render, so the thumbnail
+    /// reflects the file's latest processing rather than only its first render.
+    private func regenerateThumbnail()
+    {
+        self.thumbnailTask?.cancel()
+
+        self.thumbnailTask = Task
+        {
+            [ weak self ] in
+
+            await self?.makeThumbnail( maxDimension: Self.thumbnailDimension )
         }
     }
 
@@ -328,6 +383,15 @@ public final class OpenFile: ObservableObject, Identifiable
             {
                 continuation.resume( returning: Self.resize( source, width: width, height: height ) )
             }
+        }
+
+        // A newer render result may have superseded this regeneration while it
+        // was resizing; if so, drop the stale result rather than overwrite the
+        // newer thumbnail.
+        guard Task.isCancelled == false
+        else
+        {
+            return
         }
 
         self.thumbnail = thumbnail

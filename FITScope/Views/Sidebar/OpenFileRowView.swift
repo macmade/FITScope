@@ -163,6 +163,15 @@ public struct OpenFileRowView: View
                 .accessibilityIdentifier( AccessibilityIdentifier.OpenFileRowView.weightPill )
             }
 
+            if self.hasAdjustments
+            {
+                Image( systemName: "slider.horizontal.3" )
+                    .font( .system( size: 11 ) )
+                    .foregroundStyle( .secondary )
+                    .help( "This image has adjustments applied." )
+                    .accessibilityIdentifier( AccessibilityIdentifier.OpenFileRowView.adjustedMarker )
+            }
+
             if let warning = self.file.warning
             {
                 Image( systemName: "exclamationmark.triangle.fill" )
@@ -219,6 +228,13 @@ public struct OpenFileRowView: View
                 self.onClose()
             }
         }
+    }
+
+    /// Whether the row's image has any adjustment applied, so the row shows an
+    /// "edited" marker. `false` before the image has loaded.
+    private var hasAdjustments: Bool
+    {
+        self.file.image?.renderer.adjustments.hasAdjustments ?? false
     }
 
     /// A one-line summary derived from the loaded image's header, or a neutral
