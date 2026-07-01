@@ -71,16 +71,23 @@ public struct NorthOverlay: CanvasOverlay
     /// when the orientation cannot be determined.
     private let compass: Compass?
 
+    /// The action performed when the toggle is tapped with no orientation to show —
+    /// proposing a plate solve — wired by the host when the overlay is built.
+    public let onUnavailableTap: ( () -> Void )?
+
     /// Creates the overlay for the given WCS and display orientation.
     ///
     /// - Parameters:
-    ///   - wcs:         The world-coordinate system to derive north from, or `nil`
-    ///                  when none is available.
-    ///   - orientation: The orientation applied to the displayed image, so the
-    ///                  compass turns with it. Defaults to the identity.
-    public init( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation = .identity )
+    ///   - wcs:              The world-coordinate system to derive north from, or
+    ///                       `nil` when none is available.
+    ///   - orientation:      The orientation applied to the displayed image, so the
+    ///                       compass turns with it. Defaults to the identity.
+    ///   - onUnavailableTap: The action to run when tapped with nothing to show.
+    ///                       Defaults to `nil`.
+    public init( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil )
     {
-        self.compass = Self.compass( wcs: wcs, orientation: orientation )
+        self.compass          = Self.compass( wcs: wcs, orientation: orientation )
+        self.onUnavailableTap = onUnavailableTap
     }
 
     /// The overlay's stable identifier, also used by the canvas to recognise the

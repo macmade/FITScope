@@ -70,22 +70,16 @@ public struct ImageCanvasView: View
     /// The identifiers of the overlays the user has turned on for this file.
     @State private var enabledOverlays = Set< String >()
 
-    /// Whether the alert proposing a plate solve is shown. Raised when an
-    /// always-offered, solve-dependent toggle (the plate-solved objects or the
-    /// north indicator) is tapped with nothing to reveal. The two share this one
-    /// prompt rather than each carrying its own.
-    @State private var isPlateSolvePromptPresented = false
+    /// Whether the overlay alert is shown. Raised when an overlay with nothing to
+    /// reveal but a ``CanvasOverlay/warning`` (e.g. star detection found nothing, or
+    /// no plate scale is known) is tapped, so the user sees why it reveals nothing.
+    @State private var isOverlayAlertPresented = false
 
-    /// Whether the overlay warning alert is shown. Raised when an overlay carrying a
-    /// ``CanvasOverlay/warning`` (star detection ran but found nothing) is tapped,
-    /// so the user sees why the toggle reveals nothing.
-    @State private var isOverlayWarningPresented = false
+    /// The title of the overlay alert — the tapped overlay's title.
+    @State private var overlayAlertTitle = ""
 
-    /// The title of the overlay warning alert — the tapped overlay's title.
-    @State private var overlayWarningTitle = ""
-
-    /// The message of the overlay warning alert — the tapped overlay's warning.
-    @State private var overlayWarningMessage = ""
+    /// The message of the overlay alert — the tapped overlay's warning.
+    @State private var overlayAlertMessage = ""
 
     /// Whether the floating bars are currently shown.
     @State private var barsVisible = true
@@ -164,22 +158,13 @@ public struct ImageCanvasView: View
                     self.revealBars()
                 }
             }
-            .alert( "Plate Solve", isPresented: self.$isPlateSolvePromptPresented )
-            {
-                Button( "Plate Solve…" ) { self.plateSolve() }
-                Button( "Cancel", role: .cancel ) {}
-            }
-            message:
-            {
-                Text( self.plateSolvePromptMessage )
-            }
-            .alert( self.overlayWarningTitle, isPresented: self.$isOverlayWarningPresented )
+            .alert( self.overlayAlertTitle, isPresented: self.$isOverlayAlertPresented )
             {
                 Button( "OK", role: .cancel ) {}
             }
             message:
             {
-                Text( self.overlayWarningMessage )
+                Text( self.overlayAlertMessage )
             }
     }
 
@@ -242,7 +227,7 @@ public struct ImageCanvasView: View
                             isPlateSolving:   self.file.isPlateSolving,
                             overlays:         self.toolbarOverlays,
                             isOverlayEnabled: { self.enabledOverlays.contains( $0 ) },
-                            onToggleOverlay:  { self.toggleOverlay( $0 ) }
+                            onToggleOverlay:  { self.overlayTapped( $0 ) }
                         )
                         .padding( .top, 16 )
                     }
@@ -365,9 +350,10 @@ public struct ImageCanvasView: View
     }
 
     /// The overlays applicable to the current image, in toolbar (back-to-front)
-    /// order. The frame overlay is always present; data-driven overlays gate
-    /// themselves through ``CanvasOverlay/isAvailable`` — the stars overlay is
-    /// offered only once detection has populated ``FITSImage/starField``.
+    /// order. Every overlay's toggle is always offered; a tap on one with no data
+    /// is handled by the overlay itself — an informational ``CanvasOverlay/warning``,
+    /// or an ``CanvasOverlay/onUnavailableTap`` call to action (proposing a plate
+    /// solve), wired here where the plate-solve context is available.
     private var overlays: [ any CanvasOverlay ]
     {
         [
@@ -382,43 +368,33 @@ public struct ImageCanvasView: View
             StarsOverlay( stars: self.file.image?.starField?.stars ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, isLoading: self.file.image?.isDetectingStars ?? false, hasDetectedStars: self.file.image?.hasDetectedStars ?? false ),
             // The plate-solved objects, registered to image space through the same
             // committed-render orientation as the stars, so the labels track the
-            // image under rotate/flip. Available only once a solve has identified
-            // objects (``ObjectsOverlay/isAvailable``).
-            ObjectsOverlay( annotations: self.file.plateSolve?.annotations ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity ),
+            // image under rotate/flip. Tapped with no objects, it proposes a plate
+            // solve through the app model.
+            ObjectsOverlay( annotations: self.file.plateSolve?.annotations ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve ),
             // The plate scale prefers the plate solve's calibration (most accurate)
-            // and falls back to the value derived from the file's header. Available
-            // only when one of them yields a scale, so the toolbar hides the toggle
-            // when the field of view is unknown.
+            // and falls back to the value derived from the file's header. Tapped with
+            // no scale, it explains that through its warning.
             ScaleBarOverlay( pixelScale: self.file.plateSolve?.calibration.pixscale ?? self.file.image?.info.pixelScale ),
             // The north / east compass, derived from the WCS — the plate solve's
             // (most authoritative) when present, else the file header's. Mapped
             // through the same committed-render orientation as the stars and
-            // objects, so it turns with the image. Like the objects toggle it is
-            // always offered: tapped without a known orientation, it proposes a
-            // plate solve rather than revealing nothing (see `toolbarOverlays`).
-            NorthOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity ),
+            // objects, so it turns with the image. Tapped without a known
+            // orientation, it proposes a plate solve through the app model.
+            NorthOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve ),
             // The RA/Dec coordinate grid, projected from the same WCS (plate solve
             // preferred, else the file header) through the committed-render
-            // orientation. Available only when a WCS projection can be built, so the
-            // toolbar hides the toggle when the field has no usable WCS.
-            EquatorialGridOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity ),
+            // orientation. Tapped with no usable WCS, it proposes a plate solve
+            // through the app model.
+            EquatorialGridOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve ),
         ]
     }
 
-    /// The identifiers of the always-offered, solve-dependent overlays: those whose
-    /// toggle is shown even with nothing to reveal, proposing a plate solve when
-    /// tapped without data. The objects, north, and equatorial-grid overlays all
-    /// behave this way.
-    private static let alwaysOfferedOverlayIDs: Set< String > = [ ObjectsOverlay.identifier, NorthOverlay.identifier, EquatorialGridOverlay.identifier ]
-
-    /// The overlays surfaced in the toolbar: those with something to show, plus
-    /// those still computing their data (shown as an in-progress button), plus those
-    /// carrying a warning (kept visible so the user learns their work ran but found
-    /// nothing), plus the always-offered, solve-dependent toggles — which propose a
-    /// plate solve rather than revealing an empty layer.
+    /// The overlays surfaced in the toolbar. Every overlay is always offered: a tap
+    /// on one with no data explains itself or proposes a plate solve, rather than
+    /// the toggle disappearing.
     private var toolbarOverlays: [ any CanvasOverlay ]
     {
-        self.overlays.filter { $0.isAvailable || $0.isLoading || $0.warning != nil || Self.alwaysOfferedOverlayIDs.contains( $0.id ) }
+        self.overlays
     }
 
     /// The available overlays the user has enabled, drawn back-to-front. A loading
@@ -428,28 +404,31 @@ public struct ImageCanvasView: View
         self.overlays.filter { $0.isAvailable && self.enabledOverlays.contains( $0.id ) }
     }
 
-    /// Toggles an overlay on or off by identifier.
+    /// Responds to a tap on an overlay's toggle by identifier.
     ///
-    /// Two kinds of overlay never simply switch on when tapped with nothing to
-    /// reveal. An overlay carrying a ``CanvasOverlay/warning`` (star detection ran
-    /// but found nothing) presents that warning. The always-offered, solve-dependent
-    /// toggles (objects and north) instead propose a plate solve, sharing one prompt.
-    private func toggleOverlay( _ id: String )
+    /// Available overlays simply switch on or off. An overlay with nothing to show
+    /// handles the tap itself — through its ``CanvasOverlay/warning`` (an
+    /// informational alert) or its ``CanvasOverlay/onUnavailableTap`` (a call to
+    /// action, e.g. proposing a plate solve) — so the canvas stays generic.
+    private func overlayTapped( _ id: String )
     {
-        let overlay = self.overlays.first { $0.id == id }
-
-        if let warning = overlay?.warning, overlay?.isAvailable != true
+        guard let overlay = self.overlays.first( where: { $0.id == id } )
+        else
         {
-            self.overlayWarningTitle     = overlay?.title ?? ""
-            self.overlayWarningMessage   = warning
-            self.isOverlayWarningPresented = true
-
             return
         }
 
-        if Self.alwaysOfferedOverlayIDs.contains( id ), overlay?.isAvailable != true
+        guard overlay.isAvailable
+        else
         {
-            self.isPlateSolvePromptPresented = true
+            if let warning = overlay.warning
+            {
+                self.presentOverlayAlert( title: overlay.title, message: warning )
+            }
+            else
+            {
+                overlay.onUnavailableTap?()
+            }
 
             return
         }
@@ -464,18 +443,25 @@ public struct ImageCanvasView: View
         }
     }
 
-    /// The message for the shared plate-solve prompt, tailored to whether the image
-    /// has been solved (but yielded nothing for the tapped overlay) or has not been
-    /// solved at all.
-    private var plateSolvePromptMessage: String
+    /// Presents the generic overlay alert with the given title and message.
+    private func presentOverlayAlert( title: String, message: String )
     {
-        self.file.plateSolve == nil
-            ? "This image hasn’t been plate-solved yet. Plate solve it to map its field — labelling the objects in view and showing the sky orientation."
-            : "The plate solve didn’t provide what this overlay needs. You can run the plate solve again from the results window."
+        self.overlayAlertTitle       = title
+        self.overlayAlertMessage     = message
+        self.isOverlayAlertPresented = true
+    }
+
+    /// Proposes a plate solve for the displayed file, or opens the results window
+    /// when one is already running — the app model owns the decision, so the canvas
+    /// need not know about plate solving. Wired into the solve-dependent overlays.
+    private func requestPlateSolve()
+    {
+        self.appModel.presentPlateSolveOrProgress( for: self.file, openWindow: self.openWindow )
     }
 
     /// Starts (or re-opens) a plate solve for the displayed file and shows the
-    /// results window, via the app model's shared entry point.
+    /// results window, via the app model's shared entry point. Backs the dedicated
+    /// plate-solve toolbar button.
     private func plateSolve()
     {
         self.appModel.presentPlateSolve( for: self.file, apiKey: self.apiKeyStore.astrometryNetKey, openWindow: self.openWindow )

@@ -340,17 +340,33 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Don't prompt to plate-solve while a solve is already running</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Don't prompt to plate-solve while a solve is already running</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>When an always-offered overlay (Objects, North, Equatorial Grid) is toggled on an unsolved image while a plate solve is already in progress (<code>OpenFile.isPlateSolving</code>), skip the redundant "Plate Solve" alert (<code>isPlateSolvePromptPresented</code>) and instead open the existing plate-solve window so the user can watch progress.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Find where <code>isPlateSolvePromptPresented</code> is set in <code>ImageCanvasView</code> for these overlay toggles.</li>
-            <li>Guard the prompt with <code>OpenFile.isPlateSolving</code>: when true, open the existing plate-solve window instead of presenting the alert.</li>
-            <li>Ensure the window is brought to front if already open.</li>
-            <li>Verify both paths: solve running (no alert, window shown) and not running (alert as before).</li>
+            <li class="done">Find where <code>isPlateSolvePromptPresented</code> is set in <code>ImageCanvasView</code> for these overlay toggles.</li>
+            <li class="done">Guard the prompt with <code>OpenFile.isPlateSolving</code>: when true, open the existing plate-solve window instead of presenting the alert.</li>
+            <li class="done">Ensure the window is brought to front if already open.</li>
+            <li class="done">Verify both paths: solve running (no alert, window shown) and not running (alert as before).</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-01</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p>After several design rounds (see Review comments), the final model — chosen by the maintainer — makes the overlay toolbar uniform: <strong>every overlay's toggle is always visible</strong>, and tapping one with no data is handled by the overlay itself (button-owned), so <code>ImageCanvasView</code> stays generic and free of plate-solve details.</p>
+            <ul>
+              <li><strong>All overlays always visible.</strong> <code>toolbarOverlays</code> is now simply all overlays (no availability / "always-offered" filtering); the earlier <code>isAlwaysOffered</code> idea was dropped as unnecessary.</li>
+              <li><strong>Button-owned tap behavior.</strong> Two generic <code>CanvasOverlay</code> hooks: <code>warning: String?</code> (an informational "no data" message — <code>StarsOverlay</code> for "found none", and now <code>ScaleBarOverlay</code> for "no scale") and <code>onUnavailableTap: (() -&gt; Void)?</code> (a call to action). The plate-solve overlays (<code>ObjectsOverlay</code>/<code>NorthOverlay</code>/<code>EquatorialGridOverlay</code>) carry an <code>onUnavailableTap</code>, wired by the view where they're built (already where plate-solve data flows in) to <code>requestPlateSolve()</code>.</li>
+              <li><strong>Generic tap handler.</strong> <code>ImageCanvasView.overlayTapped(_:)</code>: available → toggle; else if it has a <code>warning</code> → show a generic overlay alert; else → run its <code>onUnavailableTap</code>. No plate-solve knowledge, no per-overlay branching. Removed the old <code>alwaysOfferedOverlayIDs</code> set, the in-view <code>plateSolvePromptMessage</code>, the <code>isPlateSolvePromptPresented</code> state, and the "Plate Solve" alert.</li>
+              <li><strong>Plate-solve decision + state in AppModel.</strong> <code>presentPlateSolveOrProgress(for:openWindow:)</code> (session <code>phase.isInProgress</code> → open the running solve's window; else raise the prompt), plus <code>presentPlateSolvePrompt(for:)</code>, the computed <code>plateSolvePromptMessage</code>, and <code>confirmPlateSolvePrompt(apiKey:openWindow:)</code>. The "Plate Solve" alert is hosted by <code>MainWindowView</code> (bound to <code>appModel.$isPlateSolvePromptPresented</code>), mirroring the existing <code>isMissingAPIKeyAlertPresented</code> pattern. The dedicated plate-solve <em>toolbar button</em> keeps its existing wiring.</li>
+            </ul>
+            <p>TDD: <code>AppModelTests.presentingThePlateSolvePromptRaisesItForAnUnsolvedFile</code>; <code>ScaleBarOverlay</code> warns / doesn't-warn by pixel scale; <code>ObjectsOverlay</code> carries and runs its <code>onUnavailableTap</code>. The <code>presentPlateSolveOrProgress</code>/<code>confirmPlateSolvePrompt</code> paths take a SwiftUI <code>OpenWindowAction</code> and aren't unit-testable (like <code>presentPlateSolve</code>). All 382 unit tests pass; the app builds.</p>
+            <p><strong>Two things to eyeball in review:</strong> (1) the M5 behavior — start a solve, tap Objects/North/Grid while it runs → results window comes forward, no alert; no solve → the "Plate Solve" prompt appears. (2) Because ScaleBar now uses <code>warning</code>, its toggle shows the same small warning badge (bottom-right) as Stars when there's no scale — consistent, but new; easy to drop if unwanted.</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>Don't like the design of extracting the overlay-tap decision into a separate <code>OverlayTapAction</code> type — keep the decision inline in <code>toggleOverlay(_:)</code> instead.</li>
+              <li><code>ImageCanvasView</code> shouldn't know about plate-solving details (e.g. reading <code>OpenFile.isPlateSolving</code> directly); the plate-solve state/decision should be owned elsewhere.</li>
+              <li>Rejected the <code>isAlwaysOffered</code> + <code>AppModel.handleAlwaysOfferedOverlayTap</code> design: <code>isAlwaysOffered</code> is questionable (which overlays are actually not always visible?), and <code>handleAlwaysOfferedOverlayTap</code> looks generic but only handles plate solving — a dishonest abstraction. Bad design; rethink.</li>
+            </ul>
+          </div>
         </li>
 
       </ol>

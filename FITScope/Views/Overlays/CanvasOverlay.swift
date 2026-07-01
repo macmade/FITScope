@@ -58,12 +58,19 @@ public protocol CanvasOverlay
     var isLoading: Bool { get }
 
     /// A warning message for an overlay that has finished computing but has nothing
-    /// to show — e.g. star detection ran yet found no stars. When non-`nil`, the
-    /// toolbar keeps the overlay's toggle visible (so the user learns the work ran)
-    /// and, on tap, presents this message instead of switching on an empty layer.
-    /// `nil` when there is nothing to warn about. Defaults to `nil`, so the toolbar
-    /// handles warnings generically without knowing what any overlay computes.
+    /// to show — e.g. star detection ran yet found no stars, or no plate scale is
+    /// known for the scale bar. When non-`nil`, the toolbar badges the toggle and,
+    /// on tap, presents this message. `nil` when there is nothing to warn about.
+    /// Defaults to `nil`, so the toolbar handles warnings generically without
+    /// knowing what any overlay computes.
     var warning: String? { get }
+
+    /// The action performed when the overlay's toggle is tapped while it has nothing
+    /// to show and no ``warning`` — a call to action the overlay owns, such as
+    /// proposing a plate solve. Wired by the host when the overlay is built (that's
+    /// where the app-level context lives), so the canvas view runs it without
+    /// knowing what it does. Defaults to `nil` (a tap with no data does nothing).
+    var onUnavailableTap: ( () -> Void )? { get }
 
     /// Draws the overlay into the canvas.
     ///
@@ -91,6 +98,13 @@ public extension CanvasOverlay
     /// Overlays with nothing to warn about report `nil`; a data-driven overlay
     /// overrides this to surface a warning once it has run and found nothing.
     var warning: String?
+    {
+        nil
+    }
+
+    /// Overlays with no call to action report `nil`; a solve-dependent overlay is
+    /// wired with one by the host when built.
+    var onUnavailableTap: ( () -> Void )?
     {
         nil
     }

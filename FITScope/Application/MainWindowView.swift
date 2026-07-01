@@ -54,6 +54,14 @@ public struct MainWindowView: View
     /// window when the file itself is closed.
     @Environment( \.dismissWindow ) private var dismissWindow
 
+    /// Opens the plate-solve results window when the shared "Plate Solve" prompt is
+    /// confirmed.
+    @Environment( \.openWindow ) private var openWindow
+
+    /// The API-key store, read for the Astrometry.net key when confirming a plate
+    /// solve from the shared prompt.
+    @EnvironmentObject private var apiKeyStore: APIKeyStore
+
     /// The file URLs to load when the window first appears.
     private let initialURLs: [ URL ]
 
@@ -165,6 +173,22 @@ public struct MainWindowView: View
         message:
         {
             Text( "Add your free Astrometry.net API key in Preferences \u{25B8} API Keys, then try plate solving again." )
+        }
+        // The shared "Plate Solve" prompt, raised by the app model when a
+        // solve-dependent overlay is tapped with nothing to reveal. Bound to the
+        // shared flag so the canvas view stays free of plate-solve details.
+        .alert( "Plate Solve", isPresented: self.$appModel.isPlateSolvePromptPresented )
+        {
+            Button( "Plate Solve\u{2026}" )
+            {
+                self.appModel.confirmPlateSolvePrompt( apiKey: self.apiKeyStore.astrometryNetKey, openWindow: self.openWindow )
+            }
+
+            Button( "Cancel", role: .cancel ) {}
+        }
+        message:
+        {
+            Text( self.appModel.plateSolvePromptMessage )
         }
         .onOpenURL
         {

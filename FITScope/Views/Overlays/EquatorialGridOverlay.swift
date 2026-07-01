@@ -50,16 +50,23 @@ public struct EquatorialGridOverlay: CanvasOverlay
     /// source-space points into the displayed frame.
     private let orientation: Processors.Orient.Orientation
 
+    /// The action performed when the toggle is tapped with no WCS to project —
+    /// proposing a plate solve — wired by the host when the overlay is built.
+    public let onUnavailableTap: ( () -> Void )?
+
     /// Creates the overlay for the given WCS and display orientation.
     ///
     /// - Parameters:
-    ///   - wcs:         The world-coordinate system to project through, or `nil`.
-    ///   - orientation: The orientation applied to the displayed image. Defaults to
-    ///                  the identity.
-    public init( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation = .identity )
+    ///   - wcs:              The world-coordinate system to project through, or `nil`.
+    ///   - orientation:      The orientation applied to the displayed image. Defaults
+    ///                       to the identity.
+    ///   - onUnavailableTap: The action to run when tapped with nothing to show.
+    ///                       Defaults to `nil`.
+    public init( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil )
     {
-        self.projection  = wcs.flatMap { WCSProjection( metadata: $0 ) }
-        self.orientation = orientation
+        self.projection       = wcs.flatMap { WCSProjection( metadata: $0 ) }
+        self.orientation      = orientation
+        self.onUnavailableTap = onUnavailableTap
     }
 
     /// The overlay's stable identifier, also used by the canvas to recognise the

@@ -59,6 +59,11 @@ public struct ScaleBarOverlay: CanvasOverlay
         ( self.pixelScale ?? 0 ) > 0
     }
 
+    public var warning: String?
+    {
+        self.isAvailable ? nil : "No scale information is available for this image. Plate solve it, or check that its header carries a focal length and pixel size."
+    }
+
     /// A chosen scale-bar measurement: the angular value to display and the length
     /// it occupies on screen.
     public struct Measurement: Equatable

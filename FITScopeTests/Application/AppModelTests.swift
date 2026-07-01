@@ -180,4 +180,18 @@ struct AppModelTests
 
         #expect( app.plateSolveSession( for: file.id ) == nil )
     }
+
+    @Test
+    func presentingThePlateSolvePromptRaisesItForAnUnsolvedFile() throws
+    {
+        let app  = AppModel()
+        let file = OpenFile( url: TestFixtures.monoImage )
+
+        app.presentPlateSolvePrompt( for: file )
+
+        // The prompt is shown, with the "not yet solved" message for a file that has
+        // never been plate-solved.
+        #expect( app.isPlateSolvePromptPresented )
+        #expect( app.plateSolvePromptMessage.contains( "hasn’t been plate-solved" ) )
+    }
 }

@@ -60,6 +60,19 @@ struct ObjectsOverlayTests
     }
 
     @Test
+    func carriesAndRunsItsUnavailableTapAction() throws
+    {
+        // The overlay owns its "tapped with nothing to show" action (proposing a
+        // plate solve); the toolbar just runs it.
+        var ran     = false
+        let overlay = ObjectsOverlay( annotations: [] ) { ran = true }
+
+        overlay.onUnavailableTap?()
+
+        #expect( ran )
+    }
+
+    @Test
     func labelUsesTheFirstName() throws
     {
         #expect( Self.annotation( names: [ "M 66", "NGC 3627" ] ).label == "M 66" )

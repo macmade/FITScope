@@ -51,6 +51,20 @@ struct ScaleBarOverlayTests
     }
 
     @Test
+    func warnsWithoutAPixelScale() throws
+    {
+        // With no scale to draw, tapping the always-offered toggle explains why
+        // rather than revealing nothing.
+        #expect( ScaleBarOverlay( pixelScale: nil ).warning != nil )
+    }
+
+    @Test
+    func doesNotWarnWithAPixelScale() throws
+    {
+        #expect( ScaleBarOverlay( pixelScale: 1.5 ).warning == nil )
+    }
+
+    @Test
     func hasAStableNonDisplayIdentifier() throws
     {
         #expect( ScaleBarOverlay( pixelScale: nil ).id == "scale" )

@@ -47,16 +47,23 @@ public struct ObjectsOverlay: CanvasOverlay
     /// source-space object positions into the displayed frame.
     private let orientation: Processors.Orient.Orientation
 
+    /// The action performed when the toggle is tapped with no objects to show —
+    /// proposing a plate solve — wired by the host when the overlay is built.
+    public let onUnavailableTap: ( () -> Void )?
+
     /// Creates the overlay for the given plate-solved objects.
     ///
     /// - Parameters:
-    ///   - annotations: The plate-solved objects, in solved-image pixel
-    ///                  coordinates.
-    ///   - orientation: The orientation applied to the displayed image.
-    public init( annotations: [ PlateSolveResult.Annotation ], orientation: Processors.Orient.Orientation = .identity )
+    ///   - annotations:      The plate-solved objects, in solved-image pixel
+    ///                       coordinates.
+    ///   - orientation:      The orientation applied to the displayed image.
+    ///   - onUnavailableTap: The action to run when tapped with nothing to show.
+    ///                       Defaults to `nil`.
+    public init( annotations: [ PlateSolveResult.Annotation ], orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil )
     {
-        self.annotations = annotations
-        self.orientation = orientation
+        self.annotations      = annotations
+        self.orientation      = orientation
+        self.onUnavailableTap = onUnavailableTap
     }
 
     /// The overlay's stable identifier, also used by the canvas to recognise the

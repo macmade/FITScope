@@ -72,6 +72,16 @@ public final class AppModel: ObservableObject
     /// alert — with an *Open Preferences* action — in SwiftUI.
     @Published public var isMissingAPIKeyAlertPresented = false
 
+    /// Whether the "Plate Solve" prompt should be shown. Raised when a
+    /// solve-dependent overlay is tapped with nothing to reveal and no solve is
+    /// running; the active window presents the alert in SwiftUI, its confirm action
+    /// calling ``confirmPlateSolvePrompt(apiKey:openWindow:)``.
+    @Published public var isPlateSolvePromptPresented = false
+
+    /// The file the plate-solve prompt is about, retained while it is shown so the
+    /// confirm action can start (or re-open) the solve. Cleared once resolved.
+    private var plateSolvePromptFile: OpenFile?
+
     /// Creates an empty app model.
     public init()
     {}
@@ -165,6 +175,66 @@ public final class AppModel: ObservableObject
         }
 
         openWindow( id: "PlateSolveWindow", value: file.id )
+    }
+
+    /// Responds to a solve-dependent overlay being tapped with nothing to reveal.
+    ///
+    /// When a solve is already running for the file, its results window is brought
+    /// forward so the user can watch progress; otherwise the "Plate Solve" prompt is
+    /// raised, proposing one. Owning this decision here keeps the canvas view from
+    /// knowing anything about plate solving.
+    ///
+    /// - Parameters:
+    ///   - file:       The file the tapped overlay belongs to.
+    ///   - openWindow: The action that opens the results window.
+    public func presentPlateSolveOrProgress( for file: OpenFile, openWindow: OpenWindowAction )
+    {
+        if self.plateSolveSession( for: file.id )?.phase.isInProgress == true
+        {
+            openWindow( id: "PlateSolveWindow", value: file.id )
+        }
+        else
+        {
+            self.presentPlateSolvePrompt( for: file )
+        }
+    }
+
+    /// Raises the "Plate Solve" prompt for a file, retaining it so the confirm
+    /// action can act on it. The active window presents the alert in SwiftUI.
+    ///
+    /// - Parameter file: The file the prompt is about.
+    public func presentPlateSolvePrompt( for file: OpenFile )
+    {
+        self.plateSolvePromptFile        = file
+        self.isPlateSolvePromptPresented = true
+    }
+
+    /// The message for the "Plate Solve" prompt, tailored to whether the file has
+    /// been solved (but yielded nothing for the tapped overlay) or not solved at all.
+    public var plateSolvePromptMessage: String
+    {
+        self.plateSolvePromptFile?.plateSolve == nil
+            ? "This image hasn’t been plate-solved yet. Plate solve it to map its field — labelling the objects in view and showing the sky orientation."
+            : "The plate solve didn’t provide what this overlay needs. You can run the plate solve again from the results window."
+    }
+
+    /// Confirms the "Plate Solve" prompt: starts (or re-opens) the solve for the
+    /// prompted file and shows its results window. A no-op if no file is pending.
+    ///
+    /// - Parameters:
+    ///   - apiKey:     The Astrometry.net API key.
+    ///   - openWindow: The action that opens the results window.
+    public func confirmPlateSolvePrompt( apiKey: String, openWindow: OpenWindowAction )
+    {
+        guard let file = self.plateSolvePromptFile
+        else
+        {
+            return
+        }
+
+        self.plateSolvePromptFile = nil
+
+        self.presentPlateSolve( for: file, apiKey: apiKey, openWindow: openWindow )
     }
 
     /// Routes URLs to the active window, or opens a new window when none exists.
