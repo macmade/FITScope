@@ -136,7 +136,7 @@
       <div class="generated">Generated 2026-06-30</div>
       <ul class="meta-list">
         <li><strong>Source:</strong> <code>Docs/agent-plans/active/2026-06-28-fixes/fixes.html</code></li>
-        <li><strong>Milestones:</strong> 28 (24 concrete fixes + 4 design decisions), one per source item</li>
+        <li><strong>Milestones:</strong> 29 (24 concrete fixes + 4 design decisions, one per source item; + 1 refactor added during M6 review)</li>
       </ul>
     </header>
 
@@ -378,18 +378,44 @@
       <ol class="milestones" start="6">
 
         <li class="milestone">
-          <div class="m-head"><h4>Flesh out the Image menu</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Flesh out the Image menu</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Add the rest of the image actions to the <em>Image</em> menu (<code>ImageCommands</code>) so they are discoverable and keyboard-accessible, rather than living only in the floating canvas toolbar (<code>ImageToolbarView</code>).</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Inventory the actions currently only in <code>ImageToolbarView</code> (zoom controls + overlay toggles).</li>
-            <li>Add zoom commands with standard shortcuts: Zoom In, Zoom Out, Actual Size (100%), Fit to Window, Recenter.</li>
-            <li>Add overlay toggles (e.g. "Show Stars") to the menu.</li>
-            <li>Share the underlying actions/state between toolbar and menu so both stay in sync; ensure correct enable/disable state.</li>
-            <li>Verify menu items and shortcuts work and reflect current state.</li>
+            <li class="done">Inventory the actions currently only in <code>ImageToolbarView</code> (zoom controls + overlay toggles).</li>
+            <li class="done">Add zoom commands with standard shortcuts: Zoom In, Zoom Out, Actual Size (100%), Fit to Window, Recenter.</li>
+            <li class="done">Add overlay toggles (e.g. "Show Stars") to the menu.</li>
+            <li class="done">Share the underlying actions/state between toolbar and menu so both stay in sync; ensure correct enable/disable state.</li>
+            <li class="done">Verify menu items and shortcuts work and reflect current state.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-01</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Scope (clarified with maintainer):</strong> every action in the top floating toolbar — Recenter, Zoom Out, Zoom In, Fit to Window, Actual Size, and the overlay toggles (Plate Solve was already there) — is mirrored into the Image menu, kept in sync with the toolbar.</p>
+            <p><strong>Architecture.</strong> The blocker was that the zoom state, the one-shot <code>CanvasCommand</code> (with its token source) and <code>enabledOverlays</code> were private <code>@State</code> in <code>ImageCanvasView</code>, while the menu sits at scene level and can only reach the frontmost window through focused values. Introduced <code>ImageCanvasController</code> (an <code>ObservableObject</code>, new file <code>FITScope/Views/Canvas/ImageCanvasController.swift</code>) as the single source of truth for canvas interaction; both the toolbar and the menu drive it. <code>ImageCanvasView</code> owns it as <code>@StateObject</code> and publishes it with <code>.focusedSceneObject(self.controller)</code>; <code>ImageCommands</code> reads it via <code>@FocusedObject var canvas: ImageCanvasController?</code>, exactly as <code>FileCommands</code> reaches the selected file — so items follow the key window and disable when no image is shown. (Two <code>.focusedSceneObject</code>s of different types now coexist: <code>OpenFile</code> from <code>MainWindowView</code> and <code>ImageCanvasController</code> from <code>ImageCanvasView</code>.)</p>
+            <ul>
+              <li><strong>Controller.</strong> <code>@Published</code> <code>zoom</code> / <code>canZoomOut</code> / <code>command</code> (private set) / <code>enabledOverlays</code> / overlay-alert state; zoom methods (<code>fit</code>/<code>actualSize</code>/<code>recenter</code>/<code>zoomIn</code>/<code>zoomOut</code>) issue distinct-token commands; <code>overlayTapped(_:)</code> holds the generic toggle-or-warn-or-call-to-action decision (moved verbatim out of the view), so the canvas stays free of overlay-specific knowledge — the pattern the maintainer settled on in M5.</li>
+              <li><strong>Overlay mirror.</strong> The controller's <code>overlays</code> list is a plain (non-<code>@Published</code>) property, kept current by the view via <code>.onChange(of: overlaySignature, initial: true)</code> — a cheap string of each overlay's id/availability/warning — so it is never written mid-<code>body</code> (the "publishing changes from within view updates" hazard M2/M4 were careful about) and rebuilds only when a tap's outcome would change, not on unrelated renders like a rotation. The overlay set is structurally fixed, so the menu re-renders correctly off the published <code>enabledOverlays</code> (checkmarks) while tap decisions read the live mirror.</li>
+              <li><strong>Menu items.</strong> Zoom items with <code>⌘+</code> (Zoom In), <code>⌘-</code> (Zoom Out, also disabled when <code>canZoomOut == false</code>), <code>⌘0</code> (Actual Size), <code>⌘9</code> (Fit to Window), and Recenter (no shortcut); none collide with the existing <code>⌘⇧S/E/P/I</code> / <code>⌘N/O</code>. Overlay items are <code>Toggle</code>s (native checkmark) whose binding ignores the new value and routes to <code>canvas.overlayTapped</code>, so a menu tap on an overlay with no data behaves exactly like its toolbar button (shows the warning alert, or proposes a plate solve). Existing "Plate Solve…" kept at the bottom.</li>
+              <li><strong>Zoom keyboard shortcuts (review — keyboard-layout fix).</strong> SwiftUI's <code>.keyboardShortcut</code> matched <code>⌘+</code> but <em>not</em> <code>⌘-</code> for the maintainer — and not even on a US layout — because SwiftUI matches by the produced character in a way that missed the minus key. The menu still <em>displays</em> the shortcuts, but the actual <code>⌘+</code> / <code>⌘-</code> handling now lives in the AppKit <code>ZoomingScrollView.performKeyEquivalent(with:)</code> (the same view that does scroll-wheel zoom), matching the key by its character exactly as AppKit/Preview do — so it works on every layout, including the keypad <code>+</code>/<code>-</code>. Being deeper in the responder chain, it runs before the menu's equivalents, so the items never double-fire; the zoom change reports back through the existing bounds-change notifications, keeping the read-out and overlays in step.</li>
+              <li><strong>View cleanup.</strong> Removed the view's <code>zoom</code>/<code>canZoomOut</code>/<code>command</code>/<code>tokens</code>/<code>enabledOverlays</code>/overlay-alert <code>@State</code>, its <code>overlayTapped</code>/<code>presentOverlayAlert</code>/<code>send</code> methods, and rewired the toolbar, <code>ZoomableImageView</code> callbacks, per-file overlay reset, and the overlay <code>.alert</code> onto the controller. <code>requestPlateSolve</code>/<code>plateSolve</code> (which need <code>appModel</code>/<code>openWindow</code>) stayed in the view and are wired into the overlays' <code>onUnavailableTap</code> as before.</li>
+            </ul>
+            <p>TDD: new <code>ImageCanvasControllerTests</code> (added to the FITScopeTests target via the <code>xcodeproj</code> gem, since the project uses explicit file references) — zoom methods issue their matching command kind; a repeated command bumps the token so the scroll view applies it again; an available overlay toggles on/off; an unavailable overlay with a warning raises the alert without enabling; one with a call to action runs it without alerting; an unknown id is a no-op. Watched them fail to compile (no <code>ImageCanvasController</code>) before writing it. All 388 unit tests pass; the app builds.</p>
+            <p><strong>Review round — more menu items.</strong> Per review, the menu now also carries the rest of the toolbar/inspector actions: <em>Rotate Left / Right</em>, <em>Flip Horizontal / Vertical</em>, <em>Invert</em>, <em>Reset View</em>, <em>Levels…</em>, <em>Curves…</em>, and <em>View FITS Headers…</em> (all file-targeted, gated on a loaded image via <code>@FocusedObject var file: OpenFile?</code>).</p>
+            <ul>
+              <li><strong>Shared model actions.</strong> Added action methods to <code>FITSImage</code> — <code>rotateLeft/rotateRight/flipHorizontal/flipVertical</code>, <code>toggleInvert()</code>, <code>resetAdjustments()</code> — so the menu drives the same model the inspector does. Rotate/flip just compose the orientation transform and re-render; Invert and Reset also bump a new <code>@Published controlsRevision</code>.</li>
+              <li><strong>The inspector-sync problem, interim fix.</strong> The inspector controls cache their values in local <code>@State</code>, so a menu-driven Reset/Invert would otherwise leave them stale. <code>InspectorView</code> now keys its controls' identity off <code>image.controlsRevision</code> (replacing its private <code>controlsID</code> UUID), so a menu change recreates and reseeds them. This is the <em>interim</em> reseed; <strong>M29</strong> replaces it by having the controls observe <code>adjustments</code> directly (see that milestone).</li>
+              <li><strong>Dedup + a fix.</strong> The 12-field reset that lived inline in <code>InspectorView.reset()</code> moved to a single <code>ImageAdjustments.reset()</code> that both the inspector button and the menu use. It copies from a fresh instance, so it can't omit a field — which surfaced that the old inline reset never reset <code>debayerAlgorithm</code>; the shared reset now does. <em>(Flagging this as a small behavior change: "Reset View" now also restores the demosaic algorithm to its default. Say the word if that should be preserved as-was.)</em></li>
+              <li><strong>Editors &amp; headers.</strong> <em>Levels…</em> / <em>Curves…</em> open their singleton windows (<code>openWindow(id:)</code>); <em>View FITS Headers…</em> opens the info window with the file's <code>FITSImageInfo</code> — the same actions the inspector buttons and info panel already use.</li>
+            </ul>
+            <p><strong>Icons.</strong> Every menu item now carries the same SF Symbol as its toolbar / inspector button, via <code>Label</code>: zoom (<code>plus</code> / <code>minus</code> / <code>1.magnifyingglass</code> / <code>arrow.up.left.and.arrow.down.right</code> / <code>scope</code>), each overlay's own <code>systemImageName</code>, orientation (<code>rotate.left</code> / <code>rotate.right</code> / the flip symbols), Reset View (<code>arrow.counterclockwise</code>), Levels / Curves (their inspector-button symbols), and Plate Solve (<code>point.3.connected.trianglepath.dotted</code>). Invert and View FITS Headers have no icon on their source controls (a plain switch, a text button), so — per review — they were given fitting symbols: Invert <code>circle.righthalf.filled</code> (as the app's "Invert Appearance" uses) and View FITS Headers <code>tablecells</code> (the headers window is a keyword table).</p>
+            <p>TDD (this round): added <code>ImageAdjustmentsTests.resetRestoresEveryValueToItsDefault</code> — mutate a spread of fields (simple values, mode/enum stages, orientation) then assert <code>settings == ImageProcessor.Settings()</code> and the orientation is identity. Watched it fail (no <code>reset()</code>) before adding the method. The <code>FITSImage</code> action wrappers and the menu wiring are model/UI glue, verified by build + the interactive check below. All 389 unit tests pass; the app builds.</p>
+            <p><strong>Needs an interactive check</strong> (the plan's last task): open an image and confirm each Image-menu item and its shortcut drives the canvas (zoom/fit/actual-size/recenter), that Zoom Out greys out when the whole image is visible, that the overlay items show live checkmarks matching the toolbar, and that a menu toggle on an overlay with no data shows the same warning / plate-solve prompt as the toolbar. Confirm the new items too: rotate/flip, Invert and Reset View change the image <em>and</em> the inspector reflects them (the interim reseed), Levels/Curves open their editors, View FITS Headers opens the headers window, and every file-targeted item greys out with no image open. Also confirm no "Publishing changes from within view updates" warning appears when switching files or opening the menu.</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>Also add to the Image menu: "View FITS headers"; the rotate / flip actions and Reset View; Show Curves and Show Levels; and Invert.</li>
+              <li>On the concern that a menu-driven Reset / Invert would desync the inspector's cached controls: the fix is that <em>all</em> inspector controls should observe the shared <code>adjustments</code> directly (rather than caching their values in local <code>@State</code> seeded once at init), so they stay in sync regardless of where an action originates. This removes the <code>controlsID</code> reseed hack entirely.</li>
+            </ul>
+          </div>
         </li>
 
         <li class="milestone">
@@ -739,16 +765,44 @@
       </ol>
     </div>
 
+    <!-- PHASE 9 -->
+    <div class="phase">
+      <h3 class="phase-title"><span class="phase-kicker">Phase 9</span>Inspector controls refactor</h3>
+      <ol class="milestones" start="29">
+
+        <li class="milestone">
+          <div class="m-head"><h4>Inspector controls observe shared adjustments</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Make every inspector control bind to and observe the shared <code>ImageAdjustments</code> object directly, instead of caching each value in local <code>@State</code> seeded once at <code>init</code>. This keeps the controls in sync with the underlying adjustments no matter where a change originates — the inspector itself, the <em>Image</em> menu, the Levels/Curves editors, or Reset — and removes the <code>controlsID</code> reseed hack in <code>InspectorView</code> (and the interim reseed signal added in M6). Arose from the M6 review: menu-driven Reset / Invert would otherwise leave the inspector's cached controls stale.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Convert the simple controls — <code>ColorControlView</code> (invert), <code>SaturationControlView</code>, <code>BrightnessContrastControlView</code> — to observe <code>adjustments</code> via <code>@ObservedObject</code> and bind directly to its <code>@Published</code> fields.</li>
+            <li>Convert the mode/toggle controls — <code>GammaCorrectionControlView</code>, <code>StretchControlView</code>, <code>WhiteBalanceControlView</code>, <code>DebayerControlView</code> — to observe <code>adjustments</code> while retaining the local remembered state they need across enable/mode toggles (gamma's exponent while off; stretch and white-balance per-mode params), re-syncing that state when <code>adjustments</code> changes externally.</li>
+            <li>Remove <code>InspectorView.controlsID</code> and its <code>reset()</code> reseed, plus the interim reseed signal introduced in M6, now that observation keeps the controls current; keep the per-image identity in <code>InspectorColumnView</code>.</li>
+            <li>Watch the re-render/performance implication of many controls observing one object during a slider drag; keep the debounced re-render so a drag does not thrash the pipeline.</li>
+            <li>Update the affected control tests (<code>Debayer</code>, <code>Gamma</code>, <code>Stretch</code>, <code>WhiteBalance</code>) and add coverage that an external change (a Reset, or a menu Invert) updates the control's displayed state.</li>
+            <li>Coordinate with M14 (gamma switch removal), M15 (regroup levels/curves) and the inspector milestones (M16–M18).</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+      </ol>
+    </div>
+
     <section class="appendix">
       <h2 class="section">Appendix</h2>
-      <p><strong>Milestone ↔ source mapping.</strong> The 28 milestones cover every item in
+      <p><strong>Milestone ↔ source mapping.</strong> Milestones M1–M28 cover every item in
         <code>fixes.html</code>, reordered into themed phases with the 4 open design questions
         last. Items not tied to a single file (light mode, processor order, debouncing,
-        inspector order) are scoped as audit-then-fix milestones.</p>
+        inspector order) are scoped as audit-then-fix milestones. M29 is not a source item: it
+        was added during the M6 review as the clean foundation for menu-driven adjustment
+        actions.</p>
       <p><strong>Cross-milestone coordination.</strong> A few milestones touch shared state and
         should be implemented mindful of each other: M8 / M26 (has-adjustments state),
         M10 / M11 (default vs. remembered window size), M14 / M19 / M27 (gamma, processor
-        order, gamma redundancy), and M3 / M24 (overlay colors and light-mode adaptation).</p>
+        order, gamma redundancy), M3 / M24 (overlay colors and light-mode adaptation), and
+        M6 / M29 (menu adjustment actions and the controls-observe-adjustments refactor,
+        which also touches M14–M18).</p>
     </section>
 
   </div>

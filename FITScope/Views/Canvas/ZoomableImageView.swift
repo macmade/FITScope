@@ -481,6 +481,11 @@ final class ZoomingScrollView: NSScrollView
     /// The magnification multiplier applied per discrete wheel notch.
     private static let zoomStep = 1.2
 
+    /// The multiplier applied by one ⌘+ / ⌘- keyboard step, matching the toolbar
+    /// and menu zoom-in / zoom-out amounts.
+    private static let keyboardZoomIn:  CGFloat = 1.25
+    private static let keyboardZoomOut: CGFloat = 0.8
+
     override func scrollWheel( with event: NSEvent )
     {
         guard event.scrollingDeltaY != 0
@@ -498,6 +503,53 @@ final class ZoomingScrollView: NSScrollView
         let point  = self.contentView.convert( event.locationInWindow, from: nil )
 
         self.setMagnification( target, centeredAt: point )
+    }
+
+    /// Handles the ⌘+ / ⌘- zoom keys directly, the way AppKit matches key
+    /// equivalents — by the character the key produces — so they work on every
+    /// keyboard layout. SwiftUI's `.keyboardShortcut` matching failed to fire ⌘-
+    /// on non-US layouts (and here even on US), while the menu still shows the
+    /// shortcuts; being deeper in the responder chain, this runs before the menu's
+    /// equivalents, so the menu items never double-fire. The change reports back
+    /// to SwiftUI through the same bounds-change notifications as scroll-wheel and
+    /// pinch zoom, keeping the zoom read-out and overlays in step.
+    override func performKeyEquivalent( with event: NSEvent ) -> Bool
+    {
+        let flags = event.modifierFlags.intersection( .deviceIndependentFlagsMask )
+
+        // Command is required; Shift is tolerated (it is needed to type "+" on many
+        // layouts and is already reflected in the produced character), but Option
+        // and Control are not, so other ⌘-shortcuts are left untouched.
+        guard flags.contains( .command ),
+              flags.isDisjoint( with: [ .option, .control ] ),
+              let key = event.charactersIgnoringModifiers
+        else
+        {
+            return super.performKeyEquivalent( with: event )
+        }
+
+        switch key
+        {
+            case "+",
+                 "=": self.zoomAroundViewportCenter( by: Self.keyboardZoomIn )
+            case "-":      self.zoomAroundViewportCenter( by: Self.keyboardZoomOut )
+            default:       return super.performKeyEquivalent( with: event )
+        }
+
+        return true
+    }
+
+    /// Multiplies the current magnification by `factor`, clamped to the allowed
+    /// range and keeping the centre of the viewport fixed.
+    ///
+    /// - Parameter factor: The magnification multiplier (> 1 zooms in, < 1 out).
+    private func zoomAroundViewportCenter( by factor: CGFloat )
+    {
+        let target = CanvasGeometry.clamp( self.magnification * factor, min: self.minMagnification, max: self.maxMagnification )
+        let clip   = self.contentView.bounds
+        let center = CGPoint( x: clip.midX, y: clip.midY )
+
+        self.setMagnification( target, centeredAt: center )
     }
 }
 

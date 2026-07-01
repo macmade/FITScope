@@ -90,6 +90,32 @@ public final class ImageAdjustments: ObservableObject
     public init()
     {}
 
+    /// Restores every adjustment to its default, rendering the file as captured.
+    ///
+    /// A single reset for the whole pipeline configuration, so the inspector's
+    /// Reset View button and the *Image* menu share it rather than each
+    /// duplicating the field-by-field copy. Values are copied from a fresh
+    /// instance, so the reset tracks the defaults automatically and can never omit
+    /// a field as it grows.
+    public func reset()
+    {
+        let defaults = ImageAdjustments()
+
+        self.normalize        = defaults.normalize
+        self.stretch          = defaults.stretch
+        self.gamma            = defaults.gamma
+        self.whiteBalance     = defaults.whiteBalance
+        self.invert           = defaults.invert
+        self.brightness       = defaults.brightness
+        self.contrast         = defaults.contrast
+        self.levels           = defaults.levels
+        self.curves           = defaults.curves
+        self.saturation       = defaults.saturation
+        self.debayer          = defaults.debayer
+        self.debayerAlgorithm = defaults.debayerAlgorithm
+        self.orientation      = defaults.orientation
+    }
+
     /// A `Sendable` snapshot of the current adjustments, safe to hand to the
     /// render pipeline across the concurrency boundary.
     public var settings: ImageProcessor.Settings

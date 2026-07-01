@@ -24,15 +24,25 @@
 
 import SwiftUI
 
-/// The app's *Image* menu commands, currently the plate-solve action.
+/// The app's *Image* menu commands: the same zoom, overlay and plate-solve
+/// actions the floating ``ImageToolbarView`` offers, so they are discoverable and
+/// keyboard-accessible from the menu bar too.
 ///
-/// The command acts on the frontmost window's selected file — published as the
-/// scene's focused object by ``MainWindowView`` — so it follows the key window
-/// and disables itself when no file is selected, mirroring ``FileCommands``.
+/// The zoom and overlay actions drive the frontmost window's ``ImageCanvasController``,
+/// and the plate-solve action targets its selected ``OpenFile`` — both published as
+/// the scene's focused objects (see ``ImageCanvasView`` and ``MainWindowView``), so
+/// every item follows the key window and disables itself when no image is shown,
+/// mirroring ``FileCommands``. The overlay items call the same tap handler the
+/// toolbar does, so a toggle on an overlay with no data behaves identically (it
+/// explains itself or proposes a plate solve) from either place.
 struct ImageCommands: View
 {
     /// The frontmost window's selected file, or `nil` when none.
     @FocusedObject private var file: OpenFile?
+
+    /// The frontmost window's canvas controller, or `nil` when no image is shown.
+    /// Observed, so the menu re-validates as zoom and overlay state change.
+    @FocusedObject private var canvas: ImageCanvasController?
 
     /// Opens the plate-solving results window.
     @Environment( \.openWindow ) private var openWindow
@@ -54,15 +64,205 @@ struct ImageCommands: View
         self.apiKeyStore = apiKeyStore
     }
 
-    /// The menu items.
+    /// Whether the frontmost window has a loaded image, gating the file-targeted
+    /// items (orientation, invert, reset, the editors, and the headers window).
+    private var hasImage: Bool
+    {
+        self.file?.image != nil
+    }
+
+    /// The menu items: zoom, overlay toggles, orientation, invert / reset, the
+    /// Levels and Curves editors, the FITS-headers window, then plate solving.
     var body: some View
     {
-        Button( "Plate Solve\u{2026}" )
+        // Each item carries the same SF Symbol as its toolbar / inspector button,
+        // so the menu reads as the same actions in a different place.
+        Button
+        {
+            self.canvas?.zoomIn()
+        }
+        label:
+        {
+            Label( "Zoom In", systemImage: "plus" )
+        }
+        .keyboardShortcut( "+", modifiers: .command )
+        .disabled( self.canvas == nil )
+
+        Button
+        {
+            self.canvas?.zoomOut()
+        }
+        label:
+        {
+            Label( "Zoom Out", systemImage: "minus" )
+        }
+        .keyboardShortcut( "-", modifiers: .command )
+        .disabled( self.canvas == nil || self.canvas?.canZoomOut == false )
+
+        Button
+        {
+            self.canvas?.actualSize()
+        }
+        label:
+        {
+            Label( "Actual Size", systemImage: "1.magnifyingglass" )
+        }
+        .keyboardShortcut( "0", modifiers: .command )
+        .disabled( self.canvas == nil )
+
+        Button
+        {
+            self.canvas?.fit()
+        }
+        label:
+        {
+            Label( "Fit to Window", systemImage: "arrow.up.left.and.arrow.down.right" )
+        }
+        .keyboardShortcut( "9", modifiers: .command )
+        .disabled( self.canvas == nil )
+
+        Button
+        {
+            self.canvas?.recenter()
+        }
+        label:
+        {
+            Label( "Recenter", systemImage: "scope" )
+        }
+        .disabled( self.canvas == nil )
+
+        if let canvas = self.canvas, canvas.overlays.isEmpty == false
+        {
+            Divider()
+
+            // Each overlay mirrors its toolbar toggle — same icon, and a binding that
+            // ignores the new value and routes to the shared tap handler, so an
+            // overlay with no data explains itself (or proposes a plate solve)
+            // instead of switching on, exactly as tapping its toolbar button does.
+            ForEach( canvas.overlays, id: \.id )
+            {
+                overlay in
+
+                Toggle( isOn: Binding( get: { canvas.isOverlayEnabled( overlay.id ) }, set: { _ in canvas.overlayTapped( overlay.id ) } ) )
+                {
+                    Label( overlay.title, systemImage: overlay.systemImageName )
+                }
+            }
+        }
+
+        Divider()
+
+        // Orientation — the same actions and icons as the inspector's orientation
+        // control, driving the shared adjustments so the inspector stays in step.
+        Button
+        {
+            self.file?.image?.rotateLeft()
+        }
+        label:
+        {
+            Label( "Rotate Left", systemImage: "rotate.left" )
+        }
+        .disabled( self.hasImage == false )
+
+        Button
+        {
+            self.file?.image?.rotateRight()
+        }
+        label:
+        {
+            Label( "Rotate Right", systemImage: "rotate.right" )
+        }
+        .disabled( self.hasImage == false )
+
+        Button
+        {
+            self.file?.image?.flipHorizontal()
+        }
+        label:
+        {
+            Label( "Flip Horizontal", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right" )
+        }
+        .disabled( self.hasImage == false )
+
+        Button
+        {
+            self.file?.image?.flipVertical()
+        }
+        label:
+        {
+            Label( "Flip Vertical", systemImage: "arrow.up.and.down.righttriangle.up.righttriangle.down" )
+        }
+        .disabled( self.hasImage == false )
+
+        Divider()
+
+        // Invert mirrors the inspector's toggle: the binding ignores the new value
+        // and routes to the shared action, which also reseeds the inspector.
+        Toggle( isOn: Binding( get: { self.file?.image?.renderer.adjustments.invert ?? false }, set: { _ in self.file?.image?.toggleInvert() } ) )
+        {
+            Label( "Invert", systemImage: "circle.righthalf.filled" )
+        }
+        .disabled( self.hasImage == false )
+
+        Button
+        {
+            self.file?.image?.resetAdjustments()
+        }
+        label:
+        {
+            Label( "Reset View", systemImage: "arrow.counterclockwise" )
+        }
+        .disabled( self.hasImage == false )
+
+        Divider()
+
+        Button
+        {
+            self.openWindow( id: "LevelsWindow" )
+        }
+        label:
+        {
+            Label( "Levels\u{2026}", systemImage: "slider.horizontal.below.rectangle" )
+        }
+        .disabled( self.hasImage == false )
+
+        Button
+        {
+            self.openWindow( id: "CurvesWindow" )
+        }
+        label:
+        {
+            Label( "Curves\u{2026}", systemImage: "point.topleft.down.to.point.bottomright.curvepath" )
+        }
+        .disabled( self.hasImage == false )
+
+        Divider()
+
+        Button
+        {
+            if let info = self.file?.image?.info
+            {
+                self.openWindow( id: "InfoWindow", value: info )
+            }
+        }
+        label:
+        {
+            Label( "View FITS Headers\u{2026}", systemImage: "tablecells" )
+        }
+        .disabled( self.hasImage == false )
+
+        Divider()
+
+        Button
         {
             if let file = self.file
             {
                 self.appModel.presentPlateSolve( for: file, apiKey: self.apiKeyStore.astrometryNetKey, openWindow: self.openWindow )
             }
+        }
+        label:
+        {
+            Label( "Plate Solve\u{2026}", systemImage: "point.3.connected.trianglepath.dotted" )
         }
         .keyboardShortcut( "p", modifiers: [ .command, .shift ] )
         .disabled( self.file == nil )

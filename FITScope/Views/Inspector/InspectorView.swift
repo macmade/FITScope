@@ -32,12 +32,6 @@ public struct InspectorView: View
     /// The image whose renderer/adjustments the controls bind to.
     @ObservedObject private var image: FITSImage
 
-    /// The controls' identity token. Reset View replaces it with a fresh value to
-    /// recreate the controls so they reseed from the just-defaulted adjustments:
-    /// reset mutates the adjustments in place — the same object, same image —
-    /// which on its own would not refresh the controls' own `@State`.
-    @State private var controlsID = UUID()
-
     /// Opens the singleton Levels editor window.
     @Environment( \.openWindow ) private var openWindow
 
@@ -174,7 +168,7 @@ public struct InspectorView: View
 
                     Divider()
 
-                    Button( action: self.reset )
+                    Button( action: self.image.resetAdjustments )
                     {
                         Label( "Reset View", systemImage: "arrow.counterclockwise" )
                             .frame( maxWidth: .infinity )
@@ -188,9 +182,12 @@ public struct InspectorView: View
             // they re-enable as soon as the render commits. Applied to the content
             // stack rather than the scroll view, so it still scrolls meanwhile.
             .disabled( self.image.renderer.isRendering )
-            // Reset View replaces this, recreating the controls so they reseed
-            // from the freshly-defaulted adjustments.
-            .id( self.controlsID )
+            // Recreate the controls when an adjustment is changed from outside the
+            // inspector (a menu-driven Reset View or Invert bumps the image's
+            // controls revision), so they reseed from the changed adjustments —
+            // the controls cache their displayed state in @State, which an
+            // in-place mutation does not refresh on its own.
+            .id( self.image.controlsRevision )
         }
         .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.container )
     }
@@ -205,33 +202,6 @@ public struct InspectorView: View
     private func reRender()
     {
         self.image.renderer.scheduleReRender()
-    }
-
-    /// Resets all adjustments to their defaults and re-renders.
-    private func reset()
-    {
-        let defaults = ImageAdjustments()
-        let current  = self.image.renderer.adjustments
-
-        current.normalize    = defaults.normalize
-        current.stretch      = defaults.stretch
-        current.gamma        = defaults.gamma
-        current.whiteBalance = defaults.whiteBalance
-        current.invert       = defaults.invert
-        current.brightness   = defaults.brightness
-        current.contrast     = defaults.contrast
-        current.levels       = defaults.levels
-        current.curves       = defaults.curves
-        current.saturation   = defaults.saturation
-        current.debayer      = defaults.debayer
-        current.orientation  = defaults.orientation
-
-        // Recreate the controls so they reseed from the now-default adjustments;
-        // they cache their displayed state in @State, which the in-place mutation
-        // above does not refresh on its own.
-        self.controlsID = UUID()
-
-        self.reRender()
     }
 }
 

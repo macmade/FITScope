@@ -48,17 +48,10 @@ public struct ImageCanvasView: View
     /// Opens the plate-solving results window.
     @Environment( \.openWindow ) private var openWindow
 
-    /// The current magnification.
-    @State private var zoom: CGFloat = 1.0
-
-    /// Whether zoom-out is available; `false` once the whole image is visible.
-    @State private var canZoomOut = true
-
-    /// The latest one-shot canvas command.
-    @State private var command = CanvasCommand( kind: .fit, token: 0 )
-
-    /// A monotonically increasing token source for commands.
-    @State private var tokens = 0
+    /// The shared source of truth for the canvas's zoom, one-shot command and
+    /// overlay state, so the floating toolbar and the *Image* menu drive the very
+    /// same state. Published to the scene below, so the menu reaches it.
+    @StateObject private var controller = ImageCanvasController()
 
     /// The latest cursor readout, shown in the status pill.
     @State private var readout = CursorReadout.empty
@@ -66,20 +59,6 @@ public struct ImageCanvasView: View
     /// The on-screen rectangle the displayed image currently occupies, reported
     /// by the canvas and used to register overlays to image space.
     @State private var displayedImageRect = CGRect.zero
-
-    /// The identifiers of the overlays the user has turned on for this file.
-    @State private var enabledOverlays = Set< String >()
-
-    /// Whether the overlay alert is shown. Raised when an overlay with nothing to
-    /// reveal but a ``CanvasOverlay/warning`` (e.g. star detection found nothing, or
-    /// no plate scale is known) is tapped, so the user sees why it reveals nothing.
-    @State private var isOverlayAlertPresented = false
-
-    /// The title of the overlay alert — the tapped overlay's title.
-    @State private var overlayAlertTitle = ""
-
-    /// The message of the overlay alert — the tapped overlay's warning.
-    @State private var overlayAlertMessage = ""
 
     /// Whether the floating bars are currently shown.
     @State private var barsVisible = true
@@ -152,19 +131,32 @@ public struct ImageCanvasView: View
                 // within view updates".
                 DispatchQueue.main.async
                 {
-                    self.readout         = .empty
-                    self.enabledOverlays = []
+                    self.readout                    = .empty
+                    self.controller.enabledOverlays = []
 
                     self.revealBars()
                 }
             }
-            .alert( self.overlayAlertTitle, isPresented: self.$isOverlayAlertPresented )
+            // Keep the controller's overlay mirror current for the *Image* menu,
+            // which reaches this window's canvas through the focused controller.
+            // Driven off a cheap signature so it rebuilds only when an overlay's
+            // availability or warning changes — never written mid-`body`.
+            .onChange( of: self.overlaySignature, initial: true )
+            {
+                _, _ in self.controller.overlays = self.overlays
+            }
+            // Publish the canvas controller as the scene's focused object, so the
+            // Image-menu commands drive this window's zoom and overlays and disable
+            // themselves when no image is shown — mirroring how the File menu reaches
+            // the selected file.
+            .focusedSceneObject( self.controller )
+            .alert( self.controller.overlayAlertTitle, isPresented: self.$controller.isOverlayAlertPresented )
             {
                 Button( "OK", role: .cancel ) {}
             }
             message:
             {
-                Text( self.overlayAlertMessage )
+                Text( self.controller.overlayAlertMessage )
             }
     }
 
@@ -180,10 +172,10 @@ public struct ImageCanvasView: View
             {
                 ZoomableImageView(
                     image:                      result.image,
-                    command:                    self.command,
+                    command:                    self.controller.command,
                     onHover:                    { coordinate in self.report( coordinate: coordinate ) },
-                    onZoomChange:               { self.zoom = $0 },
-                    onCanZoomOutChange:         { self.canZoomOut = $0 },
+                    onZoomChange:               { self.controller.zoom = $0 },
+                    onCanZoomOutChange:         { self.controller.canZoomOut = $0 },
                     onDisplayedImageRectChange: { self.displayedImageRect = $0 }
                 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageCanvasView.canvas )
@@ -215,19 +207,19 @@ public struct ImageCanvasView: View
                     self.floatingBar
                     {
                         ImageToolbarView(
-                            zoom:             self.zoom,
-                            canZoomOut:       self.canZoomOut,
-                            onFit:            { self.send( .fit ) },
-                            onActualSize:     { self.send( .actualSize ) },
-                            onRecenter:       { self.send( .recenter ) },
-                            onZoomIn:         { self.send( .zoomIn ) },
-                            onZoomOut:        { self.send( .zoomOut ) },
+                            zoom:             self.controller.zoom,
+                            canZoomOut:       self.controller.canZoomOut,
+                            onFit:            { self.controller.fit() },
+                            onActualSize:     { self.controller.actualSize() },
+                            onRecenter:       { self.controller.recenter() },
+                            onZoomIn:         { self.controller.zoomIn() },
+                            onZoomOut:        { self.controller.zoomOut() },
                             onPlateSolve:     { self.plateSolve() },
                             isPlateSolved:    self.file.plateSolve != nil,
                             isPlateSolving:   self.file.isPlateSolving,
                             overlays:         self.toolbarOverlays,
-                            isOverlayEnabled: { self.enabledOverlays.contains( $0 ) },
-                            onToggleOverlay:  { self.overlayTapped( $0 ) }
+                            isOverlayEnabled: { self.controller.isOverlayEnabled( $0 ) },
+                            onToggleOverlay:  { self.controller.overlayTapped( $0 ) }
                         )
                         .padding( .top, 16 )
                     }
@@ -401,54 +393,16 @@ public struct ImageCanvasView: View
     /// overlay has no data yet, so it is never drawn.
     private var activeOverlays: [ any CanvasOverlay ]
     {
-        self.overlays.filter { $0.isAvailable && self.enabledOverlays.contains( $0.id ) }
+        self.overlays.filter { $0.isAvailable && self.controller.enabledOverlays.contains( $0.id ) }
     }
 
-    /// Responds to a tap on an overlay's toggle by identifier.
-    ///
-    /// Available overlays simply switch on or off. An overlay with nothing to show
-    /// handles the tap itself — through its ``CanvasOverlay/warning`` (an
-    /// informational alert) or its ``CanvasOverlay/onUnavailableTap`` (a call to
-    /// action, e.g. proposing a plate solve) — so the canvas stays generic.
-    private func overlayTapped( _ id: String )
+    /// A cheap value summarizing the overlays' menu-relevant state — each overlay's
+    /// identity, availability and whether it warns — so the controller's overlay
+    /// mirror is rebuilt exactly when a tap's outcome would change, and not on every
+    /// unrelated render (e.g. a rotation, which changes only how overlays draw).
+    private var overlaySignature: String
     {
-        guard let overlay = self.overlays.first( where: { $0.id == id } )
-        else
-        {
-            return
-        }
-
-        guard overlay.isAvailable
-        else
-        {
-            if let warning = overlay.warning
-            {
-                self.presentOverlayAlert( title: overlay.title, message: warning )
-            }
-            else
-            {
-                overlay.onUnavailableTap?()
-            }
-
-            return
-        }
-
-        if self.enabledOverlays.contains( id )
-        {
-            self.enabledOverlays.remove( id )
-        }
-        else
-        {
-            self.enabledOverlays.insert( id )
-        }
-    }
-
-    /// Presents the generic overlay alert with the given title and message.
-    private func presentOverlayAlert( title: String, message: String )
-    {
-        self.overlayAlertTitle       = title
-        self.overlayAlertMessage     = message
-        self.isOverlayAlertPresented = true
+        self.overlays.map { "\( $0.id ):\( $0.isAvailable ):\( $0.warning != nil )" }.joined( separator: "|" )
     }
 
     /// Proposes a plate solve for the displayed file, or opens the results window
@@ -465,13 +419,6 @@ public struct ImageCanvasView: View
     private func plateSolve()
     {
         self.appModel.presentPlateSolve( for: self.file, apiKey: self.apiKeyStore.astrometryNetKey, openWindow: self.openWindow )
-    }
-
-    /// Issues a one-shot canvas command with a fresh token.
-    private func send( _ kind: CanvasCommand.Kind )
-    {
-        self.tokens  += 1
-        self.command  = CanvasCommand( kind: kind, token: self.tokens )
     }
 
     /// Decodes the value under the cursor and reports a formatted readout.

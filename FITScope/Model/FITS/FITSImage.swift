@@ -24,6 +24,7 @@
 
 import Combine
 import SwiftAstro
+import SwiftPixel
 import SwiftUI
 import SwiftUtilities
 
@@ -67,6 +68,16 @@ public class FITSImage: ObservableObject
     /// The image's histogram view options, kept here so each file retains its own
     /// histogram display choices across selection changes.
     public let histogramOptions = HistogramViewOptions()
+
+    /// A revision bumped whenever an adjustment is changed from outside the
+    /// inspector — the *Image* menu's Reset View or Invert — so the inspector can
+    /// recreate its controls and reseed them from the changed adjustments.
+    ///
+    /// Interim: the inspector controls cache their values in local state seeded at
+    /// init, so an external change is invisible to them without a fresh identity.
+    /// Milestone M29 makes the controls observe the adjustments directly, after
+    /// which this signal is no longer needed.
+    @Published public private( set ) var controlsRevision = 0
 
     /// Forwards the renderer's change notifications to this object's observers.
     private var rendererObserver: AnyCancellable?
@@ -121,5 +132,66 @@ public class FITSImage: ObservableObject
 
         self.starField     = analysis.starField
         self.signalToNoise = analysis.signalToNoise
+    }
+
+    /// Resets every image adjustment to its default and re-renders.
+    ///
+    /// Shared by the inspector's Reset View button and the *Image* menu, so both
+    /// use the one ``ImageAdjustments/reset()`` rather than each duplicating it.
+    /// Bumps ``controlsRevision`` so the inspector's cached controls reseed.
+    public func resetAdjustments()
+    {
+        self.renderer.adjustments.reset()
+        self.controlsRevision += 1
+
+        self.renderer.scheduleReRender()
+    }
+
+    /// Toggles the photographic-negative inversion and re-renders.
+    ///
+    /// Bumps ``controlsRevision`` so the inspector's Invert control reseeds when
+    /// the toggle is driven from the menu.
+    public func toggleInvert()
+    {
+        self.renderer.adjustments.invert.toggle()
+        self.controlsRevision += 1
+
+        self.renderer.scheduleReRender()
+    }
+
+    /// Rotates the image 90° counter-clockwise and re-renders.
+    public func rotateLeft()
+    {
+        self.applyOrientation { $0.rotatedCounterClockwise() }
+    }
+
+    /// Rotates the image 90° clockwise and re-renders.
+    public func rotateRight()
+    {
+        self.applyOrientation { $0.rotatedClockwise() }
+    }
+
+    /// Flips the image horizontally and re-renders.
+    public func flipHorizontal()
+    {
+        self.applyOrientation { $0.flippedHorizontally() }
+    }
+
+    /// Flips the image vertically and re-renders.
+    public func flipVertical()
+    {
+        self.applyOrientation { $0.flippedVertically() }
+    }
+
+    /// Composes a screen-relative transform onto the current orientation and
+    /// re-renders. No ``controlsRevision`` bump: the orientation control holds no
+    /// cached state of its own, so it needs no reseeding.
+    ///
+    /// - Parameter transform: The orientation transform to compose on.
+    private func applyOrientation( _ transform: ( Processors.Orient.Orientation ) -> Processors.Orient.Orientation )
+    {
+        self.renderer.adjustments.orientation = transform( self.renderer.adjustments.orientation )
+
+        self.renderer.scheduleReRender()
     }
 }

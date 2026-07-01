@@ -132,4 +132,34 @@ struct ImageAdjustmentsTests
         #expect( updatedDebayer.pattern == .grbg )
         #expect( updatedDebayer.mode    == .bilinear )
     }
+
+    /// `reset()` restores every adjustment to its default in one place, so the
+    /// inspector's Reset View button and the Image menu share the same reset
+    /// rather than each duplicating the field-by-field copy.
+    @Test
+    @MainActor
+    func resetRestoresEveryValueToItsDefault()
+    {
+        let adjustments = ImageAdjustments()
+
+        // Move a spread of fields — simple values, the mode/enum pipeline stages,
+        // and orientation — away from their defaults.
+        adjustments.invert      = true
+        adjustments.gamma       = 2.0
+        adjustments.brightness  = 0.5
+        adjustments.contrast    = 2.0
+        adjustments.saturation  = 0.5
+        adjustments.stretch     = .arcsinh( 12 )
+        adjustments.levels      = .uniform( .init( inputBlack: 0.1, inputWhite: 0.9, gamma: 1.5 ) )
+        adjustments.curves      = .uniform( .init( points: [ .init( x: 0, y: 0 ), .init( x: 0.5, y: 0.7 ), .init( x: 1, y: 1 ) ] ) )
+        adjustments.debayer     = .pattern( .grbg )
+        adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
+
+        adjustments.reset()
+
+        // One equality covers every pipeline field the settings encode; the
+        // orientation is checked explicitly for clarity.
+        #expect( adjustments.settings == ImageProcessor.Settings() )
+        #expect( adjustments.orientation.isIdentity )
+    }
 }
