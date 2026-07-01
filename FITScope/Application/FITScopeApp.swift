@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -40,6 +41,10 @@ public struct FITScopeApp: App
     /// Opens an auxiliary window by identifier, used to present the custom About
     /// window.
     @Environment( \.openWindow ) private var openWindow
+
+    /// The project's GitHub page, opened from the Help menu in lieu of a bundled
+    /// help book.
+    private static let helpURL = URL( string: "https://github.com/macmade/FITScope" )
 
     /// Creates the application.
     public init()
@@ -108,6 +113,20 @@ public struct FITScopeApp: App
             CommandMenu( "Image" )
             {
                 ImageCommands( appModel: self.appDelegate.appModel, apiKeyStore: self.appDelegate.apiKeyStore )
+            }
+
+            CommandGroup( replacing: CommandGroupPlacement.help )
+            {
+                // The app ships no help book, so the standard "Help" item does
+                // nothing. Point it at the project's GitHub page instead.
+                Button( "\( Bundle.main.title ) Help" )
+                {
+                    if let url = Self.helpURL
+                    {
+                        NSWorkspace.shared.open( url )
+                    }
+                }
+                .keyboardShortcut( "?", modifiers: .command )
             }
         }
 
