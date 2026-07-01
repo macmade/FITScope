@@ -67,7 +67,8 @@ public struct FilesSidebarView: View
                 {
                     Image( systemName: "plus" )
                 }
-                .buttonStyle( .borderless )
+                .buttonStyle( .plain )
+                .foregroundStyle( .secondary )
                 .help( "Open FITS Files…" )
                 .accessibilityIdentifier( AccessibilityIdentifier.FilesSidebarView.addButton )
             }
@@ -133,8 +134,10 @@ public struct FilesSidebarView: View
         {
             Image( systemName: "arrow.up.arrow.down" )
         }
-        .menuStyle( .borderlessButton )
+        .menuStyle( .button )
+        .buttonStyle( .plain )
         .menuIndicator( .hidden )
+        .foregroundStyle( .secondary )
         .fixedSize()
         .help( "Sort Files" )
         .accessibilityIdentifier( AccessibilityIdentifier.FilesSidebarView.sortMenu )

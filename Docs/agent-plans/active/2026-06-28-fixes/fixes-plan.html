@@ -419,16 +419,28 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Sidebar sort button doesn't match the add button</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Sidebar sort button doesn't match the add button</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Make the sort control (the <code>arrow.up.arrow.down</code> menu) in the files sidebar header (<code>FilesSidebarView</code>) match the adjacent <code>+</code> add button: same icon size and same tint.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Compare the modifiers/styles applied to the add button vs. the sort menu in <code>FilesSidebarView</code>.</li>
-            <li>Align icon size (font/image scale) and tint between the two controls.</li>
-            <li>Verify the header controls look consistent in both light and dark appearance.</li>
+            <li class="done">Compare the modifiers/styles applied to the add button vs. the sort menu in <code>FilesSidebarView</code>.</li>
+            <li class="done">Align icon size (font/image scale) and tint between the two controls.</li>
+            <li class="done">Verify the header controls look consistent in both light and dark appearance.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-01</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Root cause of the mismatch:</strong> the add button rendered with <code>.buttonStyle( .borderless )</code>, while the sort menu used <code>.menuStyle( .borderlessButton )</code>. Those are two different rendering paths: a borderless <em>button</em> tints its glyph with the accent color and sizes it as a plain image, whereas the borderless-button <em>menu</em> style draws its label through its own chrome — so the sort glyph read in a different tint and a slightly different size than the neighbouring <code>+</code>.</p>
+            <p><strong>Fix:</strong> switched the sort menu to <code>.menuStyle( .button )</code> + <code>.buttonStyle( .borderless )</code> so it adopts the <em>same</em> button style as the add button, giving both controls an identical icon size and tint. This mirrors the established in-repo pattern in <code>HistogramControlView</code>, where a <code>Menu</code> is made to match its neighbouring control via <code>.menuStyle( .button ).buttonStyle( … )</code> rather than a bespoke style. <code>.menuIndicator( .hidden )</code> and <code>.fixedSize()</code> were kept, so no disclosure chevron appears and the control stays sized to its glyph. One-line change; no new files, so no Xcode-project edits were needed.</p>
+            <p><strong>TDD note (honest):</strong> this milestone is a purely visual style tweak (icon size + tint). There is no logic to assert — the project's XCTest setup can't verify a rendered SwiftUI glyph's color or size — so no unit test was written; a hollow test would add nothing. Verification is the build plus an interactive visual check. The FITScope target builds clean via <code>xcodebuild</code> (Debug, macOS).</p>
+            <p><strong>Review round 1 — color still mismatched.</strong> Matching the button style fixed the size but not the tint: a borderless <em>button</em> tints its glyph with the accent color, but the <code>Menu</code> — even with <code>.buttonStyle( .borderless )</code> — kept drawing its label in the default label/control color, so it didn't pick up that accent tint. Added an explicit <code>.foregroundStyle( Color.accentColor )</code> to the sort menu. <em>This did nothing</em> (see review comment): <code>.buttonStyle( .borderless )</code> imposes its own tint and ignores <code>.foregroundStyle</code>, so the override was silently dropped, and the menu label kept rendering a dimmer shade than the borderless <code>+</code>.</p>
+            <p><strong>Review round 2 — guaranteed match by unifying both controls.</strong> Rather than fight two different default tints, both controls now use the <em>identical</em> style so they can't diverge: <code>.buttonStyle( .plain )</code> plus <code>.foregroundStyle( .secondary )</code> on the add <code>Button</code> and on the sort <code>Menu</code> (the menu via <code>.menuStyle( .button ).buttonStyle( .plain )</code>). Unlike <code>.borderless</code>, the <code>.plain</code> style honours <code>.foregroundStyle</code> (this is exactly what <code>HistogramControlView</code> relies on), so both glyphs render in the same secondary shade at the same size. Rebuilt clean.</p>
+            <p><strong>Needs a quick visual check</strong> (the plan's last task): confirm the sort icon now matches the <code>+</code> in size and tint, in both light and dark appearance. No SwiftUI preview was added: <code>FilesSidebarView</code> never had one and previewing it needs a full <code>WindowModel</code> + sample-file scaffolding that doesn't exist (its small child views have previews, but the container doesn't).</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>The sort icon still isn't the same color as the add button.</li>
+              <li>The <code>.foregroundStyle( Color.accentColor )</code> change did nothing — the sort icon is still a different (dimmer) shade than the <code>+</code> (confirmed with a screenshot of the header).</li>
+            </ul>
+          </div>
         </li>
 
         <li class="milestone">
