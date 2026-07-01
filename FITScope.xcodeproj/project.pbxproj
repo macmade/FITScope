@@ -211,6 +211,7 @@
 		A4B7F72827EB5946B7D329AC /* PlateSolveResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B503A40CF3A57D863C1304 /* PlateSolveResult.swift */; };
 		A88DD46D272944AD847BC0FD /* StarsOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEE209DF99F410FA6950C91 /* StarsOverlayTests.swift */; };
 		AE429B193507E2CB21017180 /* StatusMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C561A20BFECBF8335B6A8AF /* StatusMessageView.swift */; };
+		AED7DB374B89DCB6270892E1 /* AppDelegateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E777059D8151CFA76FB977B9 /* AppDelegateTests.swift */; };
 		B24204D4CA2C31CA9D54C333 /* HeaderExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276C7888FA0EFF9C2F111112 /* HeaderExportTests.swift */; };
 		B3478104EBCB8EB1B9C44998 /* ImageInfoPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6F768D0B5B05753212F21BA /* ImageInfoPanelView.swift */; };
 		B386E03B0E5A1FE92DF77CCD /* ImageInfoTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A15B5C28550566FCCF1C81 /* ImageInfoTabView.swift */; };
@@ -595,6 +596,7 @@
 		DF3765F1937F36620A92317F /* MainWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
 		E0A86A0DF44489494DEF2C5C /* StarDetection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarDetection.swift; sourceTree = "<group>"; };
 		E7410133087261AF83595054 /* ImageInformation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInformation.swift; sourceTree = "<group>"; };
+		E777059D8151CFA76FB977B9 /* AppDelegateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegateTests.swift; sourceTree = "<group>"; };
 		EB9DD79B3B4350B42B48B2B2 /* SegmentedControlView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SegmentedControlView.swift; sourceTree = "<group>"; };
 		F02EA5AA79E7AB973E861807 /* CanvasOverlayStyleTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasOverlayStyleTests.swift; sourceTree = "<group>"; };
 		F4348EFC31827F94E1D002E5 /* OpenMeteoResponses.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoResponses.swift; sourceTree = "<group>"; };
@@ -1263,6 +1265,7 @@
 			children = (
 				05FB1000000000000000A0E1 /* AppModelTests.swift */,
 				AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */,
+				E777059D8151CFA76FB977B9 /* AppDelegateTests.swift */,
 			);
 			path = Application;
 			sourceTree = "<group>";
@@ -1890,6 +1893,7 @@
 				05FB1000000000000000C204 /* InfoViewTableTests.swift in Sources */,
 				0CEEF32A7D5262CA32ADE85F /* CanvasOverlayStyleTests.swift in Sources */,
 				2A97FD03D751B622DAC96291 /* ImageCanvasControllerTests.swift in Sources */,
+				AED7DB374B89DCB6270892E1 /* AppDelegateTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

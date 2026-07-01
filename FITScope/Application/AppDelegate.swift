@@ -137,4 +137,36 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
     {
         flag
     }
+
+    /// Re-surfaces a modal panel when the app is reactivated.
+    ///
+    /// The Open and Save panels run app-modal via `runModal()`. If the app is
+    /// sent to the background — or the user switches to another Space — while a
+    /// panel is up, returning to the app can otherwise leave the panel buried
+    /// behind other windows or stranded on the Space it was opened on, where it
+    /// is unreachable. Whenever the app becomes active with a modal window
+    /// showing, bring that window forward and let it follow the user to the
+    /// active Space. This is generic: it covers any modal window, not just the
+    /// Open panel.
+    public func applicationDidBecomeActive( _ notification: Notification )
+    {
+        guard let modalWindow = NSApp.modalWindow
+        else
+        {
+            return
+        }
+
+        Self.surface( modalWindow )
+    }
+
+    /// Brings a window to the front and lets it follow the user to whichever
+    /// Space is currently active, so a reactivated app never leaves it buried or
+    /// stranded on another Space.
+    ///
+    /// - Parameter window: The window to surface.
+    public static func surface( _ window: NSWindow )
+    {
+        window.collectionBehavior.insert( .moveToActiveSpace )
+        window.orderFrontRegardless()
+    }
 }

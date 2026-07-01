@@ -159,18 +159,16 @@ public struct FilesSidebarView: View
     }
 
     /// Presents an open panel and opens the chosen FITS files into the window.
+    ///
+    /// Reuses ``AppModel/runOpenPanel()`` so the Open panel is built in one place
+    /// rather than duplicated per call site.
     private func runOpenPanel()
     {
-        let panel = NSOpenPanel()
+        let urls = self.appModel.runOpenPanel()
 
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories    = false
-        panel.canChooseFiles          = true
-        panel.allowedContentTypes     = [ .fits ]
-
-        if panel.runModal() == .OK
+        if urls.isEmpty == false
         {
-            self.model.open( urls: panel.urls )
+            self.model.open( urls: urls )
         }
     }
 

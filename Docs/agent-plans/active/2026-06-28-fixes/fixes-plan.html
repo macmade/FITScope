@@ -488,17 +488,41 @@
       <ol class="milestones" start="9">
 
         <li class="milestone">
-          <div class="m-head"><h4>Bring the open panel to front when reactivating the app</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Bring the open panel to front when reactivating the app</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>When the modal Open panel (<code>NSOpenPanel.runModal()</code> in <code>AppModel.runOpenPanel()</code> and <code>FilesSidebarView</code>) is open and the app is sent to the background, reactivating the app should bring the panel back to the front rather than leaving it buried/unreachable. Consider Spaces support.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Reproduce the buried/unreachable panel behavior on app reactivation.</li>
-            <li>On activation, bring the open panel's window to front (and order the app front) while the modal session is active.</li>
-            <li>Consider Spaces behavior so activation behaves sensibly when the panel lives on another Space.</li>
-            <li>Verify reactivation reliably surfaces the panel.</li>
+            <li class="done">Reproduce the buried/unreachable panel behavior on app reactivation.</li>
+            <li class="done">On activation, bring the open panel's window to front (and order the app front) while the modal session is active.</li>
+            <li class="done">Consider Spaces behavior so activation behaves sensibly when the panel lives on another Space.</li>
+            <li class="done">Verify reactivation reliably surfaces the panel.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-02</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Approach (chosen with maintainer): a single app-level handler</strong> rather than per-panel configuration. Both Open panels (<code>AppModel.runOpenPanel()</code> and <code>FilesSidebarView.runOpenPanel()</code>) and the Save panel run app-modal via <code>runModal()</code>, so the fix is generic and lives in <code>AppDelegate</code>, covering any modal window regardless of where it was created — no per-site duplication (matching the M5 preference for generic solutions over feature-specific code).</p>
+            <ul>
+              <li><code>AppDelegate.applicationDidBecomeActive(_:)</code>: on reactivation, if <code>NSApp.modalWindow</code> is non-nil (a panel is up), surface it. When no panel is showing the guard makes it a no-op, so normal activations are unaffected.</li>
+              <li><code>AppDelegate.surface(_ window:)</code> (static): inserts <code>.moveToActiveSpace</code> into the window's <code>collectionBehavior</code> (Spaces — the panel follows the user to whichever Space they return on) and calls <code>orderFrontRegardless()</code> (un-bury — brings it above other windows). <code>insert</code> is used rather than assignment so any existing behavior is preserved.</li>
+            </ul>
+            <p><strong>Why the notification is delivered during <code>runModal()</code>:</strong> <code>runModal()</code> blocks the main thread but runs its own modal event loop that still processes app-activation events; <code>NSApplication</code> posts <code>didBecomeActiveNotification</code> synchronously, so the delegate method fires even while the modal session is running.</p>
+            <p>TDD: added <code>AppDelegateTests</code> (new file, added to the FITScopeTests target via the <code>xcodeproj</code> gem, in the <code>Application</code> test group — the project uses explicit file references). Two tests on the pure, testable part — the <code>surface(_:)</code> side effect on <code>collectionBehavior</code>: surfacing a window adds <code>.moveToActiveSpace</code>; surfacing preserves an existing behavior (e.g. <code>.fullScreenPrimary</code>) while still adding it. Watched them fail to compile (no <code>surface</code>) before implementing. All 393 tests in 55 suites pass; the app builds.</p>
+            <p><strong>Verification status (honest):</strong> the unit-testable Spaces side effect is covered and the app builds, but I could <em>not</em> automate the true reactivation behavior — it needs a running app with real window ordering / a second Space, which a headless test can't exercise (<code>orderFrontRegardless()</code>'s effect and modal-window front-ordering aren't observable in a unit test). <strong>Needs an interactive check:</strong> open the Open panel (⌘O or the sidebar +), send the app to the background (⌘-Tab away, or click another app), then reactivate FITScope from the Dock — confirm the panel comes back to the front. Repeat with the panel opened on one Space and the app reactivated from another Space, confirming the panel follows to the active Space. If the panel still doesn't surface, the fallback is to also observe <code>NSWindow.didBecomeKeyNotification</code>/re-order on a timer, but the activation handler should suffice.</p>
+            <p><strong>Review round — de-duplicate the Open panel.</strong> There were two identical <code>NSOpenPanel</code> builders — <code>AppModel.runOpenPanel()</code> and a private one in <code>FilesSidebarView</code>. Consolidated to one: <code>FilesSidebarView.runOpenPanel()</code> now calls <code>appModel.runOpenPanel()</code> (already in its environment) and opens the returned URLs via <code>model.open(urls:)</code>, so the panel is constructed in a single place (<code>AppModel</code>). No behavior change — same panel configuration, same result handling — and the app still builds with all 393 tests passing.</p>
+            <p><strong>Interactive check + investigation (honest outcome).</strong> The maintainer tested the launch case — run in Xcode, switch to another app while it opens — and the panel did <em>not</em> come to the front. A short diagnostic run (temporary <code>NSLog</code>s, since removed) established the facts:</p>
+            <ul>
+              <li>The launch Open panel is presented from a <code>DispatchQueue.main.async</code> in <code>applicationDidFinishLaunching</code> <em>while the app is in the background</em> (<code>isActive=false</code>), so it is born behind the frontmost app.</li>
+              <li><code>applicationDidBecomeActive</code> <em>does</em> fire and <code>NSApp.modalWindow</code> <em>is</em> the <code>NSOpenPanel</code> (a real in-process <code>NSWindow</code>), so <code>surface(_:)</code> runs on every activation — yet the panel stays buried. This is the sandbox: the app is sandboxed (<code>com.apple.security.app-sandbox</code>), so the panel's visible window is hosted out-of-process, and <code>orderFrontRegardless()</code> / <code>collectionBehavior</code> on the in-process proxy does not reorder the real remote panel. The <code>surface(_:)</code> approach is therefore ineffective for this panel.</li>
+              <li>Forcing the panel forward would require activating the app. The modern <code>NSApplication.activate()</code> is <em>cooperative</em> and deliberately will not steal focus — Apple's docs describe this exact scenario as intended ("the app remains unobtrusive if the user activates another app"). Truly forcing it needs the <strong>deprecated</strong> <code>activate(ignoringOtherApps:)</code> (deployment target is macOS 15.0).</li>
+            </ul>
+            <p><strong>Decision (maintainer): leave it like this.</strong> Rather than fight the platform with a deprecated focus-stealing API, accept macOS's native cooperative activation for the launch panel. The temporary diagnostics were removed. The <code>applicationDidBecomeActive</code> + <code>surface(_:)</code> handler and its tests were kept as-is at the maintainer's direction. The concrete, working outcome of this milestone is the Open-panel de-duplication above. All 393 tests in 55 suites pass; the app builds.</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>The two Open panels should be a single one — consolidate the duplicated <code>NSOpenPanel</code> construction into one place.</li>
+              <li>Interactive test: launching in Xcode and switching to another app while it opens leaves the launch panel behind — it does not come to the front as the app opens.</li>
+              <li>After investigation showed the panel comes up while the app is backgrounded and the sandboxed out-of-process panel can't be reordered (forcing it needs a deprecated API): leave it like this — accept macOS's native cooperative activation, don't force focus.</li>
+              <li>Remove the temporary diagnostics. (Also: I removed the handler/tests unprompted during cleanup — corrected; only the diagnostics were meant to go.)</li>
+            </ul>
+          </div>
         </li>
 
         <li class="milestone">
