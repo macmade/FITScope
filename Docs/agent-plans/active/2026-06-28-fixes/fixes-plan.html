@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixes — Implementation Plan</title>
+<style>
+  :root {
+    --bg: #14171c;
+    --panel: #1c2128;
+    --panel-2: #20262e;
+    --border: #2b323c;
+    --text: #d6dbe2;
+    --muted: #8b95a3;
+    --accent: #6db1ff;
+    --accent-soft: #243447;
+    --code: #ffd9a0;
+    --ok: #3fb950;
+    --ok-bg: #16301d;
+    --ok-border: #2a6b38;
+    --wip: #d29922;
+    --wip-bg: #332a12;
+    --wip-border: #7a5e1d;
+    --idle: #8b95a3;
+    --idle-bg: #262c34;
+    --idle-border: #39424d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 3rem 1.5rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .container { max-width: 880px; margin: 0 auto; }
+  header.page { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+  h1 { margin: 0 0 0.35rem; font-size: 2.4rem; letter-spacing: -0.02em; }
+  .generated { color: var(--muted); font-size: 0.9rem; }
+  .meta-list { list-style: none; padding: 0; margin: 1rem 0 0; color: var(--muted); font-size: 0.92rem; }
+  .meta-list li { margin: 0.15rem 0; }
+  .meta-list strong { color: var(--text); font-weight: 600; }
+  .overview { margin: 1.5rem 0 0; }
+  .overview p { margin: 0 0 0.9rem; }
+  h2.section {
+    font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); margin: 2.75rem 0 1.25rem; padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  code { color: var(--code); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88em; }
+
+  /* Q&A */
+  .qa { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 0.5rem 1.25rem; }
+  .qa dt { font-weight: 600; margin: 1rem 0 0.25rem; }
+  .qa dd { margin: 0 0 1rem; color: var(--muted); }
+  .qa dd::before { content: "↳ "; color: var(--accent); }
+
+  /* Notes */
+  .notes-block { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; }
+  .notes-block ul { margin: 0.5rem 0 0; padding-left: 1.2rem; }
+  .notes-block li { margin: 0.35rem 0; }
+
+  /* Phases */
+  .phase { margin-top: 2.5rem; }
+  .phase > h3.phase-title {
+    font-size: 1.25rem; margin: 0 0 1rem; letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .phase > h3.phase-title .phase-kicker {
+    display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--accent); font-weight: 600; margin-bottom: 0.15rem;
+  }
+
+  /* Milestones */
+  ol.milestones { list-style: none; counter-reset: ms; margin: 0; padding: 0; }
+  ol.milestones > li.milestone {
+    counter-increment: ms;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .m-head { display: flex; align-items: flex-start; gap: 0.75rem; }
+  .m-head h4 {
+    margin: 0; font-size: 1.12rem; flex: 1;
+  }
+  .m-head h4::before {
+    content: "M" counter(ms) " · ";
+    color: var(--accent); font-weight: 600;
+  }
+  .status {
+    flex: none;
+    display: inline-block;
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+    border-radius: 999px; padding: 0.18rem 0.7rem; white-space: nowrap;
+  }
+  .status.not-started { color: var(--idle); background: var(--idle-bg); border: 1px solid var(--idle-border); }
+  .status.in-progress { color: var(--wip); background: var(--wip-bg); border: 1px solid var(--wip-border); }
+  .status.completed   { color: var(--ok);  background: var(--ok-bg);  border: 1px solid var(--ok-border); }
+  .open-tag {
+    display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-soft);
+    border-radius: 999px; padding: 0.1rem 0.55rem; margin-left: 0.5rem; vertical-align: middle;
+  }
+  .field { margin-top: 1rem; }
+  .field .label {
+    display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--muted); margin-bottom: 0.3rem; font-weight: 600;
+  }
+  .field p { margin: 0; }
+  ul.tasks { list-style: none; margin: 0; padding: 0; }
+  ul.tasks li { padding-left: 1.6rem; position: relative; margin: 0.25rem 0; }
+  ul.tasks li::before {
+    content: "\2610"; position: absolute; left: 0; top: -0.05rem;
+    color: var(--muted); font-size: 1.05rem;
+  }
+  ul.tasks li.done::before { content: "\2611"; color: var(--ok); }
+  ul.tasks li.done { color: var(--muted); text-decoration: line-through; }
+  .subfields { display: grid; grid-template-columns: 1fr; gap: 0; margin-top: 0.5rem; }
+  .placeholder { color: var(--muted); font-style: italic; }
+  .completed-line { margin-top: 1rem; font-size: 0.9rem; color: var(--muted); }
+  .completed-line .label {
+    display: inline; text-transform: uppercase; letter-spacing: 0.07em; font-size: 0.7rem;
+    font-weight: 600; margin-right: 0.4rem;
+  }
+  .appendix p { margin: 0 0 0.9rem; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="page">
+      <h1>Fixes — Implementation Plan</h1>
+      <div class="generated">Generated 2026-06-30</div>
+      <ul class="meta-list">
+        <li><strong>Source:</strong> <code>Docs/agent-plans/active/2026-06-28-fixes/fixes.html</code></li>
+        <li><strong>Milestones:</strong> 28 (24 concrete fixes + 4 design decisions), one per source item</li>
+      </ul>
+    </header>
+
+    <section class="overview">
+      <h2 class="section">Overview</h2>
+      <p>
+        This plan turns the FITScope <em>Fixes</em> roadmap into a sequence of small,
+        individually reviewable and committable milestones — one per source item. The
+        24 concrete defect and polish items come first, grouped into themed phases
+        (canvas &amp; overlays, plate solving, menus &amp; sidebar, windows &amp; panels,
+        inspector &amp; image controls, rendering pipeline, and app chrome). The 4
+        open design questions are handled last as <em>decision milestones</em>: each
+        investigates the trade-offs, proposes a recommendation, and is resolved with the
+        maintainer before any implementation.
+      </p>
+      <p>
+        Each milestone records its own Status, Completion date, Implementation notes, and
+        Review comments so the <code>/xs:implement</code> command can update this document
+        in place as work proceeds.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="section">Questions &amp; answers</h2>
+      <dl class="qa">
+        <dt>How should milestones be sized for this list of ~30 mostly small, independent items?</dt>
+        <dd>One item = one milestone. Each source item becomes its own milestone for maximum granularity and fine-grained commits.</dd>
+
+        <dt>How should the 4 "Open question" items (default stretch for detection, default stretch for previews, gamma vs. levels gamma, histogram backdrop on curves) be handled?</dt>
+        <dd>As decision milestones: investigate first, capture the trade-offs, propose a recommendation, and resolve with the maintainer before implementing.</dd>
+
+        <dt>Are all items in scope, or should any be excluded/deprioritized?</dt>
+        <dd>All items are in scope; the plan covers every entry in the source document.</dd>
+
+        <dt>How should milestones be ordered?</dt>
+        <dd>Concrete fixes first, grouped by theme; open design questions resolved toward the end.</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h2 class="section">Notes</h2>
+      <div class="notes-block">
+        <p>Context, conventions, and gotchas to keep in mind while implementing:</p>
+        <ul>
+          <li><strong>Xcode project must stay in sync.</strong> This is an Xcode app
+            (<code>.xcodeproj</code> present). New files must be added to the project and
+            the appropriate targets; build and run tests through <code>xcodebuild</code>
+            rather than <code>swift build</code>/<code>swift test</code>.</li>
+          <li><strong>Swift conventions.</strong> Prefer <code>let</code> over <code>var</code>;
+            never force-unwrap (<code>!</code>); avoid raw loops (prefer
+            <code>map</code>/<code>filter</code>/<code>reduce</code>/<code>forEach</code>);
+            one type per file; add SwiftUI previews for new/changed views; document public
+            and private members.</li>
+          <li><strong>Key locations</strong> (verified to exist):
+            <code>FITScope/Views/Overlays/</code> (<code>CanvasOverlay.swift</code>,
+            <code>CanvasOverlayLayer.swift</code>, <code>StarsOverlay.swift</code>,
+            <code>ObjectsOverlay.swift</code>, <code>ScaleBarOverlay.swift</code>,
+            <code>NorthOverlay.swift</code>, <code>EquatorialGridOverlay.swift</code>,
+            <code>ReticleOverlay.swift</code>);
+            <code>FITScope/Views/Canvas/</code> (<code>ImageCanvasView.swift</code>,
+            <code>ImageToolbarView.swift</code>);
+            <code>FITScope/Views/Inspector/</code>,
+            <code>FITScope/Views/Levels/</code>, <code>FITScope/Views/Curves/</code>,
+            <code>FITScope/Views/ImageControls/</code> (<code>GammaCorrectionControlView.swift</code>);
+            <code>FITScope/Image/ImageProcessor.swift</code>;
+            <code>FITScope/Application/</code> (<code>FITScopeApp.swift</code>,
+            <code>AppModel.swift</code>, <code>MainWindowView.swift</code>,
+            <code>Commands/ImageCommands.swift</code>);
+            <code>FITScope/Model/OpenFile.swift</code>;
+            <code>FITScope/Views/PlateSolve/PlateSolveWindowView.swift</code>;
+            <code>FITScope/Views/Sidebar/FilesSidebarView.swift</code>;
+            <code>FITScope/Views/Preferences/APIKeysPreferencesView.swift</code>;
+            <code>FITScope/Base.lproj/MainMenu.xib</code>;
+            <code>FITScopeThumbnailExtension/</code>.</li>
+          <li><strong>Discrepancy to verify:</strong> the source mentions a
+            <code>FrameOverlay</code>, but no <code>FrameOverlay.swift</code> exists in the
+            overlays directory. Before the overlay-alpha milestone (M3), confirm which type
+            draws the "frame" (it may be <code>ReticleOverlay</code> or another overlay) and
+            apply the consistent alpha to the actual set of overlay implementations.</li>
+          <li><strong>Decision milestones gate on approval.</strong> M25–M28 must pause for
+            the maintainer's decision before any code is written; record the decision in the
+            milestone's Implementation notes.</li>
+        </ul>
+      </div>
+    </section>
+
+    <h2 class="section">Milestones</h2>
+
+    <!-- PHASE 1 -->
+    <div class="phase">
+      <h3 class="phase-title"><span class="phase-kicker">Phase 1</span>Canvas, overlays &amp; star detection</h3>
+      <ol class="milestones" start="1">
+
+        <li class="milestone">
+          <div class="m-head"><h4>Warn when no stars are detected</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Keep the "Show stars" overlay toggle visible even when detection finds nothing, and surface a warning so the user knows detection ran but found no stars — instead of the control silently disappearing.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Locate where the "Show stars" toggle visibility is gated on the star count (likely <code>ImageCanvasView</code> / toolbar / overlay model).</li>
+            <li>Keep the toggle visible when zero stars are detected; distinguish "not yet run" from "ran, found none".</li>
+            <li>Add a clear warning (e.g. badge, tooltip, or inline message) communicating that detection found no stars.</li>
+            <li>Verify behavior for both states (no stars vs. some stars) and add/adjust a SwiftUI preview.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Overlays are laggy when resizing the window</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Make the canvas overlays (stars, objects, frame, scale bar) drawn by <code>CanvasOverlayLayer</code> redraw in step with the image during a window resize, so they stay registered to the displayed image without visible lag.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Investigate how <code>CanvasOverlayLayer</code> tracks the displayed image geometry and when it redraws relative to resize events.</li>
+            <li>Identify the source of lag (e.g. animation/implicit layer actions, layout timing, separate update path from the image).</li>
+            <li>Synchronize overlay redraw with the image during live resize (disable implicit CA animations if applicable; update on the same layout pass).</li>
+            <li>Verify overlays track smoothly while resizing at different zoom levels.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Give overlays a consistent semi-transparent alpha</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Apply a sensible, consistent alpha across the canvas overlays so they read as annotations layered over the image rather than sitting heavily on top with hard-coded, mostly opaque colors.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Confirm the full set of overlay implementations (<code>StarsOverlay</code>, <code>ObjectsOverlay</code>, <code>ScaleBarOverlay</code>, and the "frame" overlay — see Notes discrepancy).</li>
+            <li>Decide on a single shared alpha value/convention (ideally centralized so it is not duplicated per overlay).</li>
+            <li>Apply the consistent alpha across all overlays, replacing hard-coded opaque colors.</li>
+            <li>Verify legibility over both bright and dark image regions.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+      </ol>
+    </div>
+
+    <!-- PHASE 2 -->
+    <div class="phase">
+      <h3 class="phase-title"><span class="phase-kicker">Phase 2</span>Plate solving</h3>
+      <ol class="milestones" start="4">
+
+        <li class="milestone">
+          <div class="m-head"><h4>Close the plate-solve window when its image is closed</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Automatically dismiss any plate-solve window (<code>PlateSolveWindowView</code> / the <code>PlateSolveWindow</code> <code>WindowGroup</code>) opened for a file when that file is closed, instead of leaving it behind referencing a no-longer-open file.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Trace how the plate-solve window is keyed to an open file's ID and how files are closed.</li>
+            <li>On file close, dismiss the matching plate-solve window (e.g. via <code>dismissWindow</code>/window-id correlation, or by observing the file set).</li>
+            <li>Handle edge cases: multiple files, window already closed, solve in progress.</li>
+            <li>Verify closing the image reliably closes its plate-solve window.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Don't prompt to plate-solve while a solve is already running</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>When an always-offered overlay (Objects, North, Equatorial Grid) is toggled on an unsolved image while a plate solve is already in progress (<code>OpenFile.isPlateSolving</code>), skip the redundant "Plate Solve" alert (<code>isPlateSolvePromptPresented</code>) and instead open the existing plate-solve window so the user can watch progress.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Find where <code>isPlateSolvePromptPresented</code> is set in <code>ImageCanvasView</code> for these overlay toggles.</li>
+            <li>Guard the prompt with <code>OpenFile.isPlateSolving</code>: when true, open the existing plate-solve window instead of presenting the alert.</li>
+            <li>Ensure the window is brought to front if already open.</li>
+            <li>Verify both paths: solve running (no alert, window shown) and not running (alert as before).</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+      </ol>
+    </div>
+
+    <!-- PHASE 3 -->
+    <div class="phase">
+      <h3 class="phase-title"><span class="phase-kicker">Phase 3</span>Menus &amp; sidebar</h3>
+      <ol class="milestones" start="6">
+
+        <li class="milestone">
+          <div class="m-head"><h4>Flesh out the Image menu</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Add the rest of the image actions to the <em>Image</em> menu (<code>ImageCommands</code>) so they are discoverable and keyboard-accessible, rather than living only in the floating canvas toolbar (<code>ImageToolbarView</code>).</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Inventory the actions currently only in <code>ImageToolbarView</code> (zoom controls + overlay toggles).</li>
+            <li>Add zoom commands with standard shortcuts: Zoom In, Zoom Out, Actual Size (100%), Fit to Window, Recenter.</li>
+            <li>Add overlay toggles (e.g. "Show Stars") to the menu.</li>
+            <li>Share the underlying actions/state between toolbar and menu so both stay in sync; ensure correct enable/disable state.</li>
+            <li>Verify menu items and shortcuts work and reflect current state.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Sidebar sort button doesn't match the add button</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Make the sort control (the <code>arrow.up.arrow.down</code> menu) in the files sidebar header (<code>FilesSidebarView</code>) match the adjacent <code>+</code> add button: same icon size and same tint.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Compare the modifiers/styles applied to the add button vs. the sort menu in <code>FilesSidebarView</code>.</li>
+            <li>Align icon size (font/image scale) and tint between the two controls.</li>
+            <li>Verify the header controls look consistent in both light and dark appearance.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Sidebar — indicate files with adjustments</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Show a marker in the sidebar file list for files that have adjustments applied, so it is clear at a glance which images have been edited.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Determine how "has adjustments" is represented on the file/model (reuse existing state if available).</li>
+            <li>Add an unobtrusive marker (e.g. dot/badge/icon) to each sidebar row when the file has adjustments.</li>
+            <li>Ensure the marker updates live as adjustments are added/removed.</li>
+            <li>Verify appearance and add/adjust the sidebar preview.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+      </ol>
+    </div>
+
+    <!-- PHASE 4 -->
+    <div class="phase">
+      <h3 class="phase-title"><span class="phase-kicker">Phase 4</span>Windows &amp; panels</h3>
+      <ol class="milestones" start="9">
+
+        <li class="milestone">
+          <div class="m-head"><h4>Bring the open panel to front when reactivating the app</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>When the modal Open panel (<code>NSOpenPanel.runModal()</code> in <code>AppModel.runOpenPanel()</code> and <code>FilesSidebarView</code>) is open and the app is sent to the background, reactivating the app should bring the panel back to the front rather than leaving it buried/unreachable. Consider Spaces support.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Reproduce the buried/unreachable panel behavior on app reactivation.</li>
+            <li>On activation, bring the open panel's window to front (and order the app front) while the modal session is active.</li>
+            <li>Consider Spaces behavior so activation behaves sensibly when the panel lives on another Space.</li>
+            <li>Verify reactivation reliably surfaces the panel.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Remember last window size</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Persist the main window's size between launches so it reopens at the dimensions the user last left it.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Choose a persistence mechanism (e.g. SwiftUI window frame autosave / scene storage / explicit defaults).</li>
+            <li>Persist and restore the main window size on launch.</li>
+            <li>Reconcile with the "larger default window" milestone (M11) so defaults apply only on first launch.</li>
+            <li>Verify size is remembered across relaunch.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Larger default window and sidebar width</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Increase the default window size and default sidebar width in <code>MainWindowView</code>, and review the sidebar's min/max column widths (<code>.navigationSplitViewColumnWidth(min: 200, ideal: 215, max: 320)</code>) and the window's min/max size (<code>.frame(minWidth: 900, minHeight: 600)</code>) so the chosen defaults sit sensibly within the allowed range.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Pick larger sensible defaults for the window size and sidebar ideal width.</li>
+            <li>Review and adjust the sidebar min/max column widths and the window min/max so defaults fit comfortably.</li>
+            <li>Coordinate with M10 (remember last window size) so persisted size overrides the default after first launch.</li>
+            <li>Verify first-launch layout and resizing limits.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Curves and levels windows — sizes and positions</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Review and refine the default sizes and on-screen positions of the curves and levels windows (<code>CurvesWindowView</code>, <code>LevelsWindowView</code>), and how they are persisted.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Assess current default size/position and persistence of both windows.</li>
+            <li>Choose sensible default sizes and positions; ensure they don't overlap awkwardly or open off-screen.</li>
+            <li>Persist size/position consistently between the two windows.</li>
+            <li>Verify both windows open and restore sensibly.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Warn before losing adjustments on window close</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>When closing a window where adjustments have been made, prompt the user to confirm — warning that the adjustments will be lost — before discarding them.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Detect unsaved/uncommitted adjustments for the window's file(s) (reuse the "has adjustments" state from M8 if shared).</li>
+            <li>Intercept window close and present a confirmation alert when adjustments exist.</li>
+            <li>Honor the user's choice (cancel close vs. discard and close).</li>
+            <li>Verify the prompt appears only when adjustments are present.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+      </ol>
+    </div>
+
+    <!-- PHASE 5 -->
+    <div class="phase">
+      <h3 class="phase-title"><span class="phase-kicker">Phase 5</span>Inspector &amp; image controls</h3>
+      <ol class="milestones" start="14">
+
+        <li class="milestone">
+          <div class="m-head"><h4>Gamma — remove the on/off switch</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Remove the gamma enable switch: a value of 1 is already a no-op, so it can be the default with no separate toggle (<code>GammaCorrectionControlView</code>).</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Remove the enable toggle from <code>GammaCorrectionControlView</code> and any backing "enabled" flag.</li>
+            <li>Default gamma to 1 (no-op) and ensure the pipeline treats 1 as identity.</li>
+            <li>Migrate/clean up any persisted "enabled" state so existing settings still load.</li>
+            <li>Update the related test (<code>GammaCorrectionControlViewTests</code>) and preview.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Regroup levels and curves into one control</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Levels and curves currently sit on separate lines; regroup them inside a single control with both buttons on the same line.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Locate the inspector controls that open the levels and curves editors.</li>
+            <li>Combine them into one control row with both buttons side by side.</li>
+            <li>Preserve each button's existing action and enabled/unavailable state.</li>
+            <li>Verify layout and add/adjust the preview.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Review order of controls in inspector</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Revisit the order of the controls shown in the inspector so it follows a logical, intuitive workflow.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>List the current inspector control/section order (<code>InspectorView</code> / <code>InspectorSectionView</code> / <code>ImageControlContainer</code>).</li>
+            <li>Propose a logical workflow order; confirm with the maintainer if the intent is ambiguous.</li>
+            <li>Reorder the sections/controls accordingly (coordinate with M15's combined control).</li>
+            <li>Verify the inspector reads sensibly top-to-bottom.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Info view — no wrap, ellipsis with tooltips</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Stop wrapping long values in the info view; truncate them with an ellipsis and show the full value in a tooltip on hover.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Find the info view that renders metadata key/value rows.</li>
+            <li>Apply single-line truncation with a trailing ellipsis to values.</li>
+            <li>Add a help/tooltip showing the full value on hover.</li>
+            <li>Verify with long values that they truncate and the tooltip shows the full text.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Info panel — selectable labels</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Make the labels in the information panel selectable so their text can be copied.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Make the info panel value (and where useful, key) labels text-selectable (e.g. <code>.textSelection(.enabled)</code>).</li>
+            <li>Ensure selection coexists with the truncation/tooltip behavior from M17.</li>
+            <li>Verify text can be selected and copied.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+      </ol>
+    </div>
+
+    <!-- PHASE 6 -->
+    <div class="phase">
+      <h3 class="phase-title"><span class="phase-kicker">Phase 6</span>Rendering pipeline</h3>
+      <ol class="milestones" start="19">
+
+        <li class="milestone">
+          <div class="m-head"><h4>Review order of processors</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Revisit the order in which image processors are applied in the rendering pipeline (<code>ImageProcessor</code>) to make sure it is correct and produces the expected result.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Document the current processor order in <code>ImageProcessor</code>.</li>
+            <li>Reason about the correct order (e.g. stretch vs. gamma vs. levels/curves vs. color) and confirm with the maintainer where ambiguous.</li>
+            <li>Reorder processors as needed.</li>
+            <li>Update/verify <code>ImageProcessorTests</code> and check rendered output matches expectations.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Ensure debouncing with image renderer</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Make sure rendering requests are properly debounced so rapid control changes do not trigger redundant renders.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Trace how control changes trigger renders and whether any debouncing exists today.</li>
+            <li>Add/verify debouncing (coalesce rapid changes; render the latest state) without dropping the final value.</li>
+            <li>Ensure correctness with sliders/continuous controls (no stale final render).</li>
+            <li>Verify rapid changes produce a single up-to-date render.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+      </ol>
+    </div>
+
+    <!-- PHASE 7 -->
+    <div class="phase">
+      <h3 class="phase-title"><span class="phase-kicker">Phase 7</span>App chrome &amp; platform polish</h3>
+      <ol class="milestones" start="21">
+
+        <li class="milestone">
+          <div class="m-head"><h4>Thumbnail extension shows white borders</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Remove the unwanted white borders along the top and right edges of the Finder thumbnail rendered by <code>FITScopeThumbnailExtension</code> so the rendered image fills its bounds cleanly.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Inspect the thumbnail rendering code and how the drawing rect/size relates to the requested thumbnail bounds.</li>
+            <li>Fix the rect/aspect/origin so the image fills the bounds without stray margins (check for off-by-one/rounding or background fill).</li>
+            <li>Verify in Finder across a few FITS images and sizes.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Make API keys preferences view larger</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Enlarge the API Keys tab (<code>APIKeysPreferencesView</code>) so the API key fields have enough room to be read and edited comfortably.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Increase the view's width/min size (and the preferences window sizing if it constrains the tab).</li>
+            <li>Give the key fields enough width; ensure other preference tabs still look right.</li>
+            <li>Verify the layout in the live Preferences window and update the preview.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Verify whether MainMenu.xib is needed for a SwiftUI app</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Confirm whether <code>Base.lproj/MainMenu.xib</code> (wired via <code>NSMainNibFile</code> in <code>Info.plist</code>) is actually required given the SwiftUI <code>@main App</code> lifecycle (<code>FITScopeApp</code>). If not, remove the xib and its <code>Info.plist</code> reference to drop dead AppKit scaffolding.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Determine whether the nib provides anything still used (menu items, app delegate wiring, etc.).</li>
+            <li>If unused: remove the <code>NSMainNibFile</code> key from <code>Info.plist</code> and delete the xib (and its project reference).</li>
+            <li>Build and run; confirm the app launches and menus behave correctly without the nib.</li>
+            <li>If it <em>is</em> needed, record the reason in Implementation notes and leave it in place.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Verify light mode appearance</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Check how the app looks in light mode and fix any contrast, color, or layout issues so it is on par with dark mode.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Run the app in light mode and audit each window/panel/overlay for contrast and color issues.</li>
+            <li>Replace hard-coded colors with semantic/adaptive colors where needed (coordinate with overlay alpha, M3).</li>
+            <li>Fix any layout/legibility problems specific to light mode.</li>
+            <li>Verify parity with dark mode across the main surfaces.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+      </ol>
+    </div>
+
+    <!-- PHASE 8 -->
+    <div class="phase">
+      <h3 class="phase-title"><span class="phase-kicker">Phase 8</span>Open design questions (decision milestones)</h3>
+      <ol class="milestones" start="25">
+
+        <li class="milestone">
+          <div class="m-head"><h4>Default stretch before star detection<span class="open-tag">Decision</span></h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Decide whether a default stretch should be applied to the image before running star detection, and if so, which stretch — then implement the decision.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Investigate how star detection currently consumes image data (raw vs. stretched) and how detection quality is affected.</li>
+            <li>Lay out the trade-offs and propose a recommended default stretch (or "none").</li>
+            <li>Pause for the maintainer's decision; record it in Implementation notes.</li>
+            <li>Implement the agreed behavior and verify detection results.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Default stretch for previews<span class="open-tag">Decision</span></h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Decide whether a default stretch should be applied before generating previews, and which one — to be settled alongside the star-detection stretch decision (M25) — then implement it.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Investigate the current preview generation path and whether any stretch is applied.</li>
+            <li>Lay out the trade-offs; propose a recommended default consistent with M25 where it makes sense.</li>
+            <li>Pause for the maintainer's decision; record it in Implementation notes.</li>
+            <li>Implement the agreed behavior and verify preview output.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Gamma vs. levels gamma — do we need both?<span class="open-tag">Decision</span></h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Evaluate whether the standalone gamma correction and the gamma (midtone) adjustment inside levels are redundant, and decide whether to keep both — then act on the decision.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Compare what standalone gamma and levels-gamma each do in the pipeline (overlap, ordering, user-facing difference).</li>
+            <li>Lay out the trade-offs; propose keep-both / merge / remove-one with rationale.</li>
+            <li>Pause for the maintainer's decision; record it in Implementation notes.</li>
+            <li>Implement the agreed outcome (coordinate with M14 gamma-switch removal and M19 processor order).</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Histogram backdrop on curves?<span class="open-tag">Decision</span></h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Decide whether to draw a histogram backdrop behind the curves editor (<code>CurveEditorCanvas</code> / <code>CurvesEditorView</code>), as is already done in the levels editor — then implement if approved.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>Review how the levels editor draws its histogram backdrop to reuse the approach.</li>
+            <li>Lay out the trade-offs (clarity vs. clutter, performance); propose a recommendation.</li>
+            <li>Pause for the maintainer's decision; record it in Implementation notes.</li>
+            <li>If approved, add the histogram backdrop to the curves editor, reusing levels' implementation where possible.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+      </ol>
+    </div>
+
+    <section class="appendix">
+      <h2 class="section">Appendix</h2>
+      <p><strong>Milestone ↔ source mapping.</strong> The 28 milestones cover every item in
+        <code>fixes.html</code>, reordered into themed phases with the 4 open design questions
+        last. Items not tied to a single file (light mode, processor order, debouncing,
+        inspector order) are scoped as audit-then-fix milestones.</p>
+      <p><strong>Cross-milestone coordination.</strong> A few milestones touch shared state and
+        should be implemented mindful of each other: M8 / M26 (has-adjustments state),
+        M10 / M11 (default vs. remembered window size), M14 / M19 / M27 (gamma, processor
+        order, gamma redundancy), and M3 / M24 (overlay colors and light-mode adaptation).</p>
+    </section>
+
+  </div>
+</body>
+</html>
