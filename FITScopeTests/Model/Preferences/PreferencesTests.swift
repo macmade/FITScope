@@ -254,6 +254,62 @@ struct PreferencesTests
         #expect( reloaded.weightFormula == "1 / FWHM (" )
     }
 
+    /// With nothing stored, there is no remembered main-window size, so the app's
+    /// launch-time default size applies rather than a persisted one.
+    @Test
+    @MainActor
+    func defaultsToNoStoredMainWindowSize()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.mainWindowSize == nil )
+    }
+
+    /// A remembered main-window size is written to the store and read back by a
+    /// fresh instance — the round-trip that reopens the window at the size the
+    /// user last left it.
+    @Test
+    @MainActor
+    func persistsMainWindowSizeAcrossInstances()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+        let size        = CGSize( width: 1234, height: 987 )
+
+        preferences.mainWindowSize = size
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.mainWindowSize == size )
+    }
+
+    /// Clearing the remembered size removes it from the store, so a fresh instance
+    /// falls back to no stored size (and thus the launch-time default).
+    @Test
+    @MainActor
+    func clearingMainWindowSizeRemovesItFromTheStore()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        preferences.mainWindowSize = CGSize( width: 1234, height: 987 )
+        preferences.mainWindowSize = nil
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.mainWindowSize == nil )
+    }
+
     /// Writes a raw `infoPanelFields` payload — `(fieldRawValue, visible)` pairs,
     /// JSON-encoded under the persisted key — directly into the store, to seed
     /// the reconciliation tests with partial or stale configurations.

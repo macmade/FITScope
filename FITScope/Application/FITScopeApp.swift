@@ -63,6 +63,21 @@ public struct FITScopeApp: App
                 .environmentObject( self.appDelegate.apiKeyStore )
         }
         .windowStyle( .titleBar )
+        // Open at the size the window was last left at, or the app default on first
+        // launch. State restoration (which would persist the frame automatically) is
+        // disabled below so the app launches clean, so the remembered size is applied
+        // here from the shared preferences instead. This closure runs each time a
+        // window is placed — including new windows opened mid-session — so it reads
+        // the latest remembered size every time, rather than a value captured once at
+        // launch (which `.defaultSize` would).
+        .defaultWindowPlacement
+        {
+            _, _ in
+
+            let size = self.appDelegate.preferences.mainWindowSize ?? MainWindowView.defaultSize
+
+            return WindowPlacement( size: size )
+        }
         .defaultLaunchBehavior( .suppressed )
         .restorationBehavior( .disabled )
         .commands

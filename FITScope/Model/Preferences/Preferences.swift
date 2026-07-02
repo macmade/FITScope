@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Combine
+import CoreGraphics
 import Foundation
 
 /// One information-panel field together with whether the user wants it shown.
@@ -66,6 +67,8 @@ public final class Preferences: ObservableObject
         static let confirmMoveToTrash   = "confirmMoveToTrash"
         static let infoPanelFields      = "infoPanelFields"
         static let weightFormula        = "weightFormula"
+        static let mainWindowWidth      = "mainWindowWidth"
+        static let mainWindowHeight     = "mainWindowHeight"
     }
 
     /// The persisted shape of one field setting: the field's stable raw value and
@@ -122,6 +125,32 @@ public final class Preferences: ObservableObject
         didSet { self.defaults.set( self.weightFormula, forKey: Key.weightFormula ) }
     }
 
+    /// The size the main window was last left at, persisted so it reopens at the
+    /// same dimensions on the next launch (see ``MainWindowView``).
+    ///
+    /// `nil` when nothing has been stored yet — so first launch falls back to the
+    /// app's default size (``MainWindowView/defaultSize``) rather than a persisted
+    /// one. Deliberately *not* `@Published`: it is written on every window-resize
+    /// step and read once at launch, with no view observing it for display, so
+    /// publishing it would only churn re-renders during a live resize.
+    public var mainWindowSize: CGSize?
+    {
+        didSet
+        {
+            guard let size = self.mainWindowSize
+            else
+            {
+                self.defaults.removeObject( forKey: Key.mainWindowWidth )
+                self.defaults.removeObject( forKey: Key.mainWindowHeight )
+
+                return
+            }
+
+            self.defaults.set( size.width,  forKey: Key.mainWindowWidth )
+            self.defaults.set( size.height, forKey: Key.mainWindowHeight )
+        }
+    }
+
     /// Creates the store, seeding each setting from `defaults` or its default
     /// value when nothing has been stored yet.
     ///
@@ -137,6 +166,27 @@ public final class Preferences: ObservableObject
         self.confirmMoveToTrash   = ( defaults.object( forKey: Key.confirmMoveToTrash ) as? Bool ) ?? true
         self.infoPanelFields      = Self.decodeInfoPanelFields( defaults.data( forKey: Key.infoPanelFields ) )
         self.weightFormula        = defaults.string( forKey: Key.weightFormula ) ?? WeightFormula.defaultExpression
+        self.mainWindowSize       = Self.decodeMainWindowSize( from: defaults )
+    }
+
+    /// Reads the persisted main-window size, if any.
+    ///
+    /// Both a width and a height must be present (via `object(forKey:)`, which
+    /// distinguishes "never set" from a stored `0`) for a size to be returned;
+    /// otherwise `nil`, so the caller applies the default size instead.
+    ///
+    /// - Parameter defaults: The backing store to read from.
+    /// - Returns: The stored size, or `nil` when nothing complete is stored.
+    private static func decodeMainWindowSize( from defaults: UserDefaults ) -> CGSize?
+    {
+        guard let width  = defaults.object( forKey: Key.mainWindowWidth )  as? Double,
+              let height = defaults.object( forKey: Key.mainWindowHeight ) as? Double
+        else
+        {
+            return nil
+        }
+
+        return CGSize( width: width, height: height )
     }
 
     /// Restores ``weightFormula`` to the default expression, discarding the user's
