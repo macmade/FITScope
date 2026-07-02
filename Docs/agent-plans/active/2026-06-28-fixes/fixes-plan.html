@@ -555,17 +555,34 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Larger default window and sidebar width</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Larger default window and sidebar width</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Increase the default window size and default sidebar width in <code>MainWindowView</code>, and review the sidebar's min/max column widths (<code>.navigationSplitViewColumnWidth(min: 200, ideal: 215, max: 320)</code>) and the window's min/max size (<code>.frame(minWidth: 900, minHeight: 600)</code>) so the chosen defaults sit sensibly within the allowed range.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Pick larger sensible defaults for the window size and sidebar ideal width.</li>
-            <li>Review and adjust the sidebar min/max column widths and the window min/max so defaults fit comfortably.</li>
-            <li>Coordinate with M10 (remember last window size) so persisted size overrides the default after first launch.</li>
-            <li>Verify first-launch layout and resizing limits.</li>
+            <li class="done">Pick larger sensible defaults for the window size and sidebar ideal width.</li>
+            <li class="done">Review and adjust the sidebar min/max column widths and the window min/max so defaults fit comfortably.</li>
+            <li class="done">Coordinate with M10 (remember last window size) so persisted size overrides the default after first launch.</li>
+            <li class="done">Verify first-launch layout and resizing limits.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-02</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Values (chosen by maintainer).</strong> Default window size and files-sidebar width, both in <code>MainWindowView</code>:</p>
+            <ul>
+              <li><strong>Default window size → <code>1280 × 840</code>.</strong> <code>MainWindowView.defaultSize</code> (introduced as a modest <code>1000 × 700</code> placeholder in M10) is now the real default. It sits well above the window's <code>900 × 600</code> minimum and fits a 13" display while giving the image canvas room on larger screens. Its doc comment lost the "M11 revisits this" note.</li>
+              <li><strong>Files sidebar → <code>min 210 / ideal 245 / max 360</code></strong> (was <code>min 200 / ideal 215 / max 320</code>). The wider ideal gives the thumbnail + filename + weight-pill row more room, with the min/max widened so the ideal sits comfortably mid-range.</li>
+            </ul>
+            <p><strong>Window min/max review.</strong> The window keeps <code>.frame( minWidth: 900, minHeight: 600 )</code> and no explicit max (it grows freely). With the default now <code>1280 × 840</code>, the default sits comfortably inside the allowed range, so no change to the window limits was needed. The trailing inspector column (<code>min 240 / ideal 255 / max 360</code>) was left as-is — the source item is about the <em>files</em> (leading) sidebar and the window, and the inspector already reads well; kept out of scope.</p>
+            <p><strong>Coordination with M10.</strong> No new wiring: <code>defaultSize</code> is already the fallback the M10 <code>.defaultWindowPlacement</code> closure uses (<code>preferences.mainWindowSize ?? MainWindowView.defaultSize</code>), so the larger default applies only until the user first resizes a window, after which the remembered size takes over.</p>
+            <p><strong>No unit test.</strong> This milestone only changes layout constants (a size and column widths); there is no logic to assert, and — as with M7's purely-visual style tweak — the XCTest setup can't verify a rendered SwiftUI layout, so a hollow test would add nothing. Verification is the build plus an interactive check. All 396 tests still pass; the app builds.</p>
+            <p><strong>Needs a quick visual check</strong> (the plan's last task): with no remembered size yet (fresh install / cleared window size), confirm the window opens at ~<code>1280 × 840</code> and the files sidebar at its wider ideal; drag the window down to its minimum and the sidebar to both ends to confirm the limits feel right.</p>
+            <p><strong>Review round — wider sidebar.</strong> The window size was accepted; the files sidebar was asked to be larger. Bumped it to <code>min 240 / ideal 280 / max 400</code> (from <code>min 210 / ideal 245 / max 360</code>). The window default (<code>1280 × 840</code>) still comfortably accommodates the wider sidebar plus the canvas and inspector.</p>
+            <p><strong>Review round — maintainer's manual adjustment.</strong> The maintainer then set the final column widths directly in <code>MainWindowView</code>: <strong>both</strong> the files sidebar (<code>.navigationSplitViewColumnWidth</code>) and the trailing inspector (<code>.inspectorColumnWidth</code>) are now <code>min 250 / ideal 300 / max 500</code>. So the inspector — left out of scope in the first cut — was widened to match. These hand-tuned values are the ones kept. Separately, corrected a stale comment above <code>.onGeometryChange</code> that still referred to <code>.defaultSize</code>: the size is applied via <code>.defaultWindowPlacement</code> (from M10's review round), so the comment now says so. All 396 tests still pass; the app builds.</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>Window size is fine; make the (files) sidebar larger.</li>
+              <li>Made manual width adjustments directly, for the inspector too: both the files sidebar and the inspector set to <code>min 250 / ideal 300 / max 500</code>.</li>
+            </ul>
+          </div>
         </li>
 
         <li class="milestone">

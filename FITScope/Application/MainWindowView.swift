@@ -35,9 +35,9 @@ public struct MainWindowView: View
     /// resized one. Once resized, the remembered size (``Preferences/mainWindowSize``)
     /// takes over, so this default only ever applies to a never-resized install.
     ///
-    /// - Note: M11 revisits this default (and the sidebar width) alongside the
-    ///   window's min/max limits; it is intentionally modest for now.
-    public static let defaultSize = CGSize( width: 1000, height: 700 )
+    /// Sits comfortably above the window's `900 × 600` minimum and fits a 13"
+    /// display while giving the image canvas room on larger screens.
+    public static let defaultSize = CGSize( width: 1280, height: 840 )
 
     /// The window's open files and selection.
     @StateObject private var model = WindowModel()
@@ -87,7 +87,7 @@ public struct MainWindowView: View
         NavigationSplitView
         {
             FilesSidebarView( model: self.model )
-                .navigationSplitViewColumnWidth( min: 200, ideal: 215, max: 320 )
+                .navigationSplitViewColumnWidth( min: 250, ideal: 300, max: 500 )
         }
         detail:
         {
@@ -131,7 +131,7 @@ public struct MainWindowView: View
                     Color.clear
                 }
             }
-            .inspectorColumnWidth( min: 240, ideal: 255, max: 360 )
+            .inspectorColumnWidth( min: 250, ideal: 300, max: 500 )
         }
         .toolbar
         {
@@ -161,10 +161,11 @@ public struct MainWindowView: View
         // Remember the window's size across launches. State restoration (SwiftUI's
         // built-in frame persistence) is disabled app-wide so the app always
         // launches clean, so the size is persisted manually: the content size is
-        // written to the shared preferences here and reapplied via `.defaultSize`
-        // in `FITScopeApp` on the next launch. The action fires outside the update
-        // pass (like `.onChange`), and `mainWindowSize` is non-`@Published`, so this
-        // neither publishes changes from within a view update nor churns re-renders.
+        // written to the shared preferences here and reapplied via
+        // `.defaultWindowPlacement` in `FITScopeApp` whenever a window is placed. The
+        // action fires outside the update pass (like `.onChange`), and
+        // `mainWindowSize` is non-`@Published`, so this neither publishes changes from
+        // within a view update nor churns re-renders.
         .onGeometryChange( for: CGSize.self, of: { $0.size }, action: { self.preferences.mainWindowSize = $0 } )
         .navigationTitle( self.model.selectedFile?.displayName ?? Bundle.main.title )
         .navigationDocument( ifPresent: self.model.selectedFile?.url )
