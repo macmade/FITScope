@@ -89,6 +89,10 @@ public struct InfoViewTable: View
             .width( min: 20, ideal: 150, max: 1000 )
         }
         .tableStyle( .inset( alternatesRowBackgrounds: true ) )
+        // Let the keyword cells (index, name, value, comment) be selected and
+        // copied, matching the Image Information panel — alongside the table's
+        // existing row selection.
+        .textSelection( .enabled )
         .onChange( of: sortOrder )
         {
             _, order in self.sortedProperties = self.properties.sorted( using: order )

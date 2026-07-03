@@ -55,6 +55,9 @@ public struct LocationInfoView: View
             self.row( systemImage: "arrow.left.arrow.right",  label: "Longitude", value: Self.format( self.longitude, positive: "E", negative: "W" ) )
         }
         .frame( maxWidth: .infinity, alignment: .leading )
+        // Let the coordinate labels and values be selected and copied, matching
+        // the Image Information panel.
+        .textSelection( .enabled )
     }
 
     /// One icon / label / value row, matching the Image Information panel's rows.

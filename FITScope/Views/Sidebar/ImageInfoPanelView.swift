@@ -65,6 +65,10 @@ public struct ImageInfoPanelView: View
                         row in self.row( row )
                     }
                 }
+                // Let the field labels and values be selected and copied. Applied
+                // to the grid so every row's text is selectable at once; it
+                // coexists with each value's single-line truncation and tooltip.
+                .textSelection( .enabled )
 
                 // Given more height than the content needs (few fields), this
                 // keeps the fields at the top and pushes the button to the bottom;

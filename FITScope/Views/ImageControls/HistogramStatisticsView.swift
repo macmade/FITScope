@@ -125,6 +125,9 @@ public struct HistogramStatisticsView: View
                 }
             }
         }
+        // Let the statistic labels and per-channel values be selected and copied,
+        // matching the Image Information panel.
+        .textSelection( .enabled )
     }
 }
 

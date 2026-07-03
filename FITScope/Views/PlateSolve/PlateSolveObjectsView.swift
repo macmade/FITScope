@@ -62,6 +62,9 @@ struct PlateSolveObjectsView: View
                         Pill( $0 )
                     }
                 }
+                // The identified object names are selectable/copyable; the
+                // "Objects in Field" heading is left as a plain heading.
+                .textSelection( .enabled )
             }
         }
     }

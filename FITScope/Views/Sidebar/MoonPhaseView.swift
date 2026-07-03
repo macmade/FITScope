@@ -91,6 +91,9 @@ public struct MoonPhaseView: View
         .padding( 12 )
         .frame( maxWidth: .infinity, maxHeight: .infinity )
         .background( .regularMaterial )
+        // Let the phase name, illumination and date be selected and copied,
+        // matching the Image Information panel.
+        .textSelection( .enabled )
     }
 
     /// The illuminated fraction as a whole-percent sentence, e.g.

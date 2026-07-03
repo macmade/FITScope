@@ -767,16 +767,43 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Info panel — selectable labels</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Info panel — selectable labels</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Make the labels in the information panel selectable so their text can be copied.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Make the info panel value (and where useful, key) labels text-selectable (e.g. <code>.textSelection(.enabled)</code>).</li>
-            <li>Ensure selection coexists with the truncation/tooltip behavior from M16.</li>
-            <li>Verify text can be selected and copied.</li>
+            <li class="done">Make the info panel value (and where useful, key) labels text-selectable (e.g. <code>.textSelection(.enabled)</code>).</li>
+            <li class="done">Ensure selection coexists with the truncation/tooltip behavior from M16.</li>
+            <li class="done">Verify text can be selected and copied.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-04</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Same panel as M16.</strong> The "information panel" is the sidebar <em>Image Information</em> grid (<code>ImageInfoPanelView</code>). Added a single <code>.textSelection( .enabled )</code> to the <code>Grid</code> rather than to each <code>Text</code>: <code>textSelection</code> propagates through the environment to every descendant <code>Text</code>, so one modifier makes every row's field <em>label</em> and <em>value</em> selectable at once — covering "value and, where useful, key labels" without repeating it per cell. This is the first use of <code>.textSelection</code> in the app.</p>
+            <p><strong>Scope.</strong> Applied to the <code>Grid</code> only, so selection is confined to the metadata rows; the "IMAGE INFORMATION" section header and the "View Full FITS Headers" button are left as ordinary chrome (a <code>Button</code> is a control and is unaffected by <code>textSelection</code> anyway).</p>
+            <p><strong>Coexistence with M16 (the task's explicit requirement).</strong> The value <code>Text</code> keeps its M16 modifiers (<code>lineLimit( 1 )</code> / <code>truncationMode( .tail )</code> / <code>frame( maxWidth: )</code> / <code>help( value )</code>); <code>.textSelection( .enabled )</code> composes with them (selection is an environment trait; truncation and the tooltip are layout/overlay traits). The build is clean and all tests pass. <strong>One thing needs an interactive check I can't run here:</strong> whether selecting-and-copying a <em>truncated</em> long value yields the full underlying string or just the visible truncated glyphs. Most values fit on one line and copy in full; for a truncated value the M16 tooltip still exposes the full text as a fallback. Flagging it — if copy returns the ellipsis form and full-value copy is wanted, that would be a small follow-up.</p>
+            <p><strong>No unit test / no preview (honest — consistent with M7 / M11 / M12 / M15 / M16).</strong> A pure view-modifier change with no logic to assert; text selection and copy are runtime AppKit behaviors the test setup can't drive, and the panel still can't be previewed (it needs a loaded <code>OpenFile</code>, per M8 / M13). Verification is the build plus an interactive selection/copy check. <strong>All 403 FITScope tests in 57 suites still pass</strong> (unchanged — the change touches no logic); the FITScope target and the other test targets build clean via <code>xcodebuild</code>.</p>
+            <p><strong>Needs an interactive check</strong> (the item's last task): in the Image Information panel, drag to select a value (and a label), press ⌘C, and confirm it pastes elsewhere; confirm selection still behaves with the M16 truncation and tooltip in place.</p>
+            <p><strong>Review round — extended to the other information panels (per review).</strong> Applied the same <code>.textSelection( .enabled )</code> treatment across the app's other read-only info panels, once at each view's content container so it propagates to every descendant <code>Text</code> (buttons, links and the map are controls and stay unaffected):</p>
+            <ul>
+              <li><strong>Sidebar sibling tabs</strong> — <code>LocationInfoView</code> (the coordinate rows under the map), <code>MoonPhaseView</code> (phase name / illumination / date), and <code>WeatherView</code> (condition, temperature, the per-metric grid and date).</li>
+              <li><strong>Plate-solve window</strong> — one modifier on <code>PlateSolveResultView</code>'s root <code>VStack</code>, covering the header, the solved calibration values (<code>PlateSolveCalibrationView</code>) and the in-field object names (<code>PlateSolveObjectsView</code>) in one place.</li>
+              <li><strong>Inspector statistics</strong> — <code>HistogramStatisticsView</code>'s grid (per-channel mean / std dev / median / min / max / percentiles / count).</li>
+              <li><strong>FITS-headers window</strong> — <code>InfoViewTable</code>'s <code>Table</code>, so the index / name / value / comment cells are selectable alongside the table's existing row selection.</li>
+            </ul>
+            <p><strong>The one to eyeball</strong>: the FITS-headers <code>Table</code> is the least certain — <code>.textSelection</code> inside a SwiftUI <code>Table</code> can behave differently from a plain stack, and must not interfere with the table's existing row selection / column sorting. Confirm its cell text can be selected and copied; if the <code>Table</code> ignores the modifier, wiring an explicit copy command / context menu would be the follow-up. The sidebar tabs, plate-solve and statistics panels are plain stacks/grids, so selection there uses the same mechanism as the Image Information panel.</p>
+            <p><strong>Verification.</strong> <strong>All 403 FITScope tests in 57 suites still pass</strong>; the FITScope target and the other test targets build clean via <code>xcodebuild</code>. As before these are pure view-modifier changes with no logic to unit-test, and selection/copy is a runtime AppKit behavior — so each panel needs the same quick interactive select-and-⌘C check.</p>
+            <p><strong>Review round — scope refinements (per review).</strong> Tightened where selection applies:</p>
+            <ul>
+              <li><strong>Weather attribution excluded.</strong> The "Weather data by Open-Meteo.com" credit/link now carries <code>.textSelection( .disabled )</code>, overriding the card's enabled selection for that one line — the informational conditions stay selectable, the attribution does not.</li>
+              <li><strong>Plate-solve narrowed to just the requested items.</strong> Removed the blanket <code>.textSelection( .enabled )</code> from <code>PlateSolveResultView</code>'s root and applied it only to: the <strong>file name</strong> (<code>PlateSolveHeaderView</code>'s <code>Text( fileName )</code> — the status line stays unselectable), the <strong>calibration labels &amp; values</strong> (the rows' <code>VStack</code> in <code>PlateSolveCalibrationView</code>, excluding the "Solution" box title), and the <strong>object names</strong> (the <code>FlowLayout</code> of pills in <code>PlateSolveObjectsView</code>, excluding the "Objects in Field" heading). The in-progress explanation and the failed/cancelled messages are no longer selectable.</li>
+            </ul>
+            <p><code>Pill</code> is a plain <code>Text</code>, so the selection propagated to the <code>FlowLayout</code> reaches the object-name pills. <strong>All 403 FITScope tests in 57 suites still pass; the app builds clean.</strong> Interactive checks are unchanged (select-and-⌘C per panel; the FITS-headers <code>Table</code> is still the one to eyeball).</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>Apply the same selectable-text treatment to the other information panels too, not just the Image Information panel.</li>
+              <li>In the Weather panel, the "Weather data by Open-Meteo.com" attribution line should not be selectable.</li>
+              <li>In the plate-solve window, only the objects, the (calibration) labels and values, and the file name should be selectable — not the rest (e.g. the in-progress explanation, the failure/cancelled messages, or section headings).</li>
+            </ul>
+          </div>
         </li>
 
       </ol>

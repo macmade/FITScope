@@ -87,6 +87,9 @@ struct PlateSolveCalibrationView: View
                 }
             }
             .padding( 4 )
+            // The calibration field labels and values are selectable/copyable;
+            // the "Solution" box title is left as a plain heading.
+            .textSelection( .enabled )
         }
         label:
         {

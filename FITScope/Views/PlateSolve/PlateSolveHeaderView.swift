@@ -66,6 +66,9 @@ struct PlateSolveHeaderView: View
                     .font( .headline )
                     .lineLimit( 2 )
                     .truncationMode( .middle )
+                    // The file name is selectable/copyable; the status line below
+                    // is transient UI, so it is left unselectable.
+                    .textSelection( .enabled )
 
                 self.status
             }

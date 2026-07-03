@@ -182,6 +182,9 @@ public struct WeatherView: View
         .padding( 12 )
         .frame( maxWidth: .infinity, maxHeight: .infinity )
         .background( .regularMaterial )
+        // Let the condition, temperature, per-metric rows and date be selected
+        // and copied, matching the Image Information panel.
+        .textSelection( .enabled )
     }
 
     /// The data-source credit shown at the bottom of the conditions card: a small
@@ -194,6 +197,9 @@ public struct WeatherView: View
             .foregroundStyle( .tertiary )
             .tint( .secondary )
             .padding( .top, 2 )
+            // The attribution credit/link is not informational data, so exclude
+            // it from the selection enabled on the conditions card above.
+            .textSelection( .disabled )
     }
 
     /// One icon / label / value row, matching the Image Information panel's rows.
