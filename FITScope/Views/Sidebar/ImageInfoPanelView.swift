@@ -120,7 +120,16 @@ public struct ImageInfoPanelView: View
                     .foregroundStyle( .secondary )
             }
 
+            // Keep long values on a single line, truncated with a trailing
+            // ellipsis, and surface the full value in a tooltip on hover — rather
+            // than wrapping onto several lines and growing the panel. The flexible
+            // frame lets the value fill the remaining width so it truncates there
+            // instead of being clipped at the panel's edge.
             Text( row.value )
+                .lineLimit( 1 )
+                .truncationMode( .tail )
+                .frame( maxWidth: .infinity, alignment: .leading )
+                .help( row.value )
         }
         .font( .system( size: 10 ) )
     }

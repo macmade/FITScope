@@ -746,16 +746,23 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Info view — no wrap, ellipsis with tooltips</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Info view — no wrap, ellipsis with tooltips</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Stop wrapping long values in the info view; truncate them with an ellipsis and show the full value in a tooltip on hover.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Find the info view that renders metadata key/value rows.</li>
-            <li>Apply single-line truncation with a trailing ellipsis to values.</li>
-            <li>Add a help/tooltip showing the full value on hover.</li>
-            <li>Verify with long values that they truncate and the tooltip shows the full text.</li>
+            <li class="done">Find the info view that renders metadata key/value rows.</li>
+            <li class="done">Apply single-line truncation with a trailing ellipsis to values.</li>
+            <li class="done">Add a help/tooltip showing the full value on hover.</li>
+            <li class="done">Verify with long values that they truncate and the tooltip shows the full text.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-04</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Target identification.</strong> Two info surfaces exist: the FITS-headers window (<code>InfoView</code> → <code>InfoViewTable</code>, a native SwiftUI <code>Table</code>) and the sidebar <em>Image Information</em> panel (<code>ImageInfoPanelView</code>, hosted by <code>ImageInfoTabView</code>). A native <code>Table</code> already truncates each cell to its column width and never wraps, so the only place long values actually <em>wrap</em> is <code>ImageInfoPanelView.row(_:)</code>, whose value cell was a bare <code>Text( row.value )</code> with no line limit — that is this milestone's target. (It is the same panel M17 will make selectable, matching that milestone's "coexists with the truncation/tooltip from M16" note.)</p>
+            <p><strong>Change.</strong> In <code>ImageInfoPanelView.row(_:)</code> the value <code>Text</code> now uses <code>.lineLimit( 1 )</code> + <code>.truncationMode( .tail )</code> (a trailing ellipsis, as the item asks — the same idiom as <code>OpenFileRowView</code>'s filename and <code>SegmentedControlView</code>), a <code>.frame( maxWidth: .infinity, alignment: .leading )</code> so the value fills the remaining width and truncates <em>there</em> (with the ellipsis) instead of being clipped at the panel's edge or forcing the grid wide, and <code>.help( row.value )</code> to surface the full value as a hover tooltip (the app's established <code>.help(…)</code> pattern, e.g. the row's <code>.help( file.url.path )</code>). The label cell is left unchanged — the item is about long <em>values</em>, and the labels are a fixed set of short field names.</p>
+            <p><strong>Height-probe interaction.</strong> <code>ImageInfoTabView</code> measures the panel's natural height with a hidden <code>heightProbe</code> (<code>.fixedSize( horizontal: false, vertical: true )</code> + <code>.onGeometryChange</code>) and floors it at <code>minContentHeight</code> (200). With values now single-line the measured height shrinks (or is unchanged when already ≥ 200), so the Info tab still sizes correctly and nothing is written mid-<code>body</code> (the "publishing changes from within view updates" hazard earlier milestones were careful about).</p>
+            <p><strong>No unit test (honest — consistent with M7 / M11 / M12 / M15).</strong> This is a pure SwiftUI view-modifier change (<code>lineLimit</code> / <code>truncationMode</code> / <code>frame</code> / <code>help</code>) with no logic to assert; the test setup can't verify a rendered <code>Text</code>'s truncation or a tooltip, and the UI suite is presence-based per its own doctrine, so a hollow test would add nothing. Verification is the build plus a visual check. <strong>All 403 FITScope tests in 57 suites still pass</strong> (unchanged — the change touches no logic); the FITScope target and the other test targets build clean via <code>xcodebuild</code>.</p>
+            <p><strong>No preview added.</strong> <code>ImageInfoPanelView</code> has no <code>#Preview</code> and the repo can't preview it: it needs a loaded <code>OpenFile</code> (a real file URL that loads/renders asynchronously) — the same limitation recorded for the sidebar views in M8 / M13. Rather than fabricate a hollow preview, I left it out.</p>
+            <p><strong>Needs a quick visual check</strong> (the item's last task): open a file whose header has a long value (e.g. a long instrument/target name or a full timestamp) and confirm the Image Information panel value stays on one line, truncates with a trailing "…", and shows the full value in a tooltip on hover; confirm short values look unchanged and the Info-tab height still reads well.</p>
+          </div>
           <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
         </li>
 
