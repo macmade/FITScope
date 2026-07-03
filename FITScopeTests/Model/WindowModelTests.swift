@@ -153,6 +153,33 @@ struct WindowModelTests
 
     @Test
     @MainActor
+    func reportsWhetherAnyOpenFileHasAdjustments() async throws
+    {
+        let model = WindowModel()
+
+        // An empty window has nothing to lose, so no confirmation is warranted.
+        #expect( model.hasAdjustedFiles == false )
+
+        model.open( urls: [ TestFixtures.monoImage ] )
+
+        let file = try #require( model.files.first )
+
+        await file.preparation?.value
+
+        // A freshly loaded, untouched file is not "adjusted".
+        #expect( model.hasAdjustedFiles == false )
+
+        let renderer = try #require( file.image?.renderer )
+
+        // Any deviation from the defaults counts — `hasAdjustments` reads the
+        // settings snapshot immediately, without needing a re-render.
+        renderer.adjustments.invert = true
+
+        #expect( model.hasAdjustedFiles, "a window with an adjusted file reports it, so a close can warn" )
+    }
+
+    @Test
+    @MainActor
     func trashingAFileTrashesItAndRemovesItFromTheModel() throws
     {
         let url = URL( fileURLWithPath: NSTemporaryDirectory() ).appendingPathComponent( "FITScopeTrashTest-\( UUID().uuidString ).fits" )

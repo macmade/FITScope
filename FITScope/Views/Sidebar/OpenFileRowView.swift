@@ -234,7 +234,7 @@ public struct OpenFileRowView: View
     /// "edited" marker. `false` before the image has loaded.
     private var hasAdjustments: Bool
     {
-        self.file.image?.renderer.adjustments.hasAdjustments ?? false
+        self.file.hasAdjustments
     }
 
     /// A one-line summary derived from the loaded image's header, or a neutral

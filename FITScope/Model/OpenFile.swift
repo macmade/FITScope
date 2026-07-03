@@ -207,6 +207,16 @@ public final class OpenFile: ObservableObject, Identifiable
         return nil
     }
 
+    /// Whether the loaded image has adjustments that differ from its as-captured
+    /// defaults — the single "edited" signal, shared by the sidebar marker, the
+    /// window's ``WindowModel/hasAdjustedFiles`` and the close/trash confirmations.
+    ///
+    /// A file whose image has not loaded yet is not adjusted.
+    public var hasAdjustments: Bool
+    {
+        self.image?.renderer.adjustments.hasAdjustments ?? false
+    }
+
     /// The file's current stage in the load → render pipeline.
     ///
     /// `rendering` covers the window after parsing finishes but before the first

@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import SwiftUI
+import SwiftUtilities
 import UniformTypeIdentifiers
 
 /// The root view of a window: a three-column layout (files + image info |
@@ -41,6 +42,11 @@ public struct MainWindowView: View
 
     /// The window's open files and selection.
     @StateObject private var model = WindowModel()
+
+    /// Retains the window's close-confirmation delegate for the window's lifetime
+    /// (`NSWindow.delegate` is weak), so closing a window with adjustments prompts
+    /// before discarding them. Installed once the hosting `NSWindow` is known.
+    @State private var closeConfirmation = WindowCloseConfirmationDelegate()
 
     /// Whether the trailing inspector is shown.
     @State private var showInspector = true
@@ -84,6 +90,12 @@ public struct MainWindowView: View
     /// The view's content.
     public var body: some View
     {
+        // Stable references for the window accessor's escaping callback, grabbed
+        // here during `body` (where reading them is valid) rather than from the
+        // property wrappers inside the deferred closure.
+        let model             = self.model
+        let closeConfirmation = self.closeConfirmation
+
         NavigationSplitView
         {
             FilesSidebarView( model: self.model )
@@ -167,6 +179,15 @@ public struct MainWindowView: View
         // `mainWindowSize` is non-`@Published`, so this neither publishes changes from
         // within a view update nor churns re-renders.
         .onGeometryChange( for: CGSize.self, of: { $0.size }, action: { self.preferences.mainWindowSize = $0 } )
+        // Warn before closing a window whose images have adjustments, so they are
+        // not discarded silently. Installed on the hosting NSWindow (the veto point
+        // for both the close button and ⌘W), forwarding to SwiftUI's own delegate.
+        .background(
+            WindowAccessor
+            {
+                window in closeConfirmation.install( on: window ) { [ weak model ] in model?.hasAdjustedFiles ?? false }
+            }
+        )
         .navigationTitle( self.model.selectedFile?.displayName ?? Bundle.main.title )
         .navigationDocument( ifPresent: self.model.selectedFile?.url )
         // Publish the selected file as the scene's focused object so the File-menu

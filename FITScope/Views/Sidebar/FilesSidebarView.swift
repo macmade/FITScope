@@ -91,7 +91,7 @@ public struct FilesSidebarView: View
                         onExport:          { self.appModel.exportImage( of: file ) },
                         onRevealInFinder:  { NSWorkspace.shared.activateFileViewerSelecting( [ file.url ] ) },
                         onMoveToTrash:     { self.moveToTrash( file ) },
-                        onClose:           { self.model.close( file ) }
+                        onClose:           { self.close( file ) }
                     )
                     .tag( file.id )
                 }
@@ -172,14 +172,57 @@ public struct FilesSidebarView: View
         }
     }
 
-    /// Moves a file to the Trash, asking the user to confirm first unless they
-    /// have turned the confirmation off. Presents an alert if the operation fails
-    /// so a destructive action never fails silently.
+    /// Closes a file, warning first when it has adjustments that would be lost, so
+    /// closing an edited image from the context menu never discards work silently
+    /// (mirroring the window-close confirmation).
+    ///
+    /// - Parameter file: The file to close.
+    private func close( _ file: OpenFile )
+    {
+        if file.hasAdjustments, self.confirmDiscardingAdjustments( of: file ) == false
+        {
+            return
+        }
+
+        self.model.close( file )
+    }
+
+    /// Presents the "adjustments will be lost" warning for a single file about to
+    /// be closed, matching the window-close confirmation's style. "Cancel" is the
+    /// default, so an accidental dismissal keeps the file and its adjustments.
+    ///
+    /// - Parameter file: The file whose adjustments would be discarded.
+    /// - Returns: `true` if the user chose to close anyway, `false` to cancel.
+    private func confirmDiscardingAdjustments( of file: OpenFile ) -> Bool
+    {
+        let alert             = NSAlert()
+        alert.alertStyle      = .warning
+        alert.messageText     = "Close \u{201C}\( file.displayName )\u{201D} and discard its adjustments?"
+        alert.informativeText = "This image has adjustments that haven\u{2019}t been exported. Closing it will discard them."
+
+        let closeButton  = alert.addButton( withTitle: "Close Anyway" )
+        let cancelButton = alert.addButton( withTitle: "Cancel" )
+
+        closeButton.hasDestructiveAction = true
+        closeButton.keyEquivalent        = ""
+        cancelButton.keyEquivalent       = "\r"
+
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
+    /// Moves a file to the Trash, asking the user to confirm first. The
+    /// confirmation appears when the user has it enabled *or* the file has
+    /// adjustments (so losing edited work is never silent, even with the trash
+    /// confirmation turned off). Presents an alert if the operation fails so a
+    /// destructive action never fails silently.
     ///
     /// - Parameter file: The file to trash.
     private func moveToTrash( _ file: OpenFile )
     {
-        if self.preferences.confirmMoveToTrash, self.confirmTrashing( file ) == false
+        let hasAdjustments = file.hasAdjustments
+
+        if self.preferences.confirmMoveToTrash || hasAdjustments,
+           self.confirmTrashing( file, notingAdjustments: hasAdjustments ) == false
         {
             return
         }
@@ -194,21 +237,33 @@ public struct FilesSidebarView: View
         }
     }
 
-    /// Presents the trash-confirmation alert for a file, including a "Don't ask
-    /// again" checkbox that, when ticked, turns the confirmation off in the
-    /// preferences so it is not shown again.
+    /// Presents the trash-confirmation alert for a file, noting when its
+    /// adjustments will also be discarded.
     ///
-    /// - Parameter file: The file about to be trashed.
+    /// The "Don't ask again" checkbox — which turns the trash confirmation off — is
+    /// offered only when that confirmation is enabled; when the alert is shown
+    /// solely to warn about losing adjustments, the checkbox is hidden so a
+    /// data-loss warning can't be suppressed.
+    ///
+    /// - Parameters:
+    ///   - file:           The file about to be trashed.
+    ///   - hasAdjustments: Whether the file also has adjustments to be discarded.
     /// - Returns: `true` if the user confirmed, `false` if they cancelled.
-    private func confirmTrashing( _ file: OpenFile ) -> Bool
+    private func confirmTrashing( _ file: OpenFile, notingAdjustments hasAdjustments: Bool ) -> Bool
     {
         let confirm = NSAlert()
 
-        confirm.messageText            = "Move \u{201C}\( file.displayName )\u{201D} to the Trash?"
-        confirm.informativeText        = "The file will be removed from its directory and moved to the Trash."
-        confirm.alertStyle             = .warning
-        confirm.showsSuppressionButton = true
-        confirm.suppressionButton?.title = "Don\u{2019}t ask again"
+        confirm.messageText     = "Move \u{201C}\( file.displayName )\u{201D} to the Trash?"
+        confirm.informativeText = hasAdjustments
+            ? "The file will be removed from its directory and moved to the Trash, and its adjustments will be discarded."
+            : "The file will be removed from its directory and moved to the Trash."
+        confirm.alertStyle      = .warning
+
+        if self.preferences.confirmMoveToTrash
+        {
+            confirm.showsSuppressionButton   = true
+            confirm.suppressionButton?.title = "Don\u{2019}t ask again"
+        }
 
         confirm.addButton( withTitle: "Move to Trash" ).hasDestructiveAction = true
         confirm.addButton( withTitle: "Cancel" )

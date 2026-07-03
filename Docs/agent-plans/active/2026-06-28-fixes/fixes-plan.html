@@ -630,17 +630,40 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Warn before losing adjustments on window close</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Warn before losing adjustments on window close</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>When closing a window where adjustments have been made, prompt the user to confirm — warning that the adjustments will be lost — before discarding them.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Detect unsaved/uncommitted adjustments for the window's file(s) (reuse the "has adjustments" state from M8 if shared).</li>
-            <li>Intercept window close and present a confirmation alert when adjustments exist.</li>
-            <li>Honor the user's choice (cancel close vs. discard and close).</li>
-            <li>Verify the prompt appears only when adjustments are present.</li>
+            <li class="done">Detect unsaved/uncommitted adjustments for the window's file(s) (reuse the "has adjustments" state from M8 if shared).</li>
+            <li class="done">Intercept window close and present a confirmation alert when adjustments exist.</li>
+            <li class="done">Honor the user's choice (cancel close vs. discard and close).</li>
+            <li class="done">Verify the prompt appears only when adjustments are present.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-03</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Scope.</strong> This is the <em>macOS window</em> closing (a window can hold several files), per the source — not per-file close. The prompt appears when any open file in the window has adjustments, and covers both the close button and ⌘W (and, incidentally, Quit — see below).</p>
+            <p><strong>Detecting adjustments (reused M8 state).</strong> Added <code>WindowModel.hasAdjustedFiles</code>: <code>files.contains { $0.image?.renderer.adjustments.hasAdjustments ?? false }</code>. It reuses each file's <code>ImageAdjustments.hasAdjustments</code> (the single source of truth from M8, also driving the sidebar marker) rather than tracking a separate flag; an unloaded file contributes <code>false</code>.</p>
+            <p><strong>Intercepting the close (AppKit, since SwiftUI has no hook).</strong> SwiftUI's <code>WindowGroup</code> exposes no declarative close-confirmation, and the only veto point (consulted by both the close button and ⌘W) is AppKit's <code>windowShouldClose(_:)</code>. New <code>WindowCloseConfirmationDelegate</code> (<code>FITScope/Application/</code>, added to the target via the <code>xcodeproj</code> gem) is an <code>NSWindowDelegate</code> <em>proxy</em>:</p>
+            <ul>
+              <li><code>windowShouldClose(_:)</code> returns <code>true</code> immediately when there are no adjustments; otherwise it presents a synchronous, app-modal <code>NSAlert</code> (the maintainer's chosen mechanism) — "Close Anyway" (destructive) / "Cancel", with Cancel as the default — and returns the choice.</li>
+              <li>SwiftUI owns the window's delegate, so the proxy <strong>forwards</strong> every message it doesn't implement to the original delegate via <code>responds(to:)</code> + <code>forwardingTarget(for:)</code>, keeping SwiftUI's window/scene lifecycle intact (the M4/M9 <code>onFileClosed</code> / <code>windowDidClose</code> teardown runs off it).</li>
+              <li><code>install(on:hasAdjustments:)</code> wires the proxy as the window's delegate, remembering the original as the forwardee; idempotent so it can be driven from a callback that fires more than once. <code>forwardee</code> is <code>nonisolated(unsafe)</code> because the <code>NSObject</code> forwarding overrides are <code>nonisolated</code> yet AppKit only dispatches these on the main thread.</li>
+            </ul>
+            <p><strong>Wiring.</strong> <code>MainWindowView</code> holds the delegate in <code>@State</code> (so it outlives the escaping callback — <code>NSWindow.delegate</code> is weak) and installs it via <code>SwiftUtilities</code>' <code>WindowAccessor</code> (the same bridge the plate-solve / Info / About windows use), passing <code>{ [weak model] in model?.hasAdjustedFiles ?? false }</code>. Stable references to the model and delegate are grabbed during <code>body</code> (valid there) and captured, rather than reading the property wrappers inside the deferred closure. Per-window: each window has its own model + delegate.</p>
+            <p><strong>TDD.</strong> Wrote <code>WindowModelTests.reportsWhetherAnyOpenFileHasAdjustments</code> first (empty → false; loaded-unadjusted → false; after an <code>invert</code> adjustment → true) and watched it fail to compile before adding <code>hasAdjustedFiles</code>. Added <code>WindowCloseConfirmationDelegateTests</code> for the non-UI paths: a no-adjustments window closes without a prompt; <code>install</code> becomes the delegate and remembers the original; unhandled delegate messages forward to the original. The adjustments→alert path uses a modal <code>NSAlert</code> a unit test can't drive. All 400 tests in 56 suites pass; the app builds.</p>
+            <p><strong>Verification status (honest) — needs an interactive check.</strong> Unit tests can't cover the modal alert or SwiftUI-delegate interaction. Please: (1) adjust an image, then close the window via the red button <em>and</em> via ⌘W → the warning appears; Cancel keeps the window, Close Anyway closes it; (2) a window with no adjustments closes immediately with no prompt; (3) confirm SwiftUI's own teardown still works (e.g. closing a file still dismisses its plate-solve window — the M4 behaviour that rides on the forwarded delegate). Note: because <code>windowShouldClose</code> is also consulted on <strong>Quit</strong>, quitting with adjustments will prompt (per window) — flag if that's unwanted. If SwiftUI ever re-sets the delegate after our install, the guard re-installs on the next key event; watch for any case where the prompt stops firing.</p>
+            <p><strong>Review round — also confirm the context-menu Close / Move to Trash.</strong> The sidebar's per-file <em>Close</em> and <em>Move to Trash</em> actions bypass <code>windowShouldClose</code> (they remove a file, they don't close the window), so they discarded an adjusted file's work silently. Now both confirm:</p>
+            <ul>
+              <li><strong>Shared "edited" signal.</strong> Centralized the previously-duplicated check into <code>OpenFile.hasAdjustments</code> (<code>image?.renderer.adjustments.hasAdjustments ?? false</code>); <code>WindowModel.hasAdjustedFiles</code> and <code>OpenFileRowView</code>'s marker now read it too, so all four sites share one definition.</li>
+              <li><strong>Close.</strong> <code>FilesSidebarView.close(_:)</code> now warns via <code>confirmDiscardingAdjustments(of:)</code> — an <code>NSAlert</code> ("Close "name" and discard its adjustments?", Close Anyway / Cancel, Cancel default) — but only when the file has adjustments; otherwise it closes immediately.</li>
+              <li><strong>Move to Trash.</strong> The existing trash confirmation now also appears when the file has adjustments (not just when the trash-confirm preference is on), so losing edited work is never silent even with that preference off. When the file has adjustments the alert's text says the adjustments will also be discarded, and the "Don't ask again" suppression (which only turns off the trash confirmation) is hidden when the alert is shown solely because of adjustments, so a data-loss warning can't be suppressed.</li>
+            </ul>
+            <p>All 400 tests still pass; the app builds. (The new confirmations are modal <code>NSAlert</code> UI, like the existing <code>confirmTrashing</code>, so they're verified by build + the interactive check; the <code>hasAdjustments</code> logic stays covered by the M8 / <code>WindowModel</code> tests.)</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>The sidebar context menu's <em>Close</em> and <em>Move to Trash</em> actions should also show the adjustments-loss confirmation (when the file being closed/trashed has adjustments), not just the window close.</li>
+            </ul>
+          </div>
         </li>
 
       </ol>

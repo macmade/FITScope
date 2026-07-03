@@ -100,6 +100,17 @@ public final class WindowModel: ObservableObject
         self.sortKey.sorted( self.files, ascending: self.sortAscending )
     }
 
+    /// Whether any open file has adjustments that differ from its as-captured
+    /// defaults — so closing the window would discard edited images.
+    ///
+    /// Reuses each file's ``ImageAdjustments/hasAdjustments`` (the single source of
+    /// truth for "edited", shared with the sidebar marker) rather than tracking a
+    /// separate flag. A file whose image has not loaded yet contributes `false`.
+    public var hasAdjustedFiles: Bool
+    {
+        self.files.contains { $0.hasAdjustments }
+    }
+
     /// Opens the given URLs, appending one ``OpenFile`` per URL. If nothing was
     /// selected, the first newly opened file becomes the selection; an existing
     /// selection is preserved.
