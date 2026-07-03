@@ -45,7 +45,7 @@ struct CurvesUnavailableView: View
                 .multilineTextAlignment( .center )
         }
         .padding( 40 )
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
+        .frame( maxWidth: .infinity )
         .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.unavailable )
     }
 }

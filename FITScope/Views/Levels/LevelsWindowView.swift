@@ -59,6 +59,9 @@ public struct LevelsWindowView: View
                 LevelsUnavailableView()
             }
         }
-        .frame( minWidth: 340, minHeight: 460 )
+        // Fixed width (the window's height adapts to its content via
+        // `.windowResizability( .contentSize )`); kept the same as the Curves editor.
+        .frame( width: 400 )
+        .persistsWindowFrame( autosaveName: "LevelsEditorWindow", centeredWhenUnsaved: true )
     }
 }

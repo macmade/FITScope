@@ -118,47 +118,49 @@ struct CurvesEditorView: View
     /// The view's content.
     var body: some View
     {
-        ScrollView
+        // No scroll view: the window is content-sized (fixed width, height adapts to
+        // this content), so the controls lay out at their natural height. The
+        // `.contain` accessibility element keeps the child controls individually
+        // reachable in the accessibility tree while still exposing the `editor`
+        // identifier — the role the enclosing scroll view previously served.
+        VStack( alignment: .leading, spacing: 14 )
         {
-            VStack( alignment: .leading, spacing: 14 )
+            CurveEditorCanvas( points: self.activePointsBinding, tint: self.tint, onChange: self.commit )
+                .frame( height: 260 )
+
+            Text( "Drag to add or move points. Drag a point off the chart to remove it." )
+                .font( .caption )
+                .foregroundStyle( .secondary )
+
+            if self.isMono == false
             {
-                CurveEditorCanvas( points: self.activePointsBinding, tint: self.tint, onChange: self.commit )
-                    .frame( height: 260 )
+                Toggle( "Per-channel", isOn: self.perChannelBinding )
+                    .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.perChannelToggle )
+                    .help( "Edit Each Colour Channel Independently" )
 
-                Text( "Drag to add or move points. Drag a point off the chart to remove it." )
-                    .font( .caption )
-                    .foregroundStyle( .secondary )
-
-                if self.isMono == false
+                if self.perChannel
                 {
-                    Toggle( "Per-channel", isOn: self.perChannelBinding )
-                        .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.perChannelToggle )
-                        .help( "Edit Each Colour Channel Independently" )
-
-                    if self.perChannel
-                    {
-                        SegmentedControlView( selection: self.$channel, values: Channel.allCases, title: { $0.description } )
-                            .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.channelPicker )
-                    }
-                }
-
-                HStack
-                {
-                    Spacer()
-
-                    Button( action: self.reset )
-                    {
-                        Label( "Reset", systemImage: "arrow.counterclockwise" )
-                    }
-                    .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.resetButton )
-                    .help( "Reset the Curve to a Straight Line" )
+                    SegmentedControlView( selection: self.$channel, values: Channel.allCases, title: { $0.description } )
+                        .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.channelPicker )
                 }
             }
-            .padding( 16 )
-            .frame( maxWidth: .infinity, alignment: .top )
+
+            HStack
+            {
+                Spacer()
+
+                Button( action: self.reset )
+                {
+                    Label( "Reset", systemImage: "arrow.counterclockwise" )
+                }
+                .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.resetButton )
+                .help( "Reset the Curve to a Straight Line" )
+            }
         }
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
+        .padding( 16 )
+        .frame( maxWidth: .infinity, alignment: .top )
         .navigationTitle( "Curves — \( self.image.info.url.lastPathComponent )" )
+        .accessibilityElement( children: .contain )
         .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.editor )
         .confirmationDialog( "Switch to Master Mode?", isPresented: self.$showSwitchToMasterConfirmation, titleVisibility: .visible )
         {

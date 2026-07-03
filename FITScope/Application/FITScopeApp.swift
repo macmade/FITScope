@@ -170,14 +170,20 @@ public struct FITScopeApp: App
         .windowResizability( .contentSize )
         .restorationBehavior( .disabled )
 
+        // The Levels and Curves editors have a fixed, shared width and adapt their
+        // height to their content (`.windowResizability( .contentSize )`), like the
+        // plate-solve window. They persist their frame across launches via
+        // `.persistsWindowFrame(...)` on their content (state restoration stays off,
+        // so they never reopen at launch); on first run — before a frame is saved —
+        // that modifier centers the window rather than leaving it in a corner.
         Window( "Levels", id: "LevelsWindow" )
         {
             LevelsWindowView()
                 .environmentObject( self.appDelegate.appModel )
         }
         .windowStyle( .titleBar )
+        .windowResizability( .contentSize )
         .restorationBehavior( .disabled )
-        .defaultPosition( .trailing )
 
         Window( "Curves", id: "CurvesWindow" )
         {
@@ -185,8 +191,8 @@ public struct FITScopeApp: App
                 .environmentObject( self.appDelegate.appModel )
         }
         .windowStyle( .titleBar )
+        .windowResizability( .contentSize )
         .restorationBehavior( .disabled )
-        .defaultPosition( .trailing )
 
         Window( "About \( Bundle.main.title )", id: "AboutWindow" )
         {

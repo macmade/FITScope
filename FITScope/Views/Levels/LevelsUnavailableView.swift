@@ -45,7 +45,7 @@ struct LevelsUnavailableView: View
                 .multilineTextAlignment( .center )
         }
         .padding( 40 )
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
+        .frame( maxWidth: .infinity )
         .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.unavailable )
     }
 }

@@ -162,64 +162,62 @@ struct LevelsEditorView: View
     /// The view's content.
     var body: some View
     {
-        // The content scrolls — like the inspector — so it stays reachable in a
-        // small window. The identifier sits on the scroll view (not a plain
-        // container, which SwiftUI would collapse into one element, hiding the
-        // controls from the accessibility tree).
-        ScrollView
+        // No scroll view: the window is content-sized (fixed width, height adapts to
+        // this content), so the controls lay out at their natural height. The
+        // `.contain` accessibility element keeps the child controls individually
+        // reachable in the accessibility tree while still exposing the `editor`
+        // identifier — the role the enclosing scroll view previously served.
+        VStack( alignment: .leading, spacing: 14 )
         {
-            VStack( alignment: .leading, spacing: 14 )
+            self.histogram
+
+            if self.isMono == false
             {
-                self.histogram
+                Toggle( "Per-channel", isOn: self.perChannelBinding )
+                    .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.perChannelToggle )
+                    .help( "Edit Each Colour Channel Independently" )
 
-                if self.isMono == false
+                if self.perChannel
                 {
-                    Toggle( "Per-channel", isOn: self.perChannelBinding )
-                        .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.perChannelToggle )
-                        .help( "Edit Each Colour Channel Independently" )
-
-                    if self.perChannel
-                    {
-                        SegmentedControlView( selection: self.$channel, values: Channel.allCases, title: { $0.description } )
-                            .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.channelPicker )
-                    }
-                }
-
-                Grid( alignment: .leading )
-                {
-                    SliderGridRowView( value: self.binding( .inputBlack ), minimumValue: 0, maximumValue: 1, label: "Input Black", image: "circle.fill" )
-                        .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.inputBlackSlider )
-
-                    SliderGridRowView( value: self.binding( .inputWhite ), minimumValue: 0, maximumValue: 1, label: "Input White", image: "circle" )
-                        .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.inputWhiteSlider )
-
-                    SliderGridRowView( value: self.binding( .gamma ), minimumValue: Self.minimumGamma, maximumValue: Self.maximumGamma, label: "Gamma", image: "eye.fill" )
-                        .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.gammaSlider )
-
-                    SliderGridRowView( value: self.binding( .outputBlack ), minimumValue: 0, maximumValue: 1, label: "Output Black", image: "circle.fill" )
-                        .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.outputBlackSlider )
-
-                    SliderGridRowView( value: self.binding( .outputWhite ), minimumValue: 0, maximumValue: 1, label: "Output White", image: "circle" )
-                        .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.outputWhiteSlider )
-                }
-
-                HStack
-                {
-                    Spacer()
-
-                    Button( action: self.reset )
-                    {
-                        Label( "Reset", systemImage: "arrow.counterclockwise" )
-                    }
-                    .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.resetButton )
-                    .help( "Reset the Levels to Their Defaults" )
+                    SegmentedControlView( selection: self.$channel, values: Channel.allCases, title: { $0.description } )
+                        .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.channelPicker )
                 }
             }
-            .padding( 16 )
-            .frame( maxWidth: .infinity, alignment: .top )
+
+            Grid( alignment: .leading )
+            {
+                SliderGridRowView( value: self.binding( .inputBlack ), minimumValue: 0, maximumValue: 1, label: "Input Black", image: "circle.fill" )
+                    .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.inputBlackSlider )
+
+                SliderGridRowView( value: self.binding( .inputWhite ), minimumValue: 0, maximumValue: 1, label: "Input White", image: "circle" )
+                    .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.inputWhiteSlider )
+
+                SliderGridRowView( value: self.binding( .gamma ), minimumValue: Self.minimumGamma, maximumValue: Self.maximumGamma, label: "Gamma", image: "eye.fill" )
+                    .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.gammaSlider )
+
+                SliderGridRowView( value: self.binding( .outputBlack ), minimumValue: 0, maximumValue: 1, label: "Output Black", image: "circle.fill" )
+                    .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.outputBlackSlider )
+
+                SliderGridRowView( value: self.binding( .outputWhite ), minimumValue: 0, maximumValue: 1, label: "Output White", image: "circle" )
+                    .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.outputWhiteSlider )
+            }
+
+            HStack
+            {
+                Spacer()
+
+                Button( action: self.reset )
+                {
+                    Label( "Reset", systemImage: "arrow.counterclockwise" )
+                }
+                .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.resetButton )
+                .help( "Reset the Levels to Their Defaults" )
+            }
         }
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
+        .padding( 16 )
+        .frame( maxWidth: .infinity, alignment: .top )
         .navigationTitle( "Levels — \( self.image.info.url.lastPathComponent )" )
+        .accessibilityElement( children: .contain )
         .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.editor )
         .confirmationDialog( "Switch to Master Mode?", isPresented: self.$showSwitchToMasterConfirmation, titleVisibility: .visible )
         {
