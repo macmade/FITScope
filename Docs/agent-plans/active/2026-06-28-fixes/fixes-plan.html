@@ -815,16 +815,34 @@
       <ol class="milestones" start="18">
 
         <li class="milestone">
-          <div class="m-head"><h4>Review order of processors</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Review order of processors</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Revisit the order in which image processors are applied in the rendering pipeline (<code>ImageProcessor</code>) to make sure it is correct and produces the expected result.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Document the current processor order in <code>ImageProcessor</code>.</li>
-            <li>Reason about the correct order (e.g. stretch vs. gamma vs. levels/curves vs. color) and confirm with the maintainer where ambiguous.</li>
-            <li>Reorder processors as needed.</li>
-            <li>Update/verify <code>ImageProcessorTests</code> and check rendered output matches expectations.</li>
+            <li class="done">Document the current processor order in <code>ImageProcessor</code>.</li>
+            <li class="done">Reason about the correct order (e.g. stretch vs. gamma vs. levels/curves vs. color) and confirm with the maintainer where ambiguous.</li>
+            <li class="done">Reorder processors as needed.</li>
+            <li class="done">Update/verify <code>ImageProcessorTests</code> and check rendered output matches expectations.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-04</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Key finding — the order lives in the <code>SwiftPixel</code> submodule, not <code>ImageProcessor</code>.</strong> The plan located the processor order in <code>ImageProcessor</code>, but that type only builds a flat <code>PixelPipeline.Config</code> and hands it to <code>SwiftPixel</code>. The actual fixed order is defined in <code>PixelPipeline.processors()</code> inside the nested submodule <code>Submodules/SwiftAstro/Submodules/SwiftPixel</code>, which also owns its thorough order tests. So the reorder was made there, not in FITScope.</p>
+            <p><strong>Decisions (confirmed with the maintainer).</strong> After documenting the current order and reasoning about correctness, two placements were genuinely ambiguous and were resolved with the maintainer:</p>
+            <ul>
+              <li><strong>White balance → before the stretch.</strong> Its <code>.auto</code> mode is gray-world colour calibration — a linear-space operation — so it now runs right after normalization, ahead of the non-linear stretch.</li>
+              <li><strong>Levels &amp; curves → after the stretch.</strong> They are display-referred tone remaps, now applied on the stretched image.</li>
+              <li><strong>Brightness/contrast stays pre-stretch.</strong> It is a genuinely linear (affine) adjustment; the maintainer chose the minimal, principled split — linear adjustments before the stretch, non-linear tone remaps after — over moving it too.</li>
+            </ul>
+            <p><strong>Old → new order</strong> (Scale → Debayer/Mono→RGB → Normalize are unchanged and correct; Orient stays last):</p>
+            <ul>
+              <li><strong>Before:</strong> Normalize → <em>Brightness/Contrast → Levels → Curves</em> → Stretch → Gamma → <em>White Balance</em> → Saturation → Invert.</li>
+              <li><strong>After:</strong> Normalize → <em>White Balance → Brightness/Contrast</em> → Stretch → Gamma → <em>Levels → Curves</em> → Saturation → Invert.</li>
+            </ul>
+            <p><strong>Changes.</strong> In <code>SwiftPixel/PixelPipeline.swift</code>: reordered the appends in <code>processors()</code> (White Balance moved to right after Normalize; Levels/Curves moved to after the Stretch/Gamma stages) and rewrote the affected doc comments (the struct-level order summary, <code>processors()</code>, and the <code>Config</code> property docs for whiteBalance / brightnessContrast / levels / curves / saturation) to describe the new order. In FITScope, only <code>ImageProcessor.render</code>'s doc comment was updated (its stage list was out of order); no FITScope logic changed. The <code>requiresNormalization</code> auto-insert and the neutral-value drops are order-independent and were untouched.</p>
+            <p><strong>Submodule note (matters for committing).</strong> The substantive change is in the <code>SwiftPixel</code> submodule (a separate repo, nested under <code>SwiftAstro</code>). The FITScope working tree shows only <code>ImageProcessor.swift</code> plus a modified <code>Submodules/SwiftAstro</code> pointer; committing this milestone means committing inside SwiftPixel, then bumping the submodule pointer in SwiftAstro, then in FITScope.</p>
+            <p><strong>TDD.</strong> Rewrote the order assertions in <code>SwiftPixelTests/PixelPipeline.swift</code> first — a comprehensive 12-stage <code>stageOrder()</code>, plus <code>levelsAppliedAfterStretch</code>, <code>curvesAppliedAfterLevelsAndStretch</code>, and <code>saturationAppliedAfterStretchBeforeInvert</code> (which also asserts white balance precedes the stretch) — and watched the four fail against the old order while <code>brightnessContrastAppendedAfterNormalizeBeforeStretch</code> kept passing (confirming B/C stays pre-stretch). Then reordered <code>processors()</code> until green.</p>
+            <p><strong>Task 4 — honest scope.</strong> FITScope's <code>ImageProcessorTests</code> cover header scaling / geometry / rotation, not tone-stage order, and still pass unchanged. The order is owned and comprehensively tested at the <code>SwiftPixel</code> level (where it lives; <code>processors()</code> is <code>internal</code> and not reachable from FITScope without <code>@testable import</code>), so no new FITScope-level order test was added — a behavioural FITScope test would have to assert exact rendered pixel values, which is brittle.</p>
+            <p><strong>Verification.</strong> The full <code>SwiftPixelTests</code> target passes (incl. the rewritten <code>PixelPipeline</code> order tests); all 403 FITScope tests in 57 suites pass; the FITScope app builds via <code>xcodebuild</code> (macOS). <strong>Needs a quick visual check</strong> (task 4's "rendered output matches expectations"): open a colour image and confirm auto white balance now behaves as a linear colour calibration applied before the stretch, and that levels/curves act on the stretched image as expected.</p>
+          </div>
           <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
         </li>
 

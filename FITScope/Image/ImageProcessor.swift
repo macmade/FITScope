@@ -174,7 +174,9 @@ public enum ImageProcessor
     ///
     /// Reads `BITPIX`, `NAXIS`/`NAXIS1`/`NAXIS2`, the optional `BAYERPAT` and the
     /// `BSCALE`/`BZERO` scaling from the header, then debayers (if applicable),
-    /// normalizes, stretches, gamma-corrects and white-balances the pixels.
+    /// normalizes, applies the pre-stretch linear adjustments (white balance,
+    /// brightness/contrast), stretches, and applies the display-referred tone,
+    /// colour and geometry stages.
     ///
     /// - Parameters:
     ///   - data:       The image HDU's raw pixel bytes.
