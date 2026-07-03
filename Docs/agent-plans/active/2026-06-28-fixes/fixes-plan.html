@@ -722,16 +722,26 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Regroup levels and curves into one control</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Regroup levels and curves into one control</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Levels and curves currently sit on separate lines; regroup them inside a single control with both buttons on the same line.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Locate the inspector controls that open the levels and curves editors.</li>
-            <li>Combine them into one control row with both buttons side by side.</li>
-            <li>Preserve each button's existing action and enabled/unavailable state.</li>
-            <li>Verify layout and add/adjust the preview.</li>
+            <li class="done">Locate the inspector controls that open the levels and curves editors.</li>
+            <li class="done">Combine them into one control row with both buttons side by side.</li>
+            <li class="done">Preserve each button's existing action and enabled/unavailable state.</li>
+            <li class="done">Verify layout and add/adjust the preview.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-03</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Approach.</strong> The Levels and Curves controls were two adjacent <code>InspectorSectionView</code> sections in <code>InspectorView</code>, each a single full-width <code>Button</code> opening its editor window. Merged them into one <strong>&ldquo;Levels &amp; Curves&rdquo;</strong> section (mirroring the existing combined <em>&ldquo;Brightness &amp; Contrast&rdquo;</em> section) whose content is an <code>HStack</code> of the two buttons; each keeps <code>Label(&hellip;).frame( maxWidth: .infinity )</code> so they split the row evenly, side by side.</p>
+            <ul>
+              <li><strong>Kept inline in <code>InspectorView</code> (no new view).</strong> The two buttons already lived inline in <code>InspectorView</code> (unlike the other sections, which wrap dedicated <code>*ControlView</code>s), so merging them in place is the minimal, in-scope change and avoids creating a file that wasn't asked for. <em>If preferred for consistency with the other sections, this could instead be extracted into a dedicated <code>LevelsCurvesControlView</code> in <code>Views/ImageControls/</code> (its own file + preview + accessibility-id namespace) — say the word and I'll refactor.</em></li>
+              <li><strong>Behaviour preserved.</strong> Both buttons keep their actions (<code>openWindow( id: &quot;LevelsWindow&quot; )</code> / <code>&quot;CurvesWindow&quot;</code>), their accessibility identifiers (<code>openLevelsButton</code> / <code>openCurvesButton</code>) and their help text. There was no per-button enabled/unavailable state; the whole inspector is <code>.disabled( isRendering )</code> as before.</li>
+              <li><strong>Accessibility ids.</strong> Replaced the two section ids (<code>Section.levels</code>, <code>Section.curves</code>) with a single <code>Section.levelsCurves</code>. The button ids are unchanged.</li>
+            </ul>
+            <p><strong>Tests.</strong> Updated the inspector identifier smoke test (two section entries → one &ldquo;levels &amp; curves&rdquo; entry). The existing UI interaction tests (<code>testOpeningLevelsEditorWindow</code>, <code>testLevelsEditorPerChannelForColorImage</code>, and the Curves equivalents) are unaffected — the buttons keep their identifiers. <strong>No unit test added:</strong> this is a pure layout change with no logic to assert (as with the M7 style tweak and the M11 layout constants); a hollow test would add nothing. Coverage comes from the existing UI interaction tests plus the build.</p>
+            <p><strong>Preview.</strong> No new view, so no new preview — <code>InspectorView</code>'s existing <code>#Preview</code> renders the combined section.</p>
+            <p><strong>Verification (honest).</strong> <strong>403 tests in 57 suites pass</strong>; the app and full test build (incl. <code>FITScopeUITests</code>) compile clean. <strong>Needs a quick visual check</strong> that the two buttons sit side by side in one row and each still opens its editor.</p>
+          </div>
           <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
         </li>
 

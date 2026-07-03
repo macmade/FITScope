@@ -141,11 +141,9 @@ public enum AccessibilityIdentifier
             /// The saturation section (colour images only).
             public static let saturation = "InspectorView.Section.saturation"
 
-            /// The levels section (holds the button opening the Levels editor).
-            public static let levels = "InspectorView.Section.levels"
-
-            /// The curves section (holds the button opening the Curves editor).
-            public static let curves = "InspectorView.Section.curves"
+            /// The combined levels & curves section (holds the buttons opening the
+            /// Levels and Curves editors).
+            public static let levelsCurves = "InspectorView.Section.levelsCurves"
 
             /// The orientation (rotate / flip) section.
             public static let orientation = "InspectorView.Section.orientation"

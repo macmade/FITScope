@@ -107,36 +107,34 @@ public struct InspectorView: View
 
                     Divider()
 
-                    InspectorSectionView( "Levels", identifier: AccessibilityIdentifier.InspectorView.Section.levels )
+                    InspectorSectionView( "Levels & Curves", identifier: AccessibilityIdentifier.InspectorView.Section.levelsCurves )
                     {
-                        Button
+                        HStack
                         {
-                            self.openWindow( id: "LevelsWindow" )
-                        }
-                        label:
-                        {
-                            Label( "Levels\u{2026}", systemImage: "slider.horizontal.below.rectangle" )
-                                .frame( maxWidth: .infinity )
-                        }
-                        .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.openLevelsButton )
-                        .help( "Open the Levels Editor" )
-                    }
+                            Button
+                            {
+                                self.openWindow( id: "LevelsWindow" )
+                            }
+                            label:
+                            {
+                                Label( "Levels\u{2026}", systemImage: "slider.horizontal.below.rectangle" )
+                                    .frame( maxWidth: .infinity )
+                            }
+                            .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.openLevelsButton )
+                            .help( "Open the Levels Editor" )
 
-                    Divider()
-
-                    InspectorSectionView( "Curves", identifier: AccessibilityIdentifier.InspectorView.Section.curves )
-                    {
-                        Button
-                        {
-                            self.openWindow( id: "CurvesWindow" )
+                            Button
+                            {
+                                self.openWindow( id: "CurvesWindow" )
+                            }
+                            label:
+                            {
+                                Label( "Curves\u{2026}", systemImage: "point.topleft.down.to.point.bottomright.curvepath" )
+                                    .frame( maxWidth: .infinity )
+                            }
+                            .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.openCurvesButton )
+                            .help( "Open the Curves Editor" )
                         }
-                        label:
-                        {
-                            Label( "Curves\u{2026}", systemImage: "point.topleft.down.to.point.bottomright.curvepath" )
-                                .frame( maxWidth: .infinity )
-                        }
-                        .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.openCurvesButton )
-                        .help( "Open the Curves Editor" )
                     }
 
                     Divider()
