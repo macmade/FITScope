@@ -136,7 +136,7 @@
       <div class="generated">Generated 2026-06-30</div>
       <ul class="meta-list">
         <li><strong>Source:</strong> <code>Docs/agent-plans/active/2026-06-28-fixes/fixes.html</code></li>
-        <li><strong>Milestones:</strong> 29 (24 concrete fixes + 4 design decisions, one per source item; + 1 refactor added during M6 review)</li>
+        <li><strong>Milestones:</strong> 27 (24 concrete fixes + 2 design decisions; + 1 refactor added during M6 review)</li>
       </ul>
     </header>
 
@@ -147,7 +147,7 @@
         individually reviewable and committable milestones — one per source item. The
         24 concrete defect and polish items come first, grouped into themed phases
         (canvas &amp; overlays, plate solving, menus &amp; sidebar, windows &amp; panels,
-        inspector &amp; image controls, rendering pipeline, and app chrome). The 4
+        inspector &amp; image controls, rendering pipeline, and app chrome). The 2
         open design questions are handled last as <em>decision milestones</em>: each
         investigates the trade-offs, proposes a recommendation, and is resolved with the
         maintainer before any implementation.
@@ -165,7 +165,7 @@
         <dt>How should milestones be sized for this list of ~30 mostly small, independent items?</dt>
         <dd>One item = one milestone. Each source item becomes its own milestone for maximum granularity and fine-grained commits.</dd>
 
-        <dt>How should the 4 "Open question" items (default stretch for detection, default stretch for previews, gamma vs. levels gamma, histogram backdrop on curves) be handled?</dt>
+        <dt>How should the 2 "Open question" items (gamma vs. levels gamma, histogram backdrop on curves) be handled?</dt>
         <dd>As decision milestones: investigate first, capture the trade-offs, propose a recommendation, and resolve with the maintainer before implementing.</dd>
 
         <dt>Are all items in scope, or should any be excluded/deprioritized?</dt>
@@ -216,7 +216,7 @@
             overlays directory. Before the overlay-alpha milestone (M3), confirm which type
             draws the "frame" (it may be <code>ReticleOverlay</code> or another overlay) and
             apply the consistent alpha to the actual set of overlay implementations.</li>
-          <li><strong>Decision milestones gate on approval.</strong> M25–M28 must pause for
+          <li><strong>Decision milestones gate on approval.</strong> M25–M26 must pause for
             the maintainer's decision before any code is written; record the decision in the
             milestone's Implementation notes.</li>
         </ul>
@@ -402,7 +402,7 @@
             <p><strong>Review round — more menu items.</strong> Per review, the menu now also carries the rest of the toolbar/inspector actions: <em>Rotate Left / Right</em>, <em>Flip Horizontal / Vertical</em>, <em>Invert</em>, <em>Reset View</em>, <em>Levels…</em>, <em>Curves…</em>, and <em>View FITS Headers…</em> (all file-targeted, gated on a loaded image via <code>@FocusedObject var file: OpenFile?</code>).</p>
             <ul>
               <li><strong>Shared model actions.</strong> Added action methods to <code>FITSImage</code> — <code>rotateLeft/rotateRight/flipHorizontal/flipVertical</code>, <code>toggleInvert()</code>, <code>resetAdjustments()</code> — so the menu drives the same model the inspector does. Rotate/flip just compose the orientation transform and re-render; Invert and Reset also bump a new <code>@Published controlsRevision</code>.</li>
-              <li><strong>The inspector-sync problem, interim fix.</strong> The inspector controls cache their values in local <code>@State</code>, so a menu-driven Reset/Invert would otherwise leave them stale. <code>InspectorView</code> now keys its controls' identity off <code>image.controlsRevision</code> (replacing its private <code>controlsID</code> UUID), so a menu change recreates and reseeds them. This is the <em>interim</em> reseed; <strong>M29</strong> replaces it by having the controls observe <code>adjustments</code> directly (see that milestone).</li>
+              <li><strong>The inspector-sync problem, interim fix.</strong> The inspector controls cache their values in local <code>@State</code>, so a menu-driven Reset/Invert would otherwise leave them stale. <code>InspectorView</code> now keys its controls' identity off <code>image.controlsRevision</code> (replacing its private <code>controlsID</code> UUID), so a menu change recreates and reseeds them. This is the <em>interim</em> reseed; <strong>M27</strong> replaces it by having the controls observe <code>adjustments</code> directly (see that milestone).</li>
               <li><strong>Dedup + a fix.</strong> The 12-field reset that lived inline in <code>InspectorView.reset()</code> moved to a single <code>ImageAdjustments.reset()</code> that both the inspector button and the menu use. It copies from a fresh instance, so it can't omit a field — which surfaced that the old inline reset never reset <code>debayerAlgorithm</code>; the shared reset now does. <em>(Flagging this as a small behavior change: "Reset View" now also restores the demosaic algorithm to its default. Say the word if that should be preserved as-was.)</em></li>
               <li><strong>Editors &amp; headers.</strong> <em>Levels…</em> / <em>Curves…</em> open their singleton windows (<code>openWindow(id:)</code>); <em>View FITS Headers…</em> opens the info window with the file's <code>FITSImageInfo</code> — the same actions the inspector buttons and info panel already use.</li>
             </ul>
@@ -697,7 +697,7 @@
             <p><strong>TDD.</strong> Added the gamma slot to <code>ImageAdjustmentsTests.adjustmentsBuildPipelineConfig</code> first — asserting the default gamma is <code>1</code>, that a gamma of <code>1</code> is omitted from the config (<code>correctGamma == nil</code>), that a non-neutral gamma flows through (<code>2.2</code>), and that setting it back to <code>1</code> omits it again. Watched it fail against the old code (default was <code>nil</code>, not <code>1</code>; and a gamma of <code>1</code> flowed through as <code>1.0</code> instead of being dropped), then implemented until green. Removed <code>GammaCorrectionControlViewTests.gammaControlMapsToGamma</code>, whose subject — the deleted <code>gamma(enabled:value:)</code> mapping — no longer exists (its "1 is the identity" coverage now lives in <code>ImageAdjustmentsTests</code>); kept <code>gammaMinimumIsPositiveAndRenders</code>, which still guards the slider's lower bound. Unit-test count is 399 (was 400 — one obsolete test removed).</p>
             <p><strong>UI tests — adapted per the maintainer's direction ("rewrite/adapt the tests").</strong> Three UI tests used the gamma toggle's <em>reveal</em> (slider appears when the toggle is on) as their observable; removing the toggle removes that signal, and the suite's own doctrine (<code>UITestSupport.swift</code>) forbids the obvious replacement — driving/reading slider values — because the custom slider is not reliably drivable. So:</p>
             <ul>
-              <li><strong>Pivoted the two <em>behavioural</em> tests to the Stretch mode picker</strong> — an existing reveal observable with the same per-file/reset semantics (selecting a mode reveals that mode's slider), driven via the existing <code>UITestSupport.selectPickerOption</code> helper. <code>testSwitchingFilesRefreshesInspectorControls</code> now selects Logarithmic on file 1 (its intensity slider appears), confirms it is gone on file 2, and returns on switching back; <code>testResetViewResetsInspectorControls</code> selects Logarithmic then confirms Reset View hides the intensity slider. The behaviour under test (controls follow the selected file; Reset resets the controls' displayed state) is unchanged — only the example control changed from gamma to stretch. (This is the per-image reseed area <strong>M29</strong> will rework.)</li>
+              <li><strong>Pivoted the two <em>behavioural</em> tests to the Stretch mode picker</strong> — an existing reveal observable with the same per-file/reset semantics (selecting a mode reveals that mode's slider), driven via the existing <code>UITestSupport.selectPickerOption</code> helper. <code>testSwitchingFilesRefreshesInspectorControls</code> now selects Logarithmic on file 1 (its intensity slider appears), confirms it is gone on file 2, and returns on switching back; <code>testResetViewResetsInspectorControls</code> selects Logarithmic then confirms Reset View hides the intensity slider. The behaviour under test (controls follow the selected file; Reset resets the controls' displayed state) is unchanged — only the example control changed from gamma to stretch. (This is the per-image reseed area <strong>M27</strong> will rework.)</li>
               <li><strong>Adapted the gamma-specific smoke test</strong> (<code>testAdjustingGammaRevealsSliderAndKeepsRendering</code> → <code>testGammaSliderIsAlwaysPresentAndKeepsRendering</code>): the slider is now always present, so it asserts the gamma slider shows unconditionally (no toggle) alongside a rendered canvas.</li>
               <li>The accessibility-identifier smoke test now checks the gamma <em>slider</em> instead of the removed toggle.</li>
             </ul>
@@ -746,20 +746,6 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Review order of controls in inspector</h4><span class="status not-started">Not started</span></div>
-          <div class="field"><span class="label">Goal</span><p>Revisit the order of the controls shown in the inspector so it follows a logical, intuitive workflow.</p></div>
-          <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>List the current inspector control/section order (<code>InspectorView</code> / <code>InspectorSectionView</code> / <code>ImageControlContainer</code>).</li>
-            <li>Propose a logical workflow order; confirm with the maintainer if the intent is ambiguous.</li>
-            <li>Reorder the sections/controls accordingly (coordinate with M15's combined control).</li>
-            <li>Verify the inspector reads sensibly top-to-bottom.</li>
-          </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
-        </li>
-
-        <li class="milestone">
           <div class="m-head"><h4>Info view — no wrap, ellipsis with tooltips</h4><span class="status not-started">Not started</span></div>
           <div class="field"><span class="label">Goal</span><p>Stop wrapping long values in the info view; truncate them with an ellipsis and show the full value in a tooltip on hover.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
@@ -778,7 +764,7 @@
           <div class="field"><span class="label">Goal</span><p>Make the labels in the information panel selectable so their text can be copied.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
             <li>Make the info panel value (and where useful, key) labels text-selectable (e.g. <code>.textSelection(.enabled)</code>).</li>
-            <li>Ensure selection coexists with the truncation/tooltip behavior from M17.</li>
+            <li>Ensure selection coexists with the truncation/tooltip behavior from M16.</li>
             <li>Verify text can be selected and copied.</li>
           </ul></div>
           <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
@@ -792,7 +778,7 @@
     <!-- PHASE 6 -->
     <div class="phase">
       <h3 class="phase-title"><span class="phase-kicker">Phase 6</span>Rendering pipeline</h3>
-      <ol class="milestones" start="19">
+      <ol class="milestones" start="18">
 
         <li class="milestone">
           <div class="m-head"><h4>Review order of processors</h4><span class="status not-started">Not started</span></div>
@@ -802,6 +788,20 @@
             <li>Reason about the correct order (e.g. stretch vs. gamma vs. levels/curves vs. color) and confirm with the maintainer where ambiguous.</li>
             <li>Reorder processors as needed.</li>
             <li>Update/verify <code>ImageProcessorTests</code> and check rendered output matches expectations.</li>
+          </ul></div>
+          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
+          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+        </li>
+
+        <li class="milestone">
+          <div class="m-head"><h4>Review order of controls in inspector</h4><span class="status not-started">Not started</span></div>
+          <div class="field"><span class="label">Goal</span><p>Revisit the order of the controls shown in the inspector so it follows a logical, intuitive workflow.</p></div>
+          <div class="field"><span class="label">Tasks</span><ul class="tasks">
+            <li>List the current inspector control/section order (<code>InspectorView</code> / <code>InspectorSectionView</code> / <code>ImageControlContainer</code>).</li>
+            <li>Propose a logical workflow order; confirm with the maintainer if the intent is ambiguous.</li>
+            <li>Reorder the sections/controls accordingly (coordinate with M15's combined control and M18's finalized processor order).</li>
+            <li>Verify the inspector reads sensibly top-to-bottom.</li>
           </ul></div>
           <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
           <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
@@ -893,41 +893,13 @@
       <ol class="milestones" start="25">
 
         <li class="milestone">
-          <div class="m-head"><h4>Default stretch before star detection<span class="open-tag">Decision</span></h4><span class="status not-started">Not started</span></div>
-          <div class="field"><span class="label">Goal</span><p>Decide whether a default stretch should be applied to the image before running star detection, and if so, which stretch — then implement the decision.</p></div>
-          <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Investigate how star detection currently consumes image data (raw vs. stretched) and how detection quality is affected.</li>
-            <li>Lay out the trade-offs and propose a recommended default stretch (or "none").</li>
-            <li>Pause for the maintainer's decision; record it in Implementation notes.</li>
-            <li>Implement the agreed behavior and verify detection results.</li>
-          </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
-        </li>
-
-        <li class="milestone">
-          <div class="m-head"><h4>Default stretch for previews<span class="open-tag">Decision</span></h4><span class="status not-started">Not started</span></div>
-          <div class="field"><span class="label">Goal</span><p>Decide whether a default stretch should be applied before generating previews, and which one — to be settled alongside the star-detection stretch decision (M25) — then implement it.</p></div>
-          <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Investigate the current preview generation path and whether any stretch is applied.</li>
-            <li>Lay out the trade-offs; propose a recommended default consistent with M25 where it makes sense.</li>
-            <li>Pause for the maintainer's decision; record it in Implementation notes.</li>
-            <li>Implement the agreed behavior and verify preview output.</li>
-          </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
-        </li>
-
-        <li class="milestone">
           <div class="m-head"><h4>Gamma vs. levels gamma — do we need both?<span class="open-tag">Decision</span></h4><span class="status not-started">Not started</span></div>
           <div class="field"><span class="label">Goal</span><p>Evaluate whether the standalone gamma correction and the gamma (midtone) adjustment inside levels are redundant, and decide whether to keep both — then act on the decision.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
             <li>Compare what standalone gamma and levels-gamma each do in the pipeline (overlap, ordering, user-facing difference).</li>
             <li>Lay out the trade-offs; propose keep-both / merge / remove-one with rationale.</li>
             <li>Pause for the maintainer's decision; record it in Implementation notes.</li>
-            <li>Implement the agreed outcome (coordinate with M14 gamma-switch removal and M19 processor order).</li>
+            <li>Implement the agreed outcome (coordinate with M14 gamma-switch removal and M18 processor order).</li>
           </ul></div>
           <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
           <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
@@ -954,7 +926,7 @@
     <!-- PHASE 9 -->
     <div class="phase">
       <h3 class="phase-title"><span class="phase-kicker">Phase 9</span>Inspector controls refactor</h3>
-      <ol class="milestones" start="29">
+      <ol class="milestones" start="27">
 
         <li class="milestone">
           <div class="m-head"><h4>Inspector controls observe shared adjustments</h4><span class="status not-started">Not started</span></div>
@@ -965,7 +937,7 @@
             <li>Remove <code>InspectorView.controlsID</code> and its <code>reset()</code> reseed, plus the interim reseed signal introduced in M6, now that observation keeps the controls current; keep the per-image identity in <code>InspectorColumnView</code>.</li>
             <li>Watch the re-render/performance implication of many controls observing one object during a slider drag; keep the debounced re-render so a drag does not thrash the pipeline.</li>
             <li>Update the affected control tests (<code>Debayer</code>, <code>Gamma</code>, <code>Stretch</code>, <code>WhiteBalance</code>) and add coverage that an external change (a Reset, or a menu Invert) updates the control's displayed state.</li>
-            <li>Coordinate with M14 (gamma switch removal), M15 (regroup levels/curves) and the inspector milestones (M16–M18).</li>
+            <li>Coordinate with M14 (gamma switch removal), M15 (regroup levels/curves) and the inspector milestones (M16, M17 and M19).</li>
           </ul></div>
           <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
           <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
@@ -977,18 +949,18 @@
 
     <section class="appendix">
       <h2 class="section">Appendix</h2>
-      <p><strong>Milestone ↔ source mapping.</strong> Milestones M1–M28 cover every item in
-        <code>fixes.html</code>, reordered into themed phases with the 4 open design questions
-        last. Items not tied to a single file (light mode, processor order, debouncing,
-        inspector order) are scoped as audit-then-fix milestones. M29 is not a source item: it
-        was added during the M6 review as the clean foundation for menu-driven adjustment
-        actions.</p>
+      <p><strong>Milestone ↔ source mapping.</strong> Milestones M1–M26 cover the items
+        carried over from <code>fixes.html</code>, reordered into themed phases with the 2 open
+        design questions last (the two default-stretch questions were dropped). Items not tied
+        to a single file (light mode, processor order, debouncing, inspector order) are scoped
+        as audit-then-fix milestones. M27 is not a source item: it was added during the M6
+        review as the clean foundation for menu-driven adjustment actions.</p>
       <p><strong>Cross-milestone coordination.</strong> A few milestones touch shared state and
-        should be implemented mindful of each other: M8 / M26 (has-adjustments state),
-        M10 / M11 (default vs. remembered window size), M14 / M19 / M27 (gamma, processor
+        should be implemented mindful of each other: M8 / M13 (has-adjustments state),
+        M10 / M11 (default vs. remembered window size), M14 / M18 / M25 (gamma, processor
         order, gamma redundancy), M3 / M24 (overlay colors and light-mode adaptation), and
-        M6 / M29 (menu adjustment actions and the controls-observe-adjustments refactor,
-        which also touches M14–M18).</p>
+        M6 / M27 (menu adjustment actions and the controls-observe-adjustments refactor,
+        which also touches M14–M17 and M19).</p>
     </section>
 
   </div>
