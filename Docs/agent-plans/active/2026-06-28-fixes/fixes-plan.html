@@ -847,17 +847,42 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Review order of controls in inspector</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Review order of controls in inspector</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Revisit the order of the controls shown in the inspector so it follows a logical, intuitive workflow.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>List the current inspector control/section order (<code>InspectorView</code> / <code>InspectorSectionView</code> / <code>ImageControlContainer</code>).</li>
-            <li>Propose a logical workflow order; confirm with the maintainer if the intent is ambiguous.</li>
-            <li>Reorder the sections/controls accordingly (coordinate with M15's combined control and M18's finalized processor order).</li>
-            <li>Verify the inspector reads sensibly top-to-bottom.</li>
+            <li class="done">List the current inspector control/section order (<code>InspectorView</code> / <code>InspectorSectionView</code> / <code>ImageControlContainer</code>).</li>
+            <li class="done">Propose a logical workflow order; confirm with the maintainer if the intent is ambiguous.</li>
+            <li class="done">Reorder the sections/controls accordingly (coordinate with M15's combined control and M18's finalized processor order).</li>
+            <li class="done">Verify the inspector reads sensibly top-to-bottom.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-04</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Current order (documented).</strong> Top→bottom the inspector showed: Histogram, Stretch, Gamma, White Balance, Debayer (colour only), Brightness &amp; Contrast, Levels &amp; Curves, Saturation (colour only), Color (Invert), Orientation, then the Reset View button. The sections live in <code>InspectorView.body</code>, each an <code>InspectorSectionView</code> wrapping a control. The order was noticeably scrambled relative to the pipeline order M18 finalized.</p>
+            <p><strong>Decision (confirmed with the maintainer).</strong> Recommended mirroring M18's finalized pipeline order so the controls appear in the order they take effect; the maintainer accepted that and amended it to surface <em>Orientation right after the Histogram</em> (framing first).</p>
+            <p><strong>New order</strong> (Histogram pinned at top as the read-only reference; Reset pinned at the bottom; Debayer and Saturation remain colour-only, shown only for CFA images):</p>
+            <ul>
+              <li>Histogram → Orientation → Debayer → White Balance → Brightness &amp; Contrast → Stretch → Gamma → Levels &amp; Curves → Saturation → Color (Invert) → Reset View.</li>
+            </ul>
+            <p><strong>Change.</strong> Pure reordering of the sections in <code>InspectorView.body</code> — no control, identifier or logic change. Added two comments: one noting Orientation is surfaced near the top for framing even though the pipeline applies it last, and one noting the remaining sections follow the pipeline application order (debayer, white balance, brightness/contrast, stretch, gamma, levels &amp; curves, saturation, invert). Coordinates with M15 (the single "Levels &amp; Curves" section) and M18 (the finalized pipeline order).</p>
+            <p><strong>No unit test</strong> (consistent with M7 / M11 / M12 / M15 / M16): a pure section-reordering has no logic to assert, and nothing in the suite asserts section order — the <code>FITScopeUITests</code> inspector check is presence-based (each section identifier exists), unaffected by order, and the section accessibility identifiers are unchanged. A hollow test would add nothing.</p>
+            <p><strong>Verification.</strong> All 403 FITScope tests in 57 suites pass; the FITScope app builds and the full test build (incl. <code>FITScopeUITests</code>) compiles clean via <code>xcodebuild</code>. <strong>Needs a quick visual check</strong> (task 4): open an image and confirm the inspector reads sensibly top-to-bottom, that Orientation sits right under the Histogram, and that for a colour (CFA) image the Debayer and Saturation sections appear in their new positions.</p>
+            <p><strong>Review round — reserve the histogram's space while loading.</strong> The Histogram section only appeared once the first render result was ready, so it popped in at the top and shifted every control below it down.</p>
+            <ul>
+              <li><strong>New <code>HistogramPlaceholderView</code></strong> (<code>Views/ImageControls/</code>, added to the FITScope target via the <code>xcodeproj</code> gem, with a <code>#Preview</code>). It reserves the same height as <code>HistogramControlView</code>'s default layout so nothing shifts: a hidden, blank 11-pt label (carrying the segmented control's paddings) stands in for the picker row's height <em>without</em> drawing a mock control, and a single dashed-border box spanning the <em>full</em> default layout height (the picker row, the inter-row spacing and the graph box) shows a short message ("Computing histogram&hellip;") centred inside it. The height is reserved by a hidden, zero-drawing copy of that layout's two heights, so it matches exactly. <em>(Three earlier cuts were rejected — see Review comments: mirroring the real tabs + box with a spinner (mocked the controls); a dashed line across the middle (ugly); and a dashed box covering only the graph area rather than the full section height.)</em></li>
+              <li><strong>Shared height.</strong> Extracted <code>HistogramControlView.graphHeight</code> (<code>110</code>) and used it in both the real control and the placeholder, so the reserved box height can't drift from the real one.</li>
+              <li><strong>Always-present section.</strong> <code>InspectorView</code> now renders the Histogram <code>InspectorSectionView</code> unconditionally; the branch on <code>renderer.result</code> moved <em>inside</em> it (real control when ready, placeholder while <code>nil</code>). The section's accessibility identifier is therefore present during loading too — the presence-based <code>FITScopeUITests</code> check still passes (it only asserts existence). The error case is unchanged (the error placeholder still replaces all controls).</li>
+            </ul>
+            <p><strong>Considered but rejected:</strong> reserving space with a <code>.hidden()</code> copy of the real control fed empty data (zero styling duplication) — but <code>Histogram</code>/<code>HistogramStatistics</code> have no cheap empty constructor (they bin real bytes), so fabricating that data would have been more fragile than the explicit placeholder.</p>
+            <p><strong>Verification (this round).</strong> All 403 FITScope tests still pass; the app builds and the full test build compiles clean. <strong>Needs a visual check</strong>: open a file and confirm the controls below the histogram no longer jump when the histogram finishes computing, and that the placeholder box lines up with the real histogram's height.</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>The histogram appears after a delay once the image finishes loading, which shifts the controls below it. Add a placeholder of the same height while it is loading so the controls do not shift.</li>
+              <li>Don't like the first placeholder — it mocked the histogram's tabs (the segmented picker) and box. Don't mock the tabs; instead show a fragmented (dashed) line with a text message.</li>
+              <li>The dashed <em>line</em> across the middle looked ugly — I meant a dashed <em>border</em> (a dashed-outline box) with the text message inside.</li>
+              <li>The dashed box should take the full section height, including the tabs (picker) area — one box spanning the whole thing, not just the graph area.</li>
+            </ul>
+          </div>
         </li>
 
         <li class="milestone">

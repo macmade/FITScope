@@ -56,37 +56,38 @@ public struct InspectorView: View
                 }
                 else
                 {
-                    if let result = self.image.renderer.result
+                    // The histogram needs the first render result; until it is
+                    // ready, a same-height placeholder holds the section's space so
+                    // the controls below it do not shift when the histogram appears.
+                    InspectorSectionView( "Histogram", identifier: AccessibilityIdentifier.InspectorView.Section.histogram )
                     {
-                        InspectorSectionView( "Histogram", identifier: AccessibilityIdentifier.InspectorView.Section.histogram )
+                        if let result = self.image.renderer.result
                         {
                             HistogramControlView( histogram: result.histogram, statistics: result.statistics, original: self.image.renderer.original, options: self.image.histogramOptions )
                         }
-
-                        Divider()
-                    }
-
-                    InspectorSectionView( "Stretch", identifier: AccessibilityIdentifier.InspectorView.Section.stretch )
-                    {
-                        StretchControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                        else
+                        {
+                            HistogramPlaceholderView()
+                        }
                     }
 
                     Divider()
 
-                    InspectorSectionView( "Gamma", identifier: AccessibilityIdentifier.InspectorView.Section.gamma )
+                    // Orientation (framing) is surfaced near the top so the image
+                    // can be squared up before any tonal work, even though the
+                    // pipeline applies it last.
+                    InspectorSectionView( "Orientation", identifier: AccessibilityIdentifier.InspectorView.Section.orientation )
                     {
-                        GammaCorrectionControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                        OrientationControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()
 
-                    InspectorSectionView( "White Balance", identifier: AccessibilityIdentifier.InspectorView.Section.whiteBalance )
-                    {
-                        WhiteBalanceControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
-                    }
-
-                    Divider()
-
+                    // From here down the sections follow the order the pipeline
+                    // applies them (see ImageProcessor / PixelPipeline): debayer,
+                    // white balance, brightness/contrast, stretch, gamma, then
+                    // levels & curves, saturation and invert.
+                    //
                     // The debayer controls only apply to a colour-filter-array
                     // image; a monochrome file has no Bayer pattern to act on, so
                     // the section is hidden entirely for it.
@@ -100,9 +101,30 @@ public struct InspectorView: View
                         Divider()
                     }
 
+                    InspectorSectionView( "White Balance", identifier: AccessibilityIdentifier.InspectorView.Section.whiteBalance )
+                    {
+                        WhiteBalanceControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                    }
+
+                    Divider()
+
                     InspectorSectionView( "Brightness & Contrast", identifier: AccessibilityIdentifier.InspectorView.Section.brightnessContrast )
                     {
                         BrightnessContrastControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                    }
+
+                    Divider()
+
+                    InspectorSectionView( "Stretch", identifier: AccessibilityIdentifier.InspectorView.Section.stretch )
+                    {
+                        StretchControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                    }
+
+                    Divider()
+
+                    InspectorSectionView( "Gamma", identifier: AccessibilityIdentifier.InspectorView.Section.gamma )
+                    {
+                        GammaCorrectionControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()
@@ -155,13 +177,6 @@ public struct InspectorView: View
                     InspectorSectionView( "Color", identifier: AccessibilityIdentifier.InspectorView.Section.color )
                     {
                         ColorControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
-                    }
-
-                    Divider()
-
-                    InspectorSectionView( "Orientation", identifier: AccessibilityIdentifier.InspectorView.Section.orientation )
-                    {
-                        OrientationControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()

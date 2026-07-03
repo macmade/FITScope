@@ -35,6 +35,11 @@ public struct HistogramControlView: View
     /// view's call sites.
     public typealias Mode = HistogramMode
 
+    /// The fixed height of the histogram graph box. Shared with
+    /// ``HistogramPlaceholderView`` so the loading placeholder reserves the same
+    /// height and the sections below the histogram do not shift when it appears.
+    public static let graphHeight: CGFloat = 110
+
     /// The per-image histogram view options this control reads and writes. Held
     /// on the image, so the choices persist across selection changes even though
     /// the inspector is rebuilt for each image.
@@ -86,7 +91,7 @@ public struct HistogramControlView: View
                 mode:             self.effectiveMode,
                 logScale:         self.options.logScale
             )
-            .frame( height: 110 )
+            .frame( height: Self.graphHeight )
             .padding( 6 )
             .background( Color.black.opacity( 0.35 ) )
             .clipShape( RoundedRectangle( cornerRadius: 10 ) )
