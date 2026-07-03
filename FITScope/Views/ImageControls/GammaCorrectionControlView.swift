@@ -24,8 +24,9 @@
 
 import SwiftUI
 
-/// The gamma-correction section of the controls panel: a toggle plus, when
-/// enabled, a slider for the gamma exponent.
+/// The gamma-correction section of the controls panel: a single slider for the
+/// gamma exponent. A gamma of `1` is the identity, so it is the neutral default
+/// and the control needs no separate on/off toggle.
 public struct GammaCorrectionControlView: View
 {
     /// The slider's lower bound. Stays above zero because a gamma of zero (or
@@ -36,21 +37,14 @@ public struct GammaCorrectionControlView: View
     /// The slider's upper bound.
     static let maximumGamma = 5.0
 
-    /// The seed value, mirroring the pipeline's default gamma.
-    static let defaultGamma = 1.8
-
     /// The shared adjustment values this control writes to.
     private let adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
     private let reRender: () -> Void
 
-    /// Whether gamma correction is enabled. Seeded from the image's adjustments
-    /// so the control reflects the file it belongs to.
-    @State private var enabled: Bool
-
-    /// The current gamma exponent. Seeded from the image's adjustments, falling
-    /// back to the pipeline's default of `1.8` when gamma is off.
+    /// The current gamma exponent. Seeded from the image's adjustments so the
+    /// control reflects the file it belongs to.
     @State private var gamma: Double
 
     /// Creates the gamma control.
@@ -62,19 +56,7 @@ public struct GammaCorrectionControlView: View
     {
         self.adjustments = adjustments
         self.reRender    = reRender
-        self.enabled     = adjustments.gamma != nil
-        self.gamma       = adjustments.gamma ?? Self.defaultGamma
-    }
-
-    /// Maps the toggle and slider value to a gamma exponent.
-    ///
-    /// - Parameters:
-    ///   - enabled: Whether gamma correction is on.
-    ///   - value:   The slider's gamma value.
-    /// - Returns: The exponent, or `nil` when correction is off.
-    static func gamma( enabled: Bool, value: Double ) -> Double?
-    {
-        enabled ? value : nil
+        self.gamma       = adjustments.gamma
     }
 
     /// The view's content.
@@ -82,36 +64,16 @@ public struct GammaCorrectionControlView: View
     {
         Grid( alignment: .leading )
         {
-            GridRow
-            {
-                Text( "Enabled" )
-                Toggle( "Enable", isOn: $enabled )
-                    .toggleStyle( SwitchToggleStyle() )
-                    .labelsHidden()
-                    .accessibilityIdentifier( AccessibilityIdentifier.GammaCorrectionControlView.toggle )
-                    .help( "Apply Gamma Correction" )
-            }
-
-            if self.enabled
-            {
-                SliderGridRowView( value: $gamma, minimumValue: Self.minimumGamma, maximumValue: Self.maximumGamma, label: "Gamma", image: "eye.fill" )
-                    .accessibilityIdentifier( AccessibilityIdentifier.GammaCorrectionControlView.slider )
-                    .help( "Gamma Exponent" )
-            }
+            SliderGridRowView( value: $gamma, minimumValue: Self.minimumGamma, maximumValue: Self.maximumGamma, label: "Gamma", image: "eye.fill" )
+                .accessibilityIdentifier( AccessibilityIdentifier.GammaCorrectionControlView.slider )
+                .help( "Gamma Exponent" )
         }
-        .onChange( of: self.gammaValue )
+        .onChange( of: self.gamma )
         {
-            self.adjustments.gamma = self.gammaValue
+            self.adjustments.gamma = self.gamma
 
             self.reRender()
         }
-    }
-
-    /// The current gamma exponent derived from the toggle and slider, or `nil`
-    /// when correction is off.
-    private var gammaValue: Double?
-    {
-        Self.gamma( enabled: self.enabled, value: self.gamma )
     }
 }
 

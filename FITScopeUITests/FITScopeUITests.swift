@@ -157,7 +157,7 @@ final class FITScopeUITests: XCTestCase
                 ( "inspector",        AccessibilityIdentifier.InspectorView.container ),
                 ( "inspector toggle", AccessibilityIdentifier.MainWindowView.inspectorToggle ),
                 ( "gamma section",    AccessibilityIdentifier.InspectorView.Section.gamma ),
-                ( "gamma toggle",     AccessibilityIdentifier.GammaCorrectionControlView.toggle ),
+                ( "gamma slider",     AccessibilityIdentifier.GammaCorrectionControlView.slider ),
             ]
 
         for entry in identifiers
@@ -228,36 +228,29 @@ final class FITScopeUITests: XCTestCase
         XCTAssertTrue( fit.waitForNonExistence( timeout: 5 ), "The floating toolbar did not auto-hide." )
     }
 
-    /// Adjusting a control feeds back into the render pipeline. Enabling the gamma
-    /// toggle reveals its exponent slider — the control's own conditional UI — and
-    /// the canvas remains rendered through the re-render the change triggers.
+    /// The gamma control's exponent slider is always present — a gamma of `1` is
+    /// the neutral identity, so the control no longer has an on/off toggle — and
+    /// it coexists with the rendered canvas.
     ///
-    /// The slider's appearance is the observable here because, until the render
-    /// lifecycle work lands (M1.3 / M1.4), there is no in-app indicator of a
-    /// re-render to assert against; M1.4's smoke test will assert the
-    /// processing → ready cycle directly once it exists.
+    /// The custom slider is not reliably drivable from a UI test, so this asserts
+    /// the control's presence rather than dragging it; the "gamma of `1` is the
+    /// identity" pipeline behaviour is covered by the unit tests
+    /// (`ImageAdjustmentsTests`).
     @MainActor
-    func testAdjustingGammaRevealsSliderAndKeepsRendering() throws
+    func testGammaSliderIsAlwaysPresentAndKeepsRendering() throws
     {
         let app = UITestSupport.launchApp()
 
         try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
-        let toggle = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.toggle )
         let slider = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.slider )
 
         XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The image canvas did not appear after opening a fixture." )
 
-        // Gamma is off by default, so its slider is not present yet.
-        XCTAssertTrue( toggle.waitForExistence( timeout: 5 ), "The gamma toggle did not appear in the inspector." )
-        XCTAssertFalse( slider.exists, "The gamma slider was present before gamma was enabled." )
-
-        toggle.click()
-
-        // Enabling gamma reveals the slider and re-renders; the canvas stays put.
-        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "Enabling gamma did not reveal its slider." )
-        XCTAssertTrue( canvas.exists, "The canvas disappeared after a gamma adjustment." )
+        // The gamma slider is shown unconditionally, with no toggle to reveal it.
+        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "The gamma slider did not appear in the inspector." )
+        XCTAssertTrue( canvas.exists, "The canvas disappeared while the gamma control was shown." )
     }
 
     /// The inspector's orientation section exposes its four reorient buttons, and
@@ -694,8 +687,10 @@ final class FITScopeUITests: XCTestCase
 
     /// Switching the selected file must refresh the inspector controls to that
     /// file's own adjustments — a control's state must not leak between images.
-    /// Enabling gamma on one file must not show as enabled on another, and the
-    /// first file's state must survive switching away and back.
+    /// A stretch mode chosen on one file must not show on another, and the first
+    /// file's state must survive switching away and back. (The stretch picker's
+    /// per-mode slider is the reveal this asserts on, standing in for the removed
+    /// gamma toggle, since the custom sliders are not drivable.)
     @MainActor
     func testSwitchingFilesRefreshesInspectorControls() throws
     {
@@ -704,8 +699,8 @@ final class FITScopeUITests: XCTestCase
         try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
-        let toggle = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.toggle )
-        let slider = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.slider )
+        let picker = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.modePicker )
+        let slider = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.intensitySlider )
 
         XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The first file did not render." )
 
@@ -718,36 +713,38 @@ final class FITScopeUITests: XCTestCase
             "Expected two file rows after opening two files (rows: \( rows.count ))."
         )
 
-        // Select the first file and enable gamma: its slider appears.
+        // Select the first file and choose the Logarithmic stretch: its intensity
+        // slider appears.
         rows.element( boundBy: 0 ).click()
-        XCTAssertTrue( toggle.waitForExistence( timeout: 30 ), "The gamma toggle did not appear." )
-        XCTAssertFalse( slider.exists, "The gamma slider was present before gamma was enabled." )
+        XCTAssertTrue( picker.waitForExistence( timeout: 30 ), "The stretch mode picker did not appear." )
+        XCTAssertFalse( slider.exists, "A stretch slider was visible before a stretch mode was selected." )
 
-        toggle.click()
-        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "Enabling gamma did not reveal its slider." )
+        UITestSupport.selectPickerOption( picker, "Logarithmic", in: app )
+        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "Selecting a stretch mode did not reveal its slider." )
 
-        // Switch to the second file: it has its own (default) adjustments, so gamma
-        // reads as off and the slider must be gone — the control must follow the
-        // newly selected image, not keep the first file's state.
+        // Switch to the second file: it has its own (default) adjustments, so the
+        // stretch reads as None and the slider must be gone — the control must
+        // follow the newly selected image, not keep the first file's state.
         rows.element( boundBy: 1 ).click()
         XCTAssertTrue(
             slider.waitForNonExistence( timeout: 10 ),
-            "The gamma slider stayed visible after switching files — the inspector did not refresh to the new image."
+            "The stretch slider stayed visible after switching files — the inspector did not refresh to the new image."
         )
 
-        // Switch back: the first file's gamma is still enabled (its adjustments
+        // Switch back: the first file's stretch is still set (its adjustments
         // persisted), so the control must reseed from that image rather than reset.
         rows.element( boundBy: 0 ).click()
         XCTAssertTrue(
             slider.waitForExistence( timeout: 10 ),
-            "The first file's gamma state was lost after switching away and back."
+            "The first file's stretch state was lost after switching away and back."
         )
     }
 
     /// "Reset View" must reset the inspector controls' displayed state, not just
-    /// the underlying render: after enabling gamma, resetting must hide the gamma
-    /// slider again, proving the control followed the reset rather than keeping
-    /// its enabled state.
+    /// the underlying render: after selecting a stretch mode, resetting must hide
+    /// that mode's slider again, proving the control followed the reset rather
+    /// than keeping its state. (The stretch picker stands in for the removed gamma
+    /// toggle, since the custom sliders are not drivable.)
     @MainActor
     func testResetViewResetsInspectorControls() throws
     {
@@ -756,20 +753,20 @@ final class FITScopeUITests: XCTestCase
         try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
         let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
-        let toggle = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.toggle )
-        let slider = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.slider )
+        let picker = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.modePicker )
+        let slider = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.intensitySlider )
         let reset  = UITestSupport.element( app, AccessibilityIdentifier.InspectorView.resetButton )
 
         XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The image did not render." )
-        XCTAssertTrue( toggle.waitForExistence( timeout: 5 ), "The gamma toggle did not appear." )
+        XCTAssertTrue( picker.waitForExistence( timeout: 5 ), "The stretch mode picker did not appear." )
 
-        toggle.click()
-        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "Enabling gamma did not reveal its slider." )
+        UITestSupport.selectPickerOption( picker, "Logarithmic", in: app )
+        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "Selecting a stretch mode did not reveal its slider." )
 
         reset.click()
         XCTAssertTrue(
             slider.waitForNonExistence( timeout: 10 ),
-            "Reset View did not reset the gamma control — its slider stayed visible."
+            "Reset View did not reset the stretch control — its slider stayed visible."
         )
     }
 

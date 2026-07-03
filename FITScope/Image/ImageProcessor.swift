@@ -61,8 +61,9 @@ public enum ImageProcessor
         /// The non-linear stretch, or `nil` for a linear image.
         public var stretch: Processors.Stretch.Algorithm?
 
-        /// The gamma-correction exponent, or `nil` to leave gamma uncorrected.
-        public var gamma: Double?
+        /// The gamma-correction exponent. A value of `1` is the identity and is
+        /// omitted from the pipeline configuration, leaving gamma uncorrected.
+        public var gamma: Double
 
         /// How to white-balance the channels, or `nil` to leave them untouched.
         public var whiteBalance: Processors.WhiteBalance.Mode?
@@ -105,7 +106,7 @@ public enum ImageProcessor
         /// - Parameters:
         ///   - normalize:    How to normalize pixel values.
         ///   - stretch:      The non-linear stretch.
-        ///   - gamma:        The gamma-correction exponent.
+        ///   - gamma:        The gamma-correction exponent (`1` is the neutral identity).
         ///   - whiteBalance: How to white-balance the channels.
         ///   - invert:       Whether to invert the image.
         ///   - brightness:   The additive brightness offset (`0` is neutral).
@@ -116,7 +117,7 @@ public enum ImageProcessor
         ///   - debayer:      How to debayer the image.
         ///   - debayerMode:  The demosaic algorithm used when debayering.
         ///   - orientation:  The net orientation applied to the rendered image.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double = 1, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
         {
             self.normalize    = normalize
             self.stretch      = stretch
@@ -156,13 +157,13 @@ public enum ImageProcessor
                 debayer:      pattern.map { ( pattern: $0, mode: self.debayerMode ) },
                 normalize:    self.normalize,
                 stretch:      self.stretch,
-                correctGamma: self.gamma,
+                correctGamma: self.gamma.isApproximatelyEqual( to: 1 ) ? nil : self.gamma,
                 whiteBalance:       self.whiteBalance,
                 invert:             self.invert,
-                brightnessContrast: ( self.brightness == 0 && self.contrast == 1 ) ? nil : ( brightness: self.brightness, contrast: self.contrast ),
+                brightnessContrast: ( self.brightness.isApproximatelyEqual( to: 0 ) && self.contrast.isApproximatelyEqual( to: 1 ) ) ? nil : ( brightness: self.brightness, contrast: self.contrast ),
                 levels:             self.levels.isIdentity ? nil : self.levels,
                 curves:             self.curves.isIdentity ? nil : self.curves,
-                saturation:         self.saturation == 1 ? nil : self.saturation,
+                saturation:         self.saturation.isApproximatelyEqual( to: 1 ) ? nil : self.saturation,
                 orient:             self.orientation.isIdentity ? nil : self.orientation
             )
         }

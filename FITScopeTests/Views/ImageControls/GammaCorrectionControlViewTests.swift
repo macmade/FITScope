@@ -25,19 +25,14 @@
 @testable import FITScope
 import Testing
 
-/// Tests for `GammaCorrectionControlView`'s pure toggle/slider-to-gamma mapping.
+/// Tests for `GammaCorrectionControlView`'s slider bounds.
+///
+/// The control is now a single always-on slider (a gamma of `1` is the neutral
+/// identity, so there is no on/off toggle); the "gamma of `1` is omitted from
+/// the pipeline" behaviour is covered by ``ImageAdjustmentsTests``.
 @Suite( "GammaCorrectionControlView" )
 struct GammaCorrectionControlViewTests
 {
-    /// The gamma control maps the toggle and slider to a gamma exponent.
-    @Test
-    @MainActor
-    func gammaControlMapsToGamma() throws
-    {
-        #expect( GammaCorrectionControlView.gamma( enabled: false, value: 2.2 ) == nil )
-        #expect( GammaCorrectionControlView.gamma( enabled: true,  value: 2.2 ) == 2.2 )
-    }
-
     /// The gamma slider minimum stays above zero so the control can never emit
     /// a gamma the pipeline rejects, and even that minimum renders without
     /// throwing.

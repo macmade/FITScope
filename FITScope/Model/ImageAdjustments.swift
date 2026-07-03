@@ -45,9 +45,10 @@ public final class ImageAdjustments: ObservableObject
     /// linear image. Off by default, so the image opens linear.
     @Published public var stretch: Processors.Stretch.Algorithm? = nil
 
-    /// The gamma-correction exponent, or `nil` to leave gamma uncorrected. Off
-    /// by default.
-    @Published public var gamma: Double? = nil
+    /// The gamma-correction exponent. Neutral (`1`) by default, which is the
+    /// identity and leaves the image uncorrected — so gamma needs no separate
+    /// on/off toggle.
+    @Published public var gamma: Double = 1
 
     /// How to white-balance the colour channels, or `nil` to leave them
     /// untouched. Off by default.

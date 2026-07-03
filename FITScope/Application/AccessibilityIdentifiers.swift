@@ -360,10 +360,8 @@ public enum AccessibilityIdentifier
     /// Identifiers applied by ``FITScope/GammaCorrectionControlView``.
     public enum GammaCorrectionControlView
     {
-        /// The gamma-correction enable toggle.
-        public static let toggle = "GammaCorrectionControlView.toggle"
-
-        /// The gamma-exponent slider, shown only while correction is enabled.
+        /// The gamma-exponent slider. Always shown — a gamma of `1` is the neutral
+        /// identity, so the control has no on/off toggle.
         public static let slider = "GammaCorrectionControlView.slider"
     }
 

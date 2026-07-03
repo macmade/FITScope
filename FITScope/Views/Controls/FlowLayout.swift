@@ -51,9 +51,23 @@ public struct FlowLayout: Layout
         let maxWidth = proposal.width ?? .infinity
         let rows     = self.rows( maxWidth: maxWidth, subviews: subviews )
 
-        let width = rows.map { row in row.map { $0.size.width }.reduce( 0, + ) + CGFloat( max( 0, row.count - 1 ) ) * self.horizontalSpacing }.max() ?? 0
+        // Broken into sub-expressions: the single-expression form was too complex
+        // for the type-checker to solve in reasonable time.
+        let rowWidths = rows.map
+        {
+            row in
 
-        let height = rows.map { row in row.map { $0.size.height }.max() ?? 0 }.reduce( 0, + ) + CGFloat( max( 0, rows.count - 1 ) ) * self.verticalSpacing
+            let itemsWidth   = row.map { $0.size.width }.reduce( 0, + )
+            let spacingWidth = CGFloat( max( 0, row.count - 1 ) ) * self.horizontalSpacing
+
+            return itemsWidth + spacingWidth
+        }
+
+        let rowHeights    = rows.map { row in row.map { $0.size.height }.max() ?? 0 }
+        let spacingHeight = CGFloat( max( 0, rows.count - 1 ) ) * self.verticalSpacing
+
+        let width  = rowWidths.max() ?? 0
+        let height = rowHeights.reduce( 0, + ) + spacingHeight
 
         return CGSize( width: maxWidth.isFinite ? maxWidth : width, height: height )
     }
