@@ -149,13 +149,13 @@ public struct HistogramControlView: View
         label:
         {
             // Sized to fill the row height so the button matches the segmented
-            // control beside it; the rounded track mirrors that control's style.
+            // control beside it; the shared chrome gives it the same rounded track
+            // and soft, backdrop-independent border.
             Image( systemName: "slider.horizontal.3" )
                 .frame( width: 30 )
                 .frame( maxHeight: .infinity )
                 .contentShape( Rectangle() )
-                .background( .quinary, in: RoundedRectangle( cornerRadius: 7 ) )
-                .overlay( RoundedRectangle( cornerRadius: 7 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
+                .segmentedControlChrome()
         }
         .menuStyle( .button )
         .buttonStyle( .plain )

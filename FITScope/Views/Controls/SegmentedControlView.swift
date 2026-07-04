@@ -73,8 +73,7 @@ public struct SegmentedControlView< Value: Hashable >: View
             }
         }
         .padding( 2 )
-        .background( .quinary, in: RoundedRectangle( cornerRadius: 7 ) )
-        .overlay( RoundedRectangle( cornerRadius: 7 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
+        .segmentedControlChrome()
     }
 
     /// One equal-width segment.
