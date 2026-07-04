@@ -160,6 +160,8 @@ public struct PlanetsView: View
                     .foregroundStyle( .secondary )
                     .frame( width: 14 )
 
+                // Unlike the other tabs, this row does not differentiate the label
+                // from the values: the planet name shares the rows' primary color.
                 Text( planet.name )
             }
 
