@@ -22,26 +22,32 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import AppKit
-@testable import FITScope
 import SwiftAstro
-import Testing
 
-/// Tests for the app-side ``MoonPhase/Phase/systemImageName`` mapping. The lunar
-/// phase computation itself now lives in — and is tested by — SwiftAstro; this
-/// covers the SF Symbol chosen for each phase.
-@Suite( "MoonPhase" )
-struct MoonPhaseTests
+/// The SF Symbol depicting each lunar phase.
+///
+/// This lives app-side rather than in SwiftAstro: the phase computation is a
+/// reusable library concern, but the choice of SF Symbol is an Apple-platform
+/// presentation detail, so the library stays UI-free.
+extension MoonPhase.Phase
 {
-    /// Every phase maps to an SF Symbol that resolves on this platform.
-    @Test
-    func everyPhaseHasAResolvableSymbol()
+    /// The name of the SF Symbol depicting this phase.
+    var systemImageName: String
     {
-        MoonPhase.Phase.allCases.forEach
+        switch self
         {
-            phase in
+            case .newMoon:        return "moonphase.new.moon"
+            case .waxingCrescent: return "moonphase.waxing.crescent"
+            case .firstQuarter:   return "moonphase.first.quarter"
+            case .waxingGibbous:  return "moonphase.waxing.gibbous"
+            case .fullMoon:       return "moonphase.full.moon"
+            case .waningGibbous:  return "moonphase.waning.gibbous"
+            case .lastQuarter:    return "moonphase.last.quarter"
+            case .waningCrescent: return "moonphase.waning.crescent"
 
-            #expect( NSImage( systemSymbolName: phase.systemImageName, accessibilityDescription: nil ) != nil, "No SF Symbol named \"\( phase.systemImageName )\"" )
+            // `MoonPhase.Phase` is a non-frozen enum in another module, so a
+            // future case must be handled; fall back to the generic moon symbol.
+            @unknown default: return "moon"
         }
     }
 }

@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import SwiftAstro
 import SwiftUI
 
 /// The Moon tab's content: the capture's lunar phase — a drawn moon disc, the

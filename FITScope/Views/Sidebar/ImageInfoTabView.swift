@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import MapKit
+import SwiftAstro
 import SwiftUI
 
 /// The info-panel tab host shown below the file list: the Image Information grid,

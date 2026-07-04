@@ -214,7 +214,7 @@
 		9A3A3D353F14A85800BD349D /* StatisticsFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0752B6126A583839BB8F8BEF /* StatisticsFormatTests.swift */; };
 		9B163B795274560E48F04CBF /* WCSProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20678C2224440A7F70B42B87 /* WCSProjectionTests.swift */; };
 		9B95B241926E5EF3B87D243F /* LocationMapRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A660D5D46BE16501558BFAEB /* LocationMapRepresentable.swift */; };
-		9C6AE833088D00380D5EA9F0 /* MoonPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A76B7A5EE76FA883E623C6 /* MoonPhase.swift */; };
+		9C6AE833088D00380D5EA9F0 /* MoonPhaseSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A76B7A5EE76FA883E623C6 /* MoonPhaseSymbol.swift */; };
 		9DCAAECAE4890CCDEBDC265F /* ObjectsOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0568BCD519879F0E48946139 /* ObjectsOverlay.swift */; };
 		A043D5D47F28AF202E84461C /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF3765F1937F36620A92317F /* MainWindowView.swift */; };
 		A4B7F72827EB5946B7D329AC /* PlateSolveResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B503A40CF3A57D863C1304 /* PlateSolveResult.swift */; };
@@ -520,7 +520,7 @@
 		0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowModelTests.swift; sourceTree = "<group>"; };
 		10D628DF4A1EE6FDEB030831 /* HeaderExport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeaderExport.swift; sourceTree = "<group>"; };
 		1201F624701C957BABD10644 /* WindowCloseConfirmationDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowCloseConfirmationDelegate.swift; sourceTree = "<group>"; };
-		15A76B7A5EE76FA883E623C6 /* MoonPhase.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhase.swift; sourceTree = "<group>"; };
+		15A76B7A5EE76FA883E623C6 /* MoonPhaseSymbol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseSymbol.swift; sourceTree = "<group>"; };
 		175E0226186A86808584BD3B /* MoonPhaseView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseView.swift; sourceTree = "<group>"; };
 		1805AA8818E2418AA78360ED /* ViewCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewCommands.swift; sourceTree = "<group>"; };
 		1BF0E28B558FF0EC25A4F530 /* EquatorialGridOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EquatorialGridOverlayTests.swift; sourceTree = "<group>"; };
@@ -945,7 +945,7 @@
 				5A516E0150000000000000B2 /* ImageWeighting.swift */,
 				5A516E0150000000000000C1 /* FileSortable.swift */,
 				5A516E0150000000000000C3 /* FileSortKey.swift */,
-				15A76B7A5EE76FA883E623C6 /* MoonPhase.swift */,
+				15A76B7A5EE76FA883E623C6 /* MoonPhaseSymbol.swift */,
 				10D628DF4A1EE6FDEB030831 /* HeaderExport.swift */,
 			);
 			path = Model;
@@ -1901,7 +1901,7 @@
 				9B95B241926E5EF3B87D243F /* LocationMapRepresentable.swift in Sources */,
 				AE429B193507E2CB21017180 /* StatusMessageView.swift in Sources */,
 				4E83E9BA85223077ADB02CC0 /* LocationInfoView.swift in Sources */,
-				9C6AE833088D00380D5EA9F0 /* MoonPhase.swift in Sources */,
+				9C6AE833088D00380D5EA9F0 /* MoonPhaseSymbol.swift in Sources */,
 				DE117DD2B55797BDF5F92B8E /* MoonPhaseView.swift in Sources */,
 				3EABE11E3DCA74FC89100204 /* MoonPhaseDisc.swift in Sources */,
 				7F6B7F6B74D2A59CAD7F35DF /* WeatherConditions.swift in Sources */,
