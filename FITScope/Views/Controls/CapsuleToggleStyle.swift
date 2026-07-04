@@ -77,10 +77,13 @@ private struct CapsuleToggle: View
 
             self.track
                 .frame( width: self.width, height: self.height )
-                .contentShape( Capsule() )
-                .onTapGesture { self.configuration.isOn.toggle() }
                 .opacity( self.isEnabled ? 1 : 0.5 )
         }
+        // The whole row toggles, not just the track, so clicking the label works
+        // too — matching a native `Toggle`. Tapping only the track left labelled
+        // toggles (e.g. Curves' "Per-channel") unresponsive over their label.
+        .contentShape( Rectangle() )
+        .onTapGesture { self.configuration.isOn.toggle() }
     }
 
     /// The switch itself: the ``Slider``'s track, fill and knob, with the knob
