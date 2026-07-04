@@ -210,6 +210,19 @@ public struct FITScopeApp: App
         .windowResizability( .contentSize )
         .restorationBehavior( .disabled )
 
+        // The session metric-trend charts. Unlike the Levels and Curves editors,
+        // the charts want room and benefit from resizing, so this window is freely
+        // resizable (opening at a sensible default) rather than sized to its
+        // content; it persists its frame across launches like the editors do.
+        Window( "Session Metrics", id: "SessionMetricsWindow" )
+        {
+            SessionMetricsWindowView()
+                .environmentObject( self.appDelegate.appModel )
+        }
+        .windowStyle( .titleBar )
+        .defaultSize( width: 900, height: 760 )
+        .restorationBehavior( .disabled )
+
         Window( "About \( Bundle.main.title )", id: "AboutWindow" )
         {
             AboutView()

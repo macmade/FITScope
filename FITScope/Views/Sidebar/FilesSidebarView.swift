@@ -34,6 +34,9 @@ public struct FilesSidebarView: View
     /// App-wide coordination, used to open files via the Open panel.
     @EnvironmentObject private var appModel: AppModel
 
+    /// Opens the session metric-trend charts window.
+    @Environment( \.openWindow ) private var openWindow
+
     /// The shared file actions the rows' context menu invokes.
     private let actions: FileActions
 
@@ -61,6 +64,8 @@ public struct FilesSidebarView: View
                     .kerning( 1.2 )
 
                 Spacer()
+
+                self.metricsButton
 
                 self.sortMenu
 
@@ -102,6 +107,26 @@ public struct FilesSidebarView: View
                 ImageInfoTabView( file: selected )
             }
         }
+    }
+
+    /// The button that opens the session metric-trend charts window, styled like
+    /// the header's other icon buttons. Disabled until at least one file is open,
+    /// mirroring the menu command.
+    private var metricsButton: some View
+    {
+        Button
+        {
+            self.openWindow( id: "SessionMetricsWindow" )
+        }
+        label:
+        {
+            Image( systemName: "chart.line.uptrend.xyaxis" )
+        }
+        .buttonStyle( .plain )
+        .foregroundStyle( .secondary )
+        .disabled( self.model.files.isEmpty )
+        .help( "Session Metrics…" )
+        .accessibilityIdentifier( AccessibilityIdentifier.FilesSidebarView.metricsButton )
     }
 
     /// The sort menu: a key picker and an ascending/descending picker, driving the

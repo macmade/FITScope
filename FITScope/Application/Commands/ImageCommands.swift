@@ -266,6 +266,22 @@ struct ImageCommands: View
 
         Divider()
 
+        // Trends every open file's metrics, so it only needs a window with files —
+        // not the selected image finished rendering — and stays available while the
+        // session is still being analysed. It is session-scoped rather than tied to
+        // the shown image, so it sits in its own group, apart from the headers item.
+        Button
+        {
+            self.openWindow( id: "SessionMetricsWindow" )
+        }
+        label:
+        {
+            Label( "Session Metrics\u{2026}", systemImage: "chart.line.uptrend.xyaxis" )
+        }
+        .disabled( self.file == nil )
+
+        Divider()
+
         Button
         {
             if let file = self.file

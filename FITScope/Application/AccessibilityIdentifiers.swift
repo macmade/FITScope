@@ -87,6 +87,9 @@ public enum AccessibilityIdentifier
 
         /// The sort menu in the sidebar header.
         public static let sortMenu = "FilesSidebarView.sortMenu"
+
+        /// The button in the sidebar header that opens the session metrics window.
+        public static let metricsButton = "FilesSidebarView.metricsButton"
     }
 
     /// Identifiers applied by ``FITScope/OpenFileRowView``.
@@ -626,5 +629,27 @@ public enum AccessibilityIdentifier
         /// The button that restores the weight formula to its default in the
         /// Weighting tab.
         public static let weightFormulaResetButton = "PreferencesView.weightFormulaResetButton"
+    }
+
+    /// Identifiers for the session metric-trend charts window.
+    public enum SessionMetricsWindowView
+    {
+        /// The chart content shown when the window has files to trend.
+        public static let chart = "SessionMetricsWindowView.chart"
+
+        /// The integration-time / relative-SNR summary strip.
+        public static let summary = "SessionMetricsWindowView.summary"
+
+        /// The reference picker driving the relative-SNR figures.
+        public static let referencePicker = "SessionMetricsWindowView.referencePicker"
+
+        /// The cumulative relative-SNR curve.
+        public static let snrCurve = "SessionMetricsWindowView.snrCurve"
+
+        /// The metric selector.
+        public static let metricPicker = "SessionMetricsWindowView.metricPicker"
+
+        /// The placeholder shown when no files are open.
+        public static let unavailable = "SessionMetricsWindowView.unavailable"
     }
 }

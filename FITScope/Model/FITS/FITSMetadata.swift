@@ -253,6 +253,10 @@ public struct FITSMetadata: Sendable
     /// The observing site elevation (`SITEELEV`), in metres.
     public var elevation: Double? { self.double( "SITEELEV" ) }
 
+    /// The frame's exposure / integration time (`EXPTIME`, else `EXPOSURE`), in
+    /// seconds.
+    public var exposureTime: Double? { self.double( "EXPTIME", "EXPOSURE" ) }
+
     /// The telescope focal length (`FOCALLEN`), in millimetres.
     public var focalLength: Double? { self.double( "FOCALLEN" ) }
 
