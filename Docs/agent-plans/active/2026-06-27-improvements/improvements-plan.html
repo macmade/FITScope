@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improvements &mdash; Implementation Plan</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --bg-card:   #181b24;
+            --bg-card-2: #1d212c;
+            --bg-inset:  #12151d;
+            --border:    #2a2f3c;
+            --text:      #e6e9ef;
+            --text-dim:  #9aa3b2;
+            --accent:    #5aa9ff;
+            --accent-dim:#2d3b52;
+            --mono:      ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+            --pill-todo-bg:   #2a2f3c;
+            --pill-todo-fg:   #9aa3b2;
+            --pill-prog-bg:   #4a3a12;
+            --pill-prog-fg:   #f0b429;
+            --pill-done-bg:   #143524;
+            --pill-done-fg:   #4ade80;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 940px;
+            margin: 0 auto;
+            padding: 48px 24px 96px;
+        }
+
+        header.doc {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 2.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .meta code {
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            background: var(--bg-inset);
+            padding: 1px 6px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        h2.section {
+            font-size: 1.0rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text-dim);
+            margin: 44px 0 18px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        p.overview, .qa, .notes {
+            color: var(--text);
+        }
+
+        p.lead {
+            color: var(--text-dim);
+            font-size: 1.02rem;
+        }
+
+        /* Questions & answers */
+        .qa dl { margin: 0; }
+        .qa dt {
+            font-weight: 600;
+            margin-top: 18px;
+            color: var(--text);
+        }
+        .qa dt:first-child { margin-top: 0; }
+        .qa dd {
+            margin: 6px 0 0;
+            padding: 10px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 8px;
+            color: var(--text-dim);
+        }
+        .qa dd strong { color: var(--text); }
+
+        /* Notes */
+        .notes ul { margin: 8px 0 0; padding-left: 22px; }
+        .notes li { margin-bottom: 8px; color: var(--text-dim); }
+        .notes li strong { color: var(--text); }
+        code {
+            font-family: var(--mono);
+            font-size: 0.86em;
+            background: var(--bg-inset);
+            padding: 1px 6px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        /* Phase heading */
+        h3.phase {
+            font-size: 1.15rem;
+            margin: 40px 0 4px;
+            color: var(--accent);
+            letter-spacing: -0.01em;
+        }
+        .phase-sub {
+            color: var(--text-dim);
+            font-size: 0.92rem;
+            margin: 0 0 12px;
+        }
+
+        /* Milestone card */
+        .milestone {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 22px;
+            margin-bottom: 18px;
+        }
+        .milestone-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 4px;
+        }
+        .milestone-head h4 {
+            margin: 0;
+            font-size: 1.14rem;
+            color: var(--text);
+        }
+        .milestone-id {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: var(--accent);
+            margin-right: 8px;
+        }
+
+        .pill {
+            flex: none;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+        }
+        .pill.todo { background: var(--pill-todo-bg); color: var(--pill-todo-fg); }
+        .pill.prog { background: var(--pill-prog-bg); color: var(--pill-prog-fg); }
+        .pill.done { background: var(--pill-done-bg); color: var(--pill-done-fg); }
+
+        .goal {
+            color: var(--text-dim);
+            margin: 6px 0 14px;
+        }
+
+        .field-label {
+            font-size: 0.74rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 16px 0 6px;
+            font-weight: 700;
+        }
+
+        ul.tasks {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        ul.tasks li {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 7px;
+            color: var(--text);
+        }
+        ul.tasks li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 4px;
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid var(--accent-dim);
+            border-radius: 4px;
+            background: var(--bg-inset);
+        }
+        ul.tasks li.sub {
+            padding-left: 48px;
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+        ul.tasks li.sub::before { left: 22px; top: 5px; width: 13px; height: 13px; }
+
+        .meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 22px;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        .meta-row .k { color: var(--text-dim); }
+
+        .placeholder {
+            background: var(--bg-inset);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-dim);
+            font-style: italic;
+            margin-top: 6px;
+        }
+
+        table.ref {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 0.9rem;
+        }
+        table.ref th, table.ref td {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        table.ref th { color: var(--text-dim); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.07em; }
+        table.ref td code { font-size: 0.82em; }
+        .ref-wrap { overflow-x: auto; }
+
+        footer.doc {
+            margin-top: 56px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="doc">
+            <h1>Improvements &mdash; Implementation Plan</h1>
+            <div class="meta">
+                <div><strong>Generated</strong> &mdash; 2026-07-04</div>
+                <div><strong>Source</strong> &mdash; <code>Docs/agent-plans/active/2026-06-27-improvements/improvements.html</code></div>
+            </div>
+            <div class="legend">
+                <span class="pill todo">Not started</span>
+                <span class="pill prog">In progress</span>
+                <span class="pill done">Completed</span>
+            </div>
+        </header>
+
+        <h2 class="section">Overview</h2>
+        <p class="overview">
+            This plan turns the FITScope improvements list into small, independently reviewable and
+            committable milestones. The 13 items span four areas: the rendering pipeline, the
+            inspector's image-processing controls, the information panels (astronomy &amp; metrics), and
+            app integration (overlays, external apps, window chrome).
+        </p>
+        <p class="overview">
+            The overall approach follows the existing architecture rather than fighting it. New image
+            adjustments (hue, colour balance) are added as first-class <code>SwiftPixel</code> processors and
+            wired through the same <code>ImageAdjustments</code> &rarr; <code>ImageProcessor.Settings</code> &rarr;
+            <code>PixelPipeline.Config</code> chain the other controls use. New astronomy (planets, sun,
+            twilight) is added to the <code>SwiftAstro</code> library so it is reusable and lives beside star
+            detection and SNR. Metrics work reuses the per-file <code>StarField</code>/<code>SignalToNoise</code> values
+            already computed at load. Each milestone names the concrete files and types it touches, and
+            keeps its own status, notes, and review fields so this document can be updated in place as
+            work proceeds.
+        </p>
+
+        <h2 class="section">Questions &amp; Answers</h2>
+        <div class="qa">
+            <dl>
+                <dt>1. The astronomy math for &ldquo;visible planets&rdquo; and &ldquo;sunrise/sunset + twilight&rdquo; does not exist yet (SwiftAstro currently only does star detection + SNR). Where should planet-position and solar/twilight calculations live?</dt>
+                <dd><strong>Extend the SwiftAstro submodule.</strong> Add planet ephemeris and solar-altitude/twilight computation to SwiftAstro as its natural, reusable home. <strong>Additionally, check whether the current local moon-phase computation should be moved into SwiftAstro</strong> for consistency, so all ephemeris lives in one place.</dd>
+
+                <dt>2. Star-detection results are currently shown only via the canvas overlay. How should the detection info (count, median FWHM/HFR, eccentricity) be presented?</dt>
+                <dd><strong>A new &ldquo;Stars&rdquo; tab</strong> in the sidebar info tab view, alongside Info / Location / Moon / Weather. The overlay stays as-is.</dd>
+
+                <dt>3. Where should the session metric-trend charts (SNR / star count / FWHM&middot;HFR across all open files, via Swift Charts) live?</dt>
+                <dd><strong>A dedicated window</strong>, like the existing Info / Levels / Curves windows &mdash; it fits whole-session (window-level) data and gives the charts room.</dd>
+
+                <dt>4. The &ldquo;Window toolbar?&rdquo; item is phrased as an open investigation, and there is already a floating canvas toolbar plus a minimal window toolbar. How should the plan treat it?</dt>
+                <dd><strong>An investigation milestone</strong> &mdash; a time-boxed spike that evaluates the idea and produces a recommendation (mockup/notes), with no committed UI.</dd>
+
+                <dt>5. Hue and colour-balance have no existing SwiftPixel processor (SwiftPixel is a submodule nested inside SwiftAstro). How should these be implemented?</dt>
+                <dd><strong>Add new <code>Processors.Hue</code> and <code>Processors.ColorBalance</code> to SwiftPixel</strong>, consistent with the existing pipeline and reusable. This requires committing changes in the nested SwiftPixel submodule.</dd>
+            </dl>
+        </div>
+
+        <h2 class="section">Notes</h2>
+        <div class="notes">
+            <p class="lead">Context, conventions, assumptions, and risks gathered while mapping the codebase.</p>
+
+            <p class="field-label">Architecture facts (verified)</p>
+            <ul>
+                <li><strong>Adjustments chain:</strong> controls bind to <code>@Published</code> fields on <code>ImageAdjustments</code> (<code>Model/ImageAdjustments.swift</code>) &rarr; snapshot as <code>ImageProcessor.Settings</code> (<code>Image/ImageProcessor.swift</code>) &rarr; <code>PixelPipeline.Config</code> &rarr; SwiftPixel. Re-renders are debounced (150&nbsp;ms) via <code>FITSImageRenderer.scheduleReRender()</code>. Only a <em>global</em> <code>reset()</code> exists today.</li>
+                <li><strong>Rendering concurrency:</strong> <code>OpenFile.prepare(throttle:)</code> acquires a FIFO <code>RenderThrottle</code> (limit &asymp; cores&minus;2), loads, renders, detects stars, releases. <code>WindowModel.open(urls:)</code> prepares all files equally &mdash; the selected file has no priority.</li>
+                <li><strong>Before/after is cheap:</strong> both <code>FITSImageRenderer.original</code> and <code>FITSImageRenderer.result</code> CGImages already exist simultaneously.</li>
+                <li><strong>SwiftPixel processors present:</strong> BrightnessContrast, CorrectGamma, Curves, Debayer, Invert, Levels, MonoToRGB, Normalize, Orient, Saturation, Scale, Stretch, WhiteBalance. <strong>No Hue, no ColorBalance</strong> &mdash; these must be added.</li>
+                <li><strong>SwiftAstro provides:</strong> star detection (<code>StarField</code>: count, medianFWHM/HFR/eccentricity), <code>SignalToNoise</code> (robust MAD noise + weight), FITS decoding. <strong>No planet/sun/twilight ephemeris.</strong> Moon phase is computed locally in the app (<code>Model/MoonPhase.swift</code>).</li>
+                <li><strong>Observer inputs</strong> come from FITS headers via <code>FITSMetadata</code>: <code>coordinate</code> (SITELAT/SITELONG), <code>elevation</code> (SITEELEV), <code>observationDate</code> (DATE-OBS, UTC).</li>
+                <li><strong>Info sidebar tabs</strong> (<code>Views/Sidebar/ImageInfoTabView.swift</code>): Info / Location / Moon / Weather. Info rows are driven by <code>ImageInformation</code> + <code>InfoField</code> + user <code>Preferences.infoPanelFields</code>.</li>
+                <li><strong>Overlay appearance is hardcoded</strong> in <code>Views/Overlays/CanvasOverlayStyle.swift</code> (alpha) and each overlay's <code>private static let color</code>/<code>lineWidth</code>.</li>
+                <li><strong>Preferences</strong>: <code>@Published</code> + <code>UserDefaults</code> in <code>Model/Preferences/Preferences.swift</code>; tabs enumerated in <code>Views/Preferences/PreferencesTab.swift</code> and hosted by <code>PreferencesView</code>.</li>
+                <li><strong>Export already exists:</strong> <code>AppModel.saveCopy(of:)</code> (original FITS bytes) and <code>AppModel.exportImage(of:)</code> (rendered CGImage &rarr; TIFF/PNG/JPEG via <code>ImageExporter</code>). Commands use <code>@FocusedObject</code>; the current file is <code>OpenFile.url</code>.</li>
+                <li><strong>Swift Charts is not yet used anywhere.</strong></li>
+            </ul>
+
+            <p class="field-label">Conventions to follow</p>
+            <ul>
+                <li><strong>Xcode project + submodules stay in sync.</strong> New source files must be added to <code>FITScope.xcodeproj</code>; new SwiftPixel/SwiftAstro files must be added to their own <code>.xcodeproj</code> and <code>Package.swift</code>. Build and run tests through <code>xcodebuild</code>.</li>
+                <li><strong>Submodule work is upstream-first.</strong> SwiftPixel and SwiftAstro changes are committed in those repos, then the submodule pointer is bumped in FITScope. Coordinate ordering: library change &rarr; build/tests &rarr; app wiring.</li>
+                <li>One type per file; add SwiftUI previews for new views; extract reusable components rather than growing long views; no force-unwrap; prefer <code>let</code>; explicit <code>public</code> for library (SwiftPixel/SwiftAstro) API.</li>
+                <li>Add unit tests where there is logic to test: new SwiftPixel processors (SwiftPixel tests), astronomy math (SwiftAstro tests), and app-side model/formatting (<code>FITScopeTests</code>).</li>
+            </ul>
+
+            <p class="field-label">Assumptions (default choices &mdash; flag in review if you disagree)</p>
+            <ul>
+                <li><strong>Before/after (M5):</strong> a <em>wipe</em>-style comparison with a draggable vertical divider over the image (original on one side, processed on the other), rather than a whole-image opacity blend. Alternative noted in the milestone.</li>
+                <li><strong>Per-control reset (M2):</strong> a small, consistent reset affordance shown per control when its value differs from the default; clicking resets that single field and re-renders. Implemented once as a reusable component and reused across controls.</li>
+                <li><strong>Open With (M13):</strong> original opens from <code>OpenFile.url</code>; the processed image is written to a temporary lossless TIFF (via the existing <code>ImageExporter</code>) then handed to <code>NSWorkspace</code>. The menu lists candidate apps via <code>NSWorkspace.urlsForApplications(toOpen:)</code> plus an &ldquo;Open With Other&hellip;&rdquo; entry.</li>
+                <li><strong>Sky-quality (M10):</strong> source the read-out from the robust background/noise already available (<code>SignalToNoise.noise</code> and/or <code>HistogramStatistics</code> median &amp; MAD); a small verification step confirms whether the star detector exposes an explicit background estimate before choosing the exact source.</li>
+                <li><strong>Sun/twilight &amp; planets placement (M7/M8):</strong> a new &ldquo;Sky&rdquo; sidebar tab hosting both observation-time sun/twilight and visible planets, keeping the existing Moon/Location/Weather tabs untouched. May instead extend the Location tab &mdash; open for review.</li>
+            </ul>
+
+            <p class="field-label">Risks &amp; open points</p>
+            <ul>
+                <li><strong>Ephemeris scope &amp; accuracy.</strong> Planet and solar positions need a defined accuracy target. For a viewer, low-precision analytic series (arc-minute-level) are sufficient and dependency-free; this should be confirmed when designing the SwiftAstro API (M6).</li>
+                <li><strong>Submodule commit coordination.</strong> Several milestones require a SwiftPixel or SwiftAstro commit before the app can build against the new API. Each such milestone flags the upstream step explicitly.</li>
+                <li><strong>&ldquo;Visible planets by letter.&rdquo;</strong> Interpreted as planets above the horizon at the observation time/location, labelled by a short symbol/abbreviation. The exact labelling (single letter vs. abbreviation vs. glyph) is a small UI decision inside M8.</li>
+            </ul>
+        </div>
+
+        <h2 class="section">Milestones</h2>
+
+        <!-- ============================ PHASE 1 ============================ -->
+        <h3 class="phase">Phase 1 &middot; Rendering responsiveness</h3>
+        <p class="phase-sub">Make the file the user is looking at feel first-class.</p>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M1</span>Prioritize the selected file for rendering</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">When a file is selected, its load/render should take priority so the image on screen is processed first, instead of waiting behind others in FIFO order.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Review current ordering: <code>WindowModel.open(urls:)</code>, <code>OpenFile.prepare(throttle:)</code>, and the FIFO <code>RenderThrottle</code> (<code>Model/RenderThrottle.swift</code>).</li>
+                <li>Introduce priority into acquisition &mdash; e.g. a priority-aware waiter queue in <code>RenderThrottle</code>, or a fast path that lets the selected file bypass/jump the queue.</li>
+                <li>Signal priority on selection change: observe <code>WindowModel.selectedFileID</code> and bump the selected <code>OpenFile</code>'s pending preparation/render to the front.</li>
+                <li>Ensure correctness: no starvation of background files, generation guards still respected, cancellation still works, no priority inversion when the selected file is already prepared.</li>
+                <li class="sub">Also consider re-selection while a batch is still preparing (rapid arrow-key navigation).</li>
+                <li>Verify with a multi-file open that selecting a not-yet-rendered file renders it ahead of the rest.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <!-- ============================ PHASE 2 ============================ -->
+        <h3 class="phase">Phase 2 &middot; Inspector controls &amp; adjustments</h3>
+        <p class="phase-sub">Extend the image-processing controls and add new colour adjustments.</p>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M2</span>Per-control reset affordance</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Let the user reset an individual inspector control to its default without resetting everything, via a small clear/reset button per control.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Design a reusable reset affordance (button/component) that appears when a control's value differs from its default.</li>
+                <li>Define per-field defaults/neutral values from <code>ImageAdjustments</code> (brightness 0, contrast 1, saturation 1, levels/curves identity, etc.).</li>
+                <li>Wire it into the control views under <code>Views/ImageControls/</code> (<code>BrightnessContrastControlView</code>, <code>SaturationControlView</code>, and the others) via the shared <code>SliderGridRowView</code> where possible.</li>
+                <li>Handle the editor windows too (Levels, Curves) so per-channel resets are consistent with the reusable affordance.</li>
+                <li>On reset: set the field to its default, then call the existing <code>reRender()</code> path.</li>
+                <li>Add SwiftUI previews showing modified vs. default states.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M3</span>Hue adjustment</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Add a hue-shift adjustment presented alongside saturation. Requires a new SwiftPixel processor plus app wiring.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li><strong>SwiftPixel (upstream):</strong> add <code>Processors.Hue</code> (3-channel, normalized buffer), following the <code>Saturation</code> processor's structure and validation. Add processor unit tests.</li>
+                <li class="sub">Add the file to SwiftPixel's <code>.xcodeproj</code> and <code>Package.swift</code>; commit; bump the submodule pointer.</li>
+                <li><strong>App:</strong> add <code>@Published var hue</code> to <code>ImageAdjustments</code> (neutral default), mirror it in <code>ImageProcessor.Settings</code>, and insert it into <code>Settings.config()</code> in pipeline order (display-referred colour, near saturation), omitting the identity value.</li>
+                <li>Extend the saturation control (or add a paired hue slider) in <code>Views/ImageControls/SaturationControlView.swift</code>, bound to <code>$adjustments.hue</code> with <code>onChange &rarr; reRender()</code>.</li>
+                <li>Include <code>hue</code> in <code>ImageAdjustments.reset()</code>/<code>hasAdjustments</code> and the per-control reset (M2).</li>
+                <li>Verify the shift is correct and stable at neutral; add a preview.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M4</span>Colour balance (shadows / midtones / highlights)</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Add a colour-balance control acting on shadows (low), midtones (mid), and highlights (high). Requires a new SwiftPixel processor plus app wiring.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li><strong>SwiftPixel (upstream):</strong> add <code>Processors.ColorBalance</code> operating per tonal range (shadows/midtones/highlights) on a normalized 3-channel buffer. Decide the model (RGB shift or CMY-style pairs) and range; add unit tests.</li>
+                <li class="sub">Add the file to SwiftPixel's <code>.xcodeproj</code> and <code>Package.swift</code>; commit; bump the submodule pointer.</li>
+                <li><strong>App:</strong> add colour-balance fields to <code>ImageAdjustments</code> (a small struct holding the three tonal triplets, neutral default), mirror in <code>ImageProcessor.Settings</code>, and add to <code>Settings.config()</code> in pipeline order (after curves, with the colour stages), omitting neutral values.</li>
+                <li>Create <code>Views/ImageControls/ColorBalanceControlView.swift</code> (three groups &times; three sliders), add it to <code>InspectorView</code> conditionally for colour images (as saturation is), with a preview.</li>
+                <li>Include colour balance in <code>reset()</code>/<code>hasAdjustments</code> and the per-control reset (M2).</li>
+                <li>Verify neutral is a true identity and each tonal range affects the expected pixels.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M5</span>Before/after comparison slider</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Add an on-image before/after comparison to compare the original and processed result &mdash; a draggable wipe divider (assumption; opacity-blend is the alternative).</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Confirm both images are available: <code>FITSImageRenderer.original</code> (before) and <code>FITSImageRenderer.result</code> (after).</li>
+                <li>Add a comparison mode to the canvas (<code>Views/Canvas/ImageCanvasView.swift</code> / <code>ZoomableImageView.swift</code>): render the processed image, reveal the original on one side of a draggable vertical divider, keeping both perfectly registered under zoom/pan.</li>
+                <li>Add a toggle to enter/exit comparison mode (canvas floating toolbar <code>ImageToolbarView</code> and/or the Image menu) with clean state in <code>ImageCanvasController</code>.</li>
+                <li>Draw the divider handle and optional &ldquo;Before&rdquo;/&ldquo;After&rdquo; labels; handle no-adjustments and monochrome cases gracefully.</li>
+                <li class="sub">If review prefers an opacity blend instead of a wipe, swap the reveal for a blend slider &mdash; the rest of the wiring is the same.</li>
+                <li>Add a preview and verify alignment at several zoom levels.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <!-- ============================ PHASE 3 ============================ -->
+        <h3 class="phase">Phase 3 &middot; Astronomy in the info panels</h3>
+        <p class="phase-sub">Add reusable ephemeris to SwiftAstro, then surface it at the observation time/location.</p>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M6</span>SwiftAstro: solar &amp; planetary ephemeris (foundation)</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Add reusable astronomy to the SwiftAstro library: solar altitude &amp; twilight phases, and planet positions/visibility &mdash; the foundation M7 and M8 consume. Also evaluate relocating the app's moon-phase computation here.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Design the public API surface (observer location + date/time in &rarr; positions/events out). Set an accuracy target appropriate for a viewer (see Notes/Risks).</li>
+                <li>Implement solar position &rarr; sunrise/sunset and civil / nautical / astronomical twilight event times for a given date and location.</li>
+                <li>Implement planet positions (Mercury, Venus, Mars, Jupiter, Saturn; Uranus/Neptune optional) and an above-horizon &ldquo;visible&rdquo; determination at a given instant/location.</li>
+                <li><strong>Evaluate moving moon-phase into SwiftAstro:</strong> compare the app's <code>Model/MoonPhase.swift</code> with a SwiftAstro home; if it belongs there, move it and keep the app calling the library (fold the app-side change into M7/M8 wiring or note it here).</li>
+                <li>Add SwiftAstro unit tests against known reference values (sun/twilight times, planet positions) within the chosen tolerance.</li>
+                <li>Add new files to SwiftAstro's <code>.xcodeproj</code> and <code>Package.swift</code>; commit; bump the submodule pointer in FITScope.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M7</span>Sunrise / sunset &amp; twilight in the info panel</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Display sunrise and sunset times including civil, nautical, and astronomical twilight, computed from the file's observer location and date.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Read observer inputs from <code>FITSMetadata</code> (<code>coordinate</code>, <code>observationDate</code>); handle missing location/date gracefully with a clear empty state.</li>
+                <li>Call the M6 SwiftAstro API to compute sunrise/sunset and the three twilight phases for the observation date/location.</li>
+                <li>Create a &ldquo;Sky&rdquo; sidebar tab (or extend Location &mdash; see Notes assumption) presenting the sun events clearly (e.g. a twilight timeline), with the observation time marked.</li>
+                <li>Wire it into <code>Views/Sidebar/ImageInfoTabView.swift</code> following the Moon/Weather tab pattern; add a preview.</li>
+                <li>Format times consistently with the app (local vs. UTC choice matching existing conventions).</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M8</span>Visible planets in the info panel</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Show which planets are visible (above the horizon) at the observation time/location, labelled by their letters/abbreviations.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Use the M6 SwiftAstro API to determine which planets are above the horizon at <code>observationDate</code> for <code>coordinate</code>.</li>
+                <li>Decide the labelling (single letter vs. short abbreviation vs. glyph) and present the visible set in the &ldquo;Sky&rdquo; tab (shared with M7), with altitude/direction if useful.</li>
+                <li>Handle the empty state (no location/date, or none visible) clearly.</li>
+                <li>Add a preview covering a few representative dates/locations.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <!-- ============================ PHASE 4 ============================ -->
+        <h3 class="phase">Phase 4 &middot; Metrics &amp; session insight</h3>
+        <p class="phase-sub">Surface the metrics already computed per file, and trend them across a session.</p>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M9</span>Star-detection info tab</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Present star-detection results (count, median FWHM/HFR, eccentricity) in a new &ldquo;Stars&rdquo; sidebar tab. The overlay stays as-is.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Source the data from <code>FITSImage.starField</code> / <code>signalToNoise</code> (already published), including the loading and no-stars states (<code>isDetectingStars</code>, <code>hasDetectedStars</code>).</li>
+                <li>Create a &ldquo;Stars&rdquo; tab view presenting the metrics grid (count, median FWHM, median HFR, median eccentricity, and SNR/noise if useful).</li>
+                <li>Wire it into <code>Views/Sidebar/ImageInfoTabView.swift</code> alongside Info / Location / Moon / Weather; add a preview covering detecting / found / none states.</li>
+                <li>Keep it consistent with the existing info-panel row styling.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M10</span>Sky-quality / background indicator</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Surface the robust sky background already estimated (during star detection / via histogram) as a relative light-pollution / sky-brightness read-out in the info panel.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Verify the exact source: whether the star detector exposes an explicit background estimate, otherwise derive from <code>SignalToNoise.noise</code> and/or <code>HistogramStatistics</code> (median, MAD).</li>
+                <li>Define a meaningful relative read-out (and, if feasible, an approximate qualitative scale) rather than a raw ADU number alone.</li>
+                <li>Add it as a row/section in the appropriate info surface (the info panel, and/or the Stars tab from M9).</li>
+                <li>Handle missing data and add a preview.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M11</span>Session metric-trend charts (dedicated window)</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Plot per-file metrics already computed &mdash; SNR, star count, FWHM/HFR &mdash; against acquisition order or DATE-OBS using Swift Charts, to spot focus/seeing drift and passing clouds across a session. Lives in a dedicated window.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Aggregate metrics across all open files from <code>WindowModel</code> (each <code>OpenFile</code>'s <code>starField</code>/<code>signalToNoise</code>/metrics), ordered by acquisition order or <code>DATE-OBS</code>.</li>
+                <li>Add Swift Charts to the project (first use) and build a trends view: SNR, star count, and FWHM/HFR series with a toggle/selector.</li>
+                <li>Add a dedicated window (following the Info/Levels/Curves window pattern in <code>FITScopeApp.swift</code>) and a command/menu entry to open it.</li>
+                <li>Update live as files finish preparing; handle the single-file / missing-metric cases.</li>
+                <li>Add a preview with representative sample data.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <!-- ============================ PHASE 5 ============================ -->
+        <h3 class="phase">Phase 5 &middot; Overlays &amp; external integration</h3>
+        <p class="phase-sub">Make overlays customizable and connect to external apps.</p>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M12</span>Overlay customization in Preferences</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Add a Preferences tab to customize overlays, letting the user set the colour and opacity of each overlay individually.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Replace the hardcoded appearance: lift per-overlay colour/opacity out of each overlay's <code>private static let</code> and <code>CanvasOverlayStyle</code> into a configurable model.</li>
+                <li>Add persisted settings to <code>Preferences</code> (per-overlay colour + opacity) following the <code>@Published</code> + <code>UserDefaults</code> pattern, with sensible defaults matching today's look.</li>
+                <li>Thread the appearance into each overlay's <code>draw(...)</code> (via parameter/environment) in <code>Views/Overlays/</code> (Reticle, Stars, Objects, ScaleBar, North, EquatorialGrid; note primary vs. secondary alpha).</li>
+                <li>Add a new <code>PreferencesTab</code> case and an <code>OverlayAppearancePreferencesView</code> with colour pickers + opacity sliders and a per-overlay reset; register it in <code>PreferencesView</code>.</li>
+                <li>Add a preview; verify overlays repaint live when preferences change.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M13</span>&ldquo;Open With&rdquo; menu (original &amp; processed)</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">Add an &ldquo;Open With&rdquo; menu to open the image in an external application &mdash; for both the original FITS file and the processed/rendered image.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Original: open <code>OpenFile.url</code> directly; enumerate candidate apps via <code>NSWorkspace.urlsForApplications(toOpen:)</code> plus an &ldquo;Open With Other&hellip;&rdquo; entry.</li>
+                <li>Processed: write <code>renderer.result.image</code> to a temporary lossless TIFF via the existing <code>ImageExporter</code>, then open it with the chosen app (clean up temp files appropriately).</li>
+                <li>Add the menu(s) in <code>Application/Commands/</code> (File and/or Image commands) using the <code>@FocusedObject</code> pattern; disable when no file/processed image is available.</li>
+                <li>Register in <code>FITScopeApp.swift</code>; verify both submenus populate and launch correctly.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <!-- ============================ PHASE 6 ============================ -->
+        <h3 class="phase">Phase 6 &middot; Investigation</h3>
+        <p class="phase-sub">Decide, don't build (yet).</p>
+
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4><span class="milestone-id">M14</span>Window toolbar &mdash; investigation</h4>
+                <span class="pill todo">Not started</span>
+            </div>
+            <p class="goal">A time-boxed spike to decide whether a proper window toolbar is worth adding, given the existing floating canvas toolbar and minimal window toolbar. Output is a recommendation, not committed UI.</p>
+
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Inventory today's controls: the floating <code>ImageToolbarView</code> (recenter, zoom, fit, actual size, plate solve, overlay toggles) and the window toolbar (inspector toggle, share).</li>
+                <li>Identify which controls, if any, benefit from a persistent window toolbar vs. staying in the floating bar; note redundancy and discoverability trade-offs.</li>
+                <li>Sketch a proposed toolbar layout (mockup/notes) and list the concrete follow-up work if pursued.</li>
+                <li>Record the recommendation (do it / drop it / partial) in this milestone's notes for a go/no-go decision.</li>
+            </ul>
+
+            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="field-label">Implementation notes</div>
+            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="field-label">Review comments</div>
+            <div class="placeholder">Review feedback for this milestone.</div>
+        </div>
+
+        <!-- ============================ APPENDIX ============================ -->
+        <h2 class="section">Appendix &middot; Subsystem reference</h2>
+        <div class="ref-wrap">
+        <table class="ref">
+            <thead>
+                <tr><th>Area</th><th>Key files &amp; types</th><th>Milestones</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Rendering &amp; concurrency</td>
+                    <td><code>Model/RenderThrottle.swift</code>, <code>Model/OpenFile.swift</code>, <code>Model/WindowModel.swift</code>, <code>Model/FITS/FITSImageRenderer.swift</code></td>
+                    <td>M1, M5</td>
+                </tr>
+                <tr>
+                    <td>Adjustments &amp; pipeline</td>
+                    <td><code>Model/ImageAdjustments.swift</code>, <code>Image/ImageProcessor.swift</code>, <code>Views/Inspector/InspectorView.swift</code>, <code>Views/ImageControls/*</code></td>
+                    <td>M2, M3, M4</td>
+                </tr>
+                <tr>
+                    <td>SwiftPixel (nested submodule)</td>
+                    <td><code>Submodules/SwiftAstro/Submodules/SwiftPixel/SwiftPixel/Processors/*</code> (add <code>Hue</code>, <code>ColorBalance</code>)</td>
+                    <td>M3, M4</td>
+                </tr>
+                <tr>
+                    <td>SwiftAstro (submodule)</td>
+                    <td><code>Submodules/SwiftAstro/SwiftAstro/*</code> (StarDetection, SignalToNoise, + new ephemeris/twilight)</td>
+                    <td>M6, M7, M8</td>
+                </tr>
+                <tr>
+                    <td>Info panel &amp; astronomy UI</td>
+                    <td><code>Views/Sidebar/ImageInfoTabView.swift</code>, <code>Model/ImageInformation.swift</code>, <code>Model/FITS/FITSMetadata.swift</code>, <code>Model/MoonPhase.swift</code></td>
+                    <td>M7, M8, M9, M10</td>
+                </tr>
+                <tr>
+                    <td>Metrics</td>
+                    <td><code>Model/FITS/FITSImage.swift</code> (<code>starField</code>, <code>signalToNoise</code>), <code>Model/ImageWeighting.swift</code>, <code>FITSImageRenderer.HistogramStatistics</code></td>
+                    <td>M9, M10, M11</td>
+                </tr>
+                <tr>
+                    <td>Overlays</td>
+                    <td><code>Views/Overlays/CanvasOverlay*.swift</code>, per-overlay files, <code>CanvasOverlayStyle.swift</code></td>
+                    <td>M12</td>
+                </tr>
+                <tr>
+                    <td>Preferences</td>
+                    <td><code>Model/Preferences/Preferences.swift</code>, <code>Views/Preferences/PreferencesTab.swift</code>, <code>PreferencesView.swift</code></td>
+                    <td>M12</td>
+                </tr>
+                <tr>
+                    <td>Commands / export / windows</td>
+                    <td><code>Application/Commands/*</code>, <code>Application/AppModel.swift</code> (<code>saveCopy</code>, <code>exportImage</code>), <code>Application/FITScopeApp.swift</code></td>
+                    <td>M11, M13</td>
+                </tr>
+                <tr>
+                    <td>Canvas / toolbars</td>
+                    <td><code>Views/Canvas/ImageCanvasView.swift</code>, <code>ZoomableImageView.swift</code>, <code>ImageToolbarView.swift</code>, <code>ImageCanvasController.swift</code></td>
+                    <td>M5, M14</td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+
+        <footer class="doc">
+            FITScope &mdash; FITS Image Viewer for macOS. &nbsp;&middot;&nbsp; Living plan: update each milestone's Status, Completed, Implementation notes, and Review comments as work proceeds.
+        </footer>
+    </div>
+</body>
+</html>
