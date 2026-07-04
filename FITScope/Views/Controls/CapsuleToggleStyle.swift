@@ -58,6 +58,10 @@ private struct CapsuleToggle: View
     /// Whether the toggle is enabled, so it can dim when not.
     @Environment( \.isEnabled ) private var isEnabled
 
+    /// The active appearance, so the fill and knob can be white on the dark track
+    /// but a dark gray on the light one, where white would wash out.
+    @Environment( \.colorScheme ) private var colorScheme
+
     /// The track width — a switch's proportions at the slider's height.
     private let width: CGFloat = 42
 
@@ -91,17 +95,17 @@ private struct CapsuleToggle: View
         let knobSize  = self.height
         let offset    = self.configuration.isOn ? self.width - knobSize : 0
         let fillWidth = offset + knobSize
-        let fillColor = self.isEnabled ? Color.white : Color.gray.opacity( 0.3 )
-        let knobColor = self.isEnabled ? Color.white : Color.gray.opacity( 0.6 )
+        let fillColor = self.isEnabled ? CustomControlChrome.fill( for: self.colorScheme ) : Color.gray.opacity( 0.3 )
+        let knobColor = self.isEnabled ? CustomControlChrome.knob : Color.gray.opacity( 0.6 )
 
         return ZStack( alignment: .leading )
         {
             Capsule()
-                .fill( .quinary )
+                .fill( CustomControlChrome.trackFill )
                 .clipShape( RoundedRectangle( cornerRadius: 10 ) )
                 .overlay(
                     Capsule()
-                        .stroke( .quaternary, lineWidth: 0.5 )
+                        .strokeBorder( CustomControlChrome.border, lineWidth: CustomControlChrome.borderWidth )
                 )
 
             Capsule()

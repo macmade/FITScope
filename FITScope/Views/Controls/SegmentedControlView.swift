@@ -87,7 +87,7 @@ public struct SegmentedControlView< Value: Hashable >: View
             }
         }
         .padding( 2 )
-        .segmentedControlChrome()
+        .customControlChrome()
     }
 
     /// One segment.

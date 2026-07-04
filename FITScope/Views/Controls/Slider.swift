@@ -60,6 +60,10 @@ public struct Slider: View
     /// styling.
     @State private var isDragging = false
 
+    /// The active appearance, so the fill and knob can be white on the dark track
+    /// but a dark gray on the light one, where white would wash out.
+    @Environment( \.colorScheme ) private var colorScheme
+
     /// Creates a slider.
     ///
     /// - Parameters:
@@ -115,8 +119,8 @@ public struct Slider: View
             let normalized   = Self.normalizedPosition( value: self.value, minimumValue: self.minimumValue, maximumValue: self.maximumValue )
             let offset       = normalized * ( totalWidth - knobSize )
             let fillWidth    = offset + knobSize
-            let fillColor    = self.disabled ? Color.gray.opacity( 0.3 ) : Color.white
-            let knobColor    = self.disabled ? Color.gray.opacity( 0.6 ) : Color.white
+            let fillColor    = self.disabled ? Color.gray.opacity( 0.3 ) : CustomControlChrome.fill( for: self.colorScheme )
+            let knobColor    = self.disabled ? Color.gray.opacity( 0.6 ) : CustomControlChrome.knob
             let imageColor   = self.disabled ? Color.gray                : Color.black
 
             ZStack( alignment: .leading )
@@ -140,11 +144,11 @@ public struct Slider: View
                 }
 
                 Capsule()
-                    .fill( .quinary )
+                    .fill( CustomControlChrome.trackFill )
                     .clipShape( RoundedRectangle( cornerRadius: 10 ) )
                     .overlay(
                         Capsule()
-                            .stroke( .quaternary, lineWidth: 0.5 )
+                            .strokeBorder( CustomControlChrome.border, lineWidth: CustomControlChrome.borderWidth )
                     )
 
                 Capsule()

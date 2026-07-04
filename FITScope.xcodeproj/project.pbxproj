@@ -236,7 +236,7 @@
 		B87104EF36B81847AA3B3D87 /* ZoomableImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBBCB4D2D5516802BA905E2D /* ZoomableImageView.swift */; };
 		BB151EF31682CFC60AB2CB64 /* OpenFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9696A9D7B24CC9A58998C7AC /* OpenFile.swift */; };
 		C0FFEE000000000000000012 /* ImageComparisonLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE000000000000000011 /* ImageComparisonLayer.swift */; };
-		C0FFEE000000000000000022 /* SegmentedControlChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE000000000000000021 /* SegmentedControlChrome.swift */; };
+		C0FFEE000000000000000022 /* CustomControlChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE000000000000000021 /* CustomControlChrome.swift */; };
 		C13E4F74949472B2970E39C7 /* CursorReadout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6A0CA25BD529178F2F9432 /* CursorReadout.swift */; };
 		C4DC1E9B6D524F050839E00D /* PlateSolveHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA145A75999011CAF0371633 /* PlateSolveHeaderView.swift */; };
 		C7C9D58AF79A7584E987A03B /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8993FF77DBD5F754CAB41153 /* InspectorView.swift */; };
@@ -612,7 +612,7 @@
 		BFA256D7D36DCB17FA81958C /* FilesSidebarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilesSidebarView.swift; sourceTree = "<group>"; };
 		C07659F02B1A39E7821ED5BE /* ImageInformationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInformationTests.swift; sourceTree = "<group>"; };
 		C0FFEE000000000000000011 /* ImageComparisonLayer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageComparisonLayer.swift; sourceTree = "<group>"; };
-		C0FFEE000000000000000021 /* SegmentedControlChrome.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SegmentedControlChrome.swift; sourceTree = "<group>"; };
+		C0FFEE000000000000000021 /* CustomControlChrome.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CustomControlChrome.swift; sourceTree = "<group>"; };
 		C3E9C27093943525176C6843 /* MoonPhaseDisc.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseDisc.swift; sourceTree = "<group>"; };
 		C5E207072CA3D851218A4EB9 /* SkyConditionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SkyConditionTests.swift; sourceTree = "<group>"; };
 		C7D3D9131B43725B5D03FCFA /* CanvasGeometry.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasGeometry.swift; sourceTree = "<group>"; };
@@ -1476,7 +1476,7 @@
 				05FB0B01000000000000FB01 /* BannerView.swift */,
 				05C4BD712DF2C9A000326B69 /* SearchField.swift */,
 				EB9DD79B3B4350B42B48B2B2 /* SegmentedControlView.swift */,
-				C0FFEE000000000000000021 /* SegmentedControlChrome.swift */,
+				C0FFEE000000000000000021 /* CustomControlChrome.swift */,
 				053C2E742DF6EE3200DA637A /* Slider.swift */,
 				5A516E0150000000000000D2 /* Pill.swift */,
 				05986B472DF892D300A55E77 /* SliderGridRowView.swift */,
@@ -1893,7 +1893,7 @@
 				11439DEF8CB5862DC678A28E /* InspectorColumnView.swift in Sources */,
 				B4A60AECE9E9B801F5300A69 /* InspectorPlaceholderView.swift in Sources */,
 				4C985DDD7F75E32CBF327D35 /* SegmentedControlView.swift in Sources */,
-				C0FFEE000000000000000022 /* SegmentedControlChrome.swift in Sources */,
+				C0FFEE000000000000000022 /* CustomControlChrome.swift in Sources */,
 				14B77DB0AE541FDDF44D92ED /* Array.swift in Sources */,
 				D770733A040513E32E810C9D /* FITSPropertySnapshot.swift in Sources */,
 				1E9E33C8743D787B7D1F00C8 /* KeychainStoring.swift in Sources */,

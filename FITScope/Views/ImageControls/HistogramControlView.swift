@@ -155,7 +155,7 @@ public struct HistogramControlView: View
                 .frame( width: 30 )
                 .frame( maxHeight: .infinity )
                 .contentShape( Rectangle() )
-                .segmentedControlChrome()
+                .customControlChrome()
         }
         .menuStyle( .button )
         .buttonStyle( .plain )
