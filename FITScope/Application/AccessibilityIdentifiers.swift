@@ -123,9 +123,6 @@ public enum AccessibilityIdentifier
             /// The stretch section.
             public static let stretch = "InspectorView.Section.stretch"
 
-            /// The gamma section.
-            public static let gamma = "InspectorView.Section.gamma"
-
             /// The white-balance section.
             public static let whiteBalance = "InspectorView.Section.whiteBalance"
 
@@ -353,14 +350,6 @@ public enum AccessibilityIdentifier
     {
         /// The invert (photographic-negative) toggle.
         public static let invertToggle = "ColorControlView.invertToggle"
-    }
-
-    /// Identifiers applied by ``FITScope/GammaCorrectionControlView``.
-    public enum GammaCorrectionControlView
-    {
-        /// The gamma-exponent slider. Always shown — a gamma of `1` is the neutral
-        /// identity, so the control has no on/off toggle.
-        public static let slider = "GammaCorrectionControlView.slider"
     }
 
     /// Identifiers applied by ``FITScope/ImageInfoPanelView``.

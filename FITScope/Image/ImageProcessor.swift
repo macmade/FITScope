@@ -51,8 +51,8 @@ public enum ImageProcessor
     /// The user-tunable pipeline parameters, as a `Sendable` snapshot.
     ///
     /// The defaults render the file as captured: a linear min/max normalization
-    /// so the data is visible, with no stretch, gamma or white balance. Only
-    /// debayering (when the file is a colour-filter array) is applied.
+    /// so the data is visible, with no stretch or white balance. Only debayering
+    /// (when the file is a colour-filter array) is applied.
     public struct Settings: Sendable, Equatable
     {
         /// How to normalize pixel values, or `nil` to skip normalization.
@@ -60,10 +60,6 @@ public enum ImageProcessor
 
         /// The non-linear stretch, or `nil` for a linear image.
         public var stretch: Processors.Stretch.Algorithm?
-
-        /// The gamma-correction exponent. A value of `1` is the identity and is
-        /// omitted from the pipeline configuration, leaving gamma uncorrected.
-        public var gamma: Double
 
         /// How to white-balance the channels, or `nil` to leave them untouched.
         public var whiteBalance: Processors.WhiteBalance.Mode?
@@ -100,13 +96,11 @@ public enum ImageProcessor
         public var orientation: Processors.Orient.Orientation
 
         /// Creates a settings snapshot. The defaults render the file as
-        /// captured: linear normalization only, with no stretch, gamma or white
-        /// balance.
+        /// captured: linear normalization only, with no stretch or white balance.
         ///
         /// - Parameters:
         ///   - normalize:    How to normalize pixel values.
         ///   - stretch:      The non-linear stretch.
-        ///   - gamma:        The gamma-correction exponent (`1` is the neutral identity).
         ///   - whiteBalance: How to white-balance the channels.
         ///   - invert:       Whether to invert the image.
         ///   - brightness:   The additive brightness offset (`0` is neutral).
@@ -117,11 +111,10 @@ public enum ImageProcessor
         ///   - debayer:      How to debayer the image.
         ///   - debayerMode:  The demosaic algorithm used when debayering.
         ///   - orientation:  The net orientation applied to the rendered image.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, gamma: Double = 1, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
         {
             self.normalize    = normalize
             self.stretch      = stretch
-            self.gamma        = gamma
             self.whiteBalance = whiteBalance
             self.invert       = invert
             self.brightness   = brightness
@@ -153,11 +146,11 @@ public enum ImageProcessor
             }
 
             return PixelPipeline.Config(
-                scale:        ( scale, offset ),
-                debayer:      pattern.map { ( pattern: $0, mode: self.debayerMode ) },
-                normalize:    self.normalize,
-                stretch:      self.stretch,
-                correctGamma: self.gamma.isApproximatelyEqual( to: 1 ) ? nil : self.gamma,
+                scale:              ( scale, offset ),
+                debayer:            pattern.map { ( pattern: $0, mode: self.debayerMode ) },
+                normalize:          self.normalize,
+                stretch:            self.stretch,
+                correctGamma:       nil,
                 whiteBalance:       self.whiteBalance,
                 invert:             self.invert,
                 brightnessContrast: ( self.brightness.isApproximatelyEqual( to: 0 ) && self.contrast.isApproximatelyEqual( to: 1 ) ) ? nil : ( brightness: self.brightness, contrast: self.contrast ),

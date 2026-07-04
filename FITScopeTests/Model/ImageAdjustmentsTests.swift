@@ -48,7 +48,7 @@ struct ImageAdjustmentsTests
         #expect( config.scale?.offset == 3 )
 
         // The defaults render the file as captured: linear normalization only,
-        // with no stretch, gamma, white balance or inversion.
+        // with no stretch, white balance or inversion.
         #expect( config.stretch      == nil )
         #expect( config.correctGamma == nil )
         #expect( config.whiteBalance == nil )
@@ -93,21 +93,6 @@ struct ImageAdjustmentsTests
         adjustments.saturation = 1.4
 
         #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).saturation == 1.4 )
-
-        // Gamma defaults to neutral (1) and, like the other neutral-valued stages,
-        // is omitted from the config — a gamma of 1 is the identity.
-        #expect( adjustments.gamma == 1 )
-        #expect( config.correctGamma == nil )
-
-        // A non-neutral gamma flows into a freshly built config.
-        adjustments.gamma = 2.2
-
-        #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).correctGamma == 2.2 )
-
-        // Setting gamma back to the neutral 1 omits it from the config again.
-        adjustments.gamma = 1
-
-        #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).correctGamma == nil )
 
         // Levels default to an identity uniform mapping and are omitted from the
         // config (the image renders unadjusted).
@@ -160,7 +145,6 @@ struct ImageAdjustmentsTests
         // Move a spread of fields — simple values, the mode/enum pipeline stages,
         // and orientation — away from their defaults.
         adjustments.invert      = true
-        adjustments.gamma       = 2.0
         adjustments.brightness  = 0.5
         adjustments.contrast    = 2.0
         adjustments.saturation  = 0.5
@@ -180,34 +164,29 @@ struct ImageAdjustmentsTests
 
     /// Values imperceptibly close to their neutral point — e.g. floating-point
     /// drift from a slider dragged back toward neutral — are treated as neutral
-    /// and omitted from the config, so their pipeline stage (a per-pixel `pow`
-    /// for gamma) is not run needlessly. A genuine, perceptible deviation is
-    /// still applied.
+    /// and omitted from the config, so their pipeline stage is not run
+    /// needlessly. A genuine, perceptible deviation is still applied.
     @Test
     @MainActor
     func neutralValuesAreOmittedWithinTolerance()
     {
         let adjustments = ImageAdjustments()
 
-        adjustments.gamma      = 1 + 1e-9
         adjustments.saturation = 1 - 1e-9
         adjustments.brightness = 1e-9
         adjustments.contrast   = 1 + 1e-9
 
         let neutral = adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil )
 
-        #expect( neutral.correctGamma       == nil )
         #expect( neutral.saturation         == nil )
         #expect( neutral.brightnessContrast == nil )
 
-        adjustments.gamma      = 1.5
         adjustments.saturation = 1.5
         adjustments.brightness = 0.5
         adjustments.contrast   = 1.5
 
         let applied = adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil )
 
-        #expect( applied.correctGamma == 1.5 )
         #expect( applied.saturation   == 1.5 )
         #expect( applied.brightnessContrast?.brightness == 0.5 )
         #expect( applied.brightnessContrast?.contrast   == 1.5 )

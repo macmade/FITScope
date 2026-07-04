@@ -122,13 +122,6 @@ public struct InspectorView: View
 
                     Divider()
 
-                    InspectorSectionView( "Gamma", identifier: AccessibilityIdentifier.InspectorView.Section.gamma )
-                    {
-                        GammaCorrectionControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
-                    }
-
-                    Divider()
-
                     InspectorSectionView( "Levels & Curves", identifier: AccessibilityIdentifier.InspectorView.Section.levelsCurves )
                     {
                         HStack

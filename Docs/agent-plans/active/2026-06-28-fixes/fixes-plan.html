@@ -1035,17 +1035,31 @@
       <ol class="milestones" start="25">
 
         <li class="milestone">
-          <div class="m-head"><h4>Gamma vs. levels gamma — do we need both?<span class="open-tag">Decision</span></h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Gamma vs. levels gamma — do we need both?<span class="open-tag">Decision</span></h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Evaluate whether the standalone gamma correction and the gamma (midtone) adjustment inside levels are redundant, and decide whether to keep both — then act on the decision.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Compare what standalone gamma and levels-gamma each do in the pipeline (overlap, ordering, user-facing difference).</li>
-            <li>Lay out the trade-offs; propose keep-both / merge / remove-one with rationale.</li>
-            <li>Pause for the maintainer's decision; record it in Implementation notes.</li>
-            <li>Implement the agreed outcome (coordinate with M14 gamma-switch removal and M18 processor order).</li>
+            <li class="done">Compare what standalone gamma and levels-gamma each do in the pipeline (overlap, ordering, user-facing difference).</li>
+            <li class="done">Lay out the trade-offs; propose keep-both / merge / remove-one with rationale.</li>
+            <li class="done">Pause for the maintainer's decision; record it in Implementation notes.</li>
+            <li class="done">Implement the agreed outcome (coordinate with M14 gamma-switch removal and M18 processor order).</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-04</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Analysis.</strong> Both live in the <code>SwiftPixel</code> submodule: standalone gamma (<code>Processors.CorrectGamma</code>) is <code>pow(v, 1 / gamma)</code> over the whole [0,1] range, at the <em>Gamma</em> pipeline stage (right after the stretch); the levels midtone (<code>Processors.Levels.Parameters.gamma</code>) is the same <code>pow</code> inside the full remap <code>out = outputBlack + clip((v − inputBlack)/(inputWhite − inputBlack))^(1/gamma) · (outputWhite − outputBlack)</code>, at the adjacent <em>Levels</em> stage. With levels at default input/output ranges the levels formula collapses to <code>pow(clip(v), 1/gamma)</code> — <strong>identical</strong> to standalone gamma — so levels-gamma is a strict superset (it can also clip black/white, remap output and work per-channel). Capability-wise the standalone gamma is redundant; its only unique value is UX (a quick always-visible inspector slider vs. opening the Levels editor).</p>
+            <p><strong>Two layers (maintainer's clarification — see Review comments).</strong> The redundancy is a <em>FITScope</em> question, not a SwiftPixel one: <code>CorrectGamma</code> is a legitimate standalone library primitive and SwiftPixel is reusable, so it stays untouched. The only lever is what FITScope <em>wires</em> — and <code>PixelPipeline.Config.correctGamma</code> is already optional, so skipping it needs no library change.</p>
+            <p><strong>Decision (maintainer, in two rounds — see Review comments).</strong> First: keep the inspector gamma slider and map it into the Levels midtone (an interim config-time fold that multiplied the gammas). On testing, that left the gamma slider and the Levels editor as two values combined only at render — they didn't reflect each other ("they don't update"), and that display-sync would <em>not</em> be fixed by M27 (which syncs each control to its own field, not two fields into one). The maintainer then <strong>changed the decision to remove the standalone gamma control entirely</strong>: gamma is now adjusted solely through the Levels editor's midtone, eliminating the two-control redundancy and confusion. SwiftPixel is untouched throughout.</p>
+            <p><strong>Implementation (removal).</strong> Deleted the inspector's <em>Gamma</em> section and <code>GammaCorrectionControlView</code> (the view file, its <code>GammaCorrectionControlViewTests</code>, and both Xcode project references), removed <code>ImageAdjustments.gamma</code> and <code>ImageProcessor.Settings.gamma</code>, and reverted the interim fold — <code>config()</code> now passes <code>correctGamma: nil</code> and maps <code>levels</code> directly (the <code>foldingGamma</code> helper is gone). Removed the gamma accessibility identifiers (<code>InspectorView.Section.gamma</code>, <code>GammaCorrectionControlView.slider</code>). This <strong>supersedes M14</strong>'s standalone gamma slider; gamma now lives only in the Levels editor's midtone, applied by SwiftPixel's unchanged <code>Levels</code> stage (its <code>CorrectGamma</code> primitive stays, just unused by FITScope). Also aligned all of <code>config()</code>'s arguments to a single column (per the alignment review note).</p>
+            <p><strong>Tests.</strong> Removed the gamma-specific assertions from <code>adjustmentsBuildPipelineConfig</code> and <code>neutralValuesAreOmittedWithinTolerance</code>, deleted the interim fold test and the <code>GammaCorrectionControlViewTests</code> suite, and dropped the gamma references from the UI tests (the always-present-slider test and the section/slider identifier checks — the failed-render probe now uses the Stretch section). <strong>408 unit tests in 57 suites pass</strong> (was 410/58 with the interim fold); <code>xcodebuild build-for-testing</code> compiles the app and the unit + UI test targets clean. <strong>Interactive check</strong>: confirm the inspector no longer shows a Gamma section and that midtone/gamma is still adjustable via the Levels editor.</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>What about SwiftPixel? — the redundancy is FITScope's, not the library's; keep SwiftPixel's <code>CorrectGamma</code> intact as a reusable primitive and treat this purely as a FITScope wiring/UX decision.</li>
+              <li>Keep the inspector as is, don't touch SwiftPixel, map the top-level gamma to the levels value. <em>(Initial direction — implemented as a config-time fold.)</em></li>
+              <li>The gamma slider and the Levels editor don't reflect each other ("they don't update" / "it doesn't work at all") — the fold left them as two independent values. Confirmed this would not be covered by M27 (which syncs a control to its own field, not two fields into one).</li>
+              <li>I changed my mind — drop the gamma from the inspector. <em>(Final decision: remove the standalone control; gamma lives solely in the Levels midtone.)</em></li>
+              <li>Pay attention to alignment in source code — specifically the <code>correctGamma: nil</code> value; aligned all of <code>config()</code>'s arguments to one column.</li>
+            </ul>
+          </div>
         </li>
 
         <li class="milestone">

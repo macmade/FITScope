@@ -156,8 +156,6 @@ final class FITScopeUITests: XCTestCase
                 ( "file row",         AccessibilityIdentifier.OpenFileRowView.row ),
                 ( "inspector",        AccessibilityIdentifier.InspectorView.container ),
                 ( "inspector toggle", AccessibilityIdentifier.MainWindowView.inspectorToggle ),
-                ( "gamma section",    AccessibilityIdentifier.InspectorView.Section.gamma ),
-                ( "gamma slider",     AccessibilityIdentifier.GammaCorrectionControlView.slider ),
             ]
 
         for entry in identifiers
@@ -226,31 +224,6 @@ final class FITScopeUITests: XCTestCase
         canvas.hover()
 
         XCTAssertTrue( fit.waitForNonExistence( timeout: 5 ), "The floating toolbar did not auto-hide." )
-    }
-
-    /// The gamma control's exponent slider is always present — a gamma of `1` is
-    /// the neutral identity, so the control no longer has an on/off toggle — and
-    /// it coexists with the rendered canvas.
-    ///
-    /// The custom slider is not reliably drivable from a UI test, so this asserts
-    /// the control's presence rather than dragging it; the "gamma of `1` is the
-    /// identity" pipeline behaviour is covered by the unit tests
-    /// (`ImageAdjustmentsTests`).
-    @MainActor
-    func testGammaSliderIsAlwaysPresentAndKeepsRendering() throws
-    {
-        let app = UITestSupport.launchApp()
-
-        try UITestSupport.openFixture( "MonoImage.fits", in: app )
-
-        let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
-        let slider = UITestSupport.element( app, AccessibilityIdentifier.GammaCorrectionControlView.slider )
-
-        XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The image canvas did not appear after opening a fixture." )
-
-        // The gamma slider is shown unconditionally, with no toggle to reveal it.
-        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "The gamma slider did not appear in the inspector." )
-        XCTAssertTrue( canvas.exists, "The canvas disappeared while the gamma control was shown." )
     }
 
     /// The inspector's orientation section exposes its four reorient buttons, and
@@ -948,7 +921,6 @@ final class FITScopeUITests: XCTestCase
                 ( "inspector container", AccessibilityIdentifier.InspectorView.container ),
                 ( "histogram section",   AccessibilityIdentifier.InspectorView.Section.histogram ),
                 ( "stretch section",     AccessibilityIdentifier.InspectorView.Section.stretch ),
-                ( "gamma section",       AccessibilityIdentifier.InspectorView.Section.gamma ),
                 ( "white-balance section", AccessibilityIdentifier.InspectorView.Section.whiteBalance ),
                 ( "brightness & contrast section", AccessibilityIdentifier.InspectorView.Section.brightnessContrast ),
                 ( "levels & curves section", AccessibilityIdentifier.InspectorView.Section.levelsCurves ),
@@ -1026,7 +998,7 @@ final class FITScopeUITests: XCTestCase
         )
 
         XCTAssertFalse(
-            UITestSupport.element( app, AccessibilityIdentifier.InspectorView.Section.gamma ).exists,
+            UITestSupport.element( app, AccessibilityIdentifier.InspectorView.Section.stretch ).exists,
             "Adjustment sections appeared for a file that failed to render."
         )
     }
