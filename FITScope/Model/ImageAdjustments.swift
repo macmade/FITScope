@@ -69,6 +69,9 @@ public final class ImageAdjustments: ObservableObject
     /// image opens with no curve adjustment.
     @Published public var curves: Processors.Curves.Channels = .uniform( .identity )
 
+    /// The hue-rotation angle in degrees. Neutral (`0`) by default.
+    @Published public var hue: Double = 0
+
     /// The colour-saturation factor. Neutral (`1`) by default.
     @Published public var saturation: Double = 1
 
@@ -105,6 +108,7 @@ public final class ImageAdjustments: ObservableObject
         self.contrast         = defaults.contrast
         self.levels           = defaults.levels
         self.curves           = defaults.curves
+        self.hue              = defaults.hue
         self.saturation       = defaults.saturation
         self.debayer          = defaults.debayer
         self.debayerAlgorithm = defaults.debayerAlgorithm
@@ -159,6 +163,7 @@ public final class ImageAdjustments: ObservableObject
             contrast:     self.contrast,
             levels:       self.levels,
             curves:       self.curves,
+            hue:          self.hue,
             saturation:   self.saturation,
             debayer:      self.debayer,
             debayerMode:  self.debayerAlgorithm,

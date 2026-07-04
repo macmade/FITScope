@@ -311,6 +311,12 @@ public enum AccessibilityIdentifier
 
         /// The reset button for the saturation slider.
         public static let reset = "SaturationControlView.reset"
+
+        /// The hue slider.
+        public static let hueSlider = "SaturationControlView.hueSlider"
+
+        /// The reset button for the hue slider.
+        public static let hueReset = "SaturationControlView.hueReset"
     }
 
     /// Identifiers applied by ``FITScope/OrientationControlView``.

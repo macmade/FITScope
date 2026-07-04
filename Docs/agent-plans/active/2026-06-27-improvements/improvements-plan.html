@@ -455,7 +455,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4><span class="milestone-id">M3</span>Hue adjustment</h4>
-                <span class="pill todo">Not started</span>
+                <span class="pill done">Completed</span>
             </div>
             <p class="goal">Add a hue-shift adjustment presented alongside saturation. Requires a new SwiftPixel processor plus app wiring.</p>
 
@@ -469,11 +469,29 @@
                 <li>Verify the shift is correct and stable at neutral; add a preview.</li>
             </ul>
 
-            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="meta-row"><span><span class="k">Status:</span> Completed</span><span><span class="k">Completed:</span> 2026-07-04</span></div>
             <div class="field-label">Implementation notes</div>
-            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Design decisions (confirmed):</strong> an <em>HSV round-trip</em> hue rotation (chosen over a luminance-axis rotation matrix) for a true, perceptually-predictable shift; the inspector section is retitled <strong>&ldquo;Saturation &amp; Hue&rdquo;</strong> now that it hosts both sliders (&ldquo;Color&rdquo; was already taken by the invert section).</li>
+                    <li><strong>SwiftPixel &mdash; <code>Processors.Hue</code>:</strong> a new processor mirroring <code>Saturation</code>&rsquo;s structure and validation (normalized, 3-channel, else <code>RuntimeError</code>). Each pixel is converted RGB&rarr;HSV, its hue advanced by <code>angle</code> degrees (wrapping), and converted back; value and saturation are preserved, a gray pixel is untouched, <code>0&deg;</code> is an identity, and outputs are clipped to <code>[0, 1]</code>. Twelve processor tests (identity, full-turn, &plusmn;120&deg; primaries, negative wrap, gray, per-pixel, normalized, both throws, name).</li>
+                    <li><strong>SwiftPixel &mdash; pipeline:</strong> threaded <code>hue: Double?</code> through <code>PixelPipeline.Config</code> (field, init, docs) and appended <code>Processors.Hue</code> in <code>processors()</code> <em>just before</em> <code>Saturation</code>, grouping the display-referred colour stages; added to <code>requiresNormalization</code> and dropped when neutral (<code>0&deg;</code>). Pipeline tests: <code>hueAppliedAfterCurvesBeforeSaturation</code>, <code>neutralHueNotAppended</code>, <code>autoInsertsNormalizeForHue</code>; the canonical <code>stageOrder</code> test was extended to 13 stages (Hue at index&nbsp;9).</li>
+                    <li><strong>Xcode/package sync:</strong> <code>Hue.swift</code> and <code>Processors-Hue.swift</code> were added to <code>SwiftPixel.xcodeproj</code> (it uses explicit file references, not synchronized groups); its <code>Package.swift</code> is folder-based so needed no change. FITScope builds <code>SwiftPixel.framework</code> from the sub-project source, so the app picks up the new processor without a submodule pointer bump.</li>
+                    <li><strong>App wiring:</strong> <code>ImageAdjustments.hue</code> (<code>@Published</code>, neutral <code>0</code>) is included in <code>reset()</code> and the <code>settings</code> snapshot; <code>ImageProcessor.Settings.hue</code> is mirrored and passed through <code>config()</code>, dropped within tolerance of <code>0</code> via <code>isApproximatelyEqual</code>, exactly as saturation is. The <code>hue</code> assertions were folded into the existing <code>ImageAdjustmentsTests</code> (config mapping, neutral-omission tolerance, and full reset).</li>
+                    <li><strong>UI:</strong> <code>SaturationControlView</code> gained a <strong>Hue</strong> slider (&minus;180&hellip;180&deg;, default <code>0</code>, knob icon <code>camera.filters</code>), with a per-control reset via <code>SliderGridRowView</code> (the M2 affordance) and its own <code>onChange&nbsp;&rarr;&nbsp;reRender</code>. New accessibility identifiers <code>hueSlider</code>/<code>hueReset</code>; a second &ldquo;Modified&rdquo; preview was added alongside the default one. The Hue slider sits <em>above</em> Saturation, matching the pipeline order (see the post-review change below), and <code>InspectorView</code>&rsquo;s section title is &ldquo;Hue &amp; Saturation&rdquo; (the section&rsquo;s accessibility identifier is unchanged, so the existing UI test still matches).</li>
+                    <li><strong>TDD:</strong> the processor and pipeline tests were written first and watched fail &mdash; the processor against a no-op/empty-name stub, the pipeline against the missing stage &mdash; before implementing. The app-side fields were introduced test-first (the red was the compile failure for the missing <code>hue</code> members).</li>
+                    <li><strong>Verification:</strong> the full SwiftPixel test suite passes; <code>FITScopeTests</code> is green at <strong>419 tests</strong> (the new hue coverage extends existing tests rather than adding functions); the app builds. The SwiftUI sliders themselves are not unit-testable and are left for your visual review via the previews.</li>
+                    <li><strong>For review:</strong> the hue readout shows two decimals (e.g. <code>45.00</code>) to stay consistent with the other sliders &mdash; it could be integer degrees or carry a <code>&deg;</code> suffix if you prefer.</li>
+                    <li><strong>Post-review change:</strong> per review, the inspector now mirrors the pipeline order &mdash; the Hue slider was moved <em>above</em> Saturation, the section title changed from &ldquo;Saturation &amp; Hue&rdquo; to &ldquo;Hue &amp; Saturation&rdquo;, and the static bounds / <code>onChange</code> handlers were reordered to match. See Review comments.</li>
+                    <li><strong>Upstream/commit (for you):</strong> the SwiftPixel change must be committed in that submodule and its pointer bumped in FITScope. I did not commit anything; local build/test works because the app compiles the submodule from its working-tree source.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <div class="placeholder">Review feedback for this milestone.</div>
+            <div class="notes">
+                <ul>
+                    <li>The processing pipeline applies hue before saturation; the inspector UI should reflect that order &mdash; the Hue slider should sit above the Saturation slider (and the section title should match).</li>
+                </ul>
+            </div>
         </div>
 
         <div class="milestone">

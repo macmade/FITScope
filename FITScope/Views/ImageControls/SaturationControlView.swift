@@ -24,10 +24,16 @@
 
 import SwiftUI
 
-/// The saturation section of the controls panel: a single slider, centred on
-/// its neutral value. Shown only for colour images (see ``InspectorView``).
+/// The colour section of the controls panel: a hue slider and a saturation
+/// slider, each centred on its neutral value. They are ordered top-to-bottom to
+/// match the processing pipeline, which rotates hue before scaling saturation.
+/// Shown only for colour images (see ``InspectorView``).
 public struct SaturationControlView: View
 {
+    /// The hue slider bounds, in degrees (neutral at `0`, a full turn either way).
+    static let minimumHue = -180.0
+    static let maximumHue =  180.0
+
     /// The saturation slider bounds (neutral at `1`, `0` desaturates to gray).
     static let minimumSaturation = 0.0
     static let maximumSaturation = 2.0
@@ -54,12 +60,20 @@ public struct SaturationControlView: View
     {
         Grid( alignment: .leading )
         {
+            SliderGridRowView( value: self.$adjustments.hue, minimumValue: Self.minimumHue, maximumValue: Self.maximumHue, label: "Hue", image: "camera.filters", defaultValue: 0, resetIdentifier: AccessibilityIdentifier.SaturationControlView.hueReset )
+                .accessibilityIdentifier( AccessibilityIdentifier.SaturationControlView.hueSlider )
+                .help( "Hue Rotation" )
+
             SliderGridRowView( value: self.$adjustments.saturation, minimumValue: Self.minimumSaturation, maximumValue: Self.maximumSaturation, label: "Saturation", image: "paintpalette.fill", defaultValue: 1, resetIdentifier: AccessibilityIdentifier.SaturationControlView.reset )
                 .accessibilityIdentifier( AccessibilityIdentifier.SaturationControlView.slider )
                 .help( "Colour Saturation" )
         }
-        // The slider binds straight to the observed adjustments, so re-render on
-        // any change to the value — from this control or from a Reset.
+        // The sliders bind straight to the observed adjustments, so re-render on
+        // any change to either value — from these controls or from a Reset.
+        .onChange( of: self.adjustments.hue )
+        {
+            self.reRender()
+        }
         .onChange( of: self.adjustments.saturation )
         {
             self.reRender()
@@ -67,9 +81,22 @@ public struct SaturationControlView: View
     }
 }
 
-#Preview
+#Preview( "Default" )
 {
     SaturationControlView( adjustments: ImageAdjustments(), reRender: {} )
+        .frame( maxWidth: .infinity, alignment: .leading )
+        .frame( maxHeight: .infinity, alignment: .top )
+        .padding()
+}
+
+#Preview( "Modified" )
+{
+    let adjustments = ImageAdjustments()
+
+    adjustments.saturation = 1.5
+    adjustments.hue        = 45
+
+    return SaturationControlView( adjustments: adjustments, reRender: {} )
         .frame( maxWidth: .infinity, alignment: .leading )
         .frame( maxHeight: .infinity, alignment: .top )
         .padding()

@@ -94,6 +94,15 @@ struct ImageAdjustmentsTests
 
         #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).saturation == 1.4 )
 
+        // Hue defaults to neutral (0°) and is omitted from the config.
+        #expect( adjustments.hue == 0 )
+        #expect( config.hue == nil )
+
+        // A change flows into a freshly built config.
+        adjustments.hue = 30
+
+        #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).hue == 30 )
+
         // Levels default to an identity uniform mapping and are omitted from the
         // config (the image renders unadjusted).
         #expect( adjustments.levels == .uniform( .identity ) )
@@ -148,6 +157,7 @@ struct ImageAdjustmentsTests
         adjustments.brightness  = 0.5
         adjustments.contrast    = 2.0
         adjustments.saturation  = 0.5
+        adjustments.hue         = 45
         adjustments.stretch     = .arcsinh( 12 )
         adjustments.levels      = .uniform( .init( inputBlack: 0.1, inputWhite: 0.9, gamma: 1.5 ) )
         adjustments.curves      = .uniform( .init( points: [ .init( x: 0, y: 0 ), .init( x: 0.5, y: 0.7 ), .init( x: 1, y: 1 ) ] ) )
@@ -175,19 +185,23 @@ struct ImageAdjustmentsTests
         adjustments.saturation = 1 - 1e-9
         adjustments.brightness = 1e-9
         adjustments.contrast   = 1 + 1e-9
+        adjustments.hue        = 1e-9
 
         let neutral = adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil )
 
         #expect( neutral.saturation         == nil )
         #expect( neutral.brightnessContrast == nil )
+        #expect( neutral.hue                == nil )
 
         adjustments.saturation = 1.5
         adjustments.brightness = 0.5
         adjustments.contrast   = 1.5
+        adjustments.hue        = 45
 
         let applied = adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil )
 
         #expect( applied.saturation   == 1.5 )
+        #expect( applied.hue          == 45 )
         #expect( applied.brightnessContrast?.brightness == 0.5 )
         #expect( applied.brightnessContrast?.contrast   == 1.5 )
     }
