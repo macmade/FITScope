@@ -36,29 +36,21 @@ public struct BrightnessContrastControlView: View
     static let minimumContrast = 0.0
     static let maximumContrast = 2.0
 
-    /// The shared adjustment values this control writes to.
-    private let adjustments: ImageAdjustments
+    /// The shared adjustment values this control observes and writes to.
+    @ObservedObject private var adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
     private let reRender: () -> Void
 
-    /// The current brightness offset. Seeded from the image's adjustments.
-    @State private var brightness: Double
-
-    /// The current contrast factor. Seeded from the image's adjustments.
-    @State private var contrast: Double
-
     /// Creates the brightness/contrast control.
     ///
     /// - Parameters:
-    ///   - adjustments: The shared adjustment values to write to.
+    ///   - adjustments: The shared adjustment values to observe and write to.
     ///   - reRender:    The closure to call after a change.
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {
         self.adjustments = adjustments
         self.reRender    = reRender
-        self.brightness  = adjustments.brightness
-        self.contrast    = adjustments.contrast
     }
 
     /// The view's content.
@@ -66,19 +58,18 @@ public struct BrightnessContrastControlView: View
     {
         Grid( alignment: .leading )
         {
-            SliderGridRowView( value: $brightness, minimumValue: Self.minimumBrightness, maximumValue: Self.maximumBrightness, label: "Brightness", image: "sun.max.fill" )
+            SliderGridRowView( value: self.$adjustments.brightness, minimumValue: Self.minimumBrightness, maximumValue: Self.maximumBrightness, label: "Brightness", image: "sun.max.fill" )
                 .accessibilityIdentifier( AccessibilityIdentifier.BrightnessContrastControlView.brightnessSlider )
                 .help( "Brightness Offset" )
 
-            SliderGridRowView( value: $contrast, minimumValue: Self.minimumContrast, maximumValue: Self.maximumContrast, label: "Contrast", image: "circle.lefthalf.filled" )
+            SliderGridRowView( value: self.$adjustments.contrast, minimumValue: Self.minimumContrast, maximumValue: Self.maximumContrast, label: "Contrast", image: "circle.lefthalf.filled" )
                 .accessibilityIdentifier( AccessibilityIdentifier.BrightnessContrastControlView.contrastSlider )
                 .help( "Contrast Around the Midpoint" )
         }
-        .onChange( of: [ self.brightness, self.contrast ] )
+        // The sliders bind straight to the observed adjustments, so re-render on
+        // any change to either value — from this control or from a Reset.
+        .onChange( of: [ self.adjustments.brightness, self.adjustments.contrast ] )
         {
-            self.adjustments.brightness = self.brightness
-            self.adjustments.contrast   = self.contrast
-
             self.reRender()
         }
     }

@@ -49,6 +49,11 @@ struct LevelsEditorView: View
     /// the committed render.
     @ObservedObject private var image: FITSImage
 
+    /// The shared adjustments the editor writes to, observed so the editor also
+    /// follows a change made from outside it — a menu/inspector Reset View, say —
+    /// rather than showing stale slider values (see ``syncFromAdjustments()``).
+    @ObservedObject private var adjustments: ImageAdjustments
+
     /// Whether the levels are edited per channel rather than as one master curve.
     @State private var perChannel: Bool
 
@@ -130,7 +135,8 @@ struct LevelsEditorView: View
     /// - Parameter image: The image whose levels are edited.
     init( image: FITSImage )
     {
-        self.image = image
+        self.image       = image
+        self.adjustments = image.renderer.adjustments
 
         switch image.renderer.adjustments.levels
         {
@@ -220,6 +226,12 @@ struct LevelsEditorView: View
         .navigationTitle( "Levels — \( self.image.info.url.lastPathComponent )" )
         .accessibilityElement( children: .contain )
         .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.editor )
+        // Follow a change made from outside the editor (e.g. a Reset View): pull
+        // it back into the sliders' displayed state.
+        .onChange( of: self.adjustments.levels )
+        {
+            self.syncFromAdjustments()
+        }
         .confirmationDialog( "Switch to Master Mode?", isPresented: self.$showSwitchToMasterConfirmation, titleVisibility: .visible )
         {
             Button( "Switch to Master", role: .destructive )
@@ -420,6 +432,44 @@ struct LevelsEditorView: View
         self.perChannel
             ? .perChannel( red: self.red.parameters, green: self.green.parameters, blue: self.blue.parameters )
             : .uniform( self.master.parameters )
+    }
+
+    /// Re-seeds the editor's mode and curves from the shared adjustments when the
+    /// levels change from outside the editor — a menu/inspector Reset View, say —
+    /// so the sliders follow. Skipped when the adjustments already match what the
+    /// editor represents, so the editor's own ``commit()`` writes don't echo back
+    /// into a loop; it writes `@State` only, so it updates the display without
+    /// re-committing or re-rendering.
+    private func syncFromAdjustments()
+    {
+        guard self.adjustments.levels != self.channels
+        else
+        {
+            return
+        }
+
+        switch self.adjustments.levels
+        {
+            case .uniform( let parameters ):
+
+                self.perChannel = false
+                self.master     = Curve( parameters )
+                self.red        = Curve( parameters )
+                self.green      = Curve( parameters )
+                self.blue       = Curve( parameters )
+
+            case .perChannel( let r, let g, let b ):
+
+                self.perChannel = true
+                self.master     = Curve( .identity )
+                self.red        = Curve( r )
+                self.green      = Curve( g )
+                self.blue       = Curve( b )
+
+            @unknown default:
+
+                break
+        }
     }
 
     /// Writes the current configuration into the image's adjustments and requests

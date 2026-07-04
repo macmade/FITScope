@@ -41,6 +41,20 @@ struct StretchControlViewTests
         #expect( StretchControlView.algorithm( mode: .sigmoid, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == .sigmoid( 1, 2 ) )
     }
 
+    /// The reverse mapping — an algorithm back to the control's mode — that seeds
+    /// the control and, since M27, re-syncs its displayed mode when the shared
+    /// adjustments change from outside it (e.g. a Reset). A wrong mapping would
+    /// leave the picker showing the wrong mode after an external change.
+    @Test
+    @MainActor
+    func stretchControlMapsAlgorithmBackToMode() throws
+    {
+        #expect( StretchControlView.mode( nil )              == .none )
+        #expect( StretchControlView.mode( .log( 50 ) )       == .log )
+        #expect( StretchControlView.mode( .arcsinh( 10 ) )   == .arcsinh )
+        #expect( StretchControlView.mode( .sigmoid( 1, 2 ) ) == .sigmoid )
+    }
+
     /// The seeded stretch defaults are non-degenerate: the arcsinh factor is
     /// non-zero (zero throws) and the sigmoid slope is non-zero (a zero slope
     /// flattens the image to 50% grey).

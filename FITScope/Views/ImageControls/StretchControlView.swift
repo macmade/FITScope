@@ -77,14 +77,15 @@ public struct StretchControlView: View
     /// The seed for the sigmoid contrast slider.
     static let defaultSigmoidN2 = 0.5
 
-    /// The shared adjustment values this control writes to.
-    private let adjustments: ImageAdjustments
+    /// The shared adjustment values this control observes and writes to.
+    @ObservedObject private var adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
     private let reRender: () -> Void
 
     /// The selected stretch mode. Seeded from the image's adjustments so the
-    /// control reflects the file it belongs to.
+    /// control reflects the file it belongs to, and re-synced when the
+    /// adjustments change from outside the control (see ``syncFromAdjustments()``).
     @State private var mode: Mode
 
     /// The logarithmic intensity slider value.
@@ -223,11 +224,19 @@ public struct StretchControlView: View
                     .help( "Sigmoid Contrast" )
             }
         }
+        // A change the control makes: push it to the shared adjustments and
+        // re-render.
         .onChange( of: self.stretchAlgorithm )
         {
             self.adjustments.stretch = self.stretchAlgorithm
 
             self.reRender()
+        }
+        // A change from outside the control (e.g. a menu Reset View): pull it
+        // back into the control's displayed state.
+        .onChange( of: self.adjustments.stretch )
+        {
+            self.syncFromAdjustments()
         }
     }
 
@@ -241,6 +250,38 @@ public struct StretchControlView: View
             sigmoidMidpoint: self.sigmoidN1,
             sigmoidContrast: self.sigmoidN2
         )
+    }
+
+    /// Re-seeds the control's mode and the active algorithm's slider from the
+    /// shared adjustments when they change from outside the control — a menu Reset
+    /// View, say — so the displayed state follows. The inactive modes keep their
+    /// remembered slider values, which the shared adjustments do not hold. Skipped
+    /// when the adjustments already match what the control represents, so the
+    /// control's own writes don't echo back into a loop.
+    private func syncFromAdjustments()
+    {
+        let algorithm = self.adjustments.stretch
+
+        guard algorithm != self.stretchAlgorithm
+        else
+        {
+            return
+        }
+
+        self.mode = Self.mode( algorithm )
+
+        switch algorithm
+        {
+            case .log( let n )?:     self.logN1     = n
+            case .arcsinh( let n )?: self.arcsinhN1 = n
+            case .sigmoid( let a, let b )?:
+
+                self.sigmoidN1 = a
+                self.sigmoidN2 = b
+
+            case nil:         break
+            @unknown default: break
+        }
     }
 }
 

@@ -58,14 +58,15 @@ public struct WhiteBalanceControlView: View
     /// every channel to black.
     static let defaultManualGain = 1.0
 
-    /// The shared adjustment values this control writes to.
-    private let adjustments: ImageAdjustments
+    /// The shared adjustment values this control observes and writes to.
+    @ObservedObject private var adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
     private let reRender: () -> Void
 
     /// The selected white-balance mode. Seeded from the image's adjustments so
-    /// the control reflects the file it belongs to.
+    /// the control reflects the file it belongs to, and re-synced when the
+    /// adjustments change from outside the control (see ``syncFromAdjustments()``).
     @State private var mode: Mode
 
     /// The manual red-channel gain.
@@ -179,11 +180,19 @@ public struct WhiteBalanceControlView: View
                     .help( "Blue Gain" )
             }
         }
+        // A change the control makes: push it to the shared adjustments and
+        // re-render.
         .onChange( of: self.whiteBalanceMode )
         {
             self.adjustments.whiteBalance = self.whiteBalanceMode
 
             self.reRender()
+        }
+        // A change from outside the control (e.g. a menu Reset View): pull it
+        // back into the control's displayed state.
+        .onChange( of: self.adjustments.whiteBalance )
+        {
+            self.syncFromAdjustments()
         }
     }
 
@@ -191,6 +200,31 @@ public struct WhiteBalanceControlView: View
     private var whiteBalanceMode: Processors.WhiteBalance.Mode?
     {
         Self.mode( self.mode, red: self.red, green: self.green, blue: self.blue )
+    }
+
+    /// Re-seeds the control's mode and, in Manual, its gains from the shared
+    /// adjustments when they change from outside the control — a menu Reset View,
+    /// say — so the displayed state follows. Skipped when the adjustments already
+    /// match what the control represents, so the control's own writes don't echo
+    /// back into a loop.
+    private func syncFromAdjustments()
+    {
+        let value = self.adjustments.whiteBalance
+
+        guard value != self.whiteBalanceMode
+        else
+        {
+            return
+        }
+
+        self.mode = Self.mode( value )
+
+        if case .manual( let r, let g, let b )? = value
+        {
+            self.red   = r
+            self.green = g
+            self.blue  = b
+        }
     }
 }
 

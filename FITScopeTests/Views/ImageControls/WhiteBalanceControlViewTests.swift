@@ -39,6 +39,18 @@ struct WhiteBalanceControlViewTests
         #expect( WhiteBalanceControlView.mode( .manual, red: 1, green: 2, blue: 3 ) == .manual( red: 1, green: 2, blue: 3 ) )
     }
 
+    /// The reverse mapping — a white-balance mode back to the control's mode —
+    /// that seeds the control and, since M27, re-syncs its displayed mode when the
+    /// shared adjustments change from outside it (e.g. a Reset).
+    @Test
+    @MainActor
+    func whiteBalanceControlMapsModeBackToControlMode() throws
+    {
+        #expect( WhiteBalanceControlView.mode( nil )   == .none )
+        #expect( WhiteBalanceControlView.mode( .auto ) == .auto )
+        #expect( WhiteBalanceControlView.mode( .manual( red: 1, green: 2, blue: 3 ) ) == .manual )
+    }
+
     /// The seeded manual gains are identity (1.0): switching to Manual leaves
     /// the image unchanged rather than blanking every channel to black.
     @Test

@@ -65,26 +65,30 @@ public struct DebayerControlView: View
         }
     }
 
-    /// The shared adjustment values this control writes to.
-    private let adjustments: ImageAdjustments
+    /// The shared adjustment values this control observes and writes to.
+    @ObservedObject private var adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after the selection changes.
     private let reRender: () -> Void
 
-    /// The selected mode. Seeded from the image's adjustments so the control
-    /// reflects the file it belongs to.
-    @State private var mode: Mode
-
     /// Creates the debayer control.
     ///
     /// - Parameters:
-    ///   - adjustments: The shared adjustment values to write to.
+    ///   - adjustments: The shared adjustment values to observe and write to.
     ///   - reRender:    The closure to call after the selection changes.
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {
         self.adjustments = adjustments
         self.reRender    = reRender
-        self.mode        = Self.mode( adjustments.debayer )
+    }
+
+    /// The picker's selected mode, derived from the observed adjustments so it
+    /// always reflects the current selection — including an external Reset — with
+    /// no cached state to fall out of sync (the mode maps one-to-one to the
+    /// debayer selection, so it needs no remembered per-mode values).
+    private var mode: Mode
+    {
+        Self.mode( self.adjustments.debayer )
     }
 
     /// Maps the control's selection to a debayer selection.
@@ -136,7 +140,7 @@ public struct DebayerControlView: View
             GridRow
             {
                 Text( "Mode" )
-                Picker( "Mode", selection: $mode )
+                Picker( "Mode", selection: self.modeBinding )
                 {
                     ForEach( Mode.allCases, id: \.self )
                     {
@@ -167,12 +171,22 @@ public struct DebayerControlView: View
                 .help( "Choose the Demosaic Algorithm" )
             }
         }
-        .onChange( of: self.mode )
-        {
-            self.adjustments.debayer = Self.selection( self.mode )
+    }
 
-            self.reRender()
-        }
+    /// A binding for the mode picker: it reads the derived ``mode`` and, on a new
+    /// selection, writes the matching debayer selection back to the adjustments
+    /// and re-renders.
+    private var modeBinding: Binding< Mode >
+    {
+        Binding(
+            get: { self.mode },
+            set:
+            {
+                self.adjustments.debayer = Self.selection( $0 )
+
+                self.reRender()
+            }
+        )
     }
 }
 

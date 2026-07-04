@@ -188,12 +188,10 @@ public struct InspectorView: View
             // they re-enable as soon as the render commits. Applied to the content
             // stack rather than the scroll view, so it still scrolls meanwhile.
             .disabled( self.image.renderer.isRendering )
-            // Recreate the controls when an adjustment is changed from outside the
-            // inspector (a menu-driven Reset View or Invert bumps the image's
-            // controls revision), so they reseed from the changed adjustments —
-            // the controls cache their displayed state in @State, which an
-            // in-place mutation does not refresh on its own.
-            .id( self.image.controlsRevision )
+            // No reseed identity here: the controls observe the shared adjustments
+            // directly, so a change from outside the inspector (a menu-driven Reset
+            // View or Invert) updates their displayed state on its own. Per-image
+            // identity is handled one level up, in InspectorColumnView.
         }
         .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.container )
     }

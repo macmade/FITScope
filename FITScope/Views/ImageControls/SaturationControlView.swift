@@ -32,25 +32,21 @@ public struct SaturationControlView: View
     static let minimumSaturation = 0.0
     static let maximumSaturation = 2.0
 
-    /// The shared adjustment values this control writes to.
-    private let adjustments: ImageAdjustments
+    /// The shared adjustment values this control observes and writes to.
+    @ObservedObject private var adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
     private let reRender: () -> Void
 
-    /// The current saturation factor. Seeded from the image's adjustments.
-    @State private var saturation: Double
-
     /// Creates the saturation control.
     ///
     /// - Parameters:
-    ///   - adjustments: The shared adjustment values to write to.
+    ///   - adjustments: The shared adjustment values to observe and write to.
     ///   - reRender:    The closure to call after a change.
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {
         self.adjustments = adjustments
         self.reRender    = reRender
-        self.saturation  = adjustments.saturation
     }
 
     /// The view's content.
@@ -58,14 +54,14 @@ public struct SaturationControlView: View
     {
         Grid( alignment: .leading )
         {
-            SliderGridRowView( value: $saturation, minimumValue: Self.minimumSaturation, maximumValue: Self.maximumSaturation, label: "Saturation", image: "paintpalette.fill" )
+            SliderGridRowView( value: self.$adjustments.saturation, minimumValue: Self.minimumSaturation, maximumValue: Self.maximumSaturation, label: "Saturation", image: "paintpalette.fill" )
                 .accessibilityIdentifier( AccessibilityIdentifier.SaturationControlView.slider )
                 .help( "Colour Saturation" )
         }
-        .onChange( of: self.saturation )
+        // The slider binds straight to the observed adjustments, so re-render on
+        // any change to the value — from this control or from a Reset.
+        .onChange( of: self.adjustments.saturation )
         {
-            self.adjustments.saturation = self.saturation
-
             self.reRender()
         }
     }

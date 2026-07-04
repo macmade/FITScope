@@ -27,26 +27,21 @@ import SwiftUI
 /// The color section of the controls panel: an invert toggle.
 public struct ColorControlView: View
 {
-    /// The shared adjustment values this control writes to.
-    private let adjustments: ImageAdjustments
+    /// The shared adjustment values this control observes and writes to.
+    @ObservedObject private var adjustments: ImageAdjustments
 
     /// Requests a debounced re-render after a change.
     private let reRender: () -> Void
 
-    /// Whether the image is inverted. Seeded from the image's adjustments so the
-    /// control reflects the file it belongs to.
-    @State private var invert: Bool
-
     /// Creates the color control.
     ///
     /// - Parameters:
-    ///   - adjustments: The shared adjustment values to write to.
+    ///   - adjustments: The shared adjustment values to observe and write to.
     ///   - reRender:    The closure to call after a change.
     public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void )
     {
         self.adjustments = adjustments
         self.reRender    = reRender
-        self.invert      = adjustments.invert
     }
 
     /// The view's content.
@@ -54,15 +49,16 @@ public struct ColorControlView: View
     {
         VStack( alignment: .leading, spacing: 10 )
         {
-            Toggle( "Invert", isOn: $invert )
+            Toggle( "Invert", isOn: self.$adjustments.invert )
                 .toggleStyle( SwitchToggleStyle() )
                 .help( "Invert the Image (Photographic Negative)" )
                 .accessibilityIdentifier( AccessibilityIdentifier.ColorControlView.invertToggle )
         }
-        .onChange( of: self.invert )
+        // Binding straight to the observed adjustments keeps the toggle in step
+        // with the value however it changes — this control, the Image menu's
+        // Invert, or a Reset — so re-render on any change to it.
+        .onChange( of: self.adjustments.invert )
         {
-            self.adjustments.invert = self.invert
-
             self.reRender()
         }
     }

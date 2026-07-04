@@ -42,6 +42,11 @@ struct CurvesEditorView: View
     /// the committed render.
     @ObservedObject private var image: FITSImage
 
+    /// The shared adjustments the editor writes to, observed so the editor also
+    /// follows a change made from outside it — a menu/inspector Reset View, say —
+    /// rather than showing a stale curve (see ``syncFromAdjustments()``).
+    @ObservedObject private var adjustments: ImageAdjustments
+
     /// Whether the curve is edited per channel rather than as one master curve.
     @State private var perChannel: Bool
 
@@ -85,7 +90,8 @@ struct CurvesEditorView: View
     /// - Parameter image: The image whose tone curve is edited.
     init( image: FITSImage )
     {
-        self.image = image
+        self.image       = image
+        self.adjustments = image.renderer.adjustments
 
         switch image.renderer.adjustments.curves
         {
@@ -162,6 +168,12 @@ struct CurvesEditorView: View
         .navigationTitle( "Curves — \( self.image.info.url.lastPathComponent )" )
         .accessibilityElement( children: .contain )
         .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.editor )
+        // Follow a change made from outside the editor (e.g. a Reset View): pull
+        // it back into the curve's displayed state.
+        .onChange( of: self.adjustments.curves )
+        {
+            self.syncFromAdjustments()
+        }
         .confirmationDialog( "Switch to Master Mode?", isPresented: self.$showSwitchToMasterConfirmation, titleVisibility: .visible )
         {
             Button( "Switch to Master", role: .destructive )
@@ -315,6 +327,44 @@ struct CurvesEditorView: View
         self.perChannel
             ? .perChannel( red: .init( points: self.red ), green: .init( points: self.green ), blue: .init( points: self.blue ) )
             : .uniform( .init( points: self.master ) )
+    }
+
+    /// Re-seeds the editor's mode and control points from the shared adjustments
+    /// when the curves change from outside the editor — a menu/inspector Reset
+    /// View, say — so the canvas follows. Skipped when the adjustments already
+    /// match what the editor represents, so the editor's own ``commit()`` writes
+    /// don't echo back into a loop; it writes `@State` only, so it updates the
+    /// display without re-committing or re-rendering.
+    private func syncFromAdjustments()
+    {
+        guard self.adjustments.curves != self.channels
+        else
+        {
+            return
+        }
+
+        switch self.adjustments.curves
+        {
+            case .uniform( let curve ):
+
+                self.perChannel = false
+                self.master     = curve.points
+                self.red        = curve.points
+                self.green      = curve.points
+                self.blue       = curve.points
+
+            case .perChannel( let r, let g, let b ):
+
+                self.perChannel = true
+                self.master     = Self.identityPoints
+                self.red        = r.points
+                self.green      = g.points
+                self.blue       = b.points
+
+            @unknown default:
+
+                break
+        }
     }
 
     /// Writes the current configuration into the image's adjustments and requests

@@ -39,4 +39,17 @@ struct DebayerControlViewTests
         #expect( DebayerControlView.selection( .bggr ) == .pattern( .bggr ) )
         #expect( DebayerControlView.selection( .rggb ) == .pattern( .rggb ) )
     }
+
+    /// The reverse mapping — a debayer selection back to the control's mode —
+    /// which, since M27, the picker derives directly from the shared adjustments,
+    /// so it reflects the current selection including an external Reset.
+    @Test
+    @MainActor
+    func debayerControlMapsSelectionBackToMode() throws
+    {
+        #expect( DebayerControlView.mode( .none )             == .none )
+        #expect( DebayerControlView.mode( .auto )             == .auto )
+        #expect( DebayerControlView.mode( .pattern( .bggr ) ) == .bggr )
+        #expect( DebayerControlView.mode( .pattern( .rggb ) ) == .rggb )
+    }
 }

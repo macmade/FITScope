@@ -50,10 +50,13 @@ public struct InspectorColumnView: View
         if let image = self.file.image
         {
             // Tie the inspector's identity to the image, so switching the selected
-            // file recreates the controls rather than reusing them. Each control's
-            // @State mirrors the image's adjustments and is seeded from it at init;
-            // a reused control would keep the previous image's state (e.g. gamma
-            // still shown as enabled). A new identity discards that and reseeds.
+            // file recreates the controls rather than reusing them. The controls
+            // observe the shared adjustments directly, but the mode controls still
+            // cache remembered per-mode values in @State (e.g. a stretch slider
+            // left set while a different mode is active), which the adjustments do
+            // not hold; a reused control would carry the previous image's
+            // remembered values over. A fresh identity per image discards them,
+            // reseeding each control from the newly selected image.
             InspectorView( image: image )
                 .id( ObjectIdentifier( image ) )
         }
