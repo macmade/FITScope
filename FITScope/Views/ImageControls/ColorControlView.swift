@@ -50,7 +50,7 @@ public struct ColorControlView: View
         VStack( alignment: .leading, spacing: 10 )
         {
             Toggle( "Invert", isOn: self.$adjustments.invert )
-                .toggleStyle( SwitchToggleStyle() )
+                .toggleStyle( CapsuleToggleStyle() )
                 .help( "Invert the Image (Photographic Negative)" )
                 .accessibilityIdentifier( AccessibilityIdentifier.ColorControlView.invertToggle )
         }

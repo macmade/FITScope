@@ -62,6 +62,15 @@ public struct LevelsWindowView: View
         // Fixed width (the window's height adapts to its content via
         // `.windowResizability( .contentSize )`); kept the same as the Curves editor.
         .frame( width: 400 )
+        // The standard window background, nudged a little darker to match the
+        // inspector, rather than the brighter material a content-sized window shows
+        // by default.
+        .background
+        {
+            Rectangle()
+                .fill( .windowBackground )
+                .overlay( Color.black.opacity( 0.05 ) )
+        }
         .persistsWindowFrame( autosaveName: "LevelsEditorWindow", centeredWhenUnsaved: true )
     }
 }

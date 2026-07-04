@@ -182,21 +182,34 @@ struct LevelsEditorView: View
         {
             self.histogram
 
-            if self.isMono == false
-            {
-                Toggle( "Per-channel", isOn: self.perChannelBinding )
-                    .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.perChannelToggle )
-                    .help( "Edit Each Colour Channel Independently" )
-
-                if self.perChannel
-                {
-                    SegmentedControlView( selection: self.$channel, values: Channel.allCases, title: { $0.description } )
-                        .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.channelPicker )
-                }
-            }
-
             Grid( alignment: .leading )
             {
+                if self.isMono == false
+                {
+                    // The toggle lives in the slider grid so its switch lines up with
+                    // the slider tracks: the label sits in the label column and the
+                    // switch (label-less) in the slider column.
+                    GridRow
+                    {
+                        Text( "Per-channel" )
+
+                        Toggle( isOn: self.perChannelBinding ) { EmptyView() }
+                            .toggleStyle( CapsuleToggleStyle() )
+                            .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.perChannelToggle )
+                            .help( "Edit Each Colour Channel Independently" )
+                    }
+
+                    if self.perChannel
+                    {
+                        GridRow
+                        {
+                            SegmentedControlView( selection: self.$channel, values: Channel.allCases, title: { $0.description } )
+                                .gridCellColumns( 3 )
+                                .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.channelPicker )
+                        }
+                    }
+                }
+
                 SliderGridRowView( value: self.binding( .inputBlack ), minimumValue: 0, maximumValue: 1, label: "Input Black", image: "circle.fill", defaultValue: Self.identityCurve.inputBlack, resetIdentifier: AccessibilityIdentifier.LevelsWindowView.inputBlackReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.inputBlackSlider )
 

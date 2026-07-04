@@ -141,6 +141,7 @@ struct CurvesEditorView: View
             if self.isMono == false
             {
                 Toggle( "Per-channel", isOn: self.perChannelBinding )
+                    .toggleStyle( CapsuleToggleStyle() )
                     .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.perChannelToggle )
                     .help( "Edit Each Colour Channel Independently" )
 
