@@ -94,7 +94,7 @@ public struct ImageInfoTabView: View
     {
         VStack( spacing: 10 )
         {
-            SegmentedControlView( selection: self.$tab, values: [ .info, .location, .moon, .sun, .planets, .conditions ], title: { $0.title }, icon: { self.icon( for: $0 ) } )
+            SegmentedControlView( selection: self.$tab, values: [ .info, .location, .moon, .sun, .planets, .conditions ], title: { $0.title }, icon: { self.icon( for: $0 ) }, collapsesUnselectedToIcon: true )
                 .padding( .horizontal, 14 )
                 .padding( .top, 12 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.tabs )
