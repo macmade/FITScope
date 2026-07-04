@@ -48,11 +48,11 @@ public struct ImageInfoTabView: View
         /// The capture-location map and coordinates.
         case location
 
-        /// The capture's lunar phase.
-        case moon
-
         /// The Sun: sunrise/sunset, twilight and the capture-time sky darkness.
         case sun
+
+        /// The capture's lunar phase.
+        case moon
 
         /// The planets above the horizon at the capture time.
         case planets
@@ -68,8 +68,8 @@ public struct ImageInfoTabView: View
                 case .info:       return "Info"
                 case .stars:      return "Stars"
                 case .location:   return "Location"
-                case .moon:       return "Moon"
                 case .sun:        return "Sun"
+                case .moon:       return "Moon"
                 case .planets:    return "Planets"
                 case .weather:    return "Weather"
             }
@@ -98,7 +98,7 @@ public struct ImageInfoTabView: View
     {
         VStack( spacing: 10 )
         {
-            SegmentedControlView( selection: self.$tab, values: [ .info, .stars, .location, .moon, .sun, .planets, .weather ], title: { $0.title }, icon: { self.icon( for: $0 ) }, collapsesUnselectedToIcon: true )
+            SegmentedControlView( selection: self.$tab, values: [ .info, .stars, .location, .sun, .moon, .planets, .weather ], title: { $0.title }, icon: { self.icon( for: $0 ) }, collapsesUnselectedToIcon: true )
                 .padding( .horizontal, 14 )
                 .padding( .top, 12 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.tabs )
@@ -153,19 +153,19 @@ public struct ImageInfoTabView: View
                 .allowsHitTesting( self.tab == .location )
                 .accessibilityHidden( self.tab != .location )
 
-            MoonPhaseView( date: self.observationDate )
-                .padding( .horizontal, 14 )
-                .padding( .bottom, 14 )
-                .opacity( self.tab == .moon ? 1 : 0 )
-                .allowsHitTesting( self.tab == .moon )
-                .accessibilityHidden( self.tab != .moon )
-
             SunTwilightView( location: self.skyLocation, date: self.observationDate )
                 .padding( .horizontal, 14 )
                 .padding( .bottom, 14 )
                 .opacity( self.tab == .sun ? 1 : 0 )
                 .allowsHitTesting( self.tab == .sun )
                 .accessibilityHidden( self.tab != .sun )
+
+            MoonPhaseView( date: self.observationDate )
+                .padding( .horizontal, 14 )
+                .padding( .bottom, 14 )
+                .opacity( self.tab == .moon ? 1 : 0 )
+                .allowsHitTesting( self.tab == .moon )
+                .accessibilityHidden( self.tab != .moon )
 
             PlanetsView( location: self.skyLocation, date: self.observationDate )
                 .padding( .horizontal, 14 )
@@ -222,8 +222,8 @@ public struct ImageInfoTabView: View
             case .info:       return "info.circle"
             case .stars:      return "sparkles"
             case .location:   return "mappin.and.ellipse"
-            case .moon:       return self.observationDate.map { MoonPhase( date: $0 ).phase.systemImageName } ?? "moon"
             case .sun:        return "sun.horizon"
+            case .moon:       return self.observationDate.map { MoonPhase( date: $0 ).phase.systemImageName } ?? "moon"
             case .planets:    return "circles.hexagonpath"
             case .weather:    return "cloud.sun"
         }
