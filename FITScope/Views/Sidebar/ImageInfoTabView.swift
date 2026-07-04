@@ -58,7 +58,7 @@ public struct ImageInfoTabView: View
         case planets
 
         /// The capture's historical weather conditions.
-        case conditions
+        case weather
 
         /// The segmented-control label for the tab.
         var title: String
@@ -71,7 +71,7 @@ public struct ImageInfoTabView: View
                 case .moon:       return "Moon"
                 case .sun:        return "Sun"
                 case .planets:    return "Planets"
-                case .conditions: return "Conditions"
+                case .weather:    return "Weather"
             }
         }
     }
@@ -98,7 +98,7 @@ public struct ImageInfoTabView: View
     {
         VStack( spacing: 10 )
         {
-            SegmentedControlView( selection: self.$tab, values: [ .info, .stars, .location, .moon, .sun, .planets, .conditions ], title: { $0.title }, icon: { self.icon( for: $0 ) }, collapsesUnselectedToIcon: true )
+            SegmentedControlView( selection: self.$tab, values: [ .info, .stars, .location, .moon, .sun, .planets, .weather ], title: { $0.title }, icon: { self.icon( for: $0 ) }, collapsesUnselectedToIcon: true )
                 .padding( .horizontal, 14 )
                 .padding( .top, 12 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.tabs )
@@ -174,12 +174,12 @@ public struct ImageInfoTabView: View
                 .allowsHitTesting( self.tab == .planets )
                 .accessibilityHidden( self.tab != .planets )
 
-            WeatherView( coordinate: self.coordinate, date: self.observationDate, isActive: self.tab == .conditions )
+            WeatherView( coordinate: self.coordinate, date: self.observationDate, isActive: self.tab == .weather )
                 .padding( .horizontal, 14 )
                 .padding( .bottom, 14 )
-                .opacity( self.tab == .conditions ? 1 : 0 )
-                .allowsHitTesting( self.tab == .conditions )
-                .accessibilityHidden( self.tab != .conditions )
+                .opacity( self.tab == .weather ? 1 : 0 )
+                .allowsHitTesting( self.tab == .weather )
+                .accessibilityHidden( self.tab != .weather )
         }
         .frame( height: self.contentHeight )
         .background( self.heightProbe )
@@ -225,7 +225,7 @@ public struct ImageInfoTabView: View
             case .moon:       return self.observationDate.map { MoonPhase( date: $0 ).phase.systemImageName } ?? "moon"
             case .sun:        return "sun.horizon"
             case .planets:    return "circles.hexagonpath"
-            case .conditions: return "cloud.sun"
+            case .weather:    return "cloud.sun"
         }
     }
 
@@ -243,8 +243,8 @@ public struct ImageInfoTabView: View
     }
 
     /// The selected image's observing site as a SwiftAstro location, or `nil` when
-    /// its header carries no observing-site coordinates. Drives the Conditions
-    /// tab's sun & twilight computation.
+    /// its header carries no observing-site coordinates. Drives the Sun tab's
+    /// sun & twilight computation.
     private var skyLocation: GeographicLocation?
     {
         guard let coordinate = self.file.image?.info.metadata.coordinate
