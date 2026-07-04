@@ -29,7 +29,6 @@
 		0579B6252DF2C149002FDD47 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0579B6232DF2C120002FDD47 /* Preview Assets.xcassets */; };
 		057F611C2DF8B78600EE82D1 /* ImageControlContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 057F611B2DF8B78000EE82D1 /* ImageControlContainer.swift */; };
 		0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF092DDE64DF005DECEF /* Assets.xcassets */; };
-		0587FF0F2DDE64DF005DECEF /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF0C2DDE64DF005DECEF /* MainMenu.xib */; };
 		0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */; };
 		05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05986B472DF892D300A55E77 /* SliderGridRowView.swift */; };
 		05A1B2C30000000000000002 /* View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000001 /* View.swift */; };
@@ -419,7 +418,6 @@
 		057F611B2DF8B78000EE82D1 /* ImageControlContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageControlContainer.swift; sourceTree = "<group>"; };
 		0587FF092DDE64DF005DECEF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0587FF0A2DDE64DF005DECEF /* FITScope.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScope.entitlements; sourceTree = "<group>"; };
-		0587FF0B2DDE64DF005DECEF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITests.swift; sourceTree = "<group>"; };
 		05986B472DF892D300A55E77 /* SliderGridRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderGridRowView.swift; sourceTree = "<group>"; };
 		05A1B2C30000000000000001 /* View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = View.swift; sourceTree = "<group>"; };
@@ -905,7 +903,6 @@
 				0587FF092DDE64DF005DECEF /* Assets.xcassets */,
 				0587FF0A2DDE64DF005DECEF /* FITScope.entitlements */,
 				056E5C4E2DDF130E003254C7 /* Info.plist */,
-				0587FF0C2DDE64DF005DECEF /* MainMenu.xib */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -1655,7 +1652,6 @@
 				05DC79A92DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits in Resources */,
 				0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */,
 				0579B6252DF2C149002FDD47 /* Preview Assets.xcassets in Resources */,
-				0587FF0F2DDE64DF005DECEF /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2036,17 +2032,6 @@
 			targetProxy = 05B189EE2FEAE7AD0056553A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
-
-/* Begin PBXVariantGroup section */
-		0587FF0C2DDE64DF005DECEF /* MainMenu.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				0587FF0B2DDE64DF005DECEF /* Base */,
-			);
-			name = MainMenu.xib;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		053BEAC32DDDDDA900EF0C79 /* Debug */ = {
