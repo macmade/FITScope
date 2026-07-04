@@ -238,6 +238,9 @@ struct LevelsEditorView: View
                 .help( "Reset the Levels to Their Defaults" )
             }
         }
+        // Lock the controls while a render driven by an edit is in flight, matching
+        // the inspector; they re-enable as soon as it commits.
+        .disabled( self.image.renderer.isRendering )
         .padding( 16 )
         .frame( maxWidth: .infinity, alignment: .top )
         .navigationTitle( "Levels — \( self.image.info.url.lastPathComponent )" )

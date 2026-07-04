@@ -164,6 +164,9 @@ struct CurvesEditorView: View
                 .help( "Reset the Curve to a Straight Line" )
             }
         }
+        // Lock the controls while a render driven by an edit is in flight, matching
+        // the inspector; they re-enable as soon as it commits.
+        .disabled( self.image.renderer.isRendering )
         .padding( 16 )
         .frame( maxWidth: .infinity, alignment: .top )
         .navigationTitle( "Curves — \( self.image.info.url.lastPathComponent )" )
