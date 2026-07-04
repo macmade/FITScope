@@ -95,6 +95,7 @@ public struct MainWindowView: View
         // property wrappers inside the deferred closure.
         let model             = self.model
         let closeConfirmation = self.closeConfirmation
+        let preferences       = self.preferences
 
         NavigationSplitView
         {
@@ -172,13 +173,15 @@ public struct MainWindowView: View
         .frame( minWidth: 900, minHeight: 600 )
         // Remember the window's size across launches. State restoration (SwiftUI's
         // built-in frame persistence) is disabled app-wide so the app always
-        // launches clean, so the size is persisted manually: the content size is
-        // written to the shared preferences here and reapplied via
-        // `.defaultWindowPlacement` in `FITScopeApp` whenever a window is placed. The
-        // action fires outside the update pass (like `.onChange`), and
-        // `mainWindowSize` is non-`@Published`, so this neither publishes changes from
-        // within a view update nor churns re-renders.
-        .onGeometryChange( for: CGSize.self, of: { $0.size }, action: { self.preferences.mainWindowSize = $0 } )
+        // launches clean, so the size is persisted manually: the window's frame
+        // size is written to the shared preferences here and reapplied via
+        // `.defaultWindowPlacement` in `FITScopeApp` whenever a window is placed.
+        // The frame size (not the SwiftUI content size) is stored deliberately —
+        // `WindowPlacement(size:)` restores the whole window frame, so saving the
+        // content size would lose the title bar's height on every launch, shrinking
+        // the window each time. `mainWindowSize` is non-`@Published`, so writing it
+        // here churns no re-renders.
+        .onWindowSizeChange { preferences.mainWindowSize = $0 }
         // Warn before closing a window whose images have adjustments, so they are
         // not discarded silently. Installed on the hosting NSWindow (the veto point
         // for both the close button and ⌘W), forwarding to SwiftUI's own delegate.

@@ -78,6 +78,24 @@ public extension View
         )
     }
 
+    /// Reports the hosting window's frame *size* — title bar and toolbar included —
+    /// whenever it changes, so a caller can persist it across launches.
+    ///
+    /// This deliberately reports the full window frame rather than the SwiftUI
+    /// content size a geometry reader would give: `WindowPlacement(size:)` (used to
+    /// restore the size) sizes the whole window frame, so saving the content size
+    /// and restoring it as a frame loses the title bar's height on every launch,
+    /// shrinking the window each time. Reporting the frame size makes the value
+    /// round-trip. State restoration stays disabled, so this only saves — it never
+    /// reopens a window.
+    ///
+    /// - Parameter action: Called with the window's frame size on every resize.
+    /// - Returns: The view, reporting its window's frame size on change.
+    func onWindowSizeChange( _ action: @escaping ( CGSize ) -> Void ) -> some View
+    {
+        self.modifier( WindowSizeChangeModifier( action: action ) )
+    }
+
     /// Applies ``SwiftUI/View/navigationDocument(_:)`` only when a URL is
     /// available, leaving the view unchanged otherwise.
     ///
@@ -101,5 +119,32 @@ public extension View
         {
             self
         }
+    }
+}
+
+/// Backs ``SwiftUI/View/onWindowSizeChange(_:)``: resolves the hosting window and
+/// keeps a resize observation alive for the view's lifetime.
+private struct WindowSizeChangeModifier: ViewModifier
+{
+    /// Called with the window's frame size on every resize.
+    let action: ( CGSize ) -> Void
+
+    /// Retains the notification observation for as long as the view exists.
+    @State private var observer = WindowResizeObserver()
+
+    /// The modified content, with the window-resize observation attached.
+    ///
+    /// - Parameter content: The wrapped content.
+    /// - Returns: The content, observing its window's frame-size changes.
+    func body( content: Content ) -> some View
+    {
+        // Grab stable references for the accessor's escaping callback, rather than
+        // reading the property wrappers inside it.
+        let observer = self.observer
+        let action   = self.action
+
+        return content.background(
+            WindowAccessor { observer.observe( $0, action: action ) }
+        )
     }
 }
