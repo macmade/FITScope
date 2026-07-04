@@ -128,8 +128,8 @@ public struct SunTwilightView: View
             GridRow
             {
                 Text( "" )
-                Text( "Dawn" ).foregroundStyle( .secondary )
                 Text( "Dusk" ).foregroundStyle( .secondary )
+                Text( "Dawn" ).foregroundStyle( .secondary )
             }
 
             self.row( systemImage: "sun.horizon", label: "Sun",          dawn: events.sunrise,          dusk: events.sunset )
@@ -162,8 +162,8 @@ public struct SunTwilightView: View
                 Text( label ).foregroundStyle( .secondary )
             }
 
-            Text( Self.timeText( dawn ) )
             Text( Self.timeText( dusk ) )
+            Text( Self.timeText( dawn ) )
         }
     }
 
