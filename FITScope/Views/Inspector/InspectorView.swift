@@ -32,6 +32,14 @@ public struct InspectorView: View
     /// The image whose renderer/adjustments the controls bind to.
     @ObservedObject private var image: FITSImage
 
+    /// The adjustments the controls edit, observed directly so the per-section
+    /// reset buttons in the section headers track edits made anywhere (a control,
+    /// the Image menu, a Reset) and appear or disappear as each section crosses its
+    /// defaults. Safe to hold: the image (and its renderer) is fixed for this
+    /// view's lifetime — ``InspectorColumnView`` gives the inspector a fresh
+    /// identity per image.
+    @ObservedObject private var adjustments: ImageAdjustments
+
     /// Opens the singleton Levels editor window.
     @Environment( \.openWindow ) private var openWindow
 
@@ -40,7 +48,8 @@ public struct InspectorView: View
     /// - Parameter image: The image to inspect and adjust.
     public init( image: FITSImage )
     {
-        self.image = image
+        self.image       = image
+        self.adjustments = image.renderer.adjustments
     }
 
     /// The view's content.
@@ -76,7 +85,13 @@ public struct InspectorView: View
                     // Orientation (framing) is surfaced near the top so the image
                     // can be squared up before any tonal work, even though the
                     // pipeline applies it last.
-                    InspectorSectionView( "Orientation", identifier: AccessibilityIdentifier.InspectorView.Section.orientation )
+                    InspectorSectionView(
+                        "Orientation",
+                        identifier:      AccessibilityIdentifier.InspectorView.Section.orientation,
+                        isModified:      self.adjustments.isModified( \.orientation ),
+                        resetIdentifier: AccessibilityIdentifier.InspectorView.SectionReset.orientation,
+                        onReset:         { self.reset( \.orientation ) }
+                    )
                     {
                         OrientationControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
@@ -93,7 +108,13 @@ public struct InspectorView: View
                     // the section is hidden entirely for it.
                     if self.image.info.isColorFilterArray
                     {
-                        InspectorSectionView( "Debayer", identifier: AccessibilityIdentifier.InspectorView.Section.debayer )
+                        InspectorSectionView(
+                            "Debayer",
+                            identifier:      AccessibilityIdentifier.InspectorView.Section.debayer,
+                            isModified:      self.adjustments.isModified( \.debayer ) || self.adjustments.isModified( \.debayerAlgorithm ),
+                            resetIdentifier: AccessibilityIdentifier.InspectorView.SectionReset.debayer,
+                            onReset:         self.resetDebayer
+                        )
                         {
                             DebayerControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                         }
@@ -101,7 +122,13 @@ public struct InspectorView: View
                         Divider()
                     }
 
-                    InspectorSectionView( "White Balance", identifier: AccessibilityIdentifier.InspectorView.Section.whiteBalance )
+                    InspectorSectionView(
+                        "White Balance",
+                        identifier:      AccessibilityIdentifier.InspectorView.Section.whiteBalance,
+                        isModified:      self.adjustments.isModified( \.whiteBalance ),
+                        resetIdentifier: AccessibilityIdentifier.InspectorView.SectionReset.whiteBalance,
+                        onReset:         { self.reset( \.whiteBalance ) }
+                    )
                     {
                         WhiteBalanceControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
@@ -115,7 +142,13 @@ public struct InspectorView: View
 
                     Divider()
 
-                    InspectorSectionView( "Stretch", identifier: AccessibilityIdentifier.InspectorView.Section.stretch )
+                    InspectorSectionView(
+                        "Stretch",
+                        identifier:      AccessibilityIdentifier.InspectorView.Section.stretch,
+                        isModified:      self.adjustments.isModified( \.stretch ),
+                        resetIdentifier: AccessibilityIdentifier.InspectorView.SectionReset.stretch,
+                        onReset:         { self.reset( \.stretch ) }
+                    )
                     {
                         StretchControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
@@ -167,7 +200,13 @@ public struct InspectorView: View
                         Divider()
                     }
 
-                    InspectorSectionView( "Color", identifier: AccessibilityIdentifier.InspectorView.Section.color )
+                    InspectorSectionView(
+                        "Color",
+                        identifier:      AccessibilityIdentifier.InspectorView.Section.color,
+                        isModified:      self.adjustments.isModified( \.invert ),
+                        resetIdentifier: AccessibilityIdentifier.InspectorView.SectionReset.color,
+                        onReset:         { self.reset( \.invert ) }
+                    )
                     {
                         ColorControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
@@ -189,8 +228,9 @@ public struct InspectorView: View
             // stack rather than the scroll view, so it still scrolls meanwhile.
             .disabled( self.image.renderer.isRendering )
             // No reseed identity here: the controls observe the shared adjustments
-            // directly, so a change from outside the inspector (a menu-driven Reset
-            // View or Invert) updates their displayed state on its own. Per-image
+            // directly, and this view observes them too (for the per-section reset
+            // buttons), so a change from outside the inspector (a menu-driven Reset
+            // View or Invert) updates the displayed state on its own. Per-image
             // identity is handled one level up, in InspectorColumnView.
         }
         .accessibilityIdentifier( AccessibilityIdentifier.InspectorView.container )
@@ -206,6 +246,27 @@ public struct InspectorView: View
     private func reRender()
     {
         self.image.renderer.scheduleReRender()
+    }
+
+    /// Resets a single adjustment field to its default and re-renders — the action
+    /// behind a per-section reset button.
+    ///
+    /// - Parameter keyPath: The adjustment field to reset.
+    private func reset< Value >( _ keyPath: ReferenceWritableKeyPath< ImageAdjustments, Value > )
+    {
+        self.adjustments.reset( keyPath )
+
+        self.reRender()
+    }
+
+    /// Resets the debayer section — both the pattern selection and the demosaic
+    /// algorithm — to their defaults and re-renders.
+    private func resetDebayer()
+    {
+        self.adjustments.reset( \.debayer )
+        self.adjustments.reset( \.debayerAlgorithm )
+
+        self.reRender()
     }
 }
 

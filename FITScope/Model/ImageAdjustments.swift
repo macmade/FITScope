@@ -111,6 +111,29 @@ public final class ImageAdjustments: ObservableObject
         self.orientation      = defaults.orientation
     }
 
+    /// Whether the value at `keyPath` differs from its pipeline default, driving
+    /// the visibility of a single control's reset affordance.
+    ///
+    /// - Parameter keyPath: The adjustment field to test.
+    /// - Returns: `true` when the field has been changed from its default.
+    public func isModified< Value: Equatable >( _ keyPath: KeyPath< ImageAdjustments, Value > ) -> Bool
+    {
+        self[ keyPath: keyPath ] != ImageAdjustments()[ keyPath: keyPath ]
+    }
+
+    /// Resets the value at `keyPath` to its pipeline default, so one control can be
+    /// reset without resetting the whole view. The other fields are left untouched.
+    ///
+    /// The default is read from a fresh instance, the same single source of truth
+    /// ``reset()`` and ``hasAdjustments`` use, so it can never drift from the
+    /// declared defaults.
+    ///
+    /// - Parameter keyPath: The adjustment field to reset.
+    public func reset< Value >( _ keyPath: ReferenceWritableKeyPath< ImageAdjustments, Value > )
+    {
+        self[ keyPath: keyPath ] = ImageAdjustments()[ keyPath: keyPath ]
+    }
+
     /// Whether any adjustment deviates from the pipeline defaults, i.e. the image
     /// is no longer rendered exactly as captured.
     ///

@@ -219,4 +219,61 @@ struct ImageAdjustmentsTests
 
         #expect( adjustments.hasAdjustments )
     }
+
+    // MARK: - Per-field reset
+
+    /// `isModified(_:)` reports whether a single field differs from its default,
+    /// so a per-control reset affordance can show only when its control is edited.
+    @Test
+    @MainActor
+    func isModifiedReportsPerFieldDeviation()
+    {
+        let adjustments = ImageAdjustments()
+
+        #expect( adjustments.isModified( \.invert )     == false )
+        #expect( adjustments.isModified( \.brightness ) == false )
+
+        adjustments.invert = true
+
+        #expect( adjustments.isModified( \.invert ) )
+        #expect( adjustments.isModified( \.brightness ) == false, "only the changed field reports as modified" )
+    }
+
+    /// `reset(_:)` restores a single field to its default while leaving the others
+    /// untouched, so one control can be reset without resetting the whole view.
+    @Test
+    @MainActor
+    func resetRestoresASingleFieldLeavingOthers()
+    {
+        let adjustments = ImageAdjustments()
+
+        adjustments.brightness = 0.5
+        adjustments.contrast   = 1.5
+
+        adjustments.reset( \.brightness )
+
+        #expect( adjustments.brightness == 0 )
+        #expect( adjustments.contrast   == 1.5, "resetting one field must not touch the others" )
+    }
+
+    /// The key-path reset works for the non-numeric pipeline fields the
+    /// section-level resets act on — the enum modes and the orientation.
+    @Test
+    @MainActor
+    func perFieldResetWorksForModeAndOrientationFields()
+    {
+        let adjustments = ImageAdjustments()
+
+        adjustments.stretch     = .arcsinh( 12 )
+        adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
+
+        #expect( adjustments.isModified( \.stretch ) )
+        #expect( adjustments.isModified( \.orientation ) )
+
+        adjustments.reset( \.stretch )
+        adjustments.reset( \.orientation )
+
+        #expect( adjustments.isModified( \.stretch ) == false )
+        #expect( adjustments.orientation.isIdentity )
+    }
 }

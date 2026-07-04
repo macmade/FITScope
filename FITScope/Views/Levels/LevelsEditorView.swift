@@ -45,6 +45,10 @@ struct LevelsEditorView: View
     /// mapping never collapses (the processor rejects `inputWhite <= inputBlack`).
     private static let minimumInputGap = 0.01
 
+    /// The identity curve, the single source for each slider's per-field reset
+    /// default (input black 0, input white 1, gamma 1, output black 0, white 1).
+    private static let identityCurve = Curve( .identity )
+
     /// The image whose levels are being edited; observed so the histogram tracks
     /// the committed render.
     @ObservedObject private var image: FITSImage
@@ -193,19 +197,19 @@ struct LevelsEditorView: View
 
             Grid( alignment: .leading )
             {
-                SliderGridRowView( value: self.binding( .inputBlack ), minimumValue: 0, maximumValue: 1, label: "Input Black", image: "circle.fill" )
+                SliderGridRowView( value: self.binding( .inputBlack ), minimumValue: 0, maximumValue: 1, label: "Input Black", image: "circle.fill", defaultValue: Self.identityCurve.inputBlack, resetIdentifier: AccessibilityIdentifier.LevelsWindowView.inputBlackReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.inputBlackSlider )
 
-                SliderGridRowView( value: self.binding( .inputWhite ), minimumValue: 0, maximumValue: 1, label: "Input White", image: "circle" )
+                SliderGridRowView( value: self.binding( .inputWhite ), minimumValue: 0, maximumValue: 1, label: "Input White", image: "circle", defaultValue: Self.identityCurve.inputWhite, resetIdentifier: AccessibilityIdentifier.LevelsWindowView.inputWhiteReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.inputWhiteSlider )
 
-                SliderGridRowView( value: self.binding( .gamma ), minimumValue: Self.minimumGamma, maximumValue: Self.maximumGamma, label: "Gamma", image: "eye.fill" )
+                SliderGridRowView( value: self.binding( .gamma ), minimumValue: Self.minimumGamma, maximumValue: Self.maximumGamma, label: "Gamma", image: "eye.fill", defaultValue: Self.identityCurve.gamma, resetIdentifier: AccessibilityIdentifier.LevelsWindowView.gammaReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.gammaSlider )
 
-                SliderGridRowView( value: self.binding( .outputBlack ), minimumValue: 0, maximumValue: 1, label: "Output Black", image: "circle.fill" )
+                SliderGridRowView( value: self.binding( .outputBlack ), minimumValue: 0, maximumValue: 1, label: "Output Black", image: "circle.fill", defaultValue: Self.identityCurve.outputBlack, resetIdentifier: AccessibilityIdentifier.LevelsWindowView.outputBlackReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.outputBlackSlider )
 
-                SliderGridRowView( value: self.binding( .outputWhite ), minimumValue: 0, maximumValue: 1, label: "Output White", image: "circle" )
+                SliderGridRowView( value: self.binding( .outputWhite ), minimumValue: 0, maximumValue: 1, label: "Output White", image: "circle", defaultValue: Self.identityCurve.outputWhite, resetIdentifier: AccessibilityIdentifier.LevelsWindowView.outputWhiteReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.outputWhiteSlider )
             }
 

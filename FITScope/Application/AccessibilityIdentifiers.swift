@@ -145,6 +145,26 @@ public enum AccessibilityIdentifier
             /// The orientation (rotate / flip) section.
             public static let orientation = "InspectorView.Section.orientation"
         }
+
+        /// Per-section reset buttons shown in a section header when that section
+        /// deviates from its defaults.
+        public enum SectionReset
+        {
+            /// The orientation section's reset button.
+            public static let orientation = "InspectorView.SectionReset.orientation"
+
+            /// The white-balance section's reset button.
+            public static let whiteBalance = "InspectorView.SectionReset.whiteBalance"
+
+            /// The debayer section's reset button.
+            public static let debayer = "InspectorView.SectionReset.debayer"
+
+            /// The stretch section's reset button.
+            public static let stretch = "InspectorView.SectionReset.stretch"
+
+            /// The color section's reset button.
+            public static let color = "InspectorView.SectionReset.color"
+        }
     }
 
     /// Identifiers applied by ``FITScope/LevelsWindowView`` and its editor.
@@ -180,6 +200,21 @@ public enum AccessibilityIdentifier
 
         /// The output white-point slider.
         public static let outputWhiteSlider = "LevelsWindowView.outputWhiteSlider"
+
+        /// The reset button for the input black-point slider.
+        public static let inputBlackReset = "LevelsWindowView.inputBlackReset"
+
+        /// The reset button for the input white-point slider.
+        public static let inputWhiteReset = "LevelsWindowView.inputWhiteReset"
+
+        /// The reset button for the midtone gamma slider.
+        public static let gammaReset = "LevelsWindowView.gammaReset"
+
+        /// The reset button for the output black-point slider.
+        public static let outputBlackReset = "LevelsWindowView.outputBlackReset"
+
+        /// The reset button for the output white-point slider.
+        public static let outputWhiteReset = "LevelsWindowView.outputWhiteReset"
 
         /// The button that resets the levels to their defaults.
         public static let resetButton = "LevelsWindowView.resetButton"
@@ -260,6 +295,12 @@ public enum AccessibilityIdentifier
 
         /// The contrast slider.
         public static let contrastSlider = "BrightnessContrastControlView.contrastSlider"
+
+        /// The reset button for the brightness slider.
+        public static let brightnessReset = "BrightnessContrastControlView.brightnessReset"
+
+        /// The reset button for the contrast slider.
+        public static let contrastReset = "BrightnessContrastControlView.contrastReset"
     }
 
     /// Identifiers applied by ``FITScope/SaturationControlView``.
@@ -267,6 +308,9 @@ public enum AccessibilityIdentifier
     {
         /// The saturation slider.
         public static let slider = "SaturationControlView.slider"
+
+        /// The reset button for the saturation slider.
+        public static let reset = "SaturationControlView.reset"
     }
 
     /// Identifiers applied by ``FITScope/OrientationControlView``.
@@ -317,6 +361,18 @@ public enum AccessibilityIdentifier
 
         /// The sigmoid-contrast slider (shown only in sigmoid mode).
         public static let contrastSlider = "StretchControlView.contrastSlider"
+
+        /// The reset button for the logarithmic-intensity slider.
+        public static let intensityReset = "StretchControlView.intensityReset"
+
+        /// The reset button for the arcsinh-factor slider.
+        public static let factorReset = "StretchControlView.factorReset"
+
+        /// The reset button for the sigmoid-midpoint slider.
+        public static let midpointReset = "StretchControlView.midpointReset"
+
+        /// The reset button for the sigmoid-contrast slider.
+        public static let contrastReset = "StretchControlView.contrastReset"
     }
 
     /// Identifiers applied by ``FITScope/WhiteBalanceControlView``.
@@ -333,6 +389,15 @@ public enum AccessibilityIdentifier
 
         /// The manual blue-gain slider (shown only in manual mode).
         public static let blueSlider = "WhiteBalanceControlView.blueSlider"
+
+        /// The reset button for the manual red-gain slider.
+        public static let redReset = "WhiteBalanceControlView.redReset"
+
+        /// The reset button for the manual green-gain slider.
+        public static let greenReset = "WhiteBalanceControlView.greenReset"
+
+        /// The reset button for the manual blue-gain slider.
+        public static let blueReset = "WhiteBalanceControlView.blueReset"
     }
 
     /// Identifiers applied by ``FITScope/DebayerControlView``.

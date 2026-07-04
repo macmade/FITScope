@@ -169,13 +169,13 @@ public struct WhiteBalanceControlView: View
 
             if self.mode == .manual
             {
-                SliderGridRowView( value: $red,   minimumValue: 0, maximumValue: 255, label: "Red",   image: "r.circle.fill" )
+                SliderGridRowView( value: $red,   minimumValue: 0, maximumValue: 255, label: "Red",   image: "r.circle.fill", defaultValue: Self.defaultManualGain, resetIdentifier: AccessibilityIdentifier.WhiteBalanceControlView.redReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.redSlider )
                     .help( "Red Gain" )
-                SliderGridRowView( value: $green, minimumValue: 0, maximumValue: 255, label: "Green", image: "g.circle.fill" )
+                SliderGridRowView( value: $green, minimumValue: 0, maximumValue: 255, label: "Green", image: "g.circle.fill", defaultValue: Self.defaultManualGain, resetIdentifier: AccessibilityIdentifier.WhiteBalanceControlView.greenReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.greenSlider )
                     .help( "Green Gain" )
-                SliderGridRowView( value: $blue,  minimumValue: 0, maximumValue: 255, label: "Blue",  image: "b.circle.fill" )
+                SliderGridRowView( value: $blue,  minimumValue: 0, maximumValue: 255, label: "Blue",  image: "b.circle.fill", defaultValue: Self.defaultManualGain, resetIdentifier: AccessibilityIdentifier.WhiteBalanceControlView.blueReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.blueSlider )
                     .help( "Blue Gain" )
             }

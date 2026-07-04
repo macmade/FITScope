@@ -202,24 +202,24 @@ public struct StretchControlView: View
 
             if self.mode == .log
             {
-                SliderGridRowView( value: $logN1, minimumValue: 0, maximumValue: 255, label: "Intensity", image: "n.circle.fill" )
+                SliderGridRowView( value: $logN1, minimumValue: 0, maximumValue: 255, label: "Intensity", image: "n.circle.fill", defaultValue: Self.defaultLogIntensity, resetIdentifier: AccessibilityIdentifier.StretchControlView.intensityReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.intensitySlider )
                     .help( "Logarithmic Intensity" )
             }
 
             if self.mode == .arcsinh
             {
-                SliderGridRowView( value: $arcsinhN1, minimumValue: 0, maximumValue: 255, label: "Factor", image: "n.circle.fill" )
+                SliderGridRowView( value: $arcsinhN1, minimumValue: 0, maximumValue: 255, label: "Factor", image: "n.circle.fill", defaultValue: Self.defaultArcsinhFactor, resetIdentifier: AccessibilityIdentifier.StretchControlView.factorReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.factorSlider )
                     .help( "Arcsinh Factor" )
             }
 
             if self.mode == .sigmoid
             {
-                SliderGridRowView( value: $sigmoidN1, minimumValue: 0, maximumValue: 255, label: "Midpoint", image: "n.circle.fill" )
+                SliderGridRowView( value: $sigmoidN1, minimumValue: 0, maximumValue: 255, label: "Midpoint", image: "n.circle.fill", defaultValue: Self.defaultSigmoidN1, resetIdentifier: AccessibilityIdentifier.StretchControlView.midpointReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.midpointSlider )
                     .help( "Sigmoid Midpoint" )
-                SliderGridRowView( value: $sigmoidN2, minimumValue: 0, maximumValue: 255, label: "Contrast", image: "n.circle.fill" )
+                SliderGridRowView( value: $sigmoidN2, minimumValue: 0, maximumValue: 255, label: "Contrast", image: "n.circle.fill", defaultValue: Self.defaultSigmoidN2, resetIdentifier: AccessibilityIdentifier.StretchControlView.contrastReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.contrastSlider )
                     .help( "Sigmoid Contrast" )
             }

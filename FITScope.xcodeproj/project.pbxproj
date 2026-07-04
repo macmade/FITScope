@@ -31,6 +31,7 @@
 		0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0587FF092DDE64DF005DECEF /* Assets.xcassets */; };
 		0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */; };
 		05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05986B472DF892D300A55E77 /* SliderGridRowView.swift */; };
+		FCA5E7B0000000000000F002 /* ResetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCA5E7B0000000000000F001 /* ResetButton.swift */; };
 		05A1B2C30000000000000002 /* View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000001 /* View.swift */; };
 		05A1B2C30000000000000004 /* FileCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000003 /* FileCommands.swift */; };
 		05A1B2C30000000000000006 /* ImageExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000005 /* ImageExporterTests.swift */; };
@@ -418,6 +419,7 @@
 		0587FF0A2DDE64DF005DECEF /* FITScope.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScope.entitlements; sourceTree = "<group>"; };
 		0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITests.swift; sourceTree = "<group>"; };
 		05986B472DF892D300A55E77 /* SliderGridRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderGridRowView.swift; sourceTree = "<group>"; };
+		FCA5E7B0000000000000F001 /* ResetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetButton.swift; sourceTree = "<group>"; };
 		05A1B2C30000000000000001 /* View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = View.swift; sourceTree = "<group>"; };
 		05A1B2C30000000000000003 /* FileCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCommands.swift; sourceTree = "<group>"; };
 		05A1B2C30000000000000005 /* ImageExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageExporterTests.swift; sourceTree = "<group>"; };
@@ -1435,6 +1437,7 @@
 				053C2E742DF6EE3200DA637A /* Slider.swift */,
 				5A516E0150000000000000D2 /* Pill.swift */,
 				05986B472DF892D300A55E77 /* SliderGridRowView.swift */,
+				FCA5E7B0000000000000F001 /* ResetButton.swift */,
 				3B9C0D4280A594EAC752F3F4 /* FlowLayout.swift */,
 				5C561A20BFECBF8335B6A8AF /* StatusMessageView.swift */,
 			);
@@ -1742,6 +1745,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */,
+				FCA5E7B0000000000000F002 /* ResetButton.swift in Sources */,
 				05C0A75C2DDE64E0005DECEF /* ImageAdjustments.swift in Sources */,
 				05FB1000000000000000D102 /* Preferences.swift in Sources */,
 				05FB1000000000000000E102 /* APIKeyStore.swift in Sources */,

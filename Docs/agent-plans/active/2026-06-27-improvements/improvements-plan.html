@@ -413,7 +413,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4><span class="milestone-id">M2</span>Per-control reset affordance</h4>
-                <span class="pill todo">Not started</span>
+                <span class="pill done">Completed</span>
             </div>
             <p class="goal">Let the user reset an individual inspector control to its default without resetting everything, via a small clear/reset button per control.</p>
 
@@ -427,11 +427,29 @@
                 <li>Add SwiftUI previews showing modified vs. default states.</li>
             </ul>
 
-            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="meta-row"><span><span class="k">Status:</span> Completed</span><span><span class="k">Completed:</span> 2026-07-04</span></div>
             <div class="field-label">Implementation notes</div>
-            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Granularity (your call):</strong> per-field on sliders + per-section for the mode/toggle/orientation controls, plus per-channel in the editors.</li>
+                    <li><strong>Reusable component:</strong> new <code>Views/Controls/ResetButton.swift</code> &mdash; a borderless circular-arrow button (action + tooltip), used for every reset so the affordance looks and behaves identically. Added to the Xcode project (the project uses explicit file references, not synchronized groups).</li>
+                    <li><strong>Model core (TDD):</strong> two generic key-path helpers on <code>ImageAdjustments</code> &mdash; <code>isModified(\.field)</code> and <code>reset(\.field)</code> &mdash; both reading the default from a fresh instance, the same single source of truth <code>reset()</code>/<code>hasAdjustments</code> use. Tests written first and watched fail (stubs returning wrong values) before implementing. One generic pair rather than a method per field (DRY).</li>
+                    <li><strong>Sliders:</strong> <code>SliderGridRowView</code> gained an optional <code>defaultValue</code> (+ reset identifier). When set and the value differs, a reset button shows beside the readout and restores the default through the existing <code>onChange&nbsp;&rarr;&nbsp;reRender</code> path. Its width is reserved even when hidden, so the row does not jump as the value crosses its default. Wired into brightness (0), contrast (1), saturation (1), the White-Balance manual gains and the Stretch parameters (each reset to its seed).</li>
+                    <li><strong>Sections:</strong> <code>InspectorSectionView</code> gained an optional header reset (<code>isModified</code> + <code>onReset</code> + identifier). <code>InspectorView</code> wires it for Orientation, White Balance, Stretch, Debayer (both pattern &amp; algorithm) and Color/Invert, each via the new <code>reset(\.field)</code> helper. To make the buttons appear/disappear reactively, <code>InspectorView</code> now also observes the adjustments (safe: the inspector has a fresh identity per image, and the renderer is never reseated). Brightness&amp;Contrast and Saturation stay per-field only.</li>
+                    <li><strong>Editors (revised after review):</strong> the Levels and Curves editors keep their whole-editor <em>Reset</em>. Levels now carries a per-slider reset on each of its five sliders (Input Black/White, Gamma, Output Black/White) via <code>SliderGridRowView</code>, exactly like the other controls, each restoring that field of the active curve to its identity default. Curves has no sliders (a draggable canvas), so it keeps only the whole-editor Reset. The earlier per-channel reset beside the channel picker was removed from both.</li>
+                    <li><strong>Previews:</strong> <code>SliderGridRowView</code> (a modified row with its reset vs. an at-default row with the space reserved), <code>InspectorSectionView</code> (a resettable modified section vs. a plain one), and <code>ResetButton</code>.</li>
+                    <li><strong>Verification:</strong> full suite <strong>419 tests pass</strong> (416 + 3 new). The reset affordances themselves are SwiftUI and not unit-testable (the custom sliders are also documented as not UI-drivable); they are covered by previews and left for your visual review. Accessibility identifiers were added for every new reset control, matching the codebase convention.</li>
+                    <li><strong>For review:</strong> (1) the promotion of <code>InspectorView</code> to observe the adjustments means its body re-evaluates on every adjustment change (e.g. each slider-drag tick); this seemed the cleanest correct approach and SwiftUI diffs it cheaply, but flagging it. (2) &ldquo;Value differs from default&rdquo; uses an exact comparison, so a slider dragged to imperceptibly-near its default still shows the reset.</li>
+                    <li><strong>Post-review change:</strong> the per-channel reset beside the channel picker in the Levels &amp; Curves editors was removed and replaced (in Levels) with per-slider resets on the individual sliders &mdash; see Review comments.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <div class="placeholder">Review feedback for this milestone.</div>
+            <div class="notes">
+                <ul>
+                    <li>The per-channel reset placed beside the channel picker (the &ldquo;tabs&rdquo;) in the Levels and Curves editors does not make sense &mdash; remove it from both. In Levels, add a reset next to each slider instead, as in the other controls.</li>
+                    <li>Pay attention to the alignment of <code>=</code> signs across consecutive assignments (a project convention).</li>
+                </ul>
+            </div>
         </div>
 
         <div class="milestone">

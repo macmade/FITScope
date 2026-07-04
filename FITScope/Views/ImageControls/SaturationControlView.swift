@@ -54,7 +54,7 @@ public struct SaturationControlView: View
     {
         Grid( alignment: .leading )
         {
-            SliderGridRowView( value: self.$adjustments.saturation, minimumValue: Self.minimumSaturation, maximumValue: Self.maximumSaturation, label: "Saturation", image: "paintpalette.fill" )
+            SliderGridRowView( value: self.$adjustments.saturation, minimumValue: Self.minimumSaturation, maximumValue: Self.maximumSaturation, label: "Saturation", image: "paintpalette.fill", defaultValue: 1, resetIdentifier: AccessibilityIdentifier.SaturationControlView.reset )
                 .accessibilityIdentifier( AccessibilityIdentifier.SaturationControlView.slider )
                 .help( "Colour Saturation" )
         }

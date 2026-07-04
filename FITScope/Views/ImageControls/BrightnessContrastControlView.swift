@@ -58,11 +58,11 @@ public struct BrightnessContrastControlView: View
     {
         Grid( alignment: .leading )
         {
-            SliderGridRowView( value: self.$adjustments.brightness, minimumValue: Self.minimumBrightness, maximumValue: Self.maximumBrightness, label: "Brightness", image: "sun.max.fill" )
+            SliderGridRowView( value: self.$adjustments.brightness, minimumValue: Self.minimumBrightness, maximumValue: Self.maximumBrightness, label: "Brightness", image: "sun.max.fill", defaultValue: 0, resetIdentifier: AccessibilityIdentifier.BrightnessContrastControlView.brightnessReset )
                 .accessibilityIdentifier( AccessibilityIdentifier.BrightnessContrastControlView.brightnessSlider )
                 .help( "Brightness Offset" )
 
-            SliderGridRowView( value: self.$adjustments.contrast, minimumValue: Self.minimumContrast, maximumValue: Self.maximumContrast, label: "Contrast", image: "circle.lefthalf.filled" )
+            SliderGridRowView( value: self.$adjustments.contrast, minimumValue: Self.minimumContrast, maximumValue: Self.maximumContrast, label: "Contrast", image: "circle.lefthalf.filled", defaultValue: 1, resetIdentifier: AccessibilityIdentifier.BrightnessContrastControlView.contrastReset )
                 .accessibilityIdentifier( AccessibilityIdentifier.BrightnessContrastControlView.contrastSlider )
                 .help( "Contrast Around the Midpoint" )
         }

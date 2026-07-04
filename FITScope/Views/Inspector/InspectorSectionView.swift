@@ -36,21 +36,40 @@ public struct InspectorSectionView< Content: View >: View
     /// ``title``, so the identifier never changes when the heading does.
     public let identifier: String?
 
+    /// Whether the section deviates from its defaults, so its header reset button
+    /// should be shown. Ignored when ``onReset`` is `nil`.
+    public let isModified: Bool
+
+    /// The accessibility identifier for the header reset button, or `nil`.
+    public let resetIdentifier: String?
+
+    /// Resets the section to its defaults, or `nil` for a section with no reset
+    /// affordance (the default).
+    public let onReset: ( () -> Void )?
+
     /// The section's content.
     @ViewBuilder public let content: Content
 
     /// Creates a section.
     ///
     /// - Parameters:
-    ///   - title:      The uppercase header text.
-    ///   - identifier: A stable accessibility identifier for the section, or
-    ///                 `nil` to leave it unidentified.
-    ///   - content:    The section body.
-    public init( _ title: String, identifier: String? = nil, @ViewBuilder content: () -> Content )
+    ///   - title:           The uppercase header text.
+    ///   - identifier:      A stable accessibility identifier for the section, or
+    ///                      `nil` to leave it unidentified.
+    ///   - isModified:      Whether the section deviates from its defaults, so its
+    ///                      reset button should show. Ignored when `onReset` is nil.
+    ///   - resetIdentifier: The reset button's accessibility identifier, or `nil`.
+    ///   - onReset:         Resets the section to its defaults, or `nil` for no
+    ///                      reset affordance.
+    ///   - content:         The section body.
+    public init( _ title: String, identifier: String? = nil, isModified: Bool = false, resetIdentifier: String? = nil, onReset: ( () -> Void )? = nil, @ViewBuilder content: () -> Content )
     {
-        self.title      = title
-        self.identifier = identifier
-        self.content    = content()
+        self.title           = title
+        self.identifier      = identifier
+        self.isModified      = isModified
+        self.resetIdentifier = resetIdentifier
+        self.onReset         = onReset
+        self.content         = content()
     }
 
     /// The view's content.
@@ -73,10 +92,7 @@ public struct InspectorSectionView< Content: View >: View
     {
         VStack( alignment: .leading, spacing: 8 )
         {
-            Text( self.title.uppercased() )
-                .font( .system( size: 10, weight: .semibold ) )
-                .foregroundStyle( .secondary )
-                .kerning( 1.2 )
+            self.header
 
             self.content
         }
@@ -84,13 +100,62 @@ public struct InspectorSectionView< Content: View >: View
         .padding( .horizontal, 14 )
         .padding( .vertical, 12 )
     }
+
+    /// The section header: the uppercase title and, when the section is modified
+    /// and resettable, a trailing reset button.
+    @ViewBuilder private var header: some View
+    {
+        HStack( spacing: 6 )
+        {
+            Text( self.title.uppercased() )
+                .font( .system( size: 10, weight: .semibold ) )
+                .foregroundStyle( .secondary )
+                .kerning( 1.2 )
+
+            if let onReset = self.onReset, self.isModified
+            {
+                Spacer()
+
+                self.resetButton( onReset: onReset )
+            }
+        }
+        .frame( maxWidth: .infinity, alignment: .leading )
+    }
+
+    /// The header reset button, carrying ``resetIdentifier`` when one was supplied.
+    @ViewBuilder
+    private func resetButton( onReset: @escaping () -> Void ) -> some View
+    {
+        let button = ResetButton( help: "Reset This Section", action: onReset )
+
+        if let resetIdentifier = self.resetIdentifier
+        {
+            button.accessibilityIdentifier( resetIdentifier )
+        }
+        else
+        {
+            button
+        }
+    }
 }
 
 #Preview
 {
-    InspectorSectionView( "Statistics" )
+    VStack( spacing: 0 )
     {
-        Text( "Section content" )
+        // A plain section, no reset affordance.
+        InspectorSectionView( "Statistics" )
+        {
+            Text( "Section content" )
+        }
+
+        Divider()
+
+        // A modified, resettable section: the header shows its reset button.
+        InspectorSectionView( "White Balance", isModified: true, onReset: {} )
+        {
+            Text( "Section content" )
+        }
     }
     .frame( width: 255 )
 }
