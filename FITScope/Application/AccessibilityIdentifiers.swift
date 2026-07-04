@@ -135,6 +135,9 @@ public enum AccessibilityIdentifier
             /// The brightness & contrast section.
             public static let brightnessContrast = "InspectorView.Section.brightnessContrast"
 
+            /// The colour-balance section (colour images only).
+            public static let colorBalance = "InspectorView.Section.colorBalance"
+
             /// The saturation section (colour images only).
             public static let saturation = "InspectorView.Section.saturation"
 
@@ -164,6 +167,9 @@ public enum AccessibilityIdentifier
 
             /// The color section's reset button.
             public static let color = "InspectorView.SectionReset.color"
+
+            /// The colour-balance section's reset button.
+            public static let colorBalance = "InspectorView.SectionReset.colorBalance"
         }
     }
 
@@ -317,6 +323,13 @@ public enum AccessibilityIdentifier
 
         /// The reset button for the hue slider.
         public static let hueReset = "SaturationControlView.hueReset"
+    }
+
+    /// Identifiers applied by ``FITScope/ColorBalanceControlView``.
+    public enum ColorBalanceControlView
+    {
+        /// The Shadows / Midtones / Highlights segmented range picker.
+        public static let rangePicker = "ColorBalanceControlView.rangePicker"
     }
 
     /// Identifiers applied by ``FITScope/OrientationControlView``.

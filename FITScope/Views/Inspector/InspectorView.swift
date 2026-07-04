@@ -192,6 +192,19 @@ public struct InspectorView: View
                     // with the debayer section).
                     if self.image.info.isColorFilterArray
                     {
+                        InspectorSectionView(
+                            "Color Balance",
+                            identifier:      AccessibilityIdentifier.InspectorView.Section.colorBalance,
+                            isModified:      self.adjustments.isModified( \.colorBalance ),
+                            resetIdentifier: AccessibilityIdentifier.InspectorView.SectionReset.colorBalance,
+                            onReset:         { self.reset( \.colorBalance ) }
+                        )
+                        {
+                            ColorBalanceControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                        }
+
+                        Divider()
+
                         InspectorSectionView( "Hue & Saturation", identifier: AccessibilityIdentifier.InspectorView.Section.saturation )
                         {
                             SaturationControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )

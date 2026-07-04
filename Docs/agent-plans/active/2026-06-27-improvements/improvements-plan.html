@@ -497,7 +497,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4><span class="milestone-id">M4</span>Colour balance (shadows / midtones / highlights)</h4>
-                <span class="pill todo">Not started</span>
+                <span class="pill done">Completed</span>
             </div>
             <p class="goal">Add a colour-balance control acting on shadows (low), midtones (mid), and highlights (high). Requires a new SwiftPixel processor plus app wiring.</p>
 
@@ -511,11 +511,32 @@
                 <li>Verify neutral is a true identity and each tonal range affects the expected pixels.</li>
             </ul>
 
-            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="meta-row"><span><span class="k">Status:</span> Completed</span><span><span class="k">Completed:</span> 2026-07-04</span></div>
             <div class="field-label">Implementation notes</div>
-            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Design decisions (confirmed):</strong> the three sliders per range are labelled as complementary pairs &mdash; <strong>Cyan&ndash;Red, Magenta&ndash;Green, Yellow&ndash;Blue</strong> (the familiar Color Balance UX; the same per-channel RGB shift underneath); and colour balance sits <strong>before Hue &amp; Saturation</strong> &mdash; pipeline <code>curves &rarr; colour balance &rarr; hue &rarr; saturation</code>, inspector section above &ldquo;Hue &amp; Saturation&rdquo;, keeping the UI order mirroring the pipeline (per the M3 review).</li>
+                    <li><strong>Defaults (stated up front, not asked):</strong> tonal weighting by Rec. 709 luminance with <code>smoothstep</code> weights that sum to <code>1</code> (shadows peak at black, midtones at mid-gray, highlights at white); sliders <code>&minus;1&hellip;+1</code>, neutral <code>0</code>; exact-identity omission (like levels/curves, not the tolerance-based omission scalars use); no &ldquo;preserve luminosity&rdquo; (YAGNI).</li>
+                    <li><strong>SwiftPixel &mdash; <code>Processors.ColorBalance</code>:</strong> a new processor with nested data types <code>Shift</code> (an RGB triplet) and <code>Ranges</code> (shadows/midtones/highlights), mirroring <code>Levels</code>&rsquo; <code>Parameters</code>/<code>Channels</code> split. Each pixel&rsquo;s luminance-weighted per-channel shifts are added and clipped to <code>[0, 1]</code>. Twelve processor tests (neutral identity, shadow/highlight/midtone targeting, mutual isolation at the tonal extremes, clipping, per-pixel, normalized, both throws, name, identity helpers).</li>
+                    <li><strong><code>var</code> vs <code>let</code> (flag):</strong> <code>Shift</code> and <code>Ranges</code> use <code>var</code> stored properties (unlike <code>Levels.Parameters</code>&rsquo; <code>let</code>) so the inspector can bind sliders straight to nested components (<code>$adjustments.colorBalance.shadows.red</code>) without reconstruction boilerplate across nine sliders. Flagging the deviation.</li>
+                    <li><strong>SwiftPixel &mdash; pipeline:</strong> threaded <code>colorBalance: Processors.ColorBalance.Ranges?</code> through <code>PixelPipeline.Config</code> and appended <code>ColorBalance</code> in <code>processors()</code> <em>before</em> <code>Hue</code>; added to <code>requiresNormalization</code>; dropped when the balance is the identity. Tests: <code>colorBalanceAppliedAfterCurvesBeforeHue</code>, <code>neutralColorBalanceNotAppended</code>, <code>autoInsertsNormalizeForColorBalance</code>; the canonical <code>stageOrder</code> test now covers 14 stages (Color Balance at index&nbsp;9).</li>
+                    <li><strong>Xcode/package sync:</strong> <code>ColorBalance.swift</code> and <code>Processors-ColorBalance.swift</code> were added to <code>SwiftPixel.xcodeproj</code>; the folder-based <code>Package.swift</code> needs no change; the app builds the framework from source, so no submodule pointer bump is needed to build.</li>
+                    <li><strong>App wiring:</strong> <code>ImageAdjustments.colorBalance</code> (<code>Ranges</code>, neutral identity) is included in <code>reset()</code> and the <code>settings</code> snapshot; <code>ImageProcessor.Settings.colorBalance</code> is mirrored and passed through <code>config()</code>, dropped when <code>isIdentity</code> (mirroring how identity levels/curves are dropped). The assertions were folded into the existing <code>ImageAdjustmentsTests</code> (config mapping, default omission, full reset).</li>
+                    <li><strong>UI:</strong> new <code>ColorBalanceControlView</code> &mdash; the app&rsquo;s <code>SegmentedControlView</code> (<em>Shadows / Midtones / Highlights</em>) over the three complementary-pair sliders (<code>&minus;1&hellip;1</code>, neutral <code>0</code>) for the selected range, each with a per-slider reset (M2 affordance) and <code>onChange&nbsp;&rarr;&nbsp;reRender</code> (see the post-review change below). Added to <code>InspectorView</code> as a &ldquo;Color Balance&rdquo; section <em>above</em> &ldquo;Hue &amp; Saturation&rdquo;, colour-images-only, with a section-level reset (<code>isModified</code>/<code>reset(\.colorBalance)</code>). Default &amp; Modified previews. The title uses American &ldquo;Color&rdquo; to match the existing &ldquo;Color&rdquo; (invert) and &ldquo;White Balance&rdquo; sections. New accessibility identifiers <code>Section.colorBalance</code>, <code>SectionReset.colorBalance</code> and the range picker&rsquo;s <code>ColorBalanceControlView.rangePicker</code>.</li>
+                    <li><strong>TDD:</strong> the processor and pipeline tests were written first and watched fail (no-op/empty-name stub, then the missing stage) before implementing; the app fields were introduced test-first (the red was the compile failure for the missing <code>colorBalance</code> members).</li>
+                    <li><strong>Verification:</strong> the full SwiftPixel suite passes; <code>FITScopeTests</code> is green at <strong>419 tests</strong>; the app builds. The SwiftUI sliders are not unit-testable and are left for your visual review via the previews.</li>
+                    <li><strong>For review:</strong> (1) the <code>var</code> deviation noted above; (2) there are now adjacent &ldquo;Color Balance&rdquo; and &ldquo;Color&rdquo; (invert) sections &mdash; happy to rename either; (3) the per-slider resets carry no individual accessibility identifiers (the custom sliders aren&rsquo;t UI-drivable, per M2); the section-level reset and the range picker are identified.</li>
+                    <li><strong>Post-review changes:</strong> (1) the control was too tall as nine stacked sliders &mdash; replaced with a compact <strong>segmented range selector</strong> (Shadows / Midtones / Highlights) showing only the selected range&rsquo;s three sliders at a time (the classic Photoshop Color Balance layout, ~3 sliders tall instead of 9). (2) the default SwiftUI segmented <code>Picker</code> looked out of place, so the selector uses the app&rsquo;s own <code>SegmentedControlView</code> (as the info sidebar tabs do). Model, pipeline and tests are unchanged throughout; only <code>ColorBalanceControlView</code> and one accessibility identifier changed. See Review comments.</li>
+                    <li><strong>Upstream/commit (for you):</strong> the SwiftPixel change must be committed in that submodule and its pointer bumped in FITScope. I did not commit anything; local build/test works because the app compiles the submodule from its working-tree source.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <div class="placeholder">Review feedback for this milestone.</div>
+            <div class="notes">
+                <ul>
+                    <li>The Colour Balance control &mdash; nine stacked sliders across three labelled groups &mdash; takes up too much vertical space in the inspector. Find a more compact layout.</li>
+                    <li>The default segmented <code>Picker</code> used for the range selector looks out of place (&ldquo;ugly tabs&rdquo;). Use the app&rsquo;s own <code>SegmentedControlView</code> instead, as the info sidebar tabs do.</li>
+                </ul>
+            </div>
         </div>
 
         <div class="milestone">

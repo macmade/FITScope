@@ -82,6 +82,10 @@ public enum ImageProcessor
         /// pipeline configuration.
         public var curves: Processors.Curves.Channels
 
+        /// The tonal-range colour balance. A neutral balance is omitted from the
+        /// pipeline configuration.
+        public var colorBalance: Processors.ColorBalance.Ranges
+
         /// The hue-rotation angle in degrees (`0` is neutral).
         public var hue: Double
 
@@ -110,12 +114,13 @@ public enum ImageProcessor
         ///   - contrast:     The contrast factor about the midpoint (`1` is neutral).
         ///   - levels:       The levels remap (an identity mapping is neutral).
         ///   - curves:       The tone curve (an identity curve is neutral).
+        ///   - colorBalance: The tonal-range colour balance (a neutral balance is neutral).
         ///   - hue:          The hue-rotation angle in degrees (`0` is neutral).
         ///   - saturation:   The colour-saturation factor (`1` is neutral).
         ///   - debayer:      How to debayer the image.
         ///   - debayerMode:  The demosaic algorithm used when debayering.
         ///   - orientation:  The net orientation applied to the rendered image.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), hue: Double = 0, saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), colorBalance: Processors.ColorBalance.Ranges = .identity, hue: Double = 0, saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
         {
             self.normalize    = normalize
             self.stretch      = stretch
@@ -125,6 +130,7 @@ public enum ImageProcessor
             self.contrast     = contrast
             self.levels       = levels
             self.curves       = curves
+            self.colorBalance = colorBalance
             self.hue          = hue
             self.saturation   = saturation
             self.debayer      = debayer
@@ -161,6 +167,7 @@ public enum ImageProcessor
                 brightnessContrast: ( self.brightness.isApproximatelyEqual( to: 0 ) && self.contrast.isApproximatelyEqual( to: 1 ) ) ? nil : ( brightness: self.brightness, contrast: self.contrast ),
                 levels:             self.levels.isIdentity ? nil : self.levels,
                 curves:             self.curves.isIdentity ? nil : self.curves,
+                colorBalance:       self.colorBalance.isIdentity ? nil : self.colorBalance,
                 hue:                self.hue.isApproximatelyEqual( to: 0 ) ? nil : self.hue,
                 saturation:         self.saturation.isApproximatelyEqual( to: 1 ) ? nil : self.saturation,
                 orient:             self.orientation.isIdentity ? nil : self.orientation

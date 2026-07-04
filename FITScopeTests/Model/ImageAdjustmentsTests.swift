@@ -103,6 +103,17 @@ struct ImageAdjustmentsTests
 
         #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).hue == 30 )
 
+        // Colour balance defaults to neutral and is omitted from the config.
+        #expect( adjustments.colorBalance == .identity )
+        #expect( config.colorBalance == nil )
+
+        // A change flows into a freshly built config.
+        adjustments.colorBalance = .init( midtones: .init( red: 0.2 ) )
+
+        let colorBalance = adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).colorBalance
+
+        #expect( colorBalance == adjustments.colorBalance )
+
         // Levels default to an identity uniform mapping and are omitted from the
         // config (the image renders unadjusted).
         #expect( adjustments.levels == .uniform( .identity ) )
@@ -153,16 +164,17 @@ struct ImageAdjustmentsTests
 
         // Move a spread of fields — simple values, the mode/enum pipeline stages,
         // and orientation — away from their defaults.
-        adjustments.invert      = true
-        adjustments.brightness  = 0.5
-        adjustments.contrast    = 2.0
-        adjustments.saturation  = 0.5
-        adjustments.hue         = 45
-        adjustments.stretch     = .arcsinh( 12 )
-        adjustments.levels      = .uniform( .init( inputBlack: 0.1, inputWhite: 0.9, gamma: 1.5 ) )
-        adjustments.curves      = .uniform( .init( points: [ .init( x: 0, y: 0 ), .init( x: 0.5, y: 0.7 ), .init( x: 1, y: 1 ) ] ) )
-        adjustments.debayer     = .pattern( .grbg )
-        adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
+        adjustments.invert       = true
+        adjustments.brightness   = 0.5
+        adjustments.contrast     = 2.0
+        adjustments.saturation   = 0.5
+        adjustments.hue          = 45
+        adjustments.colorBalance = .init( midtones: .init( red: 0.2 ) )
+        adjustments.stretch      = .arcsinh( 12 )
+        adjustments.levels       = .uniform( .init( inputBlack: 0.1, inputWhite: 0.9, gamma: 1.5 ) )
+        adjustments.curves       = .uniform( .init( points: [ .init( x: 0, y: 0 ), .init( x: 0.5, y: 0.7 ), .init( x: 1, y: 1 ) ] ) )
+        adjustments.debayer      = .pattern( .grbg )
+        adjustments.orientation  = .init( rotation: .clockwise90, mirroredHorizontally: false )
 
         adjustments.reset()
 
