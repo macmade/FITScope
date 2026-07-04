@@ -35,14 +35,24 @@ class ThumbnailProvider: QLThumbnailProvider
         do
         {
             let image = try FITSPreviewRenderer.render( contentsOf: request.fileURL )
-            let size  = Self.fittedSize( imageWidth: image.width, imageHeight: image.height, within: request.maximumSize )
+            let size  = ThumbnailLayout.fittedSize( imageWidth: image.width, imageHeight: image.height, within: request.maximumSize )
 
             handler(
                 QLThumbnailReply( contextSize: size )
                 {
                     ( context: CGContext ) -> Bool in
 
-                    context.draw( image, in: CGRect( origin: .zero, size: size ) )
+                    // The context's backing store is `size × displayScale` pixels
+                    // and is handed to us unscaled — its coordinate space is that
+                    // full pixel extent — so fill `context.width × context.height`
+                    // rather than the point-sized `size`. Drawing into `size`
+                    // would place the image in the bottom-left corner at a
+                    // fraction of the context and leave white margins on the top
+                    // and right. Because `size` is aspect-fitted to the image,
+                    // filling the whole context does not distort it.
+                    let bounds = CGRect( x: 0, y: 0, width: context.width, height: context.height )
+
+                    context.draw( image, in: bounds )
 
                     return true
                 },
@@ -53,26 +63,5 @@ class ThumbnailProvider: QLThumbnailProvider
         {
             handler( nil, error )
         }
-    }
-
-    /// Scales the image's dimensions down to fit within the requested maximum
-    /// size while preserving its aspect ratio.
-    ///
-    /// - Parameters:
-    ///   - imageWidth:  The rendered image's width in pixels.
-    ///   - imageHeight: The rendered image's height in pixels.
-    ///   - maximumSize: The largest thumbnail size QuickLook will accept.
-    /// - Returns: The aspect-fitted thumbnail size.
-    private static func fittedSize( imageWidth: Int, imageHeight: Int, within maximumSize: CGSize ) -> CGSize
-    {
-        guard imageWidth > 0, imageHeight > 0
-        else
-        {
-            return maximumSize
-        }
-
-        let scale = min( maximumSize.width / CGFloat( imageWidth ), maximumSize.height / CGFloat( imageHeight ) )
-
-        return CGSize( width: CGFloat( imageWidth ) * scale, height: CGFloat( imageHeight ) * scale )
     }
 }
