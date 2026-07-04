@@ -64,6 +64,11 @@ public struct Slider: View
     /// but a dark gray on the light one, where white would wash out.
     @Environment( \.colorScheme ) private var colorScheme
 
+    /// Whether the surrounding context is enabled, so the slider also dims and stops
+    /// responding when a parent applies `.disabled(…)` — matching the capsule toggle,
+    /// which reacts to the same environment rather than only an explicit flag.
+    @Environment( \.isEnabled ) private var isEnabled
+
     /// Creates a slider.
     ///
     /// - Parameters:
@@ -119,9 +124,11 @@ public struct Slider: View
             let normalized   = Self.normalizedPosition( value: self.value, minimumValue: self.minimumValue, maximumValue: self.maximumValue )
             let offset       = normalized * ( totalWidth - knobSize )
             let fillWidth    = offset + knobSize
-            let fillColor    = self.disabled ? Color.gray.opacity( 0.3 ) : CustomControlChrome.fill( for: self.colorScheme )
-            let knobColor    = self.disabled ? Color.gray.opacity( 0.6 ) : CustomControlChrome.knob
-            let imageColor   = self.disabled ? Color.gray                : Color.black
+            // Disabled either explicitly or by a `.disabled(…)` ancestor.
+            let isDisabled   = self.disabled || self.isEnabled == false
+            let fillColor    = isDisabled ? Color.gray.opacity( 0.3 ) : CustomControlChrome.fill( for: self.colorScheme )
+            let knobColor    = isDisabled ? Color.gray.opacity( 0.6 ) : CustomControlChrome.knob
+            let imageColor   = isDisabled ? Color.gray                : Color.black
 
             ZStack( alignment: .leading )
             {
@@ -134,7 +141,7 @@ public struct Slider: View
                         index in
 
                         Rectangle()
-                            .fill( self.disabled ? Color.gray.opacity( 0.5 ) : Color.secondary )
+                            .fill( isDisabled ? Color.gray.opacity( 0.5 ) : Color.secondary )
                             .frame( width: 1, height: knobSize / 3 )
                             .position(
                                 x: knobSize / 2 + CGFloat( index ) * spacing,
@@ -159,7 +166,7 @@ public struct Slider: View
                     .frame( width: knobSize, height: knobSize )
                     .foregroundStyle( knobColor )
                     .shadow( radius: 2 )
-                    .brightness( self.isDragging && self.disabled == false ? -0.1 : 0 )
+                    .brightness( self.isDragging && isDisabled == false ? -0.1 : 0 )
                     .overlay
                     {
                         if let image = self.image
@@ -172,7 +179,7 @@ public struct Slider: View
                     .offset( x: offset )
             }
             .gesture(
-                self.disabled ? nil : DragGesture( minimumDistance: 0 ).onChanged
+                isDisabled ? nil : DragGesture( minimumDistance: 0 ).onChanged
                 {
                     gesture in
 
@@ -207,7 +214,7 @@ public struct Slider: View
                     self.onChange?( self.value, self.isDragging )
                 }
             )
-            .opacity( self.disabled ? 0.5 : 1.0 )
+            .opacity( isDisabled ? 0.5 : 1.0 )
         }
     }
 }
