@@ -505,5 +505,71 @@ struct FITSImageRendererTests
         #expect( renderer.isRendering, "a stale commit must not clear the flag while a newer render is in flight" )
     }
 
+    /// The before/after comparison "before" image is produced lazily: a normal
+    /// render never computes it, so a file that is never compared pays nothing.
+    @Test
+    @MainActor
+    func comparisonImageIsNilUntilPrepared() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+
+        #expect( renderer.originalImage == nil, "the before image is not computed until requested" )
+    }
+
+    /// Preparing the "before" image renders the captured view and caches it, so a
+    /// second request at the same orientation reuses it — toggling the comparison
+    /// on and off does no extra work.
+    @Test
+    @MainActor
+    func preparingTheComparisonImageCachesAndReusesIt() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        await renderer.render()
+        await renderer.prepareOriginalImage()
+
+        let first = try #require( renderer.originalImage, "preparing the before image must produce it" )
+
+        await renderer.prepareOriginalImage()
+
+        #expect( renderer.originalImage === first, "the before image is cached and reused at the same orientation" )
+    }
+
+    /// The "before" image follows the current orientation so it stays registered
+    /// pixel-for-pixel with the processed result: a 90° rotation re-renders it and
+    /// swaps its dimensions, invalidating the earlier cache.
+    @Test
+    @MainActor
+    func theComparisonImageReRendersWhenOrientationChanges() async throws
+    {
+        // A non-square image so a 90° rotation is observable as swapped dimensions.
+        let ( data, properties ) = FITSTestData.gradient( width: 16, height: 8 )
+        let renderer             = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: data, properties: properties ) )
+
+        await renderer.render()
+        await renderer.prepareOriginalImage()
+
+        let identity = try #require( renderer.originalImage )
+
+        #expect( identity.width  == 16 )
+        #expect( identity.height == 8 )
+
+        renderer.adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
+
+        await renderer.prepareOriginalImage()
+
+        let rotated = try #require( renderer.originalImage )
+
+        #expect( rotated !== identity,  "a changed orientation re-renders the before image" )
+        #expect( rotated.width  == 8,   "a 90° rotation swaps the dimensions" )
+        #expect( rotated.height == 16 )
+    }
+
     private struct StaleError: Error {}
 }

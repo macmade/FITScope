@@ -167,6 +167,20 @@ public class FITSImageRenderer: ObservableObject
     /// first render and cached for the file's lifetime, or `nil` before then.
     @Published public private( set ) var original: HistogramSet?
 
+    /// The "before" image for the before/after comparison: the file as captured
+    /// (default adjustments — the same linear, unstretched view the histogram's
+    /// ``original`` describes) rendered at the *current* orientation so it stays
+    /// registered pixel-for-pixel with the processed ``result``. Rendered lazily
+    /// on the first ``prepareOriginalImage()`` and cached for the file's lifetime,
+    /// so a file that is never compared pays nothing; `nil` until then.
+    @Published public private( set ) var originalImage: CGImage?
+
+    /// The orientation ``originalImage`` was rendered at, so a later orientation
+    /// change (a rotate or flip) can invalidate and re-render it — keeping the
+    /// before image registered with the processed result — while an unchanged
+    /// orientation reuses the cache.
+    private var originalImageOrientation: Processors.Orient.Orientation?
+
     /// The error from the most recent failed render, or `nil` on success.
     @Published public private( set ) var error: Error?
 
@@ -296,6 +310,66 @@ public class FITSImageRenderer: ObservableObject
         {
             self.commit( .failure( error ), generation: generation )
         }
+    }
+
+    /// Prepares the "before" image for the before/after comparison, rendering the
+    /// captured view (default adjustments) at the current orientation and caching
+    /// it in ``originalImage``.
+    ///
+    /// A no-op when the cache already matches the current orientation, so toggling
+    /// the comparison on and off — or requesting it repeatedly — does no extra
+    /// work. A changed orientation re-renders so the before image keeps swapping
+    /// and rotating in lock-step with the processed result. Any render failure or
+    /// missing input leaves ``originalImage`` unchanged, so the caller simply has
+    /// no before image to show rather than surfacing an error.
+    public func prepareOriginalImage() async
+    {
+        let orientation = self.adjustments.orientation
+
+        guard self.originalImage == nil || self.originalImageOrientation != orientation
+        else
+        {
+            return
+        }
+
+        guard let input = try? self.input.get()
+        else
+        {
+            return
+        }
+
+        // The captured view: every adjustment at its default, but the current
+        // orientation, so the before image matches the processed result's
+        // dimensions and registers with it under a rotate or flip.
+        let settings = ImageProcessor.Settings( orientation: orientation )
+
+        let image = try? await withCheckedThrowingContinuation
+        {
+            ( continuation: CheckedContinuation< CGImage, any Error > ) in
+
+            DispatchQueue.global( qos: .userInitiated ).async
+            {
+                do
+                {
+                    let render = try ImageProcessor.render( data: input.data, properties: input.properties, settings: settings )
+
+                    continuation.resume( returning: render.image )
+                }
+                catch
+                {
+                    continuation.resume( throwing: error )
+                }
+            }
+        }
+
+        guard let image
+        else
+        {
+            return
+        }
+
+        self.originalImage            = image
+        self.originalImageOrientation = orientation
     }
 
     /// Renders the image with the given settings and computes its histograms and

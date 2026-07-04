@@ -133,6 +133,7 @@ public struct ImageCanvasView: View
                 {
                     self.readout                    = .empty
                     self.controller.enabledOverlays = []
+                    self.controller.isComparing     = false
 
                     self.revealBars()
                 }
@@ -202,24 +203,68 @@ public struct ImageCanvasView: View
                         .allowsHitTesting( false )
                     }
                 }
+                .overlay
+                {
+                    // The before/after comparison wipe: reveals the captured
+                    // "before" on the left of a draggable divider, registered to
+                    // the same displayed rectangle as the result so it tracks
+                    // zoom, pan, rotate and flip. Shown only once the before image
+                    // is ready and matches the result's dimensions — it re-renders
+                    // on a rotation, briefly mismatching until the new one commits.
+                    if self.controller.isComparing,
+                       let before = image.renderer.originalImage,
+                       before.width  == result.image.width,
+                       before.height == result.image.height
+                    {
+                        ImageComparisonLayer(
+                            beforeImage:      before,
+                            displayedRect:    self.displayedImageRect,
+                            fraction:         self.controller.comparisonFraction,
+                            onFractionChange: { self.controller.setComparisonFraction( $0 ) }
+                        )
+                    }
+                }
+                // Prepare the "before" image when the comparison is entered, and
+                // re-prepare it when the orientation changes while comparing, so it
+                // stays registered with the rotated / flipped result.
+                .onChange( of: self.controller.isComparing )
+                {
+                    _, comparing in
+
+                    if comparing
+                    {
+                        Task { await image.renderer.prepareOriginalImage() }
+                    }
+                }
+                .onChange( of: image.renderer.result?.orientation )
+                {
+                    _, _ in
+
+                    if self.controller.isComparing
+                    {
+                        Task { await image.renderer.prepareOriginalImage() }
+                    }
+                }
                 .overlay( alignment: .top )
                 {
                     self.floatingBar
                     {
                         ImageToolbarView(
-                            zoom:             self.controller.zoom,
-                            canZoomOut:       self.controller.canZoomOut,
-                            onFit:            { self.controller.fit() },
-                            onActualSize:     { self.controller.actualSize() },
-                            onRecenter:       { self.controller.recenter() },
-                            onZoomIn:         { self.controller.zoomIn() },
-                            onZoomOut:        { self.controller.zoomOut() },
-                            onPlateSolve:     { self.plateSolve() },
-                            isPlateSolved:    self.file.plateSolve != nil,
-                            isPlateSolving:   self.file.isPlateSolving,
-                            overlays:         self.toolbarOverlays,
-                            isOverlayEnabled: { self.controller.isOverlayEnabled( $0 ) },
-                            onToggleOverlay:  { self.controller.overlayTapped( $0 ) }
+                            zoom:               self.controller.zoom,
+                            canZoomOut:         self.controller.canZoomOut,
+                            onFit:              { self.controller.fit() },
+                            onActualSize:       { self.controller.actualSize() },
+                            onRecenter:         { self.controller.recenter() },
+                            onZoomIn:           { self.controller.zoomIn() },
+                            onZoomOut:          { self.controller.zoomOut() },
+                            onPlateSolve:       { self.plateSolve() },
+                            isPlateSolved:      self.file.plateSolve != nil,
+                            isPlateSolving:     self.file.isPlateSolving,
+                            isComparing:        self.controller.isComparing,
+                            onToggleComparison: { self.controller.toggleComparison() },
+                            overlays:           self.toolbarOverlays,
+                            isOverlayEnabled:   { self.controller.isOverlayEnabled( $0 ) },
+                            onToggleOverlay:    { self.controller.overlayTapped( $0 ) }
                         )
                         .padding( .top, 16 )
                     }

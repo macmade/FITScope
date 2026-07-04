@@ -62,6 +62,13 @@ public struct ImageToolbarView: View
     /// loading state.
     public let isPlateSolving: Bool
 
+    /// Whether the before/after comparison is active, shown as the compare
+    /// button's tinted state.
+    public let isComparing: Bool
+
+    /// Called to toggle the before/after comparison on or off.
+    public let onToggleComparison: () -> Void
+
     /// The overlays available for the current image, in toolbar order. Empty when
     /// none apply, in which case no overlay section is shown.
     public let overlays: [ any CanvasOverlay ]
@@ -73,21 +80,23 @@ public struct ImageToolbarView: View
     public let onToggleOverlay: ( String ) -> Void
 
     /// Creates the toolbar.
-    public init( zoom: CGFloat, canZoomOut: Bool, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void, onPlateSolve: ( () -> Void )? = nil, isPlateSolved: Bool = false, isPlateSolving: Bool = false, overlays: [ any CanvasOverlay ], isOverlayEnabled: @escaping ( String ) -> Bool, onToggleOverlay: @escaping ( String ) -> Void )
+    public init( zoom: CGFloat, canZoomOut: Bool, onFit: @escaping () -> Void, onActualSize: @escaping () -> Void, onRecenter: @escaping () -> Void, onZoomIn: @escaping () -> Void, onZoomOut: @escaping () -> Void, onPlateSolve: ( () -> Void )? = nil, isPlateSolved: Bool = false, isPlateSolving: Bool = false, isComparing: Bool = false, onToggleComparison: @escaping () -> Void = {}, overlays: [ any CanvasOverlay ], isOverlayEnabled: @escaping ( String ) -> Bool, onToggleOverlay: @escaping ( String ) -> Void )
     {
-        self.zoom             = zoom
-        self.canZoomOut       = canZoomOut
-        self.onFit            = onFit
-        self.onActualSize     = onActualSize
-        self.onRecenter       = onRecenter
-        self.onZoomIn         = onZoomIn
-        self.onZoomOut        = onZoomOut
-        self.onPlateSolve     = onPlateSolve
-        self.isPlateSolved    = isPlateSolved
-        self.isPlateSolving   = isPlateSolving
-        self.overlays         = overlays
-        self.isOverlayEnabled = isOverlayEnabled
-        self.onToggleOverlay  = onToggleOverlay
+        self.zoom               = zoom
+        self.canZoomOut         = canZoomOut
+        self.onFit              = onFit
+        self.onActualSize       = onActualSize
+        self.onRecenter         = onRecenter
+        self.onZoomIn           = onZoomIn
+        self.onZoomOut          = onZoomOut
+        self.onPlateSolve       = onPlateSolve
+        self.isPlateSolved      = isPlateSolved
+        self.isPlateSolving     = isPlateSolving
+        self.isComparing        = isComparing
+        self.onToggleComparison = onToggleComparison
+        self.overlays           = overlays
+        self.isOverlayEnabled   = isOverlayEnabled
+        self.onToggleOverlay    = onToggleOverlay
     }
 
     /// The view's content.
@@ -112,6 +121,10 @@ public struct ImageToolbarView: View
 
             ImageToolbarButton( systemImage: "arrow.up.left.and.arrow.down.right", help: "Fit the Image to the Window", identifier: AccessibilityIdentifier.ImageToolbarView.fit, action: self.onFit )
             ImageToolbarButton( systemImage: "1.magnifyingglass", help: "Show the Image at Actual Size (100%)", identifier: AccessibilityIdentifier.ImageToolbarView.actualSize, action: self.onActualSize )
+
+            Divider().frame( height: 16 )
+
+            ImageToolbarButton( systemImage: "rectangle.split.2x1", help: "Compare Before and After", identifier: AccessibilityIdentifier.ImageToolbarView.compare, isActive: self.isComparing, action: self.onToggleComparison )
 
             if let onPlateSolve = self.onPlateSolve
             {

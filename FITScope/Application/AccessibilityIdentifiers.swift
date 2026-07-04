@@ -48,6 +48,13 @@ public enum AccessibilityIdentifier
         public static let canvas = "ImageCanvasView.canvas"
     }
 
+    /// Identifiers applied by ``FITScope/ImageComparisonLayer``.
+    public enum ImageComparisonLayer
+    {
+        /// The draggable before/after divider handle.
+        public static let divider = "ImageComparisonLayer.divider"
+    }
+
     /// Identifiers applied by ``FITScope/LoadingView``.
     public enum LoadingView
     {
@@ -275,6 +282,9 @@ public enum AccessibilityIdentifier
 
         /// The plate-solve button.
         public static let plateSolve = "ImageToolbarView.plateSolve"
+
+        /// The before/after comparison toggle button.
+        public static let compare = "ImageToolbarView.compare"
 
         /// The toggle button for the overlay with the given stable identifier.
         ///

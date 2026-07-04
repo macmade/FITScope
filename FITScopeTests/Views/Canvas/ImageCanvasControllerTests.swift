@@ -144,4 +144,51 @@ struct ImageCanvasControllerTests
         #expect( controller.isOverlayEnabled( "missing" ) == false )
         #expect( controller.isOverlayAlertPresented == false )
     }
+
+    @Test
+    func toggleComparisonTurnsBeforeAfterOnAndOff()
+    {
+        let controller = ImageCanvasController()
+
+        #expect( controller.isComparing == false, "the before/after comparison starts off" )
+
+        controller.toggleComparison()
+        #expect( controller.isComparing )
+
+        controller.toggleComparison()
+        #expect( controller.isComparing == false )
+    }
+
+    @Test
+    func turningComparisonOnRecentersTheDivider()
+    {
+        let controller = ImageCanvasController()
+
+        controller.toggleComparison()
+        controller.setComparisonFraction( 0.2 )
+
+        #expect( controller.comparisonFraction == 0.2 )
+
+        // Turning it off then on again resets the divider to centre, so the
+        // comparison always starts from a predictable position.
+        controller.toggleComparison()
+        controller.toggleComparison()
+
+        #expect( controller.comparisonFraction == 0.5, "re-entering the comparison recentres the divider" )
+    }
+
+    @Test
+    func comparisonFractionClampsToTheUnitRange()
+    {
+        let controller = ImageCanvasController()
+
+        controller.setComparisonFraction( 0.4 )
+        #expect( controller.comparisonFraction == 0.4 )
+
+        controller.setComparisonFraction( 1.5 )
+        #expect( controller.comparisonFraction == 1.0, "a fraction past the right edge clamps to 1" )
+
+        controller.setComparisonFraction( -0.3 )
+        #expect( controller.comparisonFraction == 0.0, "a fraction past the left edge clamps to 0" )
+    }
 }

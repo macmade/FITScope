@@ -131,6 +131,19 @@ struct ImageCommands: View
         }
         .disabled( self.canvas == nil )
 
+        Divider()
+
+        // The before/after comparison — a canvas view aid, so it toggles the same
+        // controller state the floating toolbar's compare button drives. The
+        // binding ignores the new value and routes to the shared toggle, so both
+        // places behave identically. Needs a rendered image, like the orientation
+        // and editor items below.
+        Toggle( isOn: Binding( get: { self.canvas?.isComparing ?? false }, set: { _ in self.canvas?.toggleComparison() } ) )
+        {
+            Label( "Compare Before/After", systemImage: "rectangle.split.2x1" )
+        }
+        .disabled( self.canvas == nil || self.hasImage == false )
+
         if let canvas = self.canvas, canvas.overlays.isEmpty == false
         {
             Divider()

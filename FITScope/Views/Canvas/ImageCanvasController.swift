@@ -54,6 +54,17 @@ public final class ImageCanvasController: ObservableObject
     /// The identifiers of the overlays the user has turned on for this file.
     @Published public var enabledOverlays = Set< String >()
 
+    /// Whether the before/after comparison is active. When on, the canvas reveals
+    /// the captured "before" image on one side of a draggable vertical divider,
+    /// with the processed result on the other.
+    @Published public var isComparing = false
+
+    /// The comparison divider position as a fraction of the viewport width
+    /// (`0` reveals only the processed result, `1` only the captured before),
+    /// clamped to `0...1`. Starts centred and is recentred whenever the comparison
+    /// is turned on.
+    @Published public private( set ) var comparisonFraction: CGFloat = 0.5
+
     /// Whether the generic overlay alert is shown — raised when an overlay with
     /// nothing to reveal but a ``CanvasOverlay/warning`` is tapped, so the user
     /// sees why it reveals nothing.
@@ -107,6 +118,30 @@ public final class ImageCanvasController: ObservableObject
     public func zoomOut()
     {
         self.issue( .zoomOut )
+    }
+
+    /// Toggles the before/after comparison on or off.
+    ///
+    /// Turning it on recentres the divider, so the comparison always starts from a
+    /// predictable middle position rather than wherever it was last dragged.
+    public func toggleComparison()
+    {
+        self.isComparing.toggle()
+
+        if self.isComparing
+        {
+            self.comparisonFraction = 0.5
+        }
+    }
+
+    /// Sets the comparison divider position, clamped to `0...1`.
+    ///
+    /// - Parameter fraction: The divider position as a fraction of the viewport
+    ///   width (`0` reveals only the processed result, `1` only the captured
+    ///   before).
+    public func setComparisonFraction( _ fraction: CGFloat )
+    {
+        self.comparisonFraction = min( max( fraction, 0 ), 1 )
     }
 
     /// Whether the overlay with a given identifier is currently enabled.
