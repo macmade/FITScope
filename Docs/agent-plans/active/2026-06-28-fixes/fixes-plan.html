@@ -942,16 +942,23 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Make API keys preferences view larger</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Make API keys preferences view larger</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Enlarge the API Keys tab (<code>APIKeysPreferencesView</code>) so the API key fields have enough room to be read and edited comfortably.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
             <li>Increase the view's width/min size (and the preferences window sizing if it constrains the tab).</li>
             <li>Give the key fields enough width; ensure other preference tabs still look right.</li>
             <li>Verify the layout in the live Preferences window and update the preview.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-04</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>No code change needed — the underlying issue was resolved elsewhere.</strong> The API Keys tab felt cramped because it previously held several key fields (including an OpenWeatherMap key); that key has since been removed, so <code>APIKeysPreferencesView</code> now shows a single <em>Astrometry.net</em> field, which sits comfortably in the standard 480-pt-wide tab (<code>PreferencesView.standardWidth</code>). With only one field there is no longer a width problem to fix.</p>
+            <p><strong>Outcome.</strong> Per the maintainer's direction, nothing was changed. No files were modified; the per-tab preferences widths (General / API Keys 480, Weighting 560, Information Panel 480×360) are left as-is. <em>(An initial plan to add a dedicated <code>apiKeysWidth</code> and widen the tab was not carried out — it was made moot by the key removal.)</em></p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>It's OK now since we removed the OpenWeatherMap key — don't change anything.</li>
+            </ul>
+          </div>
         </li>
 
         <li class="milestone">
