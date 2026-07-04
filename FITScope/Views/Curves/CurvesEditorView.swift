@@ -125,7 +125,7 @@ struct CurvesEditorView: View
         // identifier — the role the enclosing scroll view previously served.
         VStack( alignment: .leading, spacing: 14 )
         {
-            CurveEditorCanvas( points: self.activePointsBinding, tint: self.tint, onChange: self.commit )
+            CurveEditorCanvas( points: self.activePointsBinding, tint: self.tint, histogram: self.image.renderer.result?.histogram, onChange: self.commit )
                 .frame( height: 260 )
 
             Text( "Drag to add or move points. Drag a point off the chart to remove it." )

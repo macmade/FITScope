@@ -44,6 +44,30 @@ public struct HistogramView: View
     /// is visible when a few bins dominate. Linear when `false`.
     public let logScale: Bool
 
+    /// Whether to draw the faint reference grid behind the curves. Turn it off
+    /// when the histogram is used as a backdrop over a view that already draws its
+    /// own grid (e.g. the Curves editor), so the two grids don't overlap.
+    public let showsGrid: Bool
+
+    /// Creates a histogram view.
+    ///
+    /// - Parameters:
+    ///   - histogram:        The histograms to draw.
+    ///   - separateChannels: Whether to stack the RGB channels in separate strips
+    ///                       rather than overlaying them (RGB mode only).
+    ///   - mode:             Which histogram (RGB, luminance or mono) to draw.
+    ///   - logScale:         Whether to scale bar heights logarithmically.
+    ///   - showsGrid:        Whether to draw the reference grid (default `true`);
+    ///                       pass `false` when overlaying another grid.
+    public init( histogram: FITSImageRenderer.Histogram, separateChannels: Bool, mode: HistogramControlView.Mode, logScale: Bool, showsGrid: Bool = true )
+    {
+        self.histogram        = histogram
+        self.separateChannels = separateChannels
+        self.mode             = mode
+        self.logScale         = logScale
+        self.showsGrid        = showsGrid
+    }
+
     /// The view's content.
     public var body: some View
     {
@@ -56,7 +80,10 @@ public struct HistogramView: View
 
             ZStack
             {
-                HistogramGridView()
+                if self.showsGrid
+                {
+                    HistogramGridView()
+                }
 
                 if self.separateChannels && self.mode == .rgb
                 {

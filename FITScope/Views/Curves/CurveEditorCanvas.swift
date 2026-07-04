@@ -61,6 +61,12 @@ struct CurveEditorCanvas: View
     /// The colour the curve is drawn in (tinted per channel).
     let tint: Color
 
+    /// The histogram drawn faintly behind the curve as a tonal-distribution
+    /// backdrop, or `nil` before the first render. Uses the same ``HistogramView``
+    /// as the Levels editor, with its own grid suppressed so only this canvas's
+    /// grid shows through.
+    let histogram: FITSImageRenderer.Histogram?
+
     /// Called after any change to the points, so the owner can commit + re-render.
     let onChange: () -> Void
 
@@ -81,19 +87,41 @@ struct CurveEditorCanvas: View
 
             let size = geometry.size
 
-            Canvas
+            ZStack
             {
-                context, _ in
+                self.backdrop
 
-                self.draw( in: &context, size: size )
+                Canvas
+                {
+                    context, _ in
+
+                    self.draw( in: &context, size: size )
+                }
+                .contentShape( Rectangle() )
+                .gesture( self.drag( in: size ) )
             }
-            .contentShape( Rectangle() )
-            .gesture( self.drag( in: size ) )
         }
         .background( Color( nsColor: .textBackgroundColor ) )
         .clipShape( RoundedRectangle( cornerRadius: 10 ) )
         .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
         .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.canvas )
+    }
+
+    /// The histogram backdrop drawn behind the curve: the same ``HistogramView``
+    /// the Levels editor uses, with its own grid suppressed so only this canvas's
+    /// grid shows through. Empty until the first render produces a histogram.
+    @ViewBuilder private var backdrop: some View
+    {
+        if let histogram = self.histogram
+        {
+            HistogramView(
+                histogram:        histogram,
+                separateChannels: false,
+                mode:             histogram.isMono ? .mono : .rgb,
+                logScale:         false,
+                showsGrid:        false
+            )
+        }
     }
 
     // MARK: - Drawing
