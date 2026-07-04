@@ -664,7 +664,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4><span class="milestone-id">M8</span>Visible planets in the info panel</h4>
-                <span class="pill todo">Not started</span>
+                <span class="pill done">Completed</span>
             </div>
             <p class="goal">Show which planets are visible (above the horizon) at the observation time/location, labelled by their letters/abbreviations.</p>
 
@@ -676,11 +676,33 @@
                 <li>Add a preview covering a few representative dates/locations.</li>
             </ul>
 
-            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="meta-row"><span><span class="k">Status:</span> Completed</span><span><span class="k">Completed:</span> 2026-07-04</span></div>
             <div class="field-label">Implementation notes</div>
-            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Placement (your call):</strong> a dedicated <strong>&ldquo;Planets&rdquo;</strong> tab (not shared with the Sun tab), completing the Moon / Sun / Planets celestial trio. Tab order: Info / Location / Moon / Sun / Planets / Conditions.</li>
+                    <li><strong>All seven observable planets (corrected mid-milestone):</strong> the first pass wrongly listed only the five naked-eye planets; it now covers <strong>Mercury&ndash;Neptune</strong> (every planet observable from Earth). This meant adding Uranus and Neptune (with their Schlyter elements) to SwiftAstro&rsquo;s <code>Planet</code> enum, validated by a distance sanity check (Uranus ~19&nbsp;AU, Neptune ~30&nbsp;AU) and an all-cases count test. The app is data-driven off <code>Planet.allCases</code>, so it picked them up with no change.</li>
+                    <li><strong><code>PlanetsView</code>:</strong> lists all seven planets, each with its astronomical symbol, altitude and compass direction from <code>PlanetPosition.horizontal</code>; above-horizon planets are shown in full and below-horizon ones dimmed. A headline counts how many are up (&ldquo;3 of 7 above the horizon&rdquo;, or &ldquo;No planets above the horizon&rdquo; &mdash; doubling as the none-visible state). Owns its own No-Location/No-Date empty states and fills the tab like the Moon/Sun tabs. Altitudes are signed whole degrees; the date is UTC.</li>
+                    <li><strong>Labelling / icons (your calls):</strong> full planet names (a vertical table has room and names are unambiguous), each prefixed by the planet&rsquo;s <strong>astronomical glyph</strong> (☿ ♀ ♂ ♃ ♄ ⛢ ♆) as the row icon &mdash; SF Symbols has no per-planet symbols, so the traditional Unicode glyphs are used. Uranus uses its <em>astronomical</em> symbol <code>⛢</code> (U+26E2) rather than the astrological <code>♅</code>. The glyphs live on <code>Planet.symbol</code> in SwiftAstro (a universal astronomical property, alongside <code>name</code>).</li>
+                    <li><strong>Shared <code>CompassDirection</code> (TDD):</strong> the azimuth&rarr;16-point abbreviation was extracted into a testable <code>CompassDirection.abbreviation(forAzimuth:)</code> and reused by both the planet rows and the Weather tab&rsquo;s wind (removing the duplicate compass logic there). Tests written first (cardinals, intercardinals, full-circle wrap, negative normalization).</li>
+                    <li><strong>Naming clash avoided:</strong> the app already has a nested <code>NorthOverlay.Compass</code> (the WCS-derived <em>celestial</em> N/E compass). To avoid two <code>Compass</code> types, the new terrestrial one is named <code>CompassDirection</code> (no compile conflict &mdash; different scopes &mdash; but the distinct name keeps them clear).</li>
+                    <li><strong>Tab &amp; wiring:</strong> new <code>Tab.planets</code> (title &ldquo;Planets&rdquo;, icon <code>circles.hexagonpath</code>), fed the same <code>skyLocation</code>/<code>observationDate</code> as the Sun tab. New accessibility identifiers <code>PlanetsView.container</code>/<code>.icon</code>.</li>
+                    <li><strong>Also in SwiftAstro this milestone:</strong> Uranus/Neptune elements, <code>Planet.symbol</code>, and (per review) the operand columns in <code>Planet.swift</code>&rsquo;s element tables were aligned. So M8 spans both repos &mdash; it needs a SwiftAstro commit + pointer bump like M6.</li>
+                    <li><strong>Verification:</strong> the app builds and its unit suite passes at <strong>430 tests</strong> (426 + 4 new <code>CompassDirection</code> tests); the SwiftAstro suite passes with the added planet/symbol tests. The view is not unit-testable; it carries with-data and no-location previews and is left for your visual review. UI tests were not run, per your standing request.</li>
+                    <li><strong>For review:</strong> (1) the sidebar now has <strong>six tabs</strong> &mdash; the segmented control will be tight and titles will likely truncate; I recommend switching the tab bar to icon-only (with tooltips) and can do that as a follow-up; (2) the Planets header icon (<code>circles.hexagonpath</code>) is a placeholder &mdash; easily changed; (3) below-horizon planets are dimmed rather than hidden, so the full set is always visible; (4) with seven rows the tab is taller &mdash; it should fit the shared tab height, but flag if it clips on a sparse Info panel; (5) the ⛢ glyph is font-dependent &mdash; flag if it doesn&rsquo;t render well on your display.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <div class="placeholder">Review feedback for this milestone.</div>
+            <div class="notes">
+                <ul>
+                    <li>Planets get their own separate tab (not shared with the Sun tab).</li>
+                    <li>Pay attention to the alignment of <code>=</code> signs across consecutive assignments.</li>
+                    <li>There are more than five planets &mdash; cover every planet observable from Earth (Mercury&ndash;Neptune), not just the naked-eye five.</li>
+                    <li>Add icons for the planet rows; use the planets&rsquo; astronomical symbols, preferring the astronomical symbol where one exists (Uranus <code>⛢</code>).</li>
+                    <li>Align the operands in <code>Planet.swift</code>&rsquo;s element tables.</li>
+                    <li>The planet glyphs looked small next to the icons in the other tabs; enlarge them &mdash; the glyph is now 14&nbsp;pt (vs the 10&nbsp;pt row text) to match their weight.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- ============================ PHASE 4 ============================ -->

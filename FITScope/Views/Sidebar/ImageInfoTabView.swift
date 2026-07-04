@@ -51,6 +51,9 @@ public struct ImageInfoTabView: View
         /// The Sun: sunrise/sunset, twilight and the capture-time sky darkness.
         case sun
 
+        /// The planets above the horizon at the capture time.
+        case planets
+
         /// The capture's historical weather conditions.
         case conditions
 
@@ -63,6 +66,7 @@ public struct ImageInfoTabView: View
                 case .location:   return "Location"
                 case .moon:       return "Moon"
                 case .sun:        return "Sun"
+                case .planets:    return "Planets"
                 case .conditions: return "Conditions"
             }
         }
@@ -90,7 +94,7 @@ public struct ImageInfoTabView: View
     {
         VStack( spacing: 10 )
         {
-            SegmentedControlView( selection: self.$tab, values: [ .info, .location, .moon, .sun, .conditions ], title: { $0.title }, icon: { self.icon( for: $0 ) } )
+            SegmentedControlView( selection: self.$tab, values: [ .info, .location, .moon, .sun, .planets, .conditions ], title: { $0.title }, icon: { self.icon( for: $0 ) } )
                 .padding( .horizontal, 14 )
                 .padding( .top, 12 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.tabs )
@@ -152,6 +156,13 @@ public struct ImageInfoTabView: View
                 .allowsHitTesting( self.tab == .sun )
                 .accessibilityHidden( self.tab != .sun )
 
+            PlanetsView( location: self.skyLocation, date: self.observationDate )
+                .padding( .horizontal, 14 )
+                .padding( .bottom, 14 )
+                .opacity( self.tab == .planets ? 1 : 0 )
+                .allowsHitTesting( self.tab == .planets )
+                .accessibilityHidden( self.tab != .planets )
+
             WeatherView( coordinate: self.coordinate, date: self.observationDate, isActive: self.tab == .conditions )
                 .padding( .horizontal, 14 )
                 .padding( .bottom, 14 )
@@ -201,6 +212,7 @@ public struct ImageInfoTabView: View
             case .location:   return "mappin.and.ellipse"
             case .moon:       return self.observationDate.map { MoonPhase( date: $0 ).phase.systemImageName } ?? "moon"
             case .sun:        return "sun.horizon"
+            case .planets:    return "circles.hexagonpath"
             case .conditions: return "cloud.sun"
         }
     }

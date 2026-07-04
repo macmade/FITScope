@@ -310,19 +310,7 @@ public struct WeatherView: View
     /// - Parameter conditions: The conditions to describe.
     private static func windText( _ conditions: WeatherConditions ) -> String
     {
-        "\( Int( conditions.windSpeedMetersPerSecond.rounded() ) ) m/s \( Self.compass( conditions.windDirectionDegrees ) )"
-    }
-
-    /// The 16-point compass abbreviation for a meteorological wind direction.
-    ///
-    /// - Parameter degrees: The direction the wind blows from, in degrees.
-    /// - Returns: The compass abbreviation, e.g. `WSW`.
-    private static func compass( _ degrees: Int ) -> String
-    {
-        let points = [ "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW" ]
-        let index  = Int( ( Double( degrees ).truncatingRemainder( dividingBy: 360 ) / 22.5 ).rounded() ) % points.count
-
-        return points[ index ]
+        "\( Int( conditions.windSpeedMetersPerSecond.rounded() ) ) m/s \( CompassDirection.abbreviation( forAzimuth: Double( conditions.windDirectionDegrees ) ) )"
     }
 
     /// A date formatted in UTC (the time zone `DATE-OBS` is recorded in), e.g.
