@@ -76,6 +76,10 @@ public struct MoonPhaseView: View
         {
             MoonPhaseDisc( fraction: moonPhase.fraction )
                 .frame( width: 92, height: 92 )
+                // The disc fills its frame edge-to-edge, unlike the SF Symbol
+                // headers in the other tabs (which carry intrinsic whitespace), so
+                // add a little bottom padding to match their optical gap to the text.
+                .padding( .bottom, 6 )
                 .accessibilityIdentifier( AccessibilityIdentifier.MoonPhaseView.icon )
 
             Text( moonPhase.phase.name )
