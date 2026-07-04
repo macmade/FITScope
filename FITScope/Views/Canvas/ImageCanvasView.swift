@@ -224,27 +224,10 @@ public struct ImageCanvasView: View
                         )
                     }
                 }
-                // Prepare the "before" image when the comparison is entered, and
-                // re-prepare it when the orientation changes while comparing, so it
-                // stays registered with the rotated / flipped result.
-                .onChange( of: self.controller.isComparing )
-                {
-                    _, comparing in
-
-                    if comparing
-                    {
-                        Task { await image.renderer.prepareOriginalImage() }
-                    }
-                }
-                .onChange( of: image.renderer.result?.orientation )
-                {
-                    _, _ in
-
-                    if self.controller.isComparing
-                    {
-                        Task { await image.renderer.prepareOriginalImage() }
-                    }
-                }
+                // The "before" image is captured eagerly by the renderer (at load
+                // and on every orientation change), so it is always ready and
+                // registered with the result — the comparison needs no on-demand
+                // preparation when it is entered.
                 .overlay( alignment: .top )
                 {
                     self.floatingBar

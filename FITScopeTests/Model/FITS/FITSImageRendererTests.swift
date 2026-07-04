@@ -505,11 +505,12 @@ struct FITSImageRendererTests
         #expect( renderer.isRendering, "a stale commit must not clear the flag while a newer render is in flight" )
     }
 
-    /// The before/after comparison "before" image is produced lazily: a normal
-    /// render never computes it, so a file that is never compared pays nothing.
+    /// The before/after comparison "before" image is produced eagerly, as part of
+    /// the normal render, so it is ready the moment the image displays and
+    /// registers pixel-for-pixel with the processed result.
     @Test
     @MainActor
-    func comparisonImageIsNilUntilPrepared() async throws
+    func comparisonImageIsReadyAfterRender() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
@@ -517,33 +518,38 @@ struct FITSImageRendererTests
 
         await renderer.render()
 
-        #expect( renderer.originalImage == nil, "the before image is not computed until requested" )
+        let before = try #require( renderer.originalImage, "the before image is rendered as part of the normal render" )
+        let result = try #require( renderer.result )
+
+        #expect( before.width  == result.image.width,  "the before image registers with the processed result" )
+        #expect( before.height == result.image.height )
     }
 
-    /// Preparing the "before" image renders the captured view and caches it, so a
-    /// second request at the same orientation reuses it — toggling the comparison
-    /// on and off does no extra work.
+    /// The captured "before" image is reused across re-renders at the same
+    /// orientation: a re-render triggered by another adjustment does not
+    /// needlessly re-render the original.
     @Test
     @MainActor
-    func preparingTheComparisonImageCachesAndReusesIt() async throws
+    func theComparisonImageIsReusedAcrossReRenders() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
         let input    = try FITSImageRenderer.renderInput( from: file.sections )
         let renderer = FITSImageRenderer( input: input )
 
         await renderer.render()
-        await renderer.prepareOriginalImage()
 
-        let first = try #require( renderer.originalImage, "preparing the before image must produce it" )
+        let first = try #require( renderer.originalImage, "the before image is rendered as part of the render" )
 
-        await renderer.prepareOriginalImage()
+        renderer.adjustments.brightness = 0.2
 
-        #expect( renderer.originalImage === first, "the before image is cached and reused at the same orientation" )
+        await renderer.render()
+
+        #expect( renderer.originalImage === first, "an unchanged orientation reuses the captured before image" )
     }
 
     /// The "before" image follows the current orientation so it stays registered
-    /// pixel-for-pixel with the processed result: a 90° rotation re-renders it and
-    /// swaps its dimensions, invalidating the earlier cache.
+    /// pixel-for-pixel with the processed result: a 90° rotation re-renders it as
+    /// part of the render and swaps its dimensions.
     @Test
     @MainActor
     func theComparisonImageReRendersWhenOrientationChanges() async throws
@@ -553,7 +559,6 @@ struct FITSImageRendererTests
         let renderer             = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: data, properties: properties ) )
 
         await renderer.render()
-        await renderer.prepareOriginalImage()
 
         let identity = try #require( renderer.originalImage )
 
@@ -562,7 +567,7 @@ struct FITSImageRendererTests
 
         renderer.adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
 
-        await renderer.prepareOriginalImage()
+        await renderer.render()
 
         let rotated = try #require( renderer.originalImage )
 

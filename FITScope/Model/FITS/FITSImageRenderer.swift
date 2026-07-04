@@ -170,15 +170,17 @@ public class FITSImageRenderer: ObservableObject
     /// The "before" image for the before/after comparison: the file as captured
     /// (default adjustments — the same linear, unstretched view the histogram's
     /// ``original`` describes) rendered at the *current* orientation so it stays
-    /// registered pixel-for-pixel with the processed ``result``. Rendered lazily
-    /// on the first ``prepareOriginalImage()`` and cached for the file's lifetime,
-    /// so a file that is never compared pays nothing; `nil` until then.
+    /// registered pixel-for-pixel with the processed ``result``. Captured eagerly
+    /// as part of ``render()`` — reusing the original already rendered for the
+    /// histogram — so the comparison is ready the moment the image displays; `nil`
+    /// only until the first render commits. A later orientation change re-renders it
+    /// within the same ``render()`` pass, so it always tracks the result.
     @Published public private( set ) var originalImage: CGImage?
 
-    /// The orientation ``originalImage`` was rendered at, so a later orientation
-    /// change (a rotate or flip) can invalidate and re-render it — keeping the
-    /// before image registered with the processed result — while an unchanged
-    /// orientation reuses the cache.
+    /// The orientation ``originalImage`` was rendered at, so ``render()`` can tell an
+    /// orientation change (a rotate or flip) — which must re-render the before image
+    /// to keep it registered with the processed result — from an unchanged
+    /// orientation, which reuses the captured image.
     private var originalImageOrientation: Processors.Orient.Orientation?
 
     /// The error from the most recent failed render, or `nil` on success.
@@ -271,9 +273,16 @@ public class FITSImageRenderer: ObservableObject
 
         do
         {
-            let input         = try self.input.get()
-            let settings      = self.adjustments.settings
-            let needsOriginal = self.original == nil
+            let input          = try self.input.get()
+            let settings       = self.adjustments.settings
+
+            // The histogram's original is orientation-independent, so it is computed
+            // once. The before/after image must match the *current* orientation to
+            // register with the processed result, so it is re-rendered whenever the
+            // orientation changes — but both come from the one original render below.
+            let needsHistogram = self.original == nil
+            let needsImage     = self.originalImage == nil || self.originalImageOrientation != settings.orientation
+            let needsOriginal  = needsHistogram || needsImage
 
             let outcome = try await withCheckedThrowingContinuation
             {
@@ -284,11 +293,13 @@ public class FITSImageRenderer: ObservableObject
                     do
                     {
                         // The original is the file as captured: a render with the
-                        // default settings (linear normalization and debayer
-                        // only). It does not depend on the user's adjustments, so
-                        // it is computed once and reused thereafter.
-                        let result   = try Self.makeResult( input: input, settings: settings )
-                        let original = needsOriginal ? try Self.makeResult( input: input, settings: ImageProcessor.Settings() ) : nil
+                        // default settings (linear normalization and debayer only),
+                        // but the current orientation, so its image registers
+                        // pixel-for-pixel with the processed result for the
+                        // before/after comparison.
+                        let originalSettings = ImageProcessor.Settings( orientation: settings.orientation )
+                        let result           = try Self.makeResult( input: input, settings: settings )
+                        let original         = needsOriginal ? try Self.makeResult( input: input, settings: originalSettings ) : nil
 
                         continuation.resume( returning: ( result, original ) )
                     }
@@ -301,7 +312,17 @@ public class FITSImageRenderer: ObservableObject
 
             if let original = outcome.original
             {
-                self.original = HistogramSet( histogram: original.histogram, statistics: original.statistics )
+                if needsHistogram
+                {
+                    self.original = HistogramSet( histogram: original.histogram, statistics: original.statistics )
+                }
+
+                // Capture the "before" image eagerly, as part of this render — at
+                // load and again whenever the orientation changes — so the
+                // comparison is always ready the moment the image displays, with no
+                // lazy render when it is entered.
+                self.originalImage            = original.image
+                self.originalImageOrientation = settings.orientation
             }
 
             self.commit( .success( outcome.result ), generation: generation )
@@ -310,66 +331,6 @@ public class FITSImageRenderer: ObservableObject
         {
             self.commit( .failure( error ), generation: generation )
         }
-    }
-
-    /// Prepares the "before" image for the before/after comparison, rendering the
-    /// captured view (default adjustments) at the current orientation and caching
-    /// it in ``originalImage``.
-    ///
-    /// A no-op when the cache already matches the current orientation, so toggling
-    /// the comparison on and off — or requesting it repeatedly — does no extra
-    /// work. A changed orientation re-renders so the before image keeps swapping
-    /// and rotating in lock-step with the processed result. Any render failure or
-    /// missing input leaves ``originalImage`` unchanged, so the caller simply has
-    /// no before image to show rather than surfacing an error.
-    public func prepareOriginalImage() async
-    {
-        let orientation = self.adjustments.orientation
-
-        guard self.originalImage == nil || self.originalImageOrientation != orientation
-        else
-        {
-            return
-        }
-
-        guard let input = try? self.input.get()
-        else
-        {
-            return
-        }
-
-        // The captured view: every adjustment at its default, but the current
-        // orientation, so the before image matches the processed result's
-        // dimensions and registers with it under a rotate or flip.
-        let settings = ImageProcessor.Settings( orientation: orientation )
-
-        let image = try? await withCheckedThrowingContinuation
-        {
-            ( continuation: CheckedContinuation< CGImage, any Error > ) in
-
-            DispatchQueue.global( qos: .userInitiated ).async
-            {
-                do
-                {
-                    let render = try ImageProcessor.render( data: input.data, properties: input.properties, settings: settings )
-
-                    continuation.resume( returning: render.image )
-                }
-                catch
-                {
-                    continuation.resume( throwing: error )
-                }
-            }
-        }
-
-        guard let image
-        else
-        {
-            return
-        }
-
-        self.originalImage            = image
-        self.originalImageOrientation = orientation
     }
 
     /// Renders the image with the given settings and computes its histograms and
