@@ -161,6 +161,56 @@ struct FITSImageRendererTests
         #expect( updated != original )
     }
 
+    /// Rapid re-render requests coalesce: scheduling a newer one cancels the
+    /// prior pending task, so a burst of changes (e.g. a slider drag) does not
+    /// spawn a render for every intermediate value.
+    @Test
+    @MainActor
+    func rapidReRendersCancelThePriorPending() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        renderer.scheduleReRender()
+        let first = try #require( renderer.pendingRender )
+
+        renderer.scheduleReRender()
+        let latest = try #require( renderer.pendingRender )
+
+        #expect( first.isCancelled, "scheduling a newer re-render must cancel the prior pending one" )
+        #expect( latest.isCancelled == false, "the latest scheduled re-render stays live" )
+
+        // Don't leave the debounced render running past the test.
+        latest.cancel()
+    }
+
+    /// A burst of changes renders only the final state: after rapid re-render
+    /// requests the committed result reflects the last adjustment, never an
+    /// intermediate one that was superseded (no dropped or stale final render).
+    @Test
+    @MainActor
+    func rapidChangesRenderOnlyTheFinalState() async throws
+    {
+        let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
+        let input    = try FITSImageRenderer.renderInput( from: file.sections )
+        let renderer = FITSImageRenderer( input: input )
+
+        // An intermediate change, immediately superseded by the final one before
+        // the debounce elapses.
+        renderer.adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
+        renderer.scheduleReRender()
+        let superseded = renderer.pendingRender
+
+        renderer.adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: true )
+        renderer.scheduleReRender()
+
+        await renderer.pendingRender?.value
+
+        #expect( superseded?.isCancelled == true, "the intermediate re-render must be coalesced away" )
+        #expect( renderer.result?.orientation == .init( rotation: .clockwise90, mirroredHorizontally: true ), "the debounced render must reflect the final adjustment, not an intermediate one" )
+    }
+
     /// A render failure must not strand the user: the thrown error surfaces but
     /// the last good render is retained, so the image and its controls survive.
     @Test

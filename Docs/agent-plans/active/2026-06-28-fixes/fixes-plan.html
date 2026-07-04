@@ -886,16 +886,26 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Ensure debouncing with image renderer</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Ensure debouncing with image renderer</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Make sure rendering requests are properly debounced so rapid control changes do not trigger redundant renders.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Trace how control changes trigger renders and whether any debouncing exists today.</li>
-            <li>Add/verify debouncing (coalesce rapid changes; render the latest state) without dropping the final value.</li>
-            <li>Ensure correctness with sliders/continuous controls (no stale final render).</li>
-            <li>Verify rapid changes produce a single up-to-date render.</li>
+            <li class="done">Trace how control changes trigger renders and whether any debouncing exists today.</li>
+            <li class="done">Add/verify debouncing (coalesce rapid changes; render the latest state) without dropping the final value.</li>
+            <li class="done">Ensure correctness with sliders/continuous controls (no stale final render).</li>
+            <li class="done">Verify rapid changes produce a single up-to-date render.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-04</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Trace (task 1).</strong> Every render-triggering path routes through one debounced entry point: a control writes to <code>renderer.adjustments</code> then calls <code>FITSImageRenderer.scheduleReRender()</code>. This covers the inspector controls (via <code>InspectorView.reRender()</code>), the Levels and Curves editors, and the <code>FITSImage</code> menu actions (rotate/flip/invert/reset). The histogram view options (log scale, statistics, separate channels) are display-only and don't re-render. <em>(<code>RenderThrottle</code> is unrelated — it bounds how many <em>files</em> prepare at once when a window opens, not the per-control re-render.)</em></p>
+            <p><strong>The mechanism already in place.</strong> <code>scheduleReRender()</code> is a correct trailing-edge debounce: it cancels any pending task and starts a fresh <code>150 ms</code> timer, so a burst of changes collapses to the last one. When it fires, <code>render()</code> snapshots <code>adjustments.settings</code> <em>at that moment</em> (so it uses the latest state), claims a monotonic generation, and <code>commit(_:generation:)</code> only writes the outcome while that generation is still the newest — so a slower, superseded in-flight render can't clobber a newer result. This already satisfies all four tasks: rapid changes coalesce (task 2), the final value is never dropped because the trailing edge always renders the latest snapshot (task 2), and the generation guard prevents a stale final render during a slider drag (task 3).</p>
+            <p><strong>Outcome: no production change needed — verified and covered.</strong> The debounce is already centralized and correct, so the work here was confirming it and closing the test gap. The generation/stale-commit logic and "a scheduled re-render applies a changed adjustment" were already tested; what wasn't were the debounce's two core promises. Added two regression tests to <code>FITSImageRendererTests</code>:</p>
+            <ul>
+              <li><code>rapidReRendersCancelThePriorPending</code> — a second <code>scheduleReRender()</code> cancels the first's pending task, and the latest stays live (coalescing).</li>
+              <li><code>rapidChangesRenderOnlyTheFinalState</code> — after two rapid changes, the committed result carries the <em>final</em> orientation and the intermediate task was coalesced away (no dropped/stale final render). Orientation is the observable here because <code>Result</code> records the orientation it was rendered with.</li>
+            </ul>
+            <p><strong>TDD honesty.</strong> These are characterization/regression tests: the behaviour is already correct, so they pass against the current code rather than being watched to fail first. What they guard against: the first fails if <code>scheduleReRender()</code> stops cancelling the prior task; the second fails if <code>render()</code> read a stale snapshot or a superseded render were allowed to commit.</p>
+            <p><strong>Verification.</strong> Tests only — no production code changed, no new files, no Xcode-project edit. All 405 FITScope tests in 57 suites pass (was 403; +2); the app builds via <code>xcodebuild</code>. <strong>Optional interactive check</strong>: drag a slider quickly and confirm the canvas settles on the final value with the controls locked only briefly, not one render per intermediate value.</p>
+          </div>
           <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
         </li>
 
