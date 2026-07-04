@@ -84,13 +84,17 @@ public struct FITScopeApp: App
         {
             CommandGroup( replacing: CommandGroupPlacement.newItem )
             {
-                Button( "New Window" )
+                Button
                 {
                     openWindow( value: WindowContent() )
                 }
+                label:
+                {
+                    Label( "New Window", systemImage: "macwindow.badge.plus" )
+                }
                 .keyboardShortcut( "n", modifiers: .command )
 
-                Button( "Open\u{2026}" )
+                Button
                 {
                     let urls = self.appDelegate.appModel.runOpenPanel()
 
@@ -98,6 +102,10 @@ public struct FITScopeApp: App
                     {
                         self.appDelegate.appModel.openIntoActiveWindowOrNew( urls: urls )
                     }
+                }
+                label:
+                {
+                    Label( "Open\u{2026}", systemImage: "folder" )
                 }
                 .keyboardShortcut( "o", modifiers: .command )
             }
@@ -111,12 +119,16 @@ public struct FITScopeApp: App
             {
                 Button( action: { openWindow( id: "AboutWindow" ) } )
                 {
-                    Text( "About \( Bundle.main.title )..." )
+                    Label( "About \( Bundle.main.title )...", systemImage: "info.circle" )
                 }
 
-                Button( "Check for Updates\u{2026}" )
+                Button
                 {
                     AppUpdater().checkForUpdates()
+                }
+                label:
+                {
+                    Label( "Check for Updates\u{2026}", systemImage: "arrow.triangle.2.circlepath" )
                 }
             }
 
@@ -134,12 +146,16 @@ public struct FITScopeApp: App
             {
                 // The app ships no help book, so the standard "Help" item does
                 // nothing. Point it at the project's GitHub page instead.
-                Button( "\( Bundle.main.title ) Help" )
+                Button
                 {
                     if let url = Self.helpURL
                     {
                         NSWorkspace.shared.open( url )
                     }
+                }
+                label:
+                {
+                    Label( "\( Bundle.main.title ) Help", systemImage: "questionmark.circle" )
                 }
                 .keyboardShortcut( "?", modifiers: .command )
             }

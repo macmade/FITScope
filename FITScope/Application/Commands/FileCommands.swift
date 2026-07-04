@@ -53,22 +53,30 @@ struct FileCommands: View
     /// The menu items.
     var body: some View
     {
-        Button( "Save As\u{2026}" )
+        Button
         {
             if let file = self.file
             {
                 self.appModel.saveCopy( of: file )
             }
         }
+        label:
+        {
+            Label( "Save As\u{2026}", systemImage: "square.and.arrow.down" )
+        }
         .keyboardShortcut( "s", modifiers: [ .command, .shift ] )
         .disabled( self.file == nil )
 
-        Button( "Export\u{2026}" )
+        Button
         {
             if let file = self.file
             {
                 self.appModel.exportImage( of: file )
             }
+        }
+        label:
+        {
+            Label( "Export\u{2026}", systemImage: "square.and.arrow.up" )
         }
         .keyboardShortcut( "e", modifiers: [ .command, .shift ] )
         .disabled( self.file?.image?.renderer.result == nil )

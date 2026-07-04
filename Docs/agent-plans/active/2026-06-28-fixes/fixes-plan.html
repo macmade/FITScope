@@ -962,17 +962,31 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Verify whether MainMenu.xib is needed for a SwiftUI app</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Verify whether MainMenu.xib is needed for a SwiftUI app</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Confirm whether <code>Base.lproj/MainMenu.xib</code> (wired via <code>NSMainNibFile</code> in <code>Info.plist</code>) is actually required given the SwiftUI <code>@main App</code> lifecycle (<code>FITScopeApp</code>). If not, remove the xib and its <code>Info.plist</code> reference to drop dead AppKit scaffolding.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Determine whether the nib provides anything still used (menu items, app delegate wiring, etc.).</li>
-            <li>If unused: remove the <code>NSMainNibFile</code> key from <code>Info.plist</code> and delete the xib (and its project reference).</li>
-            <li>Build and run; confirm the app launches and menus behave correctly without the nib.</li>
-            <li>If it <em>is</em> needed, record the reason in Implementation notes and leave it in place.</li>
+            <li class="done">Determine whether the nib provides anything still used (menu items, app delegate wiring, etc.).</li>
+            <li class="done">If unused: remove the <code>NSMainNibFile</code> key from <code>Info.plist</code> and delete the xib (and its project reference).</li>
+            <li class="done">Build and run; confirm the app launches and menus behave correctly without the nib.</li>
+            <li class="done">If it <em>is</em> needed, record the reason in Implementation notes and leave it in place.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-04</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Verdict: the xib is dead scaffolding — removed.</strong> The app is a SwiftUI-lifecycle app (<code>@main struct FITScopeApp: App</code>) that builds its <em>entire</em> menu bar from <code>.commands</code> and wires its delegate via <code>@NSApplicationDelegateAdaptor( AppDelegate.self )</code>. The evidence that <code>MainMenu.xib</code> / <code>NSMainNibFile</code> are unused:</p>
+            <ul>
+              <li><strong>Delegate mismatch.</strong> The xib's File's Owner (<code>NSApplication</code>) wires its <code>delegate</code> outlet to a custom object of class <code>ApplicationDelegate</code> (module <code>FITScope</code>) — a class that <strong>no longer exists</strong> (the live delegate is <code>AppDelegate</code>, connected through the SwiftUI adaptor, not the nib).</li>
+              <li><strong>Dead custom actions.</strong> The xib's only non-boilerplate menu items target that nonexistent object via <code>showAboutWindow:</code>, <code>checkForUpdates:</code>, <code>showInfo:</code>, <code>showHelp:</code>. Yet About / Check for Updates / Help all work, because <code>FITScopeApp.body</code>'s <code>.commands</code> provide them (App menu <code>CommandGroup( replacing: .appInfo )</code> → About + Check for Updates; <code>CommandGroup( replacing: .help )</code> → <em>FITScope Help</em>; plus File/View/Image command groups). The standard Edit/Window/etc. menus come from SwiftUI's defaults.</li>
+              <li><strong>No other coupling.</strong> <code>AppDelegate</code> has no <code>IBOutlet</code>/<code>IBAction</code>/<code>awakeFromNib</code>; no Swift code references the nib; <code>Base.lproj</code> contained only <code>MainMenu.xib</code>; it was the only xib/storyboard in the project. Git history shows the xib and the <code>NSMainNibFile</code> key both originate from the initial AppKit project scaffold (<code>28adbbd</code>), predating the SwiftUI build.</li>
+            </ul>
+            <p><strong>Removal (maintainer approved).</strong> (1) Removed the <code>NSMainNibFile</code> key + its <code>MainMenu</code> value from <code>FITScope/Info.plist</code>, keeping <code>NSPrincipalClass = NSApplication</code> (standard). The edit is byte-surgical — only those two lines change; an initial <code>PlistBuddy Delete</code> reordered the whole plist alphabetically, so it was reverted in favour of removing exactly the two lines. (2) Deleted <code>FITScope/Base.lproj/MainMenu.xib</code> and the now-empty <code>Base.lproj</code>. (3) Removed the xib's Xcode references — the <code>PBXVariantGroup</code> (<code>MainMenu.xib</code>) with its <code>Base</code> child file reference and the Resources build-phase entry — via the <code>xcodeproj</code> gem; the project has no remaining <code>MainMenu</code> reference.</p>
+            <p><strong>No unit test.</strong> This is a resource/Info.plist/project removal with no logic to assert (consistent with the other config/layout milestones); verification is the build plus the interactive launch check.</p>
+            <p><strong>Verification.</strong> The <code>FITScope</code> app builds clean via <code>xcodebuild</code> (Debug, macOS) with no <code>MainMenu</code>-related error or warning; all <strong>409 unit tests in 58 suites</strong> still pass. <strong>Needs an interactive launch check</strong> (task 3): launch the app and confirm the full menu bar is unchanged — the app menu (About FITScope…, Check for Updates…), File (New Window ⌘N, Open… ⌘O, and the <code>FileCommands</code> items), Edit/Window standard menus, the custom <em>Image</em> menu, View items, and Help (<em>FITScope Help</em> ⌘?) — and that launch/behaviour is otherwise identical.</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>Considered, while here, converting the app to an Xcode-generated Info.plist (<code>GENERATE_INFOPLIST_FILE</code>) and dropping the now-optional <code>NSPrincipalClass</code>. Decision: <strong>leave the explicit Info.plist as-is for now</strong> and keep this milestone scoped to the dead xib. The FITS <code>CFBundleDocumentTypes</code> / <code>UTImportedTypeDeclarations</code> have no <code>INFOPLIST_KEY_*</code> build-setting equivalents, so the file could only be <em>slimmed</em> (the hybrid the extensions already use), not eliminated — deferred as a possible separate cleanup. <code>NSPrincipalClass = NSApplication</code> is kept.</li>
+            </ul>
+          </div>
         </li>
 
         <li class="milestone">
