@@ -35,11 +35,50 @@ import Foundation
 @MainActor
 final class RenderThrottle
 {
+    /// The initial urgency of an acquisition. Promoted work is served before
+    /// unpromoted work; a ``high`` acquire enters already promoted, as if
+    /// ``prioritize(key:)`` had been called on it the instant it suspended.
+    enum Priority
+    {
+        /// Background work with no particular urgency.
+        case normal
+
+        /// Work the user is waiting on directly, e.g. the selected file.
+        case high
+    }
+
+    /// A suspended acquirer waiting for a slot.
+    private struct Waiter
+    {
+        /// The caller's optional identifier, used to promote it later.
+        let key: AnyHashable?
+
+        /// The promotion order stamped when this waiter was last promoted, or `nil`
+        /// if it was never promoted. A higher value means a more recent promotion,
+        /// so the most recently selected file wins over earlier ones.
+        var promotion: Int?
+
+        /// A monotonically increasing sequence number, giving FIFO order among
+        /// unpromoted waiters.
+        let ticket: Int
+
+        /// The continuation resumed when this waiter is granted a slot.
+        let continuation: CheckedContinuation< Void, Never >
+    }
+
     /// The number of slots still available.
     private var available: Int
 
-    /// Callers suspended waiting for a slot, resumed in FIFO order on release.
-    private var waiters: [ CheckedContinuation< Void, Never > ] = []
+    /// Callers suspended waiting for a slot, served most-recently-promoted first
+    /// and, among unpromoted waiters, in FIFO order (by ``Waiter/ticket``).
+    private var waiters: [ Waiter ] = []
+
+    /// The next ticket to hand out, so unpromoted waiters keep their arrival order.
+    private var nextTicket = 0
+
+    /// The next promotion stamp to hand out, so a later promotion always outranks
+    /// an earlier one and the newest selection is served first.
+    private var nextPromotion = 0
 
     /// Creates a throttle allowing `limit` concurrent holders (at least one).
     ///
@@ -50,7 +89,12 @@ final class RenderThrottle
     }
 
     /// Acquires a slot, suspending until one is free.
-    func acquire() async
+    ///
+    /// - Parameters:
+    ///   - key:      An optional identifier the caller can later pass to
+    ///               ``prioritize(key:)`` to promote this acquirer while it waits.
+    ///   - priority: The initial urgency of this acquisition.
+    func acquire( key: AnyHashable? = nil, priority: Priority = .normal ) async
     {
         if self.available > 0
         {
@@ -59,19 +103,82 @@ final class RenderThrottle
             return
         }
 
-        await withCheckedContinuation { self.waiters.append( $0 ) }
+        let ticket    = self.nextTicket
+        let promotion = priority == .high ? self.makePromotion() : nil
+
+        self.nextTicket += 1
+
+        await withCheckedContinuation
+        {
+            continuation in
+
+            self.waiters.append( Waiter( key: key, promotion: promotion, ticket: ticket, continuation: continuation ) )
+        }
     }
 
-    /// Releases a slot, handing it to the next waiter if any.
-    func release()
+    /// Promotes the still-waiting acquirer with the given key so it wins the next
+    /// freed slot ahead of earlier waiters. Re-promoting stamps a fresh, higher
+    /// order, so the most recently selected file is served first even when several
+    /// were promoted while navigating. A no-op when no waiter currently carries the
+    /// key — the acquirer already holds a slot, has finished, or has not suspended
+    /// yet.
+    ///
+    /// - Parameter key: The key of the waiter to promote.
+    func prioritize( key: AnyHashable )
     {
-        if self.waiters.isEmpty
-        {
-            self.available += 1
-        }
+        guard let index = self.waiters.firstIndex( where: { $0.key == key } )
         else
         {
-            self.waiters.removeFirst().resume()
+            return
         }
+
+        self.waiters[ index ].promotion = self.makePromotion()
+    }
+
+    /// Releases a slot, handing it to the most deserving waiter if any — the most
+    /// recently promoted one, or the earliest unpromoted one — otherwise returning
+    /// it to the pool.
+    func release()
+    {
+        guard let index = self.indexOfNextWaiter()
+        else
+        {
+            self.available += 1
+
+            return
+        }
+
+        self.waiters.remove( at: index ).continuation.resume()
+    }
+
+    /// The index of the waiter that should receive the next freed slot: the most
+    /// recently promoted one, or — when none is promoted — the earliest arrival
+    /// (lowest ticket). `nil` when no waiter is suspended.
+    private func indexOfNextWaiter() -> Int?
+    {
+        self.waiters.indices.max
+        {
+            lhs, rhs in
+
+            let left  = self.waiters[ lhs ]
+            let right = self.waiters[ rhs ]
+
+            switch ( left.promotion, right.promotion )
+            {
+                case ( let leftPromotion?, let rightPromotion? ): return leftPromotion < rightPromotion
+                case ( nil, _? ):                             return true
+                case ( _?, nil ):                             return false
+                case ( nil, nil ):                            return left.ticket > right.ticket
+            }
+        }
+    }
+
+    /// Stamps and returns the next promotion order, higher than any handed out
+    /// before, so later promotions outrank earlier ones.
+    private func makePromotion() -> Int
+    {
+        self.nextPromotion += 1
+
+        return self.nextPromotion
     }
 }

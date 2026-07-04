@@ -281,8 +281,15 @@ public final class OpenFile: ObservableObject, Identifiable
     /// `@Published` changes are published outside SwiftUI's view-update pass. The
     /// `throttle` bounds how many files prepare at once.
     ///
-    /// - Parameter throttle: Gates concurrent preparations across the window.
-    func prepare( throttle: RenderThrottle )
+    /// The file's ``id`` is used as the throttle key, so the owning model can later
+    /// ``RenderThrottle/prioritize(key:)`` this preparation while it waits — e.g.
+    /// when the file becomes the selection.
+    ///
+    /// - Parameters:
+    ///   - throttle: Gates concurrent preparations across the window.
+    ///   - priority: The initial render priority — `.high` for the file the user
+    ///               is looking at, so it is processed ahead of the rest.
+    func prepare( throttle: RenderThrottle, priority: RenderThrottle.Priority = .normal )
     {
         guard self.preparation == nil
         else
@@ -290,11 +297,13 @@ public final class OpenFile: ObservableObject, Identifiable
             return
         }
 
+        let id = self.id
+
         self.preparation = Task
         {
             [ weak self ] in
 
-            await throttle.acquire()
+            await throttle.acquire( key: id, priority: priority )
 
             defer { throttle.release() }
 

@@ -70,21 +70,47 @@ public final class WindowModel: ObservableObject
 
     /// Bounds how many files render at once, so opening many files cannot
     /// saturate the CPU or spike memory. Shared by every file in the window.
-    private let renderThrottle = RenderThrottle( limit: max( 2, ProcessInfo.processInfo.activeProcessorCount - 2 ) )
+    private let renderThrottle: RenderThrottle
 
     /// Per-file change subscriptions, so the window recomputes weights when a
     /// file finishes analysis (its metrics arrive asynchronously). Rebuilt
     /// whenever the file set changes.
     private var fileObservers: [ AnyCancellable ] = []
 
+    /// Watches the selection so the selected file's still-waiting preparation can
+    /// be promoted in the throttle, keeping the on-screen image first in line.
+    private var selectionObserver: AnyCancellable?
+
     /// Whether a weight recomputation is already queued for the next runloop turn,
     /// coalescing the many change notifications a load/render pass emits into a
     /// single recompute.
     private var isWeightRecomputeScheduled = false
 
-    /// Creates an empty window model.
-    public init()
-    {}
+    /// Creates an empty window model with a render throttle sized to the machine,
+    /// leaving a couple of cores free so preparing many files never saturates the
+    /// CPU.
+    public convenience init()
+    {
+        self.init( renderThrottle: RenderThrottle( limit: max( 2, ProcessInfo.processInfo.activeProcessorCount - 2 ) ) )
+    }
+
+    /// Creates an empty window model gated by the given render throttle. Exposed so
+    /// tests can inject a controllable throttle; production uses ``init()``.
+    ///
+    /// - Parameter renderThrottle: The throttle that bounds concurrent preparations.
+    init( renderThrottle: RenderThrottle )
+    {
+        self.renderThrottle = renderThrottle
+
+        // Promote the selected file's preparation as the selection changes, so the
+        // file the user is looking at is rendered ahead of the rest.
+        self.selectionObserver = self.$selectedFileID
+            .compactMap { $0 }
+            .sink
+            {
+                [ weak self ] id in self?.renderThrottle.prioritize( key: id )
+            }
+    }
 
     /// The currently selected open file, or `nil`.
     public var selectedFile: OpenFile?
@@ -128,13 +154,19 @@ public final class WindowModel: ObservableObject
 
         self.files.append( contentsOf: newFiles )
 
-        // Render every opened file (not just the displayed one) so its sidebar
-        // row updates on its own; the throttle bounds how many run at once.
-        newFiles.forEach { $0.prepare( throttle: self.renderThrottle ) }
-
+        // Adopt a selection before preparing, so the selected file can start at
+        // high priority and be processed ahead of the rest.
         if self.selectedFileID == nil
         {
             self.selectedFileID = newFiles.first?.id
+        }
+
+        // Render every opened file (not just the displayed one) so its sidebar
+        // row updates on its own; the throttle bounds how many run at once and
+        // gives the selected file priority.
+        newFiles.forEach
+        {
+            $0.prepare( throttle: self.renderThrottle, priority: $0.id == self.selectedFileID ? .high : .normal )
         }
 
         self.observeFilesForWeighting()

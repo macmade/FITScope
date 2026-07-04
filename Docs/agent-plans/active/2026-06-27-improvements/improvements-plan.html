@@ -375,7 +375,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4><span class="milestone-id">M1</span>Prioritize the selected file for rendering</h4>
-                <span class="pill todo">Not started</span>
+                <span class="pill done">Completed</span>
             </div>
             <p class="goal">When a file is selected, its load/render should take priority so the image on screen is processed first, instead of waiting behind others in FIFO order.</p>
 
@@ -389,9 +389,19 @@
                 <li>Verify with a multi-file open that selecting a not-yet-rendered file renders it ahead of the rest.</li>
             </ul>
 
-            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="meta-row"><span><span class="k">Status:</span> Completed</span><span><span class="k">Completed:</span> 2026-07-04</span></div>
             <div class="field-label">Implementation notes</div>
-            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Approach:</strong> a priority-aware, keyed <code>RenderThrottle</code>, chosen over a &ldquo;bypass the queue&rdquo; fast path so the concurrency limit (the CPU/memory guard the throttle exists for) is never exceeded.</li>
+                    <li><strong><code>RenderThrottle</code>:</strong> <code>acquire(key:priority:)</code> keeps the old keyless/normal call working, so existing tests and call sites are untouched. Each waiter carries an optional <em>promotion</em> stamp plus a FIFO <em>ticket</em>. <code>release()</code> serves the most-recently-promoted waiter, otherwise the earliest unpromoted one (FIFO). <code>prioritize(key:)</code> stamps a fresh promotion on a still-waiting acquirer; it is a no-op when no waiter carries the key &mdash; already acquired, finished, or not yet suspended &mdash; so there is no priority inversion.</li>
+                    <li><strong>Rapid re-selection (task&nbsp;5):</strong> chose <em>most-recently-promoted wins</em> over a plain high/normal flag. Plain FIFO-among-high would render the <em>first</em>-navigated file first; with promotion stamps, holding an arrow key promotes each file passed through but the file finally on screen (latest promotion) is served first. Covered by <code>repromotingServesTheMostRecentlyPromotedWaiterFirst</code>. Promotions are one-off per selection, so background files are not starved.</li>
+                    <li><strong><code>OpenFile.prepare(throttle:priority:)</code>:</strong> passes the file&rsquo;s <code>id</code> as the throttle key and its initial priority; the selected file starts <code>.high</code>.</li>
+                    <li><strong><code>WindowModel</code>:</strong> the throttle is now injected through an internal designated init (a <code>public convenience init()</code> preserves the production core-count sizing), which made the wiring deterministically testable without a mock. It observes <code>$selectedFileID</code> and calls <code>prioritize(key:)</code> on change, and <code>open(urls:)</code> adopts the selection <em>before</em> preparing so the selected file starts at high priority.</li>
+                    <li><strong>TDD:</strong> tests were written first and watched fail (stubbed no-op, then the FIFO-among-high gap) before implementing. Suite covers throttle ordering (prioritized-beats-earlier-normal, high-acquire-beats-normal, unmatched-prioritize keeps FIFO, most-recently-promoted wins) and the <code>WindowModel</code> selection&rarr;prioritize wiring. Full suite: <strong>416 tests pass</strong>.</li>
+                    <li><strong>Not automated:</strong> task&nbsp;6&rsquo;s live multi-file visual check (selecting a not-yet-rendered file renders it ahead of the rest) &mdash; the mechanism is unit-tested, but the on-screen behaviour is left for manual verification.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
             <div class="placeholder">Review feedback for this milestone.</div>
         </div>
