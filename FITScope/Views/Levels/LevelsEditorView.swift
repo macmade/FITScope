@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import AppKit
 import SwiftPixel
 import SwiftUI
 
@@ -250,9 +251,9 @@ struct LevelsEditorView: View
             )
             .frame( height: 120 )
             .padding( 6 )
-            .background( Color.black.opacity( 0.35 ) )
+            .background( Color( nsColor: .textBackgroundColor ) )
             .clipShape( RoundedRectangle( cornerRadius: 10 ) )
-            .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+            .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
         }
     }
 

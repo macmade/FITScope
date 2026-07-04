@@ -132,7 +132,7 @@ public struct LocationMapView: View
     /// The hairline border drawn around the map / placeholder card.
     private static var cardBorder: some View
     {
-        RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 )
+        RoundedRectangle( cornerRadius: 10 ).strokeBorder( .quaternary, lineWidth: 0.5 )
     }
 
     /// Opens the capture location in the Maps app, dropping a named pin at the

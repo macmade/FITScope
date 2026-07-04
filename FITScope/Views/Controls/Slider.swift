@@ -144,7 +144,7 @@ public struct Slider: View
                     .clipShape( RoundedRectangle( cornerRadius: 10 ) )
                     .overlay(
                         Capsule()
-                            .stroke( .quaternary, lineWidth: 1 )
+                            .stroke( .quaternary, lineWidth: 0.5 )
                     )
 
                 Capsule()

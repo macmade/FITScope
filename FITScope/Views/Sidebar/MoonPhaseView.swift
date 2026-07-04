@@ -60,7 +60,7 @@ public struct MoonPhaseView: View
         }
         .frame( maxWidth: .infinity, maxHeight: .infinity )
         .clipShape( RoundedRectangle( cornerRadius: 10 ) )
-        .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+        .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
     }
 
     /// The lunar phase for a date: the disc, the phase name, the illumination and

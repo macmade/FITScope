@@ -186,14 +186,16 @@ struct CurvesEditorView: View
         self.image.renderer.result?.histogram.isMono ?? false
     }
 
-    /// The colour the curve is drawn in: white for the master curve, otherwise
-    /// the edited channel's colour.
+    /// The colour the curve is drawn in: a muted, adaptive grey for the master
+    /// curve — the primary label colour at low opacity, so it flips black/white
+    /// with the appearance yet stays soft rather than a harsh pure black/white on
+    /// the light or dark editor background — otherwise the edited channel's colour.
     private var tint: Color
     {
         guard self.perChannel
         else
         {
-            return .white
+            return .primary.opacity( 0.3 )
         }
 
         switch self.channel

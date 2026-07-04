@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import AppKit
 import SwiftPixel
 import SwiftUI
 
@@ -93,9 +94,9 @@ public struct HistogramControlView: View
             )
             .frame( height: Self.graphHeight )
             .padding( 6 )
-            .background( Color.black.opacity( 0.35 ) )
+            .background( Color( nsColor: .textBackgroundColor ) )
             .clipShape( RoundedRectangle( cornerRadius: 10 ) )
-            .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+            .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
 
             if self.options.showStatistics
             {
@@ -105,9 +106,9 @@ public struct HistogramControlView: View
                         .padding( 12 )
                 }
                 .frame( maxWidth: .infinity, alignment: .leading )
-                .background( Color.black.opacity( 0.35 ) )
+                .background( Color( nsColor: .textBackgroundColor ) )
                 .clipShape( RoundedRectangle( cornerRadius: 10 ) )
-                .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+                .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
                 .accessibilityIdentifier( AccessibilityIdentifier.HistogramControlView.statisticsPanel )
             }
         }
@@ -153,8 +154,8 @@ public struct HistogramControlView: View
                 .frame( width: 30 )
                 .frame( maxHeight: .infinity )
                 .contentShape( Rectangle() )
-                .background( Color.black.opacity( 0.25 ), in: RoundedRectangle( cornerRadius: 7 ) )
-                .overlay( RoundedRectangle( cornerRadius: 7 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+                .background( .quinary, in: RoundedRectangle( cornerRadius: 7 ) )
+                .overlay( RoundedRectangle( cornerRadius: 7 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
         }
         .menuStyle( .button )
         .buttonStyle( .plain )

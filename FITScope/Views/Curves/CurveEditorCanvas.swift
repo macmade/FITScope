@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import AppKit
 import SwiftPixel
 import SwiftUI
 
@@ -66,6 +67,11 @@ struct CurveEditorCanvas: View
     /// The index of the point currently being dragged, or `nil`.
     @State private var draggingIndex: Int?
 
+    /// The current appearance, used to draw the identity reference slightly
+    /// darker in light mode — black-on-white reads fainter than white-on-dark at
+    /// the same opacity, so the light appearance needs a touch more.
+    @Environment( \.colorScheme ) private var colorScheme
+
     /// The view's content.
     var body: some View
     {
@@ -84,9 +90,9 @@ struct CurveEditorCanvas: View
             .contentShape( Rectangle() )
             .gesture( self.drag( in: size ) )
         }
-        .background( Color.black.opacity( 0.35 ) )
+        .background( Color( nsColor: .textBackgroundColor ) )
         .clipShape( RoundedRectangle( cornerRadius: 10 ) )
-        .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+        .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
         .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.canvas )
     }
 
@@ -112,7 +118,7 @@ struct CurveEditorCanvas: View
             grid.addLine( to: CGPoint( x: size.width, y: y ) )
         }
 
-        context.stroke( grid, with: .color( .white.opacity( 0.08 ) ), lineWidth: 1 )
+        context.stroke( grid, with: .color( Color.primary.opacity( 0.08 ) ), lineWidth: 1 )
 
         // Identity reference (bottom-left to top-right).
         var identity = Path()
@@ -120,7 +126,9 @@ struct CurveEditorCanvas: View
         identity.move( to: CGPoint( x: 0, y: size.height ) )
         identity.addLine( to: CGPoint( x: size.width, y: 0 ) )
 
-        context.stroke( identity, with: .color( .white.opacity( 0.12 ) ), style: StrokeStyle( lineWidth: 1, dash: [ 4, 4 ] ) )
+        let identityOpacity = self.colorScheme == .light ? 0.2 : 0.12
+
+        context.stroke( identity, with: .color( Color.primary.opacity( identityOpacity ) ), style: StrokeStyle( lineWidth: 1, dash: [ 4, 4 ] ) )
 
         // The interpolated curve, sampled across the width.
         let curve   = Processors.Curves.Curve( points: self.points )
@@ -152,7 +160,7 @@ struct CurveEditorCanvas: View
             let rect   = CGRect( x: centre.x - Self.markerRadius, y: centre.y - Self.markerRadius, width: Self.markerRadius * 2, height: Self.markerRadius * 2 )
 
             context.fill( Path( ellipseIn: rect ), with: .color( self.tint ) )
-            context.stroke( Path( ellipseIn: rect ), with: .color( .black.opacity( 0.6 ) ), lineWidth: 1 )
+            context.stroke( Path( ellipseIn: rect ), with: .color( Color.primary.opacity( 0.6 ) ), lineWidth: 1 )
         }
     }
 

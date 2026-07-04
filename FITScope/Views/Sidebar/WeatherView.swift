@@ -107,7 +107,7 @@ public struct WeatherView: View
         }
         .frame( maxWidth: .infinity, maxHeight: .infinity )
         .clipShape( RoundedRectangle( cornerRadius: 10 ) )
-        .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+        .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
         .accessibilityIdentifier( AccessibilityIdentifier.WeatherView.container )
     }
 

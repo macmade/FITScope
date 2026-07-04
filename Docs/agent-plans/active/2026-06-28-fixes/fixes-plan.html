@@ -990,17 +990,40 @@
         </li>
 
         <li class="milestone">
-          <div class="m-head"><h4>Verify light mode appearance</h4><span class="status not-started">Not started</span></div>
+          <div class="m-head"><h4>Verify light mode appearance</h4><span class="status completed">Completed</span></div>
           <div class="field"><span class="label">Goal</span><p>Check how the app looks in light mode and fix any contrast, color, or layout issues so it is on par with dark mode.</p></div>
           <div class="field"><span class="label">Tasks</span><ul class="tasks">
-            <li>Run the app in light mode and audit each window/panel/overlay for contrast and color issues.</li>
-            <li>Replace hard-coded colors with semantic/adaptive colors where needed (coordinate with overlay alpha, M3).</li>
-            <li>Fix any layout/legibility problems specific to light mode.</li>
-            <li>Verify parity with dark mode across the main surfaces.</li>
+            <li class="done">Run the app in light mode and audit each window/panel/overlay for contrast and color issues.</li>
+            <li class="done">Replace hard-coded colors with semantic/adaptive colors where needed (coordinate with overlay alpha, M3).</li>
+            <li class="done">Fix any layout/legibility problems specific to light mode.</li>
+            <li class="done">Verify parity with dark mode across the main surfaces.</li>
           </ul></div>
-          <div class="completed-line"><span class="label">Completed</span><span class="placeholder">—</span></div>
-          <div class="field"><span class="label">Implementation notes</span><p class="placeholder">—</p></div>
-          <div class="field"><span class="label">Review comments</span><p class="placeholder">—</p></div>
+          <div class="completed-line"><span class="label">Completed</span><span>2026-07-04</span></div>
+          <div class="field"><span class="label">Implementation notes</span>
+            <p><strong>Root cause pattern.</strong> The offending controls all used the same dark-tuned hard-coded colours — translucent <code>Color.black.opacity(…)</code> fills with faint <code>Color.white.opacity(0.08)</code> borders/grids — which over a <em>light</em> panel wash out to a muddy medium-grey with an invisible border. The maintainer chose (see Review comments) to make these <strong>light-adaptive</strong> (follow the appearance) rather than keep them dark in both modes.</p>
+            <p><strong>Fixes (all via semantic / system colours — no new types, so SwiftUI/AppKit is the single source of truth):</strong></p>
+            <ul>
+              <li><strong>Histogram</strong> (<code>HistogramControlView</code>, <code>HistogramView</code>): graph well + statistics panel → <code>Color( nsColor: .textBackgroundColor )</code> (white in light, near-black in dark — so the dark well is preserved <em>and</em> light is clean); the grid → <code>Color.primary.opacity( 0.08 )</code>; the tabs track and view-options button → <code>.quinary</code> fill; the selected tab → <code>Color( nsColor: .controlColor )</code> (native raised look).</li>
+              <li><strong>Segmented control</strong> (<code>SegmentedControlView</code>): as above; <code>import AppKit</code> added for the system colours.</li>
+              <li><strong>Levels editor</strong> (<code>LevelsEditorView</code>): the histogram backdrop well → <code>.textBackgroundColor</code> (it embeds the same <code>HistogramView</code>, so its grid adapts too).</li>
+              <li><strong>Curves editor</strong> (<code>CurveEditorCanvas</code>, <code>CurvesEditorView</code>): well → <code>.textBackgroundColor</code>; grid → <code>Color.primary.opacity( 0.08 )</code>; control-point rim → <code>Color.primary.opacity( 0.6 )</code>; the <strong>master curve</strong> tint was a hard <code>.white</code> (invisible on the new light well) → a muted adaptive <code>Color.primary.opacity( 0.3 )</code> (see the review iteration); the dashed identity line is drawn slightly darker in light (<code>0.2</code>) than dark (<code>0.12</code>) via <code>@Environment( \.colorScheme )</code>, since black-on-white reads fainter than white-on-dark at equal opacity.</li>
+              <li><strong>Borders</strong>: every <code>.quaternary</code> control/panel border settled at <code>lineWidth: 0.5</code> after the maintainer flagged 1&nbsp;pt as too strong in light (tabs, then histogram/stats). The slider track border was softened to <code>0.5</code> too.</li>
+              <li><strong>Sidebar info cards</strong> (<code>MoonPhaseView</code>, <code>WeatherView</code>, <code>LocationMapView</code>): the same washed-out <code>white.opacity(0.08)</code> card borders → <code>.quaternary</code> @ 0.5&nbsp;pt, found by an audit for the pattern after the inspector/editors were done.</li>
+            </ul>
+            <p><strong>Deliberately left as-is</strong> (black/white over <em>image</em> content, correct in both appearances): the on-image overlays (already centralized in <code>CanvasOverlayStyle</code>, M3), the floating toolbar / status-bar borders over the image, <code>OpenFileRowView</code>'s re-render dim scrim, <code>PlateSolveHeaderView</code>'s black-backed preview, and <code>MoonPhaseDisc</code>'s shadow.</p>
+            <p><strong>No unit test.</strong> These are pure colour/appearance changes with no logic to assert (consistent with the other visual milestones); verification is the build plus the interactive light/dark check.</p>
+            <p><strong>Verification.</strong> The app builds clean via <code>xcodebuild</code> (Debug, macOS) after each step. The maintainer verified interactively in light and dark across several rounds (histogram well/tabs, slider border, Levels/Curves editors, the curve line's visibility then its strength, the dashed identity line) and confirmed the result looks good; the three sidebar card borders got the same treatment as the final step.</p>
+          </div>
+          <div class="field"><span class="label">Review comments</span>
+            <ul>
+              <li>Histogram and the custom tabs looked ugly in light mode; the slider border was a bit too strong. (Chose to make the histogram <strong>light-adaptive</strong> rather than keep it dark in both modes.)</li>
+              <li>Adapt the Levels and Curves editors too; the custom tabs control's border was too strong in light mode.</li>
+              <li>The histogram/statistics panel borders were also too strong in the inspector in light mode; in light mode the curve line was not visible (was hard-coded white on the now-light well).</li>
+              <li>The curve line was then too strong at full/secondary strength in both modes — settled on a muted <code>primary.opacity(0.3)</code>.</li>
+              <li>The dashed identity line in Curves should be slightly darker in light mode (made mode-adaptive).</li>
+              <li>Approved fixing the three sidebar info-card borders (Moon phase, Weather, Location) found in the follow-up audit.</li>
+            </ul>
+          </div>
         </li>
 
       </ol>

@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import AppKit
 import SwiftUI
 
 /// A single-selection segmented control whose segments expand to share the full
@@ -72,8 +73,8 @@ public struct SegmentedControlView< Value: Hashable >: View
             }
         }
         .padding( 2 )
-        .background( Color.black.opacity( 0.25 ), in: RoundedRectangle( cornerRadius: 7 ) )
-        .overlay( RoundedRectangle( cornerRadius: 7 ).strokeBorder( .white.opacity( 0.08 ), lineWidth: 1 ) )
+        .background( .quinary, in: RoundedRectangle( cornerRadius: 7 ) )
+        .overlay( RoundedRectangle( cornerRadius: 7 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
     }
 
     /// One equal-width segment.
@@ -111,7 +112,7 @@ public struct SegmentedControlView< Value: Hashable >: View
             {
                 if isSelected
                 {
-                    RoundedRectangle( cornerRadius: 5 ).fill( Color.gray.opacity( 0.4 ) )
+                    RoundedRectangle( cornerRadius: 5 ).fill( Color( nsColor: .controlColor ) )
                 }
             }
         }

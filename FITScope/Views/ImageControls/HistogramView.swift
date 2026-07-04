@@ -85,7 +85,8 @@ public struct HistogramView: View
     }
 
     /// One channel's area, drawn as a vertical gradient fill beneath a crisp top
-    /// stroke so the curve reads clearly against the dark background.
+    /// stroke so the curve reads clearly against the histogram background in both
+    /// light and dark appearance.
     ///
     /// - Parameters:
     ///   - data:     The bin counts for the channel.
@@ -298,7 +299,7 @@ struct HistogramGridView: View
                     path.addLine( to: CGPoint( x: geometry.size.width, y: y ) )
                 }
             }
-            .stroke( Color.white.opacity( 0.06 ), lineWidth: 0.5 )
+            .stroke( Color.primary.opacity( 0.08 ), lineWidth: 0.5 )
         }
     }
 }
