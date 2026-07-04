@@ -97,9 +97,14 @@ public struct MainWindowView: View
         let closeConfirmation = self.closeConfirmation
         let preferences       = self.preferences
 
+        // The file actions shared by the sidebar rows' and the image canvas's
+        // context menus, so both menus behave identically. Built here where the
+        // app model, window model and preferences are all in scope.
+        let fileActions = FileActions( appModel: self.appModel, model: self.model, preferences: self.preferences )
+
         NavigationSplitView
         {
-            FilesSidebarView( model: self.model )
+            FilesSidebarView( model: self.model, actions: fileActions )
                 .navigationSplitViewColumnWidth( min: 250, ideal: 300, max: 500 )
         }
         detail:
@@ -127,6 +132,7 @@ public struct MainWindowView: View
                 else if let file = self.model.selectedFile
                 {
                     ImageCanvasView( file: file )
+                        .fileContextMenu( for: file, actions: fileActions )
                 }
             }
         }

@@ -32,6 +32,7 @@
 		0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */; };
 		05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05986B472DF892D300A55E77 /* SliderGridRowView.swift */; };
 		FCA5E7B0000000000000F002 /* ResetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCA5E7B0000000000000F001 /* ResetButton.swift */; };
+		FEEDFACE0000000000000004 /* FileContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDFACE0000000000000003 /* FileContextMenu.swift */; };
 		05A1B2C30000000000000002 /* View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000001 /* View.swift */; };
 		05A1B2C30000000000000004 /* FileCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000003 /* FileCommands.swift */; };
 		05A1B2C30000000000000006 /* ImageExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000005 /* ImageExporterTests.swift */; };
@@ -135,6 +136,7 @@
 		0B8F6AE680E1526BC19F3E4A /* StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0750384B9B00F3AF15C9AFC /* StatusBarView.swift */; };
 		0CEEF32A7D5262CA32ADE85F /* CanvasOverlayStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F02EA5AA79E7AB973E861807 /* CanvasOverlayStyleTests.swift */; };
 		0DCE0490AEA79DFE7A0171AE /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77051EA6E847507556D8B2B0 /* AppModel.swift */; };
+		FEEDFACE0000000000000002 /* FileActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDFACE0000000000000001 /* FileActions.swift */; };
 		0E5DD39F0AAB39B1610489D5 /* DebayerModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00D623443776E3C8CE7D5534 /* DebayerModeTests.swift */; };
 		11439DEF8CB5862DC678A28E /* InspectorColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D7E39AB2783ACE444D01AA1 /* InspectorColumnView.swift */; };
 		12D1CA8C4330A87062BA764E /* StarDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002C1D9E4346F9D0ADBFF793 /* StarDetectionTests.swift */; };
@@ -420,6 +422,7 @@
 		0587FF142DDE64E3005DECEF /* FITScopeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeUITests.swift; sourceTree = "<group>"; };
 		05986B472DF892D300A55E77 /* SliderGridRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderGridRowView.swift; sourceTree = "<group>"; };
 		FCA5E7B0000000000000F001 /* ResetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetButton.swift; sourceTree = "<group>"; };
+		FEEDFACE0000000000000003 /* FileContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileContextMenu.swift; sourceTree = "<group>"; };
 		05A1B2C30000000000000001 /* View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = View.swift; sourceTree = "<group>"; };
 		05A1B2C30000000000000003 /* FileCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCommands.swift; sourceTree = "<group>"; };
 		05A1B2C30000000000000005 /* ImageExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageExporterTests.swift; sourceTree = "<group>"; };
@@ -557,6 +560,7 @@
 		6EC3FF3263CBF035678ABD2E /* ReticleOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReticleOverlay.swift; sourceTree = "<group>"; };
 		711A84E175F157D73C74F06E /* ImageCanvasControllerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCanvasControllerTests.swift; sourceTree = "<group>"; };
 		77051EA6E847507556D8B2B0 /* AppModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		FEEDFACE0000000000000001 /* FileActions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FileActions.swift; sourceTree = "<group>"; };
 		799F647F7C536FA5329F2F55 /* NorthOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NorthOverlayTests.swift; sourceTree = "<group>"; };
 		7C686F7A99DA48AB69336E13 /* StatisticsFormat.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatisticsFormat.swift; sourceTree = "<group>"; };
 		81685BD1A3B59CF94FAA4347 /* ThumbnailLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailLayout.swift; sourceTree = "<group>"; };
@@ -1042,6 +1046,7 @@
 				05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */,
 				DF3765F1937F36620A92317F /* MainWindowView.swift */,
 				77051EA6E847507556D8B2B0 /* AppModel.swift */,
+				FEEDFACE0000000000000001 /* FileActions.swift */,
 				2D1BE1B06CB1ADF17E538E40 /* AppUpdater.swift */,
 				3BEAE300CD214042135F55D9 /* AppDelegate.swift */,
 				0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */,
@@ -1438,6 +1443,7 @@
 				5A516E0150000000000000D2 /* Pill.swift */,
 				05986B472DF892D300A55E77 /* SliderGridRowView.swift */,
 				FCA5E7B0000000000000F001 /* ResetButton.swift */,
+				FEEDFACE0000000000000003 /* FileContextMenu.swift */,
 				3B9C0D4280A594EAC752F3F4 /* FlowLayout.swift */,
 				5C561A20BFECBF8335B6A8AF /* StatusMessageView.swift */,
 			);
@@ -1746,6 +1752,7 @@
 			files = (
 				05986B482DF892D800A55E77 /* SliderGridRowView.swift in Sources */,
 				FCA5E7B0000000000000F002 /* ResetButton.swift in Sources */,
+				FEEDFACE0000000000000004 /* FileContextMenu.swift in Sources */,
 				05C0A75C2DDE64E0005DECEF /* ImageAdjustments.swift in Sources */,
 				05FB1000000000000000D102 /* Preferences.swift in Sources */,
 				05FB1000000000000000E102 /* APIKeyStore.swift in Sources */,
@@ -1832,6 +1839,7 @@
 				05FB1000000000000000F102 /* InfoField.swift in Sources */,
 				B3478104EBCB8EB1B9C44998 /* ImageInfoPanelView.swift in Sources */,
 				0DCE0490AEA79DFE7A0171AE /* AppModel.swift in Sources */,
+				FEEDFACE0000000000000002 /* FileActions.swift in Sources */,
 				E7B81EF94F4D952CFB809D7A /* AppUpdater.swift in Sources */,
 				2D8702C0C4F8BCD0EB3272DA /* AppDelegate.swift in Sources */,
 				0AC10000000000000000F002 /* AccessibilityIdentifiers.swift in Sources */,
