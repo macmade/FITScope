@@ -623,7 +623,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4><span class="milestone-id">M7</span>Sunrise / sunset &amp; twilight in the info panel</h4>
-                <span class="pill todo">Not started</span>
+                <span class="pill done">Completed</span>
             </div>
             <p class="goal">Display sunrise and sunset times including civil, nautical, and astronomical twilight, computed from the file's observer location and date.</p>
 
@@ -636,11 +636,29 @@
                 <li>Format times consistently with the app (local vs. UTC choice matching existing conventions).</li>
             </ul>
 
-            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="meta-row"><span><span class="k">Status:</span> Completed</span><span><span class="k">Completed:</span> 2026-07-04</span></div>
             <div class="field-label">Implementation notes</div>
-            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Placement (settled via review &mdash; see below):</strong> a new dedicated <strong>&ldquo;Sun&rdquo;</strong> tab holds the sun/twilight, and the weather stays in its own tab, renamed <strong>&ldquo;Conditions&rdquo;</strong>. Two separate full-height tabs, no scrolling. This mirrors the existing &ldquo;Moon&rdquo; tab &mdash; Moon and Sun as sibling celestial tabs &mdash; with the M8 planets getting their own tab too. Tab order: Info / Location / Moon / Sun / Conditions.</li>
+                    <li><strong>New <code>SunTwilightView</code> (the Sun tab):</strong> leads with the capture-time <em>sky darkness</em> &mdash; the key answer for an imager &mdash; classified from the Sun&rsquo;s altitude (<code>SolarPosition.horizontal</code>) into Daylight / Civil / Nautical / Astronomical twilight / Astronomical Night, with the altitude (e.g. &ldquo;Sun 34.2&deg; below horizon&rdquo;) and a matching SF Symbol. Below it, a compact Dawn/Dusk grid of the day&rsquo;s sunrise/sunset and the three twilight times from <code>TwilightEvents.compute</code>, a dash for any that don&rsquo;t occur (polar). It owns its own &ldquo;No Location&rdquo;/&ldquo;No Date&rdquo; empty states and fills the tab, exactly like the Moon and Weather tabs. Times and date are UTC, matching the other panels.</li>
+                    <li><strong>Classification (TDD):</strong> new <code>SkyCondition</code> enum with <code>forSunAltitude(_:)</code> + label + SF Symbol. Tests written first (band boundaries at &minus;0.833/&minus;6/&minus;12/&minus;18, and every case has a resolvable symbol). Kept app-side for now &mdash; it&rsquo;s a presentation classification &mdash; though the thresholds mirror SwiftAstro&rsquo;s; could move to the library later.</li>
+                    <li><strong>Observer inputs:</strong> <code>ImageInfoTabView</code> maps <code>FITSMetadata.Coordinate</code> &rarr; a new <code>skyLocation: GeographicLocation?</code> for the sun/twilight, and reuses <code>observationDate</code>; the existing <code>coordinate</code> still feeds the Weather tab.</li>
+                    <li><strong>Tabs:</strong> a new <code>Tab.sun</code> (title &ldquo;Sun&rdquo;, icon <code>sun.horizon</code>) and the former weather tab renamed to <code>Tab.conditions</code> (title &ldquo;Conditions&rdquo;, icon <code>cloud.sun</code>). <code>WeatherView</code> is unchanged (still fills its tab and fetches only while active). New accessibility identifiers <code>SunTwilightView.container</code>/<code>.icon</code>.</li>
+                    <li><strong>Iteration:</strong> this milestone went through two review turns &mdash; first merged into one scrolling &ldquo;Conditions&rdquo; tab, then split into the two separate non-scrolling tabs above. The intermediate <code>ConditionsView</code> was removed.</li>
+                    <li><strong>Verification:</strong> the app builds and the unit suite passes at <strong>426 tests</strong> (420 + 6 new <code>SkyCondition</code> tests). The SwiftUI views are not unit-testable; they carry previews (with-data and no-location) and are left for your visual review. UI tests were not run, per your standing request.</li>
+                    <li><strong>For review:</strong> (1) five tabs now sit in the sidebar segmented control &mdash; titles may truncate at narrow widths (flagged; could go icon-only if it reads poorly); (2) events are computed for the observation&rsquo;s <em>UTC day</em>, with the capture-time sky-darkness headline giving the direct &ldquo;was it dark?&rdquo; answer for sessions spanning past midnight; (3) the Sun (<code>sun.horizon</code>) and Conditions (<code>cloud.sun</code>) icons are easily changed; (4) times are UTC rather than the site&rsquo;s local time; (5) <code>SkyCondition</code> lives app-side.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <div class="placeholder">Review feedback for this milestone.</div>
+            <div class="notes">
+                <ul>
+                    <li>Don&rsquo;t add a separate &ldquo;Sky&rdquo; tab &mdash; the sun/twilight (and the M8 planets) can go in the Weather tab instead. Rename it accordingly; chosen name: &ldquo;Conditions&rdquo;.</li>
+                    <li>Actually, split it into two separate tabs with no scrolling: a &ldquo;Sun&rdquo; tab for the sun/twilight, and keep the weather in a &ldquo;Conditions&rdquo; tab. Planets (M8) will get their own tab too, not shared with the Sun tab.</li>
+                    <li>The Sun tab&rsquo;s headline icon was smaller than the Conditions tab&rsquo;s (32 vs 40&nbsp;pt); align them &mdash; the Sun icon is now 40&nbsp;pt to match.</li>
+                    <li>Give the twilight grid rows leading icons (like the Weather rows), evoking what each twilight is named for: Sun&nbsp;&rarr;&nbsp;<code>sun.horizon</code>, Civil&nbsp;&rarr;&nbsp;<code>building</code>, Nautical&nbsp;&rarr;&nbsp;<code>sailboat</code>, Astronomical&nbsp;&rarr;&nbsp;<code>moon.stars</code>. (Verified against SF Symbols &mdash; the originally-suggested <code>boat</code> and <code>telescope</code> don&rsquo;t exist, so <code>sailboat</code> and <code>moon.stars</code> were used.)</li>
+                </ul>
+            </div>
         </div>
 
         <div class="milestone">

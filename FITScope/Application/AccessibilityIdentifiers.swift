@@ -494,6 +494,16 @@ public enum AccessibilityIdentifier
         public static let icon = "WeatherView.icon"
     }
 
+    /// Identifiers applied by ``FITScope/SunTwilightView``.
+    public enum SunTwilightView
+    {
+        /// The sun & twilight section's container.
+        public static let container = "SunTwilightView.container"
+
+        /// The sky-condition symbol.
+        public static let icon = "SunTwilightView.icon"
+    }
+
     /// Identifiers applied by ``FITScope/InfoView`` (the FITS headers window).
     public enum InfoView
     {

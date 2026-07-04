@@ -48,18 +48,22 @@ public struct ImageInfoTabView: View
         /// The capture's lunar phase.
         case moon
 
-        /// The capture's historical weather.
-        case weather
+        /// The Sun: sunrise/sunset, twilight and the capture-time sky darkness.
+        case sun
+
+        /// The capture's historical weather conditions.
+        case conditions
 
         /// The segmented-control label for the tab.
         var title: String
         {
             switch self
             {
-                case .info:     return "Info"
-                case .location: return "Location"
-                case .moon:     return "Moon"
-                case .weather:  return "Weather"
+                case .info:       return "Info"
+                case .location:   return "Location"
+                case .moon:       return "Moon"
+                case .sun:        return "Sun"
+                case .conditions: return "Conditions"
             }
         }
     }
@@ -86,7 +90,7 @@ public struct ImageInfoTabView: View
     {
         VStack( spacing: 10 )
         {
-            SegmentedControlView( selection: self.$tab, values: [ .info, .location, .moon, .weather ], title: { $0.title }, icon: { self.icon( for: $0 ) } )
+            SegmentedControlView( selection: self.$tab, values: [ .info, .location, .moon, .sun, .conditions ], title: { $0.title }, icon: { self.icon( for: $0 ) } )
                 .padding( .horizontal, 14 )
                 .padding( .top, 12 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.tabs )
@@ -141,12 +145,19 @@ public struct ImageInfoTabView: View
                 .allowsHitTesting( self.tab == .moon )
                 .accessibilityHidden( self.tab != .moon )
 
-            WeatherView( coordinate: self.coordinate, date: self.observationDate, isActive: self.tab == .weather )
+            SunTwilightView( location: self.skyLocation, date: self.observationDate )
                 .padding( .horizontal, 14 )
                 .padding( .bottom, 14 )
-                .opacity( self.tab == .weather ? 1 : 0 )
-                .allowsHitTesting( self.tab == .weather )
-                .accessibilityHidden( self.tab != .weather )
+                .opacity( self.tab == .sun ? 1 : 0 )
+                .allowsHitTesting( self.tab == .sun )
+                .accessibilityHidden( self.tab != .sun )
+
+            WeatherView( coordinate: self.coordinate, date: self.observationDate, isActive: self.tab == .conditions )
+                .padding( .horizontal, 14 )
+                .padding( .bottom, 14 )
+                .opacity( self.tab == .conditions ? 1 : 0 )
+                .allowsHitTesting( self.tab == .conditions )
+                .accessibilityHidden( self.tab != .conditions )
         }
         .frame( height: self.contentHeight )
         .background( self.heightProbe )
@@ -186,10 +197,11 @@ public struct ImageInfoTabView: View
     {
         switch tab
         {
-            case .info:     return "info.circle"
-            case .location: return "mappin.and.ellipse"
-            case .moon:     return self.observationDate.map { MoonPhase( date: $0 ).phase.systemImageName } ?? "moon"
-            case .weather:  return "cloud.sun"
+            case .info:       return "info.circle"
+            case .location:   return "mappin.and.ellipse"
+            case .moon:       return self.observationDate.map { MoonPhase( date: $0 ).phase.systemImageName } ?? "moon"
+            case .sun:        return "sun.horizon"
+            case .conditions: return "cloud.sun"
         }
     }
 
@@ -204,5 +216,19 @@ public struct ImageInfoTabView: View
         }
 
         return CLLocationCoordinate2D( latitude: coordinate.latitude, longitude: coordinate.longitude )
+    }
+
+    /// The selected image's observing site as a SwiftAstro location, or `nil` when
+    /// its header carries no observing-site coordinates. Drives the Conditions
+    /// tab's sun & twilight computation.
+    private var skyLocation: GeographicLocation?
+    {
+        guard let coordinate = self.file.image?.info.metadata.coordinate
+        else
+        {
+            return nil
+        }
+
+        return GeographicLocation( latitude: coordinate.latitude, longitude: coordinate.longitude )
     }
 }
