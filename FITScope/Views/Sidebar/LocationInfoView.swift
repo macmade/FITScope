@@ -74,11 +74,11 @@ public struct LocationInfoView: View
             HStack( spacing: 5 )
             {
                 Image( systemName: systemImage )
-                    .foregroundStyle( .secondary )
+                    .foregroundStyle( Color.secondary )
                     .frame( width: 12 )
 
                 Text( label )
-                    .foregroundStyle( .secondary )
+                    .foregroundStyle( Color.secondary )
             }
 
             Text( value )

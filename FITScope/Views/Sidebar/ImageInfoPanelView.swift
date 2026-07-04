@@ -53,7 +53,7 @@ public struct ImageInfoPanelView: View
         {
             Text( "IMAGE INFORMATION" )
                 .font( .system( size: 10, weight: .semibold ) )
-                .foregroundStyle( .secondary )
+                .foregroundStyle( Color.secondary )
                 .kerning( 1.2 )
 
             if let info = self.file.image?.info, let summary = ImageInformation( info: info )
@@ -86,7 +86,7 @@ public struct ImageInfoPanelView: View
             {
                 Text( "No information available." )
                     .font( .system( size: 10 ) )
-                    .foregroundStyle( .tertiary )
+                    .foregroundStyle( Color( nsColor: .tertiaryLabelColor ) )
 
                 Spacer( minLength: 0 )
             }
@@ -117,11 +117,11 @@ public struct ImageInfoPanelView: View
             HStack( spacing: 5 )
             {
                 Image( systemName: row.systemImageName )
-                    .foregroundStyle( .secondary )
+                    .foregroundStyle( Color.secondary )
                     .frame( width: 12 )
 
                 Text( row.label )
-                    .foregroundStyle( .secondary )
+                    .foregroundStyle( Color.secondary )
             }
 
             // Keep long values on a single line, truncated with a trailing
