@@ -25,13 +25,14 @@
 import SwiftAstro
 import SwiftUI
 
-/// The Stars tab's content: the results of the automatic star detection — the
-/// star count and the median FWHM, half-flux radius and eccentricity, the usual
-/// measures of focus and tracking quality. The canvas overlay is unaffected.
+/// The star-detection results as a self-contained section: the star count and the
+/// median FWHM, half-flux radius and eccentricity (the usual measures of focus and
+/// tracking quality), styled like the info tabs — a centered icon and headline over
+/// a metrics grid.
 ///
-/// It owns its states so its host doesn't branch on the data: a spinner while
-/// detection runs, the metrics once stars are found, or a placeholder when none
-/// are.
+/// It owns all its states so its host doesn't branch on the data: a spinner while
+/// detection runs, the metrics once stars are found, or a "no stars" message once
+/// it has run and found none.
 public struct StarsView: View
 {
     /// The detected star field, or `nil` before detection has produced one.
@@ -54,88 +55,70 @@ public struct StarsView: View
         self.hasDetected = hasDetected
     }
 
-    /// The view's content: the metrics once detection has found stars, a "no
-    /// stars" placeholder once it has run and found none, otherwise a spinner
-    /// while it runs (or before it has). All fill a bordered card so the tab keeps
-    /// a stable shape.
+    /// The view's content: a spinner while detection runs, the icon, count and
+    /// metrics grid once stars are found, or the icon and a "no stars" headline
+    /// once detection has run and found none.
     public var body: some View
     {
-        Group
+        VStack( spacing: 8 )
         {
             if self.hasDetected == false
             {
-                self.detecting
-            }
-            else if let starField = self.starField, starField.count > 0
-            {
-                self.metrics( starField )
+                ProgressView()
+                    .controlSize( .small )
+
+                Text( "Detecting Stars\u{2026}" )
+                    .font( .system( size: 11 ) )
+                    .foregroundStyle( .secondary )
             }
             else
             {
-                StatusMessageView( systemImage: "sparkles", title: "No Stars Detected", message: "No stars were found in this image." )
+                Image( systemName: "sparkles" )
+                    .font( .system( size: 40 ) )
+                    .symbolRenderingMode( .hierarchical )
+                    .accessibilityIdentifier( AccessibilityIdentifier.StarsView.icon )
+
+                if let starField = self.starField, starField.count > 0
+                {
+                    Text( Self.countText( starField.count ) )
+                        .font( .system( size: 12, weight: .semibold ) )
+
+                    self.grid( starField )
+                        .padding( .top, 2 )
+                }
+                else
+                {
+                    Text( "No Stars Detected" )
+                        .font( .system( size: 12, weight: .semibold ) )
+                }
             }
         }
         .frame( maxWidth: .infinity, maxHeight: .infinity )
-        .clipShape( RoundedRectangle( cornerRadius: 10 ) )
-        .overlay( RoundedRectangle( cornerRadius: 10 ).strokeBorder( .quaternary, lineWidth: 0.5 ) )
         .accessibilityIdentifier( AccessibilityIdentifier.StarsView.container )
     }
 
-    /// The in-progress state: a spinner and label while detection runs.
-    private var detecting: some View
-    {
-        VStack( spacing: 8 )
-        {
-            ProgressView()
-                .controlSize( .small )
-
-            Text( "Detecting Stars\u{2026}" )
-                .font( .system( size: 11 ) )
-                .foregroundStyle( .secondary )
-        }
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
-        .background( .regularMaterial )
-    }
-
-    /// The detection metrics: the star count headline and the median shape
-    /// measures.
+    /// The metrics grid: the median, minimum and maximum of the FWHM, half-flux
+    /// radius and eccentricity in their own columns.
     ///
     /// - Parameter starField: The detected star field (with at least one star).
-    private func metrics( _ starField: StarField ) -> some View
+    /// - Returns: The metrics grid.
+    private func grid( _ starField: StarField ) -> some View
     {
-        VStack( spacing: 8 )
+        Grid( alignment: .leading, horizontalSpacing: 12, verticalSpacing: 3 )
         {
-            Image( systemName: "sparkles" )
-                .font( .system( size: 40 ) )
-                .symbolRenderingMode( .hierarchical )
-                .accessibilityIdentifier( AccessibilityIdentifier.StarsView.icon )
-
-            Text( Self.countText( starField.count ) )
-                .font( .system( size: 12, weight: .semibold ) )
-
-            Grid( alignment: .leading, horizontalSpacing: 12, verticalSpacing: 3 )
+            GridRow
             {
-                GridRow
-                {
-                    Text( "" )
-                    Text( "Median" ).foregroundStyle( .secondary )
-                    Text( "Min" ).foregroundStyle( .secondary )
-                    Text( "Max" ).foregroundStyle( .secondary )
-                }
-
-                self.row( systemImage: "circle.dotted",             label: "FWHM",         median: Self.pixelText( starField.medianFWHM ),          range: starField.fwhmRange )
-                self.row( systemImage: "smallcircle.filled.circle", label: "HFR",          median: Self.pixelText( starField.medianHFR ),           range: starField.hfrRange )
-                self.row( systemImage: "oval",                      label: "Eccentricity", median: Self.numberText( starField.medianEccentricity ), range: starField.eccentricityRange )
+                Text( "" )
+                Text( "Median" ).foregroundStyle( .secondary )
+                Text( "Min" ).foregroundStyle( .secondary )
+                Text( "Max" ).foregroundStyle( .secondary )
             }
-            .font( .system( size: 10 ) )
-            .padding( .top, 2 )
+
+            self.row( systemImage: "circle.dotted",             label: "FWHM",         median: Self.pixelText( starField.medianFWHM ),          range: starField.fwhmRange )
+            self.row( systemImage: "smallcircle.filled.circle", label: "HFR",          median: Self.pixelText( starField.medianHFR ),           range: starField.hfrRange )
+            self.row( systemImage: "oval",                      label: "Eccentricity", median: Self.numberText( starField.medianEccentricity ), range: starField.eccentricityRange )
         }
-        .padding( 12 )
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
-        .background( .regularMaterial )
-        // Let the count and metrics be selected and copied, matching the other
-        // info panels.
-        .textSelection( .enabled )
+        .font( .system( size: 10 ) )
     }
 
     /// One metric row: an icon and the metric's name, then its median, minimum
@@ -209,7 +192,7 @@ public struct StarsView: View
 #Preview( "Detecting" )
 {
     StarsView( starField: nil, hasDetected: false )
-        .frame( width: 260, height: 240 )
+        .frame( width: 260, height: 160 )
         .padding()
 }
 
@@ -228,13 +211,13 @@ public struct StarsView: View
     }
 
     return StarsView( starField: StarField( stars: stars ), hasDetected: true )
-        .frame( width: 260, height: 240 )
+        .frame( width: 260, height: 160 )
         .padding()
 }
 
 #Preview( "None" )
 {
     StarsView( starField: StarField( stars: [] ), hasDetected: true )
-        .frame( width: 260, height: 240 )
+        .frame( width: 260, height: 160 )
         .padding()
 }

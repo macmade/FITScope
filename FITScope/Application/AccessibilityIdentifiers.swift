@@ -514,14 +514,31 @@ public enum AccessibilityIdentifier
         public static let icon = "PlanetsView.icon"
     }
 
+    /// Identifiers applied by ``FITScope/AnalysisView``.
+    public enum AnalysisView
+    {
+        /// The analysis tab's container.
+        public static let container = "AnalysisView.container"
+    }
+
     /// Identifiers applied by ``FITScope/StarsView``.
     public enum StarsView
     {
-        /// The stars tab's container.
+        /// The stars section's container.
         public static let container = "StarsView.container"
 
-        /// The stars header symbol.
+        /// The stars section's header symbol.
         public static let icon = "StarsView.icon"
+    }
+
+    /// Identifiers applied by ``FITScope/SkyBackgroundView``.
+    public enum SkyBackgroundView
+    {
+        /// The sky-background section's container.
+        public static let container = "SkyBackgroundView.container"
+
+        /// The sky-background section's header symbol.
+        public static let icon = "SkyBackgroundView.icon"
     }
 
     /// Identifiers applied by ``FITScope/InfoView`` (the FITS headers window).

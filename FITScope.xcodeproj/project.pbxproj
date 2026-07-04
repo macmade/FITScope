@@ -158,6 +158,7 @@
 		3099EBF0657F94AB1C2C273A /* CanvasOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07F8042EA7350A5A850DCE85 /* CanvasOverlay.swift */; };
 		3247F84189D2AF56CCDECE73 /* AstrometryClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46FF085F9376167DDD0A9FD7 /* AstrometryClient.swift */; };
 		382F7DF73F52BD55C45092C9 /* DropAcceptance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 017FF3966AE1E425A510642E /* DropAcceptance.swift */; };
+		38BB308BC82BE02615DF2FD4 /* StarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB3715CBB030149A29AA873A /* StarsView.swift */; };
 		3B1C22E264FBA73078EF2FF0 /* PreferencesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 064386153AA98B05F6656779 /* PreferencesTab.swift */; };
 		3B6040E0C2E98390EAD6983B /* LocationMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7BFE397E63A8A20A58F030E /* LocationMapView.swift */; };
 		3EABE11E3DCA74FC89100204 /* MoonPhaseDisc.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E9C27093943525176C6843 /* MoonPhaseDisc.swift */; };
@@ -174,7 +175,7 @@
 		4D40EC938ECB07A3AB919772 /* DropAcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFBDAF375886651EAEF634B1 /* DropAcceptanceTests.swift */; };
 		4E83E9BA85223077ADB02CC0 /* LocationInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551AA37CC8260691B24CBDDF /* LocationInfoView.swift */; };
 		52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */; };
-		54065838C048CFC29D3F7E9D /* StarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCACD7E9EC017435B0121B6 /* StarsView.swift */; };
+		54065838C048CFC29D3F7E9D /* AnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCACD7E9EC017435B0121B6 /* AnalysisView.swift */; };
 		546A99E3839DAF0FA8441186 /* HistogramPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78D7CBE758186E62FCA898A /* HistogramPlaceholderView.swift */; };
 		57C4FB597E4FAA17244A7F17 /* SunTwilightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0457D28C6A4D379B1D149226 /* SunTwilightView.swift */; };
 		5A516E0150000000000000B1 /* ImageWeighting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A516E0150000000000000B2 /* ImageWeighting.swift */; };
@@ -196,6 +197,7 @@
 		73471F6671C722655FD0059F /* CanvasCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88704186886B49150B293572 /* CanvasCommand.swift */; };
 		7399A902A0D95261FD89124D /* CompassDirection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CEADF9A0D4776F30676DA79 /* CompassDirection.swift */; };
 		76B54F287C11C6DE09907894 /* HeaderExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D628DF4A1EE6FDEB030831 /* HeaderExport.swift */; };
+		776089F158755B3BAFA125DC /* SkyBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3608534BB97DAB5C88B42771 /* SkyBackgroundView.swift */; };
 		7B543E85E898ADF392FE8ACB /* AstrometryTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847C8768478977166B540620 /* AstrometryTransport.swift */; };
 		7D9F3B0B9F33E7D25CEB613F /* AstrometryTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86ADBDCAF1E7598A4CC5DEDD /* AstrometryTestSupport.swift */; };
 		7EBA7A151826541146E7EFF5 /* ObjectsOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B077522E455E19CF61F335A /* ObjectsOverlayTests.swift */; };
@@ -542,6 +544,7 @@
 		2DF5F41CCB06024918FD83D1 /* AstrometryClientTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AstrometryClientTests.swift; sourceTree = "<group>"; };
 		2FD59DBA32F275D80213F313 /* OpenMeteoClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoClient.swift; sourceTree = "<group>"; };
 		3079567CE7B6AC8339AA61C2 /* LocationInfoViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LocationInfoViewTests.swift; sourceTree = "<group>"; };
+		3608534BB97DAB5C88B42771 /* SkyBackgroundView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SkyBackgroundView.swift; sourceTree = "<group>"; };
 		37A6023D1148AA3BC889366A /* WeatherConditionsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeatherConditionsTests.swift; sourceTree = "<group>"; };
 		3B32FB9C155A9685F962137B /* CompassDirectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CompassDirectionTests.swift; sourceTree = "<group>"; };
 		3B9C0D4280A594EAC752F3F4 /* FlowLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
@@ -626,6 +629,7 @@
 		E0A86A0DF44489494DEF2C5C /* StarDetection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarDetection.swift; sourceTree = "<group>"; };
 		E7410133087261AF83595054 /* ImageInformation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInformation.swift; sourceTree = "<group>"; };
 		E777059D8151CFA76FB977B9 /* AppDelegateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegateTests.swift; sourceTree = "<group>"; };
+		EB3715CBB030149A29AA873A /* StarsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarsView.swift; sourceTree = "<group>"; };
 		EB9DD79B3B4350B42B48B2B2 /* SegmentedControlView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SegmentedControlView.swift; sourceTree = "<group>"; };
 		F02EA5AA79E7AB973E861807 /* CanvasOverlayStyleTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasOverlayStyleTests.swift; sourceTree = "<group>"; };
 		F31A4C622181F86B28E16A73 /* WindowCloseConfirmationDelegateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowCloseConfirmationDelegateTests.swift; sourceTree = "<group>"; };
@@ -633,7 +637,7 @@
 		F5A15B5C28550566FCCF1C81 /* ImageInfoTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInfoTabView.swift; sourceTree = "<group>"; };
 		F9B45988B10C9ED2BD630750 /* PlanetsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlanetsView.swift; sourceTree = "<group>"; };
 		FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFileTests.swift; sourceTree = "<group>"; };
-		FBCACD7E9EC017435B0121B6 /* StarsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarsView.swift; sourceTree = "<group>"; };
+		FBCACD7E9EC017435B0121B6 /* AnalysisView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AnalysisView.swift; sourceTree = "<group>"; };
 		FCA5E7B0000000000000F001 /* ResetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetButton.swift; sourceTree = "<group>"; };
 		FE01A0010000000000000001 /* WeightFormula.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightFormula.swift; sourceTree = "<group>"; };
 		FE01A0020000000000000001 /* WeightFormulaTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeightFormulaTests.swift; sourceTree = "<group>"; };
@@ -1222,7 +1226,9 @@
 				4D7A6FCCB028599AAB32207D /* WeatherView.swift */,
 				0457D28C6A4D379B1D149226 /* SunTwilightView.swift */,
 				F9B45988B10C9ED2BD630750 /* PlanetsView.swift */,
-				FBCACD7E9EC017435B0121B6 /* StarsView.swift */,
+				FBCACD7E9EC017435B0121B6 /* AnalysisView.swift */,
+				EB3715CBB030149A29AA873A /* StarsView.swift */,
+				3608534BB97DAB5C88B42771 /* SkyBackgroundView.swift */,
 			);
 			path = Sidebar;
 			sourceTree = "<group>";
@@ -1941,7 +1947,9 @@
 				57C4FB597E4FAA17244A7F17 /* SunTwilightView.swift in Sources */,
 				213415D04BB6CBDF6DA3315C /* PlanetsView.swift in Sources */,
 				7399A902A0D95261FD89124D /* CompassDirection.swift in Sources */,
-				54065838C048CFC29D3F7E9D /* StarsView.swift in Sources */,
+				54065838C048CFC29D3F7E9D /* AnalysisView.swift in Sources */,
+				38BB308BC82BE02615DF2FD4 /* StarsView.swift in Sources */,
+				776089F158755B3BAFA125DC /* SkyBackgroundView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

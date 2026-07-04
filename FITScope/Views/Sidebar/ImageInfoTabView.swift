@@ -42,8 +42,8 @@ public struct ImageInfoTabView: View
         /// The Image Information grid.
         case info
 
-        /// The star-detection metrics.
-        case stars
+        /// The image-analysis metrics: star detection and the sky background.
+        case analysis
 
         /// The capture-location map and coordinates.
         case location
@@ -66,7 +66,7 @@ public struct ImageInfoTabView: View
             switch self
             {
                 case .info:       return "Info"
-                case .stars:      return "Stars"
+                case .analysis:   return "Analysis"
                 case .location:   return "Location"
                 case .sun:        return "Sun"
                 case .moon:       return "Moon"
@@ -98,7 +98,7 @@ public struct ImageInfoTabView: View
     {
         VStack( spacing: 10 )
         {
-            SegmentedControlView( selection: self.$tab, values: [ .info, .stars, .location, .sun, .moon, .planets, .weather ], title: { $0.title }, icon: { self.icon( for: $0 ) }, collapsesUnselectedToIcon: true )
+            SegmentedControlView( selection: self.$tab, values: [ .info, .analysis, .location, .sun, .moon, .planets, .weather ], title: { $0.title }, icon: { self.icon( for: $0 ) }, collapsesUnselectedToIcon: true )
                 .padding( .horizontal, 14 )
                 .padding( .top, 12 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.tabs )
@@ -137,12 +137,12 @@ public struct ImageInfoTabView: View
                 .opacity( self.tab == .info ? 1 : 0 )
                 .accessibilityHidden( self.tab != .info )
 
-            StarsView( starField: self.file.image?.starField, hasDetected: self.file.image?.hasDetectedStars ?? false )
+            AnalysisView( starField: self.file.image?.starField, hasDetected: self.file.image?.hasDetectedStars ?? false, skyBackground: self.file.image?.skyBackground, hasMeasuredBackground: self.file.image?.hasMeasuredBackground ?? false )
                 .padding( .horizontal, 14 )
                 .padding( .bottom, 14 )
-                .opacity( self.tab == .stars ? 1 : 0 )
-                .allowsHitTesting( self.tab == .stars )
-                .accessibilityHidden( self.tab != .stars )
+                .opacity( self.tab == .analysis ? 1 : 0 )
+                .allowsHitTesting( self.tab == .analysis )
+                .accessibilityHidden( self.tab != .analysis )
 
             // LocationMapView and MoonPhaseView own their own empty/error states,
             // so the host just supplies the (optional) data.
@@ -220,7 +220,7 @@ public struct ImageInfoTabView: View
         switch tab
         {
             case .info:       return "info.circle"
-            case .stars:      return "sparkles"
+            case .analysis:   return "sparkles"
             case .location:   return "mappin.and.ellipse"
             case .sun:        return "sun.horizon"
             case .moon:       return self.observationDate.map { MoonPhase( date: $0 ).phase.systemImageName } ?? "moon"

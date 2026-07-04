@@ -56,14 +56,29 @@ public class FITSImage: ObservableObject
     /// weight's `SNRWeight` term.
     @Published public private( set ) var signalToNoise: SignalToNoise?
 
+    /// The robust sky-background estimate, measured on the same linear detection
+    /// image but published independently of ``starField`` (the background is far
+    /// cheaper, so it lands first). `nil` until the measurement has run, or when
+    /// there is no usable image. Carries the background level and noise (in linear
+    /// ADU) and their fractions of the frame's value range, which the Analysis tab
+    /// surfaces as a relative sky-quality read-out. ``signalToNoise`` is derived
+    /// from its noise, so the two share a single robust estimate.
+    @Published public private( set ) var skyBackground: SkyBackground?
+
     /// Whether star detection is currently running, so the UI can show progress.
-    /// `true` only while ``detectStars()`` is in flight.
+    /// `true` only while ``detectStars()`` is detecting stars.
     @Published public private( set ) var isDetectingStars = false
 
     /// Whether star detection has finished running at least once. Lets the UI tell
     /// "detection hasn't run" from "detection ran and found nothing" — both leave
     /// ``starField`` empty — so the stars overlay can warn about the latter.
     @Published public private( set ) var hasDetectedStars = false
+
+    /// Whether the sky-background measurement has finished running at least once.
+    /// Lets the UI tell "not measured yet" from "measured but unavailable" (a
+    /// degenerate image) — both leave ``skyBackground`` `nil`. Set independently of
+    /// ``hasDetectedStars``, since the two measurements run concurrently.
+    @Published public private( set ) var hasMeasuredBackground = false
 
     /// The image's histogram view options, kept here so each file retains its own
     /// histogram display choices across selection changes.
@@ -88,12 +103,14 @@ public class FITSImage: ObservableObject
         }
     }
 
-    /// Runs star detection and noise estimation on the image's linear data and
-    /// publishes the results.
+    /// Runs star detection and the sky-background measurement on the image's linear
+    /// data and publishes the results.
     ///
-    /// Both measurements derive from the same linear detection image, so they run
-    /// together in one off-main-actor pass; only the published assignments happen
-    /// here. Does nothing when the render input is unavailable.
+    /// The two run as concurrent off-main-actor passes and publish independently,
+    /// so the cheaper background estimate appears as soon as it is ready rather than
+    /// waiting for star detection to finish. Both read the same linear detection
+    /// image. Does nothing when the render input is unavailable; awaits both before
+    /// returning.
     public func detectStars() async
     {
         guard let input = try? self.renderer.renderInputSnapshot()
@@ -102,6 +119,21 @@ public class FITSImage: ObservableObject
             return
         }
 
+        let detectionImage = input.detectionImage
+
+        async let stars:      Void = self.detectStarField( in: detectionImage )
+        async let background: Void = self.measureBackground( in: detectionImage )
+
+        _ = await( stars, background )
+    }
+
+    /// Detects the stars on the linear image and publishes ``starField``,
+    /// off the main actor, toggling ``isDetectingStars``/``hasDetectedStars``
+    /// around the work.
+    ///
+    /// - Parameter image: The linear detection image.
+    private func detectStarField( in image: PixelBuffer? ) async
+    {
         self.isDetectingStars = true
 
         defer
@@ -110,18 +142,29 @@ public class FITSImage: ObservableObject
             self.hasDetectedStars = true
         }
 
-        let detectionImage = input.detectionImage
-        let analysis       = await Task.detached
-        {
-            (
-                starField:     StarDetection.detectStars( in: detectionImage ),
-                signalToNoise: SignalToNoise.estimate( in: detectionImage )
-            )
-        }
-        .value
+        self.starField = await Task.detached { StarDetection.detectStars( in: image ) }.value
+    }
 
-        self.starField     = analysis.starField
-        self.signalToNoise = analysis.signalToNoise
+    /// Measures the sky background on the linear image and publishes it, off the
+    /// main actor and independently of star detection, marking
+    /// ``hasMeasuredBackground`` when done.
+    ///
+    /// ``signalToNoise`` is derived from the background's noise — the same robust
+    /// estimate — rather than measured separately; a flat frame (zero noise) has no
+    /// meaningful signal-to-noise, matching ``SignalToNoise/estimate(in:)``.
+    ///
+    /// - Parameter image: The linear detection image.
+    private func measureBackground( in image: PixelBuffer? ) async
+    {
+        defer
+        {
+            self.hasMeasuredBackground = true
+        }
+
+        let background = await Task.detached { SkyBackground.estimate( in: image ) }.value
+
+        self.skyBackground = background
+        self.signalToNoise = background.flatMap { $0.noise > 0 ? SignalToNoise( noise: $0.noise ) : nil }
     }
 
     /// Resets every image adjustment to its default and re-renders.
