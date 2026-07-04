@@ -514,6 +514,16 @@ public enum AccessibilityIdentifier
         public static let icon = "PlanetsView.icon"
     }
 
+    /// Identifiers applied by ``FITScope/StarsView``.
+    public enum StarsView
+    {
+        /// The stars tab's container.
+        public static let container = "StarsView.container"
+
+        /// The stars header symbol.
+        public static let icon = "StarsView.icon"
+    }
+
     /// Identifiers applied by ``FITScope/InfoView`` (the FITS headers window).
     public enum InfoView
     {

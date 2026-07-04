@@ -174,6 +174,7 @@
 		4D40EC938ECB07A3AB919772 /* DropAcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFBDAF375886651EAEF634B1 /* DropAcceptanceTests.swift */; };
 		4E83E9BA85223077ADB02CC0 /* LocationInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551AA37CC8260691B24CBDDF /* LocationInfoView.swift */; };
 		52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */; };
+		54065838C048CFC29D3F7E9D /* StarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCACD7E9EC017435B0121B6 /* StarsView.swift */; };
 		546A99E3839DAF0FA8441186 /* HistogramPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78D7CBE758186E62FCA898A /* HistogramPlaceholderView.swift */; };
 		57C4FB597E4FAA17244A7F17 /* SunTwilightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0457D28C6A4D379B1D149226 /* SunTwilightView.swift */; };
 		5A516E0150000000000000B1 /* ImageWeighting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A516E0150000000000000B2 /* ImageWeighting.swift */; };
@@ -632,6 +633,7 @@
 		F5A15B5C28550566FCCF1C81 /* ImageInfoTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInfoTabView.swift; sourceTree = "<group>"; };
 		F9B45988B10C9ED2BD630750 /* PlanetsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlanetsView.swift; sourceTree = "<group>"; };
 		FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFileTests.swift; sourceTree = "<group>"; };
+		FBCACD7E9EC017435B0121B6 /* StarsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarsView.swift; sourceTree = "<group>"; };
 		FCA5E7B0000000000000F001 /* ResetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetButton.swift; sourceTree = "<group>"; };
 		FE01A0010000000000000001 /* WeightFormula.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightFormula.swift; sourceTree = "<group>"; };
 		FE01A0020000000000000001 /* WeightFormulaTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeightFormulaTests.swift; sourceTree = "<group>"; };
@@ -1220,6 +1222,7 @@
 				4D7A6FCCB028599AAB32207D /* WeatherView.swift */,
 				0457D28C6A4D379B1D149226 /* SunTwilightView.swift */,
 				F9B45988B10C9ED2BD630750 /* PlanetsView.swift */,
+				FBCACD7E9EC017435B0121B6 /* StarsView.swift */,
 			);
 			path = Sidebar;
 			sourceTree = "<group>";
@@ -1938,6 +1941,7 @@
 				57C4FB597E4FAA17244A7F17 /* SunTwilightView.swift in Sources */,
 				213415D04BB6CBDF6DA3315C /* PlanetsView.swift in Sources */,
 				7399A902A0D95261FD89124D /* CompassDirection.swift in Sources */,
+				54065838C048CFC29D3F7E9D /* StarsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

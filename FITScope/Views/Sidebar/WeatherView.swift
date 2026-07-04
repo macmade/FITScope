@@ -152,7 +152,7 @@ public struct WeatherView: View
         {
             Image( systemName: conditions.systemImageName )
                 .font( .system( size: 40 ) )
-                .symbolRenderingMode( .multicolor )
+                .symbolRenderingMode( .hierarchical )
                 .accessibilityIdentifier( AccessibilityIdentifier.WeatherView.icon )
 
             Text( conditions.conditionDescription )

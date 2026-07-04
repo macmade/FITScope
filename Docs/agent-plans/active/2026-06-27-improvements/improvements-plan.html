@@ -712,7 +712,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4><span class="milestone-id">M9</span>Star-detection info tab</h4>
-                <span class="pill todo">Not started</span>
+                <span class="pill done">Completed</span>
             </div>
             <p class="goal">Present star-detection results (count, median FWHM/HFR, eccentricity) in a new &ldquo;Stars&rdquo; sidebar tab. The overlay stays as-is.</p>
 
@@ -724,11 +724,29 @@
                 <li>Keep it consistent with the existing info-panel row styling.</li>
             </ul>
 
-            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="meta-row"><span><span class="k">Status:</span> Completed</span><span><span class="k">Completed:</span> 2026-07-04</span></div>
             <div class="field-label">Implementation notes</div>
-            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>New &ldquo;Stars&rdquo; tab:</strong> a new <code>StarsView</code> tab (icon <code>sparkles</code>, matching the Detected-Stars overlay), placed right after Info since both describe the frame itself. Tab order: Info / Stars / Location / Moon / Sun / Planets / Conditions.</li>
+                    <li><strong>States (corrected via review):</strong> a spinner + &ldquo;Detecting Stars&hellip;&rdquo; whenever detection has <em>not completed</em> (running, pending, or no image); the metrics once stars are found; a &ldquo;No Stars Detected&rdquo; placeholder <em>only</em> once detection has actually run (gated on <code>hasDetectedStars</code>) and found none &mdash; so it never misleads before detection. Reacts to the async detection because <code>FITSImageLoader</code> bridges the image&rsquo;s <code>objectWillChange</code> up to <code>OpenFile</code>, so the tab (fed plain values, like the other tabs) refreshes when detection commits.</li>
+                    <li><strong>Metrics (median, min &amp; max, in columns):</strong> a <code>sparkles</code> header with the star count (grouped &amp; pluralized, e.g. &ldquo;1,247 stars&rdquo;), then a <strong>columns grid with a header row</strong> &mdash; metric | Median | Min | Max &mdash; matching the Sun/Planets tabs&rsquo; column layout (same small header-label size): <strong>FWHM</strong>, <strong>HFR</strong> (px, on the median) and <strong>eccentricity</strong>, each showing its median and its separate minimum and maximum (e.g. FWHM &middot; <code>3.42 px</code> &middot; <code>2.10</code> &middot; <code>8.70</code>). Medians are used (robust to hot pixels/outliers, unlike a mean). Row icons <code>circle.dotted</code> / <code>smallcircle.filled.circle</code> / <code>oval</code>; the overlay is untouched.</li>
+                    <li><strong>SwiftAstro addition:</strong> the value ranges were added to <code>StarField</code> (<code>fwhmRange</code>/<code>hfrRange</code>/<code>eccentricityRange</code>, <code>ClosedRange&lt;Double&gt;?</code>) alongside the existing medians, with tests; the tab reads their bounds for the Min and Max columns. So M9 spans both repos &mdash; it needs a SwiftAstro commit + pointer bump.</li>
+                    <li><strong>SNR/noise deferred (task&rsquo;s &ldquo;if useful&rdquo;):</strong> left out of the Stars tab &mdash; the raw robust noise is a small normalized number that reads better as the dedicated sky-quality indicator in M10, so this tab stays focused on star-shape quality. Flag if you&rsquo;d rather it appear here too.</li>
+                    <li><strong>Consistency:</strong> owns its states and fills the tab like the Moon/Sun/Planets tabs; row styling matches; previews cover the detecting / found / none states. New accessibility identifiers <code>StarsView.container</code>/<code>.icon</code>.</li>
+                    <li><strong>Verification:</strong> the app builds and the unit suite passes at <strong>430 tests</strong>; the SwiftAstro suite passes with the new <code>StarField</code> range test. The view formats SwiftAstro values (which are tested), so it has no new app-side unit-testable logic. UI tests were not run, per your standing request.</li>
+                    <li><strong>For review:</strong> (1) SNR/noise deferred to M10 (above); (2) FWHM/HFR are shown in pixels (not arcsec, since a reliable pixel scale isn&rsquo;t always present); (3) row icons are approximations for the shape metrics &mdash; easily changed.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <div class="placeholder">Review feedback for this milestone.</div>
+            <div class="notes">
+                <ul>
+                    <li>&ldquo;No Stars Detected&rdquo; is misleading when detection has not yet run &mdash; only show it once detection has actually completed.</li>
+                    <li>Clarify what the star numbers are (they are medians, not averages) and show min/max too &mdash; not as a combined range but as <strong>separate Min and Max columns</strong>.</li>
+                    <li>Present the star metrics as columns like the other tabs (metric | Median | Min | Max), and keep the column-header labels the same small size as the other tabs &mdash; they had rendered large because the row font was applied to the data rows but not the header row.</li>
+                    <li>Icon colors: the Sun tab&rsquo;s icon was white/invisible in light mode, and colored icons aren&rsquo;t wanted on any tab &mdash; so every tab&rsquo;s header icon now uses a neutral <code>hierarchical</code> rendering (Weather and Stars were switched off multicolor; the Sun tint was dropped).</li>
+                </ul>
+            </div>
         </div>
 
         <div class="milestone">

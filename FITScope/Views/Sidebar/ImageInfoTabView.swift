@@ -42,6 +42,9 @@ public struct ImageInfoTabView: View
         /// The Image Information grid.
         case info
 
+        /// The star-detection metrics.
+        case stars
+
         /// The capture-location map and coordinates.
         case location
 
@@ -63,6 +66,7 @@ public struct ImageInfoTabView: View
             switch self
             {
                 case .info:       return "Info"
+                case .stars:      return "Stars"
                 case .location:   return "Location"
                 case .moon:       return "Moon"
                 case .sun:        return "Sun"
@@ -94,7 +98,7 @@ public struct ImageInfoTabView: View
     {
         VStack( spacing: 10 )
         {
-            SegmentedControlView( selection: self.$tab, values: [ .info, .location, .moon, .sun, .planets, .conditions ], title: { $0.title }, icon: { self.icon( for: $0 ) }, collapsesUnselectedToIcon: true )
+            SegmentedControlView( selection: self.$tab, values: [ .info, .stars, .location, .moon, .sun, .planets, .conditions ], title: { $0.title }, icon: { self.icon( for: $0 ) }, collapsesUnselectedToIcon: true )
                 .padding( .horizontal, 14 )
                 .padding( .top, 12 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoTabView.tabs )
@@ -132,6 +136,13 @@ public struct ImageInfoTabView: View
             ImageInfoPanelView( file: self.file )
                 .opacity( self.tab == .info ? 1 : 0 )
                 .accessibilityHidden( self.tab != .info )
+
+            StarsView( starField: self.file.image?.starField, hasDetected: self.file.image?.hasDetectedStars ?? false )
+                .padding( .horizontal, 14 )
+                .padding( .bottom, 14 )
+                .opacity( self.tab == .stars ? 1 : 0 )
+                .allowsHitTesting( self.tab == .stars )
+                .accessibilityHidden( self.tab != .stars )
 
             // LocationMapView and MoonPhaseView own their own empty/error states,
             // so the host just supplies the (optional) data.
@@ -209,6 +220,7 @@ public struct ImageInfoTabView: View
         switch tab
         {
             case .info:       return "info.circle"
+            case .stars:      return "sparkles"
             case .location:   return "mappin.and.ellipse"
             case .moon:       return self.observationDate.map { MoonPhase( date: $0 ).phase.systemImageName } ?? "moon"
             case .sun:        return "sun.horizon"

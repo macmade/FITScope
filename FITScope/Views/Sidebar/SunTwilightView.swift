@@ -92,7 +92,7 @@ public struct SunTwilightView: View
         {
             Image( systemName: condition.systemImageName )
                 .font( .system( size: 40 ) )
-                .symbolRenderingMode( .multicolor )
+                .symbolRenderingMode( .hierarchical )
                 .accessibilityIdentifier( AccessibilityIdentifier.SunTwilightView.icon )
 
             Text( condition.label )
