@@ -60,7 +60,7 @@ struct IntegrationSummaryTests
     @Test
     func targetHoursSetTheReference() throws
     {
-        let summary = try #require( IntegrationSummary( exposures: [ 2 * 3600 ], reference: .hours( 4 ) ) )
+        let summary = try #require( IntegrationSummary( exposures: [ 2 * 3600.0 ], reference: .hours( 4 ) ) )
 
         #expect( summary.referenceSeconds == 4 * 3600 )
         #expect( abs( summary.relativeSNR - ( 0.5 ).squareRoot() ) < 1e-9 )
