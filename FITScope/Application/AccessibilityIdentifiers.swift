@@ -629,6 +629,33 @@ public enum AccessibilityIdentifier
         /// The button that restores the weight formula to its default in the
         /// Weighting tab.
         public static let weightFormulaResetButton = "PreferencesView.weightFormulaResetButton"
+
+        /// The Overlays tab's content.
+        public static let overlaysTab = "PreferencesView.overlaysTab"
+
+        /// The button that restores every overlay's appearance to its default in
+        /// the Overlays tab.
+        public static let overlaysRestoreAllButton = "PreferencesView.overlaysRestoreAllButton"
+
+        /// The colour picker for the overlay with the given identifier, in the
+        /// Overlays tab.
+        ///
+        /// - Parameter overlay: The overlay's identifier.
+        /// - Returns: The accessibility identifier.
+        public static func overlayColorPicker( _ overlay: String ) -> String
+        {
+            "PreferencesView.overlayColorPicker.\( overlay )"
+        }
+
+        /// The button that restores a single overlay's appearance to its default,
+        /// in the Overlays tab.
+        ///
+        /// - Parameter overlay: The overlay's identifier.
+        /// - Returns: The accessibility identifier.
+        public static func overlayResetButton( _ overlay: String ) -> String
+        {
+            "PreferencesView.overlayResetButton.\( overlay )"
+        }
     }
 
     /// Identifiers for the session metric-trend charts window.

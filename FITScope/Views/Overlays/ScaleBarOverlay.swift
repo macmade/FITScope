@@ -41,16 +41,29 @@ public struct ScaleBarOverlay: CanvasOverlay
     /// be determined (no WCS, focal length, or pixel size).
     private let pixelScale: Double?
 
+    /// The bar's and label's appearance (colour + opacity).
+    private let appearance: OverlayAppearance
+
     /// Creates the overlay for the given pixel scale.
     ///
-    /// - Parameter pixelScale: The plate scale, in arc-seconds per pixel, or `nil`
-    ///                         when unknown.
-    public init( pixelScale: Double? )
+    /// - Parameters:
+    ///   - pixelScale: The plate scale, in arc-seconds per pixel, or `nil` when
+    ///                 unknown.
+    ///   - appearance: The bar's and label's colour and opacity. Defaults to
+    ///                 ``ScaleBarOverlay/defaultAppearance``.
+    public init( pixelScale: Double?, appearance: OverlayAppearance = ScaleBarOverlay.defaultAppearance )
     {
         self.pixelScale = pixelScale
+        self.appearance = appearance
     }
 
-    public let id              = "scale"
+    /// The overlay's stable identifier.
+    public static let identifier = "scale"
+
+    /// The bar's and label's default appearance — semi-transparent white.
+    public static let defaultAppearance = OverlayAppearance( color: .white, opacity: CanvasOverlayStyle.alpha, secondaryOpacity: CanvasOverlayStyle.alpha )
+
+    public let id              = ScaleBarOverlay.identifier
     public let title           = "Scale Bar"
     public let systemImageName = "ruler"
 
@@ -83,9 +96,6 @@ public struct ScaleBarOverlay: CanvasOverlay
             60, 120, 300, 600, 1200, 1800,
             3600, 7200, 18000, 36000,
         ]
-
-    /// The colour of the bar and its label.
-    private static let color = Color.white.opacity( CanvasOverlayStyle.alpha )
 
     /// The on-screen stroke width.
     private static let lineWidth: CGFloat = 1.5
@@ -218,9 +228,9 @@ public struct ScaleBarOverlay: CanvasOverlay
         path.move(    to: CGPoint( x: endX,   y: baseline - Self.tickHeight ) )
         path.addLine( to: CGPoint( x: endX,   y: baseline ) )
 
-        context.stroke( path, with: .color( Self.color ), lineWidth: Self.lineWidth )
+        context.stroke( path, with: .color( self.appearance.primaryColor ), lineWidth: Self.lineWidth )
 
-        let label = Text( measurement.label ).font( .system( size: Self.labelFontSize, weight: .medium ) ).foregroundStyle( Self.color )
+        let label = Text( measurement.label ).font( .system( size: Self.labelFontSize, weight: .medium ) ).foregroundStyle( self.appearance.primaryColor )
 
         context.draw( label, at: CGPoint( x: ( startX + endX ) / 2, y: baseline - Self.tickHeight - Self.labelGap ), anchor: .bottom )
     }

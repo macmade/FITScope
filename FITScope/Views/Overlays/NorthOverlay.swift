@@ -75,6 +75,9 @@ public struct NorthOverlay: CanvasOverlay
     /// proposing a plate solve — wired by the host when the overlay is built.
     public let onUnavailableTap: ( () -> Void )?
 
+    /// The compass's appearance (colour + opacity).
+    private let appearance: OverlayAppearance
+
     /// Creates the overlay for the given WCS and display orientation.
     ///
     /// - Parameters:
@@ -84,16 +87,22 @@ public struct NorthOverlay: CanvasOverlay
     ///                       compass turns with it. Defaults to the identity.
     ///   - onUnavailableTap: The action to run when tapped with nothing to show.
     ///                       Defaults to `nil`.
-    public init( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil )
+    ///   - appearance:       The compass's colour and opacity. Defaults to
+    ///                       ``NorthOverlay/defaultAppearance``.
+    public init( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil, appearance: OverlayAppearance = NorthOverlay.defaultAppearance )
     {
         self.compass          = Self.compass( wcs: wcs, orientation: orientation )
         self.onUnavailableTap = onUnavailableTap
+        self.appearance       = appearance
     }
 
     /// The overlay's stable identifier, also used by the canvas to recognise the
     /// north toggle — which, like the objects toggle, it always offers and routes
     /// to a plate-solve prompt when there is no orientation to show.
     public static let identifier = "north"
+
+    /// The compass's default appearance — semi-transparent white.
+    public static let defaultAppearance = OverlayAppearance( color: .white, opacity: CanvasOverlayStyle.alpha, secondaryOpacity: CanvasOverlayStyle.alpha )
 
     public let id              = NorthOverlay.identifier
     public let title           = "North Indicator"
@@ -208,9 +217,6 @@ public struct NorthOverlay: CanvasOverlay
 
     // MARK: - Drawing
 
-    /// The compass colour.
-    private static let color = Color.white.opacity( CanvasOverlayStyle.alpha )
-
     /// The on-screen stroke width.
     private static let lineWidth: CGFloat = 1.5
 
@@ -264,8 +270,8 @@ public struct NorthOverlay: CanvasOverlay
 
         let center = CGPoint( x: region.maxX - Self.marginRight, y: region.minY + Self.marginTop )
 
-        Self.drawArm( in: &context, center: center, direction: compass.east,  length: Self.eastLength,  label: "E", withHead: false )
-        Self.drawArm( in: &context, center: center, direction: compass.north, length: Self.northLength, label: "N", withHead: true )
+        Self.drawArm( in: &context, center: center, direction: compass.east,  length: Self.eastLength,  label: "E", withHead: false, color: self.appearance.primaryColor )
+        Self.drawArm( in: &context, center: center, direction: compass.north, length: Self.northLength, label: "N", withHead: true,  color: self.appearance.primaryColor )
     }
 
     /// Draws one compass arm: a line from the centre along `direction`, an optional
@@ -278,7 +284,8 @@ public struct NorthOverlay: CanvasOverlay
     ///   - length:    The arm length, in points.
     ///   - label:     The single-letter label (`N` or `E`).
     ///   - withHead:  Whether to draw an arrowhead at the tip.
-    private static func drawArm( in context: inout GraphicsContext, center: CGPoint, direction: CGVector, length: CGFloat, label: String, withHead: Bool )
+    ///   - color:     The arm and label colour (the overlay's configured appearance).
+    private static func drawArm( in context: inout GraphicsContext, center: CGPoint, direction: CGVector, length: CGFloat, label: String, withHead: Bool, color: Color )
     {
         let tip = CGPoint( x: center.x + ( direction.dx * length ), y: center.y + ( direction.dy * length ) )
 
@@ -302,10 +309,10 @@ public struct NorthOverlay: CanvasOverlay
             path.addLine( to: CGPoint( x: tip.x + ( right.dx * Self.headLength ), y: tip.y + ( right.dy * Self.headLength ) ) )
         }
 
-        context.stroke( path, with: .color( Self.color ), lineWidth: Self.lineWidth )
+        context.stroke( path, with: .color( color ), lineWidth: Self.lineWidth )
 
         let labelPoint = CGPoint( x: tip.x + ( direction.dx * Self.labelGap ), y: tip.y + ( direction.dy * Self.labelGap ) )
-        let text       = Text( label ).font( .system( size: Self.labelFontSize, weight: .semibold ) ).foregroundStyle( Self.color )
+        let text       = Text( label ).font( .system( size: Self.labelFontSize, weight: .semibold ) ).foregroundStyle( color )
 
         context.draw( text, at: labelPoint, anchor: .center )
     }

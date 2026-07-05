@@ -58,6 +58,9 @@ public struct StarsOverlay: CanvasOverlay
     /// empty.
     private let hasDetectedStars: Bool
 
+    /// The markers' appearance (colour + opacity).
+    private let appearance: OverlayAppearance
+
     /// Creates the overlay for the given detected stars.
     ///
     /// - Parameters:
@@ -66,15 +69,24 @@ public struct StarsOverlay: CanvasOverlay
     ///   - isLoading:        Whether detection is still running. Defaults to `false`.
     ///   - hasDetectedStars: Whether detection has finished running at least once.
     ///                       Defaults to `false`.
-    public init( stars: [ Star ], orientation: Processors.Orient.Orientation = .identity, isLoading: Bool = false, hasDetectedStars: Bool = false )
+    ///   - appearance:       The markers' colour and opacity. Defaults to
+    ///                       ``StarsOverlay/defaultAppearance``.
+    public init( stars: [ Star ], orientation: Processors.Orient.Orientation = .identity, isLoading: Bool = false, hasDetectedStars: Bool = false, appearance: OverlayAppearance = StarsOverlay.defaultAppearance )
     {
         self.stars            = stars
         self.orientation      = orientation
         self.isLoading        = isLoading
         self.hasDetectedStars = hasDetectedStars
+        self.appearance       = appearance
     }
 
-    public let id              = "stars"
+    /// The overlay's stable identifier.
+    public static let identifier = "stars"
+
+    /// The markers' default appearance — semi-transparent green.
+    public static let defaultAppearance = OverlayAppearance( color: .green, opacity: CanvasOverlayStyle.alpha, secondaryOpacity: CanvasOverlayStyle.alpha )
+
+    public let id              = StarsOverlay.identifier
     public let title           = "Detected Stars"
     public let systemImageName = "sparkles"
 
@@ -96,9 +108,6 @@ public struct StarsOverlay: CanvasOverlay
 
         return "Star detection ran on this image but didn’t find any stars."
     }
-
-    /// The marker colour.
-    private static let color = Color.green.opacity( CanvasOverlayStyle.alpha )
 
     /// The on-screen stroke width, kept constant across zoom.
     private static let lineWidth: CGFloat = 1.5
@@ -187,7 +196,7 @@ public struct StarsOverlay: CanvasOverlay
             let radius     = Self.markerRadius( hfr: star.hfr, displayScale: scale )
             let circle     = Path( ellipseIn: CGRect( x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2 ) )
 
-            context.stroke( circle, with: .color( Self.color ), lineWidth: Self.lineWidth )
+            context.stroke( circle, with: .color( self.appearance.primaryColor ), lineWidth: Self.lineWidth )
         }
     }
 }

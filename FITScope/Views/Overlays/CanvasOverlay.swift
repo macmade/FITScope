@@ -36,6 +36,20 @@ import SwiftUI
 /// instead scale with the image.
 public protocol CanvasOverlay
 {
+    /// The overlay's default appearance — its original hardcoded look. Preferences
+    /// seeds each overlay's colour and opacity from this and resets to it, and an
+    /// overlay's ``draw(in:canvasSize:imageSize:displayedRect:)`` falls back to it
+    /// when built without a custom appearance. Declared per type, so each overlay
+    /// owns its own default.
+    static var defaultAppearance: OverlayAppearance { get }
+
+    /// The opacity channels the overlay exposes for customisation, in display
+    /// order. Defaults to a single stroke-opacity channel; an overlay that draws
+    /// more than one tier (the equatorial grid, whose lines sit beneath its labels)
+    /// overrides this to declare its own — so an overlay's tier structure is pure
+    /// data, with no special-casing anywhere else.
+    static var opacityChannels: [ OverlayOpacityChannel ] { get }
+
     /// A stable identifier, used to key the overlay's enabled state and its
     /// toolbar toggle. It must not be a localized or display-derived string.
     var id: String { get }
@@ -88,6 +102,13 @@ public protocol CanvasOverlay
 
 public extension CanvasOverlay
 {
+    /// Most overlays draw a single tier, so they expose one opacity channel — their
+    /// stroke opacity. An overlay with more than one tier overrides this.
+    static var opacityChannels: [ OverlayOpacityChannel ]
+    {
+        [ OverlayOpacityChannel( label: "Opacity", keyPath: \OverlayAppearance.opacity ) ]
+    }
+
     /// Overlays whose data is always ready report `false`; a data-driven overlay
     /// that computes asynchronously overrides this while its work is in flight.
     var isLoading: Bool

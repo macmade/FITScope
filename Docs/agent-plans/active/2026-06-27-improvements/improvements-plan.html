@@ -886,7 +886,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4><span class="milestone-id">M12</span>Overlay customization in Preferences</h4>
-                <span class="pill todo">Not started</span>
+                <span class="pill done">Completed</span>
             </div>
             <p class="goal">Add a Preferences tab to customize overlays, letting the user set the colour and opacity of each overlay individually.</p>
 
@@ -899,11 +899,33 @@
                 <li>Add a preview; verify overlays repaint live when preferences change.</li>
             </ul>
 
-            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="meta-row"><span><span class="k">Status:</span> Completed</span><span><span class="k">Completed:</span> 2026-07-05</span></div>
             <div class="field-label">Implementation notes</div>
-            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Pattern (per review):</strong> no central catalog enum. Each overlay <em>declares its own</em> appearance metadata through the <code>CanvasOverlay</code> protocol &mdash; a static <code>defaultAppearance</code> and a static <code>opacityChannels</code>. The protocol extension supplies the single-channel default (&ldquo;Opacity&rdquo; &rarr; <code>\.opacity</code>); only <code>EquatorialGridOverlay</code> overrides it, declaring its two tiers (&ldquo;Labels&rdquo; &rarr; <code>\.opacity</code>, &ldquo;Lines&rdquo; &rarr; <code>\.secondaryOpacity</code>). So the grid&rsquo;s two-tier nature lives on the grid, with no <code>== .grid</code> conditionals anywhere.</li>
+                    <li><strong>Model (<code>Model/Overlays/</code>):</strong> <code>OverlayAppearance</code> stores the colour as clamped sRGB components plus a primary and secondary opacity (persistable numbers, directly testable; a <code>Color</code> accessor bridges via <code>NSColor(&hellip;).usingColorSpace(.sRGB)</code>). <code>OverlayOpacityChannel</code> pairs a label with a <code>WritableKeyPath&lt;OverlayAppearance, Double&gt;</code>, so the editor renders one slider per channel and binds straight through the key path.</li>
+                    <li><strong>Overlays:</strong> each gained a static <code>identifier</code> + static <code>defaultAppearance</code> (today&rsquo;s colours: reticle yellow, stars green, objects cyan, scale/north/grid white; primary alpha 0.7, grid lines at the 0.28 secondary alpha) and an instance <code>appearance</code>, threaded through <code>init</code> (defaulting to the overlay&rsquo;s own default). <code>draw(&hellip;)</code> uses <code>appearance.primaryColor</code>/<code>secondaryColor</code>; the static draw helpers in <code>NorthOverlay</code> and <code>EquatorialGridOverlay</code> take the colour(s) as parameters. The per-overlay <code>private static let color</code>s are gone. <code>CanvasOverlayStyle.alpha</code>/<code>secondaryAlpha</code> stay as the shared default-opacity source.</li>
+                    <li><strong>Catalog:</strong> <code>CanvasOverlayCatalog.all</code> (Views) lists representative, data-free overlay instances in display order &mdash; read only for their metadata, never drawn. This is the one registration point; overlays still own their own appearance.</li>
+                    <li><strong>Preferences (decoupled):</strong> <code>Preferences</code> holds a generic <code>[String: OverlayAppearance]</code> keyed by overlay id and knows nothing about the overlays or their defaults (so Model does not depend on Views). It stores <em>only</em> the overlays the user changed; an absent overlay falls back to its own default at read time. <code>overlayAppearance(_:)</code> returns the customisation or <code>nil</code>; <code>resetOverlayAppearance(_:)</code> drops the key; <code>resetAllOverlayAppearances()</code> clears the map. Persisted as a JSON array under <code>overlayAppearances</code>, same pattern as <code>infoPanelFields</code>.</li>
+                    <li><strong>Live wiring:</strong> <code>ImageCanvasView.overlays</code> passes each overlay <code>preferences.overlayAppearance(id) ?? Type.defaultAppearance</code>. Because the view observes <code>Preferences</code>, changing a colour/opacity rebuilds the overlays and repaints the canvas live.</li>
+                    <li><strong>UI:</strong> new <code>PreferencesTab.overlays</code> + <code>OverlayAppearancePreferencesView</code>, registered in <code>PreferencesView</code>. After review: overlay cards in <strong>two top-aligned columns</strong> (two fixed column stacks, not a grid, so a taller card leaves its row-mate pinned to the top); each card is a <code>GroupBox</code> with the overlay&rsquo;s icon + title in the header, a per-card reset once customised, a colour well, and <strong>native</strong> opacity sliders; field labels form a left column via <code>Grid</code>, rendered <strong>small and grey</strong>; a &ldquo;Restore All Defaults&rdquo; button clears everything. New accessibility identifiers (<code>overlaysTab</code>, <code>overlaysRestoreAllButton</code>, per-overlay <code>overlayColorPicker(_:)</code>/<code>overlayResetButton(_:)</code>) and a preview.</li>
+                    <li><strong>TDD:</strong> the model and Preferences tests were written first and watched fail (a real red &mdash; the test target would not compile against the missing <code>OverlayAppearance</code>/<code>OverlayKind</code>), then implemented. After the protocol redesign the tests were reworked onto the overlays&rsquo; own metadata (<code>CanvasOverlayAppearanceTests</code>) and the generic string-keyed store. The SwiftUI editor is not unit-testable; it is covered by its preview and left for your visual review.</li>
+                    <li><strong>Verification:</strong> the full unit suite passes at <strong>466 tests</strong> and the app builds. (The suite had to be run with <code>-enableCodeCoverage NO</code>: with coverage on, the test host crashed at bootstrap with an &ldquo;LLVM Profile Error: Counters section not page-aligned&rdquo; &mdash; an environment/toolchain instrumentation issue, unrelated to these changes.)</li>
+                    <li><strong>Xcode project:</strong> the three new source files and one test file were added to <code>FITScope.xcodeproj</code> (and the retired <code>OverlayKind</code> files removed) via the <code>xcodeproj</code> gem, matching M11&rsquo;s workflow.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <div class="placeholder">Review feedback for this milestone.</div>
+            <div class="notes">
+                <ul>
+                    <li>The first model draft introduced a central <code>OverlayKind</code> enum that <em>looked</em> generic but was riddled with conditions dedicated to the equatorial grid (a <code>hasSecondaryTier</code> flag and <code>primaryOpacityLabel</code>/<code>secondaryOpacityLabel</code> accessors branching on <code>self == .grid</code>). That is the wrong pattern &mdash; a generic catalog should not special-case one member.</li>
+                    <li>Instead, use a <strong>protocol</strong> so each overlay declares its own appearance metadata (its default appearance and the opacity channels it exposes). The grid simply declares two channels; every other overlay uses the single-channel default. No central enum, no per-grid conditionals.</li>
+                    <li>Overlays tab layout: the single stacked column was too tall &mdash; lay the overlay cards out in <strong>two columns</strong>. The blocks in a row should be <strong>top-aligned</strong> (not centred).</li>
+                    <li>Use <strong>native sliders</strong> (not the app&rsquo;s custom slider) for the opacity controls.</li>
+                    <li>Each slider&rsquo;s label should sit on the <strong>left</strong>, aligned with the &ldquo;Color&rdquo; label; the field labels should be <strong>grey and smaller</strong>.</li>
+                    <li>Show each overlay&rsquo;s <strong>icon next to its title</strong> in the card header.</li>
+                </ul>
+            </div>
         </div>
 
         <div class="milestone">

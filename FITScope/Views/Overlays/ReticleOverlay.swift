@@ -39,18 +39,30 @@ import SwiftUI
 /// centre — so its toolbar toggle is always offered.
 public struct ReticleOverlay: CanvasOverlay
 {
-    /// Creates the overlay.
-    public init()
-    {}
+    /// The overlay's stable identifier.
+    public static let identifier = "reticle"
 
-    public let id              = "reticle"
+    /// The reticle's default appearance — the familiar semi-transparent yellow
+    /// frame, crosshair, and rings.
+    public static let defaultAppearance = OverlayAppearance( color: .yellow, opacity: CanvasOverlayStyle.alpha, secondaryOpacity: CanvasOverlayStyle.alpha )
+
+    /// The reticle's appearance — the colour and opacity shared by the border,
+    /// crosshair, and rings, drawn as one element.
+    private let appearance: OverlayAppearance
+
+    /// Creates the overlay.
+    ///
+    /// - Parameter appearance: The reticle's colour and opacity. Defaults to
+    ///   ``ReticleOverlay/defaultAppearance``.
+    public init( appearance: OverlayAppearance = ReticleOverlay.defaultAppearance )
+    {
+        self.appearance = appearance
+    }
+
+    public let id              = ReticleOverlay.identifier
     public let title           = "Reticle"
     public let systemImageName = "plus.viewfinder"
     public let isAvailable     = true
-
-    /// The reticle colour, shared by the border, crosshair, and rings (the frame's
-    /// colour, so the consolidated overlay keeps the familiar frame look).
-    private static let color = Color.yellow.opacity( CanvasOverlayStyle.alpha )
 
     /// The on-screen stroke width, kept constant across zoom.
     private static let lineWidth: CGFloat = 1
@@ -125,7 +137,7 @@ public struct ReticleOverlay: CanvasOverlay
         let base = min( displayedRect.width, displayedRect.height )
 
         // The border is the displayed rectangle itself, so it hugs the image edges.
-        context.stroke( Path( displayedRect ), with: .color( Self.color ), lineWidth: Self.lineWidth )
+        context.stroke( Path( displayedRect ), with: .color( self.appearance.primaryColor ), lineWidth: Self.lineWidth )
 
         // Four crosshair arms that do NOT cross the centre: each runs from the
         // second ring (so it crosses the outer ring on the way in) out to a fixed
@@ -143,7 +155,7 @@ public struct ReticleOverlay: CanvasOverlay
         cross.move(    to: CGPoint( x: center.x + inner, y: center.y ) )
         cross.addLine( to: CGPoint( x: center.x + outer, y: center.y ) )
 
-        context.stroke( cross, with: .color( Self.color ), lineWidth: Self.lineWidth )
+        context.stroke( cross, with: .color( self.appearance.primaryColor ), lineWidth: Self.lineWidth )
 
         // Concentric rings, sized relative to the displayed image so they scale.
         var rings = Path()
@@ -157,6 +169,6 @@ public struct ReticleOverlay: CanvasOverlay
             rings.addEllipse( in: CGRect( x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2 ) )
         }
 
-        context.stroke( rings, with: .color( Self.color ), lineWidth: Self.lineWidth )
+        context.stroke( rings, with: .color( self.appearance.primaryColor ), lineWidth: Self.lineWidth )
     }
 }

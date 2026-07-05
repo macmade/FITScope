@@ -379,34 +379,48 @@ public struct ImageCanvasView: View
         [
             // Frames the image and marks its centre (border + crosshair + rings),
             // always available and registered to the image so it tracks zoom/pan.
-            ReticleOverlay(),
+            ReticleOverlay( appearance: self.overlayAppearance( ReticleOverlay.identifier, default: ReticleOverlay.defaultAppearance ) ),
             // The orientation comes from the committed render result, not the live
             // adjustment, so the markers reorient together with the image rather
             // than jumping ahead while a rotation is still rendering. `isLoading`
             // surfaces detection progress through the overlay, so the toolbar shows
             // it generically without knowing about star detection.
-            StarsOverlay( stars: self.file.image?.starField?.stars ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, isLoading: self.file.image?.isDetectingStars ?? false, hasDetectedStars: self.file.image?.hasDetectedStars ?? false ),
+            StarsOverlay( stars: self.file.image?.starField?.stars ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, isLoading: self.file.image?.isDetectingStars ?? false, hasDetectedStars: self.file.image?.hasDetectedStars ?? false, appearance: self.overlayAppearance( StarsOverlay.identifier, default: StarsOverlay.defaultAppearance ) ),
             // The plate-solved objects, registered to image space through the same
             // committed-render orientation as the stars, so the labels track the
             // image under rotate/flip. Tapped with no objects, it proposes a plate
             // solve through the app model.
-            ObjectsOverlay( annotations: self.file.plateSolve?.annotations ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve ),
+            ObjectsOverlay( annotations: self.file.plateSolve?.annotations ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( ObjectsOverlay.identifier, default: ObjectsOverlay.defaultAppearance ) ),
             // The plate scale prefers the plate solve's calibration (most accurate)
             // and falls back to the value derived from the file's header. Tapped with
             // no scale, it explains that through its warning.
-            ScaleBarOverlay( pixelScale: self.file.plateSolve?.calibration.pixscale ?? self.file.image?.info.pixelScale ),
+            ScaleBarOverlay( pixelScale: self.file.plateSolve?.calibration.pixscale ?? self.file.image?.info.pixelScale, appearance: self.overlayAppearance( ScaleBarOverlay.identifier, default: ScaleBarOverlay.defaultAppearance ) ),
             // The north / east compass, derived from the WCS — the plate solve's
             // (most authoritative) when present, else the file header's. Mapped
             // through the same committed-render orientation as the stars and
             // objects, so it turns with the image. Tapped without a known
             // orientation, it proposes a plate solve through the app model.
-            NorthOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve ),
+            NorthOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( NorthOverlay.identifier, default: NorthOverlay.defaultAppearance ) ),
             // The RA/Dec coordinate grid, projected from the same WCS (plate solve
             // preferred, else the file header) through the committed-render
             // orientation. Tapped with no usable WCS, it proposes a plate solve
             // through the app model.
-            EquatorialGridOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve ),
+            EquatorialGridOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( EquatorialGridOverlay.identifier, default: EquatorialGridOverlay.defaultAppearance ) ),
         ]
+    }
+
+    /// The user's configured appearance for an overlay, or the overlay's own
+    /// default when it has not been customised in Preferences. Reading these here —
+    /// where the view observes ``preferences`` — means changing a colour or opacity
+    /// in Preferences rebuilds the overlays and repaints the canvas live.
+    ///
+    /// - Parameters:
+    ///   - id:                The overlay's identifier.
+    ///   - defaultAppearance: The overlay's own default appearance.
+    /// - Returns: The appearance to draw the overlay with.
+    private func overlayAppearance( _ id: String, default defaultAppearance: OverlayAppearance ) -> OverlayAppearance
+    {
+        self.preferences.overlayAppearance( id ) ?? defaultAppearance
     }
 
     /// The overlays surfaced in the toolbar. Every overlay is always offered: a tap

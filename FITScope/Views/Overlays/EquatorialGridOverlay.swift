@@ -54,6 +54,10 @@ public struct EquatorialGridOverlay: CanvasOverlay
     /// proposing a plate solve — wired by the host when the overlay is built.
     public let onUnavailableTap: ( () -> Void )?
 
+    /// The grid's appearance — its colour and the two opacity tiers (labels and
+    /// the fainter lines).
+    private let appearance: OverlayAppearance
+
     /// Creates the overlay for the given WCS and display orientation.
     ///
     /// - Parameters:
@@ -62,17 +66,34 @@ public struct EquatorialGridOverlay: CanvasOverlay
     ///                       to the identity.
     ///   - onUnavailableTap: The action to run when tapped with nothing to show.
     ///                       Defaults to `nil`.
-    public init( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil )
+    ///   - appearance:       The grid's colour and its label/line opacities. Defaults
+    ///                       to ``EquatorialGridOverlay/defaultAppearance``.
+    public init( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil, appearance: OverlayAppearance = EquatorialGridOverlay.defaultAppearance )
     {
         self.projection       = wcs.flatMap { WCSProjection( metadata: $0 ) }
         self.orientation      = orientation
         self.onUnavailableTap = onUnavailableTap
+        self.appearance       = appearance
     }
 
     /// The overlay's stable identifier, also used by the canvas to recognise the
     /// grid toggle — which, like the objects and north toggles, it always offers and
     /// routes to a plate-solve prompt when there is no WCS to project.
     public static let identifier = "grid"
+
+    /// The grid's default appearance — white, with labels at the shared primary
+    /// alpha and the fainter lines at the shared secondary alpha.
+    public static let defaultAppearance = OverlayAppearance( color: .white, opacity: CanvasOverlayStyle.alpha, secondaryOpacity: CanvasOverlayStyle.secondaryAlpha )
+
+    /// The grid exposes two opacity tiers — unlike the single-tier overlays — so it
+    /// declares both channels itself: its brighter labels and its fainter lines.
+    public static var opacityChannels: [ OverlayOpacityChannel ]
+    {
+        [
+            OverlayOpacityChannel( label: "Labels", keyPath: \OverlayAppearance.opacity ),
+            OverlayOpacityChannel( label: "Lines",  keyPath: \OverlayAppearance.secondaryOpacity ),
+        ]
+    }
 
     public let id              = EquatorialGridOverlay.identifier
     public let title           = "Equatorial Grid"
@@ -218,14 +239,6 @@ public struct EquatorialGridOverlay: CanvasOverlay
 
     // MARK: - Drawing
 
-    /// The grid-line colour — faint, so the grid sits behind the image content.
-    /// Uses the shared secondary alpha, keeping the lines de-emphasised beneath the
-    /// brighter labels while tracking the overlays' single source of truth.
-    private static let lineColor = Color.white.opacity( CanvasOverlayStyle.secondaryAlpha )
-
-    /// The label colour, at the shared overlay alpha.
-    private static let labelColor = Color.white.opacity( CanvasOverlayStyle.alpha )
-
     /// The on-screen stroke width, kept constant across zoom.
     private static let lineWidth: CGFloat = 0.75
 
@@ -344,7 +357,7 @@ public struct EquatorialGridOverlay: CanvasOverlay
                 ( ra: projection.referenceRA + $0, dec: dec )
             }
 
-            Self.drawLine( in: &context, skyPoints: skyPoints, projection: projection, sourceSize: sourceSize, orientation: self.orientation, imageSize: imageSize, displayedRect: displayedRect, label: Self.formatDec( degrees: dec, stepDegrees: decStep ), anchor: .left, frame: frame )
+            Self.drawLine( in: &context, skyPoints: skyPoints, projection: projection, sourceSize: sourceSize, orientation: self.orientation, imageSize: imageSize, displayedRect: displayedRect, label: Self.formatDec( degrees: dec, stepDegrees: decStep ), anchor: .left, frame: frame, lineColor: self.appearance.secondaryColor, labelColor: self.appearance.primaryColor )
         }
 
         // Meridians: constant right ascension, sampled across the Dec range.
@@ -360,7 +373,7 @@ public struct EquatorialGridOverlay: CanvasOverlay
                 ( ra: ra, dec: $0 )
             }
 
-            Self.drawLine( in: &context, skyPoints: skyPoints, projection: projection, sourceSize: sourceSize, orientation: self.orientation, imageSize: imageSize, displayedRect: displayedRect, label: Self.formatRA( degrees: ra, stepDegrees: raStep ), anchor: .bottom, frame: frame )
+            Self.drawLine( in: &context, skyPoints: skyPoints, projection: projection, sourceSize: sourceSize, orientation: self.orientation, imageSize: imageSize, displayedRect: displayedRect, label: Self.formatRA( degrees: ra, stepDegrees: raStep ), anchor: .bottom, frame: frame, lineColor: self.appearance.secondaryColor, labelColor: self.appearance.primaryColor )
         }
     }
 
@@ -386,7 +399,9 @@ public struct EquatorialGridOverlay: CanvasOverlay
     ///   - label:         The line's label.
     ///   - anchor:        Which shared edge the label aligns to.
     ///   - frame:         The gutter / baseline and clamp bounds labels align into.
-    private static func drawLine( in context: inout GraphicsContext, skyPoints: [ ( ra: Double, dec: Double ) ], projection: WCSProjection, sourceSize: CGSize, orientation: Processors.Orient.Orientation, imageSize: CGSize, displayedRect: CGRect, label: String, anchor: LabelAnchor, frame: LabelFrame )
+    ///   - lineColor:     The colour for the grid line (the fainter secondary tier).
+    ///   - labelColor:    The colour for the label (the brighter primary tier).
+    private static func drawLine( in context: inout GraphicsContext, skyPoints: [ ( ra: Double, dec: Double ) ], projection: WCSProjection, sourceSize: CGSize, orientation: Processors.Orient.Orientation, imageSize: CGSize, displayedRect: CGRect, label: String, anchor: LabelAnchor, frame: LabelFrame, lineColor: Color, labelColor: Color )
     {
         var path    = Path()
         var started = false
@@ -422,7 +437,7 @@ public struct EquatorialGridOverlay: CanvasOverlay
             points.append( view )
         }
 
-        context.stroke( path, with: .color( Self.lineColor ), lineWidth: Self.lineWidth )
+        context.stroke( path, with: .color( lineColor ), lineWidth: Self.lineWidth )
 
         guard label.isEmpty == false, let position = Self.labelPosition( points: points, anchor: anchor, frame: frame )
         else
@@ -430,7 +445,7 @@ public struct EquatorialGridOverlay: CanvasOverlay
             return
         }
 
-        let text = Text( label ).font( .system( size: Self.labelFontSize, weight: .medium ) ).foregroundStyle( Self.labelColor )
+        let text = Text( label ).font( .system( size: Self.labelFontSize, weight: .medium ) ).foregroundStyle( labelColor )
 
         switch anchor
         {

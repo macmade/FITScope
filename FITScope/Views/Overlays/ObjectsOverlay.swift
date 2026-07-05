@@ -51,6 +51,9 @@ public struct ObjectsOverlay: CanvasOverlay
     /// proposing a plate solve — wired by the host when the overlay is built.
     public let onUnavailableTap: ( () -> Void )?
 
+    /// The markers' and labels' appearance (colour + opacity).
+    private let appearance: OverlayAppearance
+
     /// Creates the overlay for the given plate-solved objects.
     ///
     /// - Parameters:
@@ -59,17 +62,23 @@ public struct ObjectsOverlay: CanvasOverlay
     ///   - orientation:      The orientation applied to the displayed image.
     ///   - onUnavailableTap: The action to run when tapped with nothing to show.
     ///                       Defaults to `nil`.
-    public init( annotations: [ PlateSolveResult.Annotation ], orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil )
+    ///   - appearance:       The markers' and labels' colour and opacity. Defaults
+    ///                       to ``ObjectsOverlay/defaultAppearance``.
+    public init( annotations: [ PlateSolveResult.Annotation ], orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil, appearance: OverlayAppearance = ObjectsOverlay.defaultAppearance )
     {
         self.annotations      = annotations
         self.orientation      = orientation
         self.onUnavailableTap = onUnavailableTap
+        self.appearance       = appearance
     }
 
     /// The overlay's stable identifier, also used by the canvas to recognise the
     /// objects toggle (which it always offers and routes to a plate-solve prompt
     /// when there is nothing to show).
     public static let identifier = "objects"
+
+    /// The markers' and labels' default appearance — semi-transparent cyan.
+    public static let defaultAppearance = OverlayAppearance( color: .cyan, opacity: CanvasOverlayStyle.alpha, secondaryOpacity: CanvasOverlayStyle.alpha )
 
     public let id              = ObjectsOverlay.identifier
     public let title           = "Plate-Solved Objects"
@@ -79,9 +88,6 @@ public struct ObjectsOverlay: CanvasOverlay
     {
         self.annotations.isEmpty == false
     }
-
-    /// The marker and label colour.
-    private static let color = Color.cyan.opacity( CanvasOverlayStyle.alpha )
 
     /// The on-screen stroke width, kept constant across zoom.
     private static let lineWidth: CGFloat = 1.5
@@ -151,7 +157,7 @@ public struct ObjectsOverlay: CanvasOverlay
             let radius     = Self.markerRadius( radius: annotation.radius, displayScale: scale )
             let circle     = Path( ellipseIn: CGRect( x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2 ) )
 
-            context.stroke( circle, with: .color( Self.color ), lineWidth: Self.lineWidth )
+            context.stroke( circle, with: .color( self.appearance.primaryColor ), lineWidth: Self.lineWidth )
 
             guard let label = annotation.label
             else
@@ -159,7 +165,7 @@ public struct ObjectsOverlay: CanvasOverlay
                 return
             }
 
-            let text = Text( label ).font( .system( size: Self.labelFontSize, weight: .medium ) ).foregroundStyle( Self.color )
+            let text = Text( label ).font( .system( size: Self.labelFontSize, weight: .medium ) ).foregroundStyle( self.appearance.primaryColor )
 
             context.draw( text, at: CGPoint( x: center.x + radius + Self.labelGap, y: center.y ), anchor: .leading )
         }

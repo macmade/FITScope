@@ -69,6 +69,7 @@ public final class Preferences: ObservableObject
         static let weightFormula        = "weightFormula"
         static let mainWindowWidth      = "mainWindowWidth"
         static let mainWindowHeight     = "mainWindowHeight"
+        static let overlayAppearances   = "overlayAppearances"
     }
 
     /// The persisted shape of one field setting: the field's stable raw value and
@@ -79,6 +80,18 @@ public final class Preferences: ObservableObject
     {
         let field:   String
         let visible: Bool
+    }
+
+    /// The persisted shape of one overlay appearance: the overlay's stable
+    /// identifier plus its sRGB components and opacities.
+    private struct StoredOverlayAppearance: Codable
+    {
+        let id:               String
+        let red:              Double
+        let green:            Double
+        let blue:             Double
+        let opacity:          Double
+        let secondaryOpacity: Double
     }
 
     /// The backing store. Reads seed the published values at init; writes flow
@@ -112,6 +125,20 @@ public final class Preferences: ObservableObject
     @Published public var infoPanelFields: [ InfoPanelFieldSetting ]
     {
         didSet { self.defaults.set( Self.encode( self.infoPanelFields ), forKey: Key.infoPanelFields ) }
+    }
+
+    /// The overlays the user has customised, keyed by overlay identifier — colour
+    /// and opacities per overlay. Drives how the canvas annotation overlays are
+    /// drawn and their editor in the Overlays preferences tab.
+    ///
+    /// Deliberately holds *only* the overlays the user has changed: an overlay
+    /// absent from the map keeps its own default appearance (so this store stays
+    /// decoupled from the overlays — it never enumerates or hardcodes their
+    /// defaults). Writes persist the map; reading back an empty or unreadable
+    /// payload yields no customisations.
+    @Published public var overlayAppearances: [ String: OverlayAppearance ]
+    {
+        didSet { self.defaults.set( Self.encode( self.overlayAppearances ), forKey: Key.overlayAppearances ) }
     }
 
     /// The user's image-weight formula, as raw text (see ``WeightFormula``).
@@ -165,6 +192,7 @@ public final class Preferences: ObservableObject
         self.autoHideFloatingBars = ( defaults.object( forKey: Key.autoHideFloatingBars ) as? Bool ) ?? true
         self.confirmMoveToTrash   = ( defaults.object( forKey: Key.confirmMoveToTrash ) as? Bool ) ?? true
         self.infoPanelFields      = Self.decodeInfoPanelFields( defaults.data( forKey: Key.infoPanelFields ) )
+        self.overlayAppearances   = Self.decodeOverlayAppearances( defaults.data( forKey: Key.overlayAppearances ) )
         self.weightFormula        = defaults.string( forKey: Key.weightFormula ) ?? WeightFormula.defaultExpression
         self.mainWindowSize       = Self.decodeMainWindowSize( from: defaults )
     }
@@ -208,6 +236,32 @@ public final class Preferences: ObservableObject
     private static var defaultInfoPanelFields: [ InfoPanelFieldSetting ]
     {
         InfoField.allCases.map { InfoPanelFieldSetting( field: $0, isVisible: true ) }
+    }
+
+    /// The user's customised appearance for an overlay, or `nil` when it has not
+    /// been customised — in which case the caller uses the overlay's own default.
+    ///
+    /// - Parameter id: The overlay's identifier.
+    /// - Returns: The stored appearance, or `nil`.
+    public func overlayAppearance( _ id: String ) -> OverlayAppearance?
+    {
+        self.overlayAppearances[ id ]
+    }
+
+    /// Restores a single overlay to its default appearance by dropping its stored
+    /// customisation, leaving the others untouched.
+    ///
+    /// - Parameter id: The overlay's identifier.
+    public func resetOverlayAppearance( _ id: String )
+    {
+        self.overlayAppearances[ id ] = nil
+    }
+
+    /// Restores every overlay to its default appearance by clearing all stored
+    /// customisations.
+    public func resetAllOverlayAppearances()
+    {
+        self.overlayAppearances = [ : ]
     }
 
     /// Encodes a configuration to JSON `Data` for `UserDefaults`.
@@ -270,5 +324,38 @@ public final class Preferences: ObservableObject
         }
 
         return result
+    }
+
+    /// Encodes the overlay appearances to JSON `Data` for `UserDefaults`.
+    ///
+    /// - Parameter appearances: The customisations to persist.
+    /// - Returns: The encoded data, or `nil` if encoding fails (never expected).
+    private static func encode( _ appearances: [ String: OverlayAppearance ] ) -> Data?
+    {
+        let stored = appearances.map
+        {
+            StoredOverlayAppearance( id: $0.key, red: $0.value.red, green: $0.value.green, blue: $0.value.blue, opacity: $0.value.opacity, secondaryOpacity: $0.value.secondaryOpacity )
+        }
+
+        return try? JSONEncoder().encode( stored )
+    }
+
+    /// Decodes the stored overlay customisations. A missing or unreadable payload
+    /// yields no customisations, so every overlay falls back to its own default.
+    ///
+    /// - Parameter data: The persisted JSON, or `nil` when nothing is stored.
+    /// - Returns: The decoded customisations, keyed by overlay identifier.
+    private static func decodeOverlayAppearances( _ data: Data? ) -> [ String: OverlayAppearance ]
+    {
+        guard let data, let stored = try? JSONDecoder().decode( [ StoredOverlayAppearance ].self, from: data )
+        else
+        {
+            return [ : ]
+        }
+
+        return Dictionary(
+            stored.map { ( $0.id, OverlayAppearance( red: $0.red, green: $0.green, blue: $0.blue, opacity: $0.opacity, secondaryOpacity: $0.secondaryOpacity ) ) },
+            uniquingKeysWith: { _, latest in latest }
+        )
     }
 }

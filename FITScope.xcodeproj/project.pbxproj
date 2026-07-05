@@ -208,9 +208,11 @@
 		7F6B7F6B74D2A59CAD7F35DF /* WeatherConditions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 528DA0DAD40D590B75B90AA3 /* WeatherConditions.swift */; };
 		80F6BE024AFD3E3A53297130 /* PlateSolveCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0606C4BF587DBB4AD119358A /* PlateSolveCalibrationView.swift */; };
 		8744872E66793145935DFB12 /* AstrometryResponses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C38E95C136002F0B9047230 /* AstrometryResponses.swift */; };
+		8828BEBFFA9146B4FEDCC4DF /* OverlayAppearancePreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21DF193192E2EB036A82D563 /* OverlayAppearancePreferencesView.swift */; };
 		8883C39B7FD3BD8B2E8035DD /* FilesSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA256D7D36DCB17FA81958C /* FilesSidebarView.swift */; };
 		8A4A9F1D77101F38D361646B /* IntegrationSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19A053364A23155634B61D1A /* IntegrationSummaryTests.swift */; };
 		8AEE515A0E32E0AEE6F7CF6A /* EquatorialGridOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BF0E28B558FF0EC25A4F530 /* EquatorialGridOverlayTests.swift */; };
+		8E10B87816F7510D829FBC6D /* CanvasOverlayAppearanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E05613CB155AD97D3D27620 /* CanvasOverlayAppearanceTests.swift */; };
 		8EFCBDEAD1C1ADF3221AF90B /* ImageCanvasController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC8D19544EBB1A50302A2E1 /* ImageCanvasController.swift */; };
 		8FD4823A666A3CBBBA760D54 /* CursorReadoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */; };
 		9223E0C2DE42A8DD4D9ECB3F /* SessionMetricsWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70E4B14A8BBABFA12D93D8AC /* SessionMetricsWindowView.swift */; };
@@ -221,6 +223,7 @@
 		96F3B0118BB78136877CC208 /* OpenFileRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 428EA4C0C0663914C3C8F4C4 /* OpenFileRowView.swift */; };
 		9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7410133087261AF83595054 /* ImageInformation.swift */; };
 		9A3A3D353F14A85800BD349D /* StatisticsFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0752B6126A583839BB8F8BEF /* StatisticsFormatTests.swift */; };
+		9A6163E1CF83BC9A5A891040 /* OverlayAppearanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9301C5FD2FCFBAC78AAA11 /* OverlayAppearanceTests.swift */; };
 		9B163B795274560E48F04CBF /* WCSProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20678C2224440A7F70B42B87 /* WCSProjectionTests.swift */; };
 		9B95B241926E5EF3B87D243F /* LocationMapRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A660D5D46BE16501558BFAEB /* LocationMapRepresentable.swift */; };
 		9C6AE833088D00380D5EA9F0 /* MoonPhaseSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A76B7A5EE76FA883E623C6 /* MoonPhaseSymbol.swift */; };
@@ -230,6 +233,7 @@
 		A043D5D47F28AF202E84461C /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF3765F1937F36620A92317F /* MainWindowView.swift */; };
 		A4B7F72827EB5946B7D329AC /* PlateSolveResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B503A40CF3A57D863C1304 /* PlateSolveResult.swift */; };
 		A57EE4574D095C50C23B497A /* ThumbnailLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81685BD1A3B59CF94FAA4347 /* ThumbnailLayout.swift */; };
+		A6EDEEF2AE40A8F0A31679E0 /* OverlayOpacityChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5571EB312AB29DEE762AA0D /* OverlayOpacityChannel.swift */; };
 		A88DD46D272944AD847BC0FD /* StarsOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEE209DF99F410FA6950C91 /* StarsOverlayTests.swift */; };
 		AE429B193507E2CB21017180 /* StatusMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C561A20BFECBF8335B6A8AF /* StatusMessageView.swift */; };
 		AED7DB374B89DCB6270892E1 /* AppDelegateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E777059D8151CFA76FB977B9 /* AppDelegateTests.swift */; };
@@ -254,6 +258,7 @@
 		D02FC0F337EBD9900B5C7FAE /* SessionMetricsFilesObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A09E9B8991D5CBB7DE09CCC /* SessionMetricsFilesObserver.swift */; };
 		D24193711C2310D674D17285 /* SessionMetricsSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 827CF6CF2E2BFB3C95FC049A /* SessionMetricsSummaryView.swift */; };
 		D3894C950C0D9EBDB32183D3 /* OpenMeteoTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557C23367A8D2C87E82A3696 /* OpenMeteoTestSupport.swift */; };
+		D38B935A489F6735AC3CFC9A /* CanvasOverlayCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E133CF06F5DB8A828FD727 /* CanvasOverlayCatalog.swift */; };
 		D41BBF135486BBEF8024EA39 /* CanvasOverlayStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2AB1D6E380EBFBEB8E9F768 /* CanvasOverlayStyle.swift */; };
 		D6356B42DB94E8CAD3027923 /* AppUpdaterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */; };
 		D68603F1398DE240630D7A92 /* IntegrationReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982DC11C05BB6556EDA0EFD7 /* IntegrationReference.swift */; };
@@ -271,6 +276,7 @@
 		E79B56F2683FA70FC52D6AFA /* InspectorSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0378BAF85DE48F0D74A2DFCC /* InspectorSectionView.swift */; };
 		E7B81EF94F4D952CFB809D7A /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1BE1B06CB1ADF17E538E40 /* AppUpdater.swift */; };
 		E9182FD7FDB7F9E09EF60B15 /* IntegrationSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = B99961EC2EE358190E67BC3B /* IntegrationSummary.swift */; };
+		ED1C033CCABA70A77F9C6559 /* OverlayAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E43E3296F35E241D872E3E /* OverlayAppearance.swift */; };
 		EDA8C3FD25FFC3542CACB017 /* FITSMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59AF90C07BCB7472F4490908 /* FITSMetadata.swift */; };
 		F5B9D3D10E367E712A2E355B /* SessionMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD872D066E754B666109019 /* SessionMetric.swift */; };
 		FA14C3E0E2CE2FF26A71FF1B /* HistogramViewOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9BD5E1A3FC040B4E14E8824 /* HistogramViewOptions.swift */; };
@@ -552,6 +558,7 @@
 		1DA1F380366A0478FB5293C1 /* NorthOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NorthOverlay.swift; sourceTree = "<group>"; };
 		20678C2224440A7F70B42B87 /* WCSProjectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WCSProjectionTests.swift; sourceTree = "<group>"; };
 		209B69186583B9C65F810C23 /* HistogramMode.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramMode.swift; sourceTree = "<group>"; };
+		21DF193192E2EB036A82D563 /* OverlayAppearancePreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OverlayAppearancePreferencesView.swift; sourceTree = "<group>"; };
 		22D6641B378926115E450672 /* WindowContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowContent.swift; sourceTree = "<group>"; };
 		276C7888FA0EFF9C2F111112 /* HeaderExportTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeaderExportTests.swift; sourceTree = "<group>"; };
 		2B264DF03E4047B5452A9DA7 /* SessionMetricsChartView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionMetricsChartView.swift; sourceTree = "<group>"; };
@@ -590,6 +597,7 @@
 		60B4D5CF1AA92231B4FCA5B6 /* PlateSolveToolbarButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveToolbarButton.swift; sourceTree = "<group>"; };
 		62C51129DC614C189D22E41F /* ImageToolbarButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageToolbarButton.swift; sourceTree = "<group>"; };
 		641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CursorReadoutTests.swift; sourceTree = "<group>"; };
+		65E133CF06F5DB8A828FD727 /* CanvasOverlayCatalog.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasOverlayCatalog.swift; sourceTree = "<group>"; };
 		6EC3FF3263CBF035678ABD2E /* ReticleOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReticleOverlay.swift; sourceTree = "<group>"; };
 		70E4B14A8BBABFA12D93D8AC /* SessionMetricsWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionMetricsWindowView.swift; sourceTree = "<group>"; };
 		711A84E175F157D73C74F06E /* ImageCanvasControllerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCanvasControllerTests.swift; sourceTree = "<group>"; };
@@ -615,6 +623,7 @@
 		9B077522E455E19CF61F335A /* ObjectsOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ObjectsOverlayTests.swift; sourceTree = "<group>"; };
 		9D588747A79BD6F05EC2CA0F /* WCSProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WCSProjection.swift; sourceTree = "<group>"; };
 		9D7E39AB2783ACE444D01AA1 /* InspectorColumnView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InspectorColumnView.swift; sourceTree = "<group>"; };
+		9E05613CB155AD97D3D27620 /* CanvasOverlayAppearanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasOverlayAppearanceTests.swift; sourceTree = "<group>"; };
 		A0750384B9B00F3AF15C9AFC /* StatusBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatusBarView.swift; sourceTree = "<group>"; };
 		A18478C6716CEEB19F032F3F /* PlateSolveSessionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveSessionTests.swift; sourceTree = "<group>"; };
 		A4DF9AFDBE4943238872A2C7 /* RenderThrottle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RenderThrottle.swift; sourceTree = "<group>"; };
@@ -643,6 +652,7 @@
 		C3E9C27093943525176C6843 /* MoonPhaseDisc.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseDisc.swift; sourceTree = "<group>"; };
 		C5E207072CA3D851218A4EB9 /* SkyConditionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SkyConditionTests.swift; sourceTree = "<group>"; };
 		C7D3D9131B43725B5D03FCFA /* CanvasGeometry.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasGeometry.swift; sourceTree = "<group>"; };
+		C8E43E3296F35E241D872E3E /* OverlayAppearance.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OverlayAppearance.swift; sourceTree = "<group>"; };
 		C9BD5E1A3FC040B4E14E8824 /* HistogramViewOptions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramViewOptions.swift; sourceTree = "<group>"; };
 		C9BFF85ED213EDE5AA875A74 /* OpenMeteoClientTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoClientTests.swift; sourceTree = "<group>"; };
 		CBC493C1AF9D9DEA5E9D32E5 /* PlateSolveSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveSession.swift; sourceTree = "<group>"; };
@@ -652,6 +662,7 @@
 		DA145A75999011CAF0371633 /* PlateSolveHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveHeaderView.swift; sourceTree = "<group>"; };
 		DAA98C89BB0BEA4A64910562 /* ScaleBarOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaleBarOverlay.swift; sourceTree = "<group>"; };
 		DAEE209DF99F410FA6950C91 /* StarsOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarsOverlayTests.swift; sourceTree = "<group>"; };
+		DB9301C5FD2FCFBAC78AAA11 /* OverlayAppearanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OverlayAppearanceTests.swift; sourceTree = "<group>"; };
 		DC1CD2FCA750D764101AF3BE /* PlateSolveObjectsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveObjectsView.swift; sourceTree = "<group>"; };
 		DE5E278538EB67DBA2577A14 /* InspectorPlaceholderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InspectorPlaceholderView.swift; sourceTree = "<group>"; };
 		DF3765F1937F36620A92317F /* MainWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
@@ -664,6 +675,7 @@
 		F02EA5AA79E7AB973E861807 /* CanvasOverlayStyleTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasOverlayStyleTests.swift; sourceTree = "<group>"; };
 		F31A4C622181F86B28E16A73 /* WindowCloseConfirmationDelegateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowCloseConfirmationDelegateTests.swift; sourceTree = "<group>"; };
 		F4348EFC31827F94E1D002E5 /* OpenMeteoResponses.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoResponses.swift; sourceTree = "<group>"; };
+		F5571EB312AB29DEE762AA0D /* OverlayOpacityChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OverlayOpacityChannel.swift; sourceTree = "<group>"; };
 		F5A15B5C28550566FCCF1C81 /* ImageInfoTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInfoTabView.swift; sourceTree = "<group>"; };
 		F9B45988B10C9ED2BD630750 /* PlanetsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlanetsView.swift; sourceTree = "<group>"; };
 		FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFileTests.swift; sourceTree = "<group>"; };
@@ -1002,6 +1014,7 @@
 				B614AFC866925D60CB8F2447 /* SessionMetricSeries.swift */,
 				B99961EC2EE358190E67BC3B /* IntegrationSummary.swift */,
 				982DC11C05BB6556EDA0EFD7 /* IntegrationReference.swift */,
+				D5DDAA91FCC3A16475728DFF /* Overlays */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -1183,6 +1196,7 @@
 				3B32FB9C155A9685F962137B /* CompassDirectionTests.swift */,
 				E1F91AFD2DCC5C268AFBC52F /* SessionMetricSeriesTests.swift */,
 				19A053364A23155634B61D1A /* IntegrationSummaryTests.swift */,
+				ECE6378AA6B52325D6063F2D /* Overlays */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -1245,6 +1259,7 @@
 				05FB1000000000000000E501 /* APIKeysPreferencesView.swift */,
 				05FB1000000000000000E301 /* APIKeyFieldView.swift */,
 				064386153AA98B05F6656779 /* PreferencesTab.swift */,
+				21DF193192E2EB036A82D563 /* OverlayAppearancePreferencesView.swift */,
 			);
 			path = Preferences;
 			sourceTree = "<group>";
@@ -1386,6 +1401,7 @@
 				2DC192E7780C67C2D23EFA7B /* ScaleBarOverlayTests.swift */,
 				0C5D104F82BB5EF35C693E8E /* ReticleOverlayTests.swift */,
 				F02EA5AA79E7AB973E861807 /* CanvasOverlayStyleTests.swift */,
+				9E05613CB155AD97D3D27620 /* CanvasOverlayAppearanceTests.swift */,
 			);
 			path = Overlays;
 			sourceTree = "<group>";
@@ -1506,6 +1522,16 @@
 			path = Common;
 			sourceTree = "<group>";
 		};
+		D5DDAA91FCC3A16475728DFF /* Overlays */ = {
+			isa = PBXGroup;
+			children = (
+				C8E43E3296F35E241D872E3E /* OverlayAppearance.swift */,
+				F5571EB312AB29DEE762AA0D /* OverlayOpacityChannel.swift */,
+			);
+			name = Overlays;
+			path = Overlays;
+			sourceTree = "<group>";
+		};
 		EC43BC2C164A92FCAD54743C /* Controls */ = {
 			isa = PBXGroup;
 			children = (
@@ -1523,6 +1549,15 @@
 				89CE2F141960005029CFBB1B /* CapsuleToggleStyle.swift */,
 			);
 			path = Controls;
+			sourceTree = "<group>";
+		};
+		ECE6378AA6B52325D6063F2D /* Overlays */ = {
+			isa = PBXGroup;
+			children = (
+				DB9301C5FD2FCFBAC78AAA11 /* OverlayAppearanceTests.swift */,
+			);
+			name = Overlays;
+			path = Overlays;
 			sourceTree = "<group>";
 		};
 		FB9C76AA40ADCD842105635B /* SessionMetrics */ = {
@@ -1552,6 +1587,7 @@
 				DAA98C89BB0BEA4A64910562 /* ScaleBarOverlay.swift */,
 				6EC3FF3263CBF035678ABD2E /* ReticleOverlay.swift */,
 				D2AB1D6E380EBFBEB8E9F768 /* CanvasOverlayStyle.swift */,
+				65E133CF06F5DB8A828FD727 /* CanvasOverlayCatalog.swift */,
 			);
 			path = Overlays;
 			sourceTree = "<group>";
@@ -2017,6 +2053,10 @@
 				D24193711C2310D674D17285 /* SessionMetricsSummaryView.swift in Sources */,
 				D68603F1398DE240630D7A92 /* IntegrationReference.swift in Sources */,
 				9D38190C8A02DE18335AF485 /* SessionMetricsSNRCurveView.swift in Sources */,
+				ED1C033CCABA70A77F9C6559 /* OverlayAppearance.swift in Sources */,
+				A6EDEEF2AE40A8F0A31679E0 /* OverlayOpacityChannel.swift in Sources */,
+				D38B935A489F6735AC3CFC9A /* CanvasOverlayCatalog.swift in Sources */,
+				8828BEBFFA9146B4FEDCC4DF /* OverlayAppearancePreferencesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2088,6 +2128,8 @@
 				5EBDE36E2D400F212A2C69B6 /* CompassDirectionTests.swift in Sources */,
 				9D31C776CA873B3039BDD712 /* SessionMetricSeriesTests.swift in Sources */,
 				8A4A9F1D77101F38D361646B /* IntegrationSummaryTests.swift in Sources */,
+				9A6163E1CF83BC9A5A891040 /* OverlayAppearanceTests.swift in Sources */,
+				8E10B87816F7510D829FBC6D /* CanvasOverlayAppearanceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

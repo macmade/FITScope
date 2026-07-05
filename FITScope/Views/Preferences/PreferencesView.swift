@@ -53,6 +53,10 @@ public struct PreferencesView: View
     /// editor and the placeholder palette.
     private static let weightingWidth: CGFloat = 560
 
+    /// The width of the Overlays tab, wide enough for its two columns of overlay
+    /// appearance cards.
+    private static let overlaysWidth: CGFloat = 620
+
     /// The size of the Information Panel tab, whose reorderable list is meant to
     /// fill a fixed area rather than size to its rows.
     private static let informationPanelSize = CGSize( width: 480, height: 360 )
@@ -86,6 +90,12 @@ public struct PreferencesView: View
                 .frame( width: Self.informationPanelSize.width, height: Self.informationPanelSize.height )
                 .tabItem { Label( "Information Panel", systemImage: "list.bullet.rectangle" ) }
                 .tag( PreferencesTab.informationPanel )
+
+            OverlayAppearancePreferencesView( preferences: self.preferences )
+                .frame( width: Self.overlaysWidth )
+                .fixedSize( horizontal: false, vertical: true )
+                .tabItem { Label( "Overlays", systemImage: "square.stack.3d.up" ) }
+                .tag( PreferencesTab.overlays )
 
             WeightingPreferencesView( preferences: self.preferences )
                 .frame( width: Self.weightingWidth )

@@ -310,6 +310,116 @@ struct PreferencesTests
         #expect( reloaded.mainWindowSize == nil )
     }
 
+    /// With nothing stored, no overlay is customised — so each overlay falls back to
+    /// its own default and the canvas looks exactly as it did before customisation
+    /// existed.
+    @Test
+    @MainActor
+    func startsWithNoOverlayCustomizations()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.overlayAppearances.isEmpty )
+        #expect( preferences.overlayAppearance( "stars" ) == nil )
+    }
+
+    /// A customised overlay appearance is written to the store and read back by a
+    /// fresh instance — the round-trip that keeps the user's colours across launches.
+    @Test
+    @MainActor
+    func persistsOverlayAppearanceChangesAcrossInstances()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+        let custom      = OverlayAppearance( red: 0.1, green: 0.2, blue: 0.3, opacity: 0.4, secondaryOpacity: 0.5 )
+
+        preferences.overlayAppearances[ "stars" ] = custom
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.overlayAppearance( "stars" ) == custom )
+    }
+
+    /// Only the customised overlays are stored; an overlay the user never touched
+    /// stays absent, so the caller falls back to that overlay's own default.
+    @Test
+    @MainActor
+    func keepsOnlyCustomizedOverlays()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        // Only the reticle stored — every other overlay is left uncustomised.
+        self.storeOverlayAppearances( [ ( "reticle", 0.1, 0.2, 0.3, 0.4, 0.5 ) ], in: defaults )
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.overlayAppearance( "reticle" ) == OverlayAppearance( red: 0.1, green: 0.2, blue: 0.3, opacity: 0.4, secondaryOpacity: 0.5 ) )
+        #expect( preferences.overlayAppearance( "stars" ) == nil )
+        #expect( Set( preferences.overlayAppearances.keys ) == [ "reticle" ] )
+    }
+
+    /// Resetting a single overlay drops its customisation (so it falls back to its
+    /// default) while leaving the others' customisations intact, and that persists
+    /// across launches.
+    @Test
+    @MainActor
+    func resetOverlayAppearanceClearsOnlyThatOverlay()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+        let custom      = OverlayAppearance( red: 0.1, green: 0.2, blue: 0.3, opacity: 0.4, secondaryOpacity: 0.5 )
+
+        preferences.overlayAppearances[ "stars" ]   = custom
+        preferences.overlayAppearances[ "objects" ] = custom
+
+        preferences.resetOverlayAppearance( "stars" )
+
+        #expect( preferences.overlayAppearance( "stars" )   == nil )
+        #expect( preferences.overlayAppearance( "objects" ) == custom )
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.overlayAppearance( "stars" )   == nil )
+        #expect( reloaded.overlayAppearance( "objects" ) == custom )
+    }
+
+    /// Restoring all overlays clears every customisation, and that cleared state
+    /// persists across launches.
+    @Test
+    @MainActor
+    func resetAllOverlayAppearancesClearsEveryOverlay()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+        let custom      = OverlayAppearance( red: 0.1, green: 0.2, blue: 0.3, opacity: 0.4, secondaryOpacity: 0.5 )
+
+        preferences.overlayAppearances[ "stars" ]   = custom
+        preferences.overlayAppearances[ "reticle" ] = custom
+
+        preferences.resetAllOverlayAppearances()
+
+        #expect( preferences.overlayAppearances.isEmpty )
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.overlayAppearances.isEmpty )
+    }
+
     /// Writes a raw `infoPanelFields` payload — `(fieldRawValue, visible)` pairs,
     /// JSON-encoded under the persisted key — directly into the store, to seed
     /// the reconciliation tests with partial or stale configurations.
@@ -319,5 +429,19 @@ struct PreferencesTests
         let data    = try! JSONSerialization.data( withJSONObject: payload )
 
         defaults.set( data, forKey: "infoPanelFields" )
+    }
+
+    /// Writes a raw `overlayAppearances` payload — `(id, red, green, blue, opacity,
+    /// secondaryOpacity)` tuples, JSON-encoded under the persisted key — directly
+    /// into the store, to seed the decoding tests with partial configurations.
+    private func storeOverlayAppearances( _ entries: [ ( String, Double, Double, Double, Double, Double ) ], in defaults: UserDefaults )
+    {
+        let payload = entries.map
+        {
+            [ "id": $0.0, "red": $0.1, "green": $0.2, "blue": $0.3, "opacity": $0.4, "secondaryOpacity": $0.5 ] as [ String: Any ]
+        }
+        let data = try! JSONSerialization.data( withJSONObject: payload )
+
+        defaults.set( data, forKey: "overlayAppearances" )
     }
 }

@@ -39,6 +39,8 @@ struct ImageCanvasControllerTests
     /// call to action without any real image data.
     private struct StubOverlay: CanvasOverlay
     {
+        static let defaultAppearance = OverlayAppearance( color: .white, opacity: 0.7, secondaryOpacity: 0.7 )
+
         let id:               String
         let title:            String
         let systemImageName = "star"

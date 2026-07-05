@@ -38,6 +38,10 @@ public enum PreferencesTab: Hashable, CaseIterable
     /// The Information Panel tab.
     case informationPanel
 
+    /// The Overlays tab, for customising the canvas annotation overlays' colours
+    /// and opacities.
+    case overlays
+
     /// The Weighting tab.
     case weighting
 }
