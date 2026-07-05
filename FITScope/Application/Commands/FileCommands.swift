@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The app's contributions to the standard *File* menu.
 ///
@@ -33,6 +34,13 @@ import SwiftUI
 /// the file's render result commits. "Save As…" only needs a selected file;
 /// "Export…" additionally needs a rendered image, so it stays disabled until one
 /// exists.
+///
+/// The two *Open With* submenus mirror that split: "Open Original With" hands the
+/// unmodified FITS file to another app (like "Save As…", so it only needs a
+/// selected file), while "Open Rendered Image With" hands the processed image
+/// (like "Export…", so it needs a committed render result). Each lists the
+/// applications the system associates with that file kind, plus an *Other…* entry
+/// that presents an application chooser.
 struct FileCommands: View
 {
     /// The frontmost window's selected file, or `nil` when none. Observed, so the
@@ -79,6 +87,32 @@ struct FileCommands: View
             Label( "Export\u{2026}", systemImage: "square.and.arrow.up" )
         }
         .keyboardShortcut( "e", modifiers: [ .command, .shift ] )
+        .disabled( self.file?.image?.renderer.result == nil )
+
+        Divider()
+
+        // Open the *original* FITS file in another app — enabled whenever a file
+        // is selected, like "Save As…". When no file is selected the menu is
+        // disabled, so the `.fits` fallback source is never used.
+        OpenWithMenu(
+            title:       "Open Original With",
+            systemImage: "arrow.up.forward.app",
+            source:      self.file.map { .url( $0.url ) } ?? .contentType( .fits ),
+            open:        { application in self.file.map { self.appModel.openOriginalFile( $0, with: application.url ) } },
+            openOther:   { self.file.map { self.appModel.openOriginalFile( withOther: $0 ) } }
+        )
+        .disabled( self.file == nil )
+
+        // Open the *rendered* image in another app — needs a committed render
+        // result, like "Export…". The rendered image is written as a TIFF, so the
+        // candidates are the TIFF handlers.
+        OpenWithMenu(
+            title:       "Open Rendered Image With",
+            systemImage: "photo",
+            source:      .contentType( .tiff ),
+            open:        { application in self.file.map { self.appModel.openRenderedImage( of: $0, with: application.url ) } },
+            openOther:   { self.file.map { self.appModel.openRenderedImage( withOther: $0 ) } }
+        )
         .disabled( self.file?.image?.renderer.result == nil )
     }
 }

@@ -372,6 +372,150 @@ public final class AppModel: ObservableObject
         }
     }
 
+    /// Opens the file's *original*, unmodified FITS file in the given external
+    /// application. The launch errors are surfaced in an alert so an *Open With*
+    /// never fails silently.
+    ///
+    /// This is the counterpart of ``saveCopy(of:)``: it hands the original bytes
+    /// to another app, rather than the rendered image.
+    ///
+    /// - Parameters:
+    ///   - file:        The open file whose original to open.
+    ///   - application: The application bundle URL to open it with.
+    public func openOriginalFile( _ file: OpenFile, with application: URL )
+    {
+        self.open( [ file.url ], with: application, failureMessage: "Could not open \u{201C}\( file.displayName )\u{201D}." )
+    }
+
+    /// Opens the file's *rendered* image in the given external application.
+    ///
+    /// The display-ready pixels are written to a temporary lossless TIFF (via
+    /// ``ExternalImageFile``) and that file is opened, so the external app sees
+    /// the processed result rather than the raw FITS data. If the image has not
+    /// finished rendering there is nothing to open, so the user is told to try
+    /// again. Encoding and launch errors are surfaced in an alert.
+    ///
+    /// - Parameters:
+    ///   - file:        The open file whose rendered image to open.
+    ///   - application: The application bundle URL to open it with.
+    public func openRenderedImage( of file: OpenFile, with application: URL )
+    {
+        guard let image = file.image?.renderer.result?.image
+        else
+        {
+            Self.presentNotReadyAlert( for: file )
+
+            return
+        }
+
+        do
+        {
+            let url = try ExternalImageFile.write( image, sourceName: file.displayName )
+
+            self.open( [ url ], with: application, failureMessage: "Could not open \u{201C}\( file.displayName )\u{201D}." )
+        }
+        catch
+        {
+            Self.presentFailureAlert( "Could not open \u{201C}\( file.displayName )\u{201D}.", error: error )
+        }
+    }
+
+    /// Presents an application chooser and opens the file's *original* FITS file
+    /// with the picked application. A cancelled chooser is a no-op. Backs the
+    /// *Open With ▸ Other…* menu item.
+    ///
+    /// - Parameter file: The open file whose original to open.
+    public func openOriginalFile( withOther file: OpenFile )
+    {
+        guard let application = Self.runChooseApplicationPanel()
+        else
+        {
+            return
+        }
+
+        self.openOriginalFile( file, with: application )
+    }
+
+    /// Presents an application chooser and opens the file's *rendered* image with
+    /// the picked application. A cancelled chooser is a no-op. Backs the *Open
+    /// With ▸ Other…* menu item.
+    ///
+    /// - Parameter file: The open file whose rendered image to open.
+    public func openRenderedImage( withOther file: OpenFile )
+    {
+        guard let application = Self.runChooseApplicationPanel()
+        else
+        {
+            return
+        }
+
+        self.openRenderedImage( of: file, with: application )
+    }
+
+    /// Opens the given files in an external application, surfacing any launch
+    /// error in an alert. The completion handler runs off the main actor, so the
+    /// alert is hopped back onto it.
+    ///
+    /// - Parameters:
+    ///   - urls:           The files to open.
+    ///   - application:    The application bundle URL to open them with.
+    ///   - failureMessage: The alert headline shown if the launch fails.
+    private func open( _ urls: [ URL ], with application: URL, failureMessage: String )
+    {
+        NSWorkspace.shared.open( urls, withApplicationAt: application, configuration: NSWorkspace.OpenConfiguration() )
+        {
+            _, error in
+
+            guard let error
+            else
+            {
+                return
+            }
+
+            let details = error.localizedDescription
+
+            Task
+            {
+                @MainActor in Self.presentFailureAlert( failureMessage, details: details )
+            }
+        }
+    }
+
+    /// Presents an informational alert telling the user the image is still
+    /// rendering, so an *Open With* on the rendered image never fails silently.
+    ///
+    /// - Parameter file: The file that is not ready yet.
+    private static func presentNotReadyAlert( for file: OpenFile )
+    {
+        let alert = NSAlert()
+
+        alert.messageText     = "\u{201C}\( file.displayName )\u{201D} is not ready yet."
+        alert.informativeText = "Wait until the image has finished rendering, then try again."
+        alert.alertStyle      = .informational
+
+        alert.runModal()
+    }
+
+    /// Presents an Open panel restricted to applications and returns the chosen
+    /// application bundle URL, or `nil` if the user cancels. Backs the *Open With
+    /// ▸ Other…* menu items.
+    ///
+    /// - Returns: The chosen application bundle URL, or `nil` on cancel.
+    public static func runChooseApplicationPanel() -> URL?
+    {
+        let panel = NSOpenPanel()
+
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories    = false
+        panel.canChooseFiles          = true
+        panel.allowedContentTypes     = [ .application ]
+        panel.directoryURL            = URL( fileURLWithPath: "/Applications" )
+        panel.prompt                  = "Open"
+        panel.message                 = "Choose an application to open the file with."
+
+        return panel.runModal() == .OK ? panel.url : nil
+    }
+
     /// Presents a Save panel with the common configuration applied and returns
     /// the chosen URL, or `nil` if the user cancels.
     ///
@@ -431,10 +575,23 @@ public final class AppModel: ObservableObject
     ///   - error:   The underlying error, shown as the informative text.
     public static func presentFailureAlert( _ message: String, error: Error )
     {
+        self.presentFailureAlert( message, details: error.localizedDescription )
+    }
+
+    /// Presents a warning alert describing a failed file operation, so a failure
+    /// is never silent. Takes the informative text directly, so a caller with
+    /// only a `Sendable` description — such as an off-main completion handler —
+    /// can present it without capturing a non-`Sendable` `Error`.
+    ///
+    /// - Parameters:
+    ///   - message: The headline describing what failed.
+    ///   - details: The informative text shown below the headline.
+    public static func presentFailureAlert( _ message: String, details: String )
+    {
         let alert = NSAlert()
 
         alert.messageText     = message
-        alert.informativeText = error.localizedDescription
+        alert.informativeText = details
         alert.alertStyle      = .warning
 
         alert.runModal()

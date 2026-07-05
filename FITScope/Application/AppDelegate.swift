@@ -123,6 +123,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
         }
     }
 
+    /// Removes the temporary images handed to external applications by the "Open
+    /// Rendered Image With" menu, so the last one does not outlive the app (see
+    /// ``ExternalImageFile/removeTemporaryFiles(in:)``).
+    public func applicationWillTerminate( _ notification: Notification )
+    {
+        ExternalImageFile.removeTemporaryFiles()
+    }
+
     /// Finder double-click / drop-on-Dock: open the files in the active window
     /// or a new one.
     public func application( _ application: NSApplication, open urls: [ URL ] )

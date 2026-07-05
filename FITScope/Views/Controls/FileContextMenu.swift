@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The single definition of an open file's context menu, shared by the files
 /// sidebar row and the image canvas so the two menus are identical. Each item's
@@ -106,6 +107,30 @@ public struct FileContextMenu: ViewModifier
                 Label( "Export\u{2026}", systemImage: "square.and.arrow.up" )
             }
             .disabled( self.file.image?.renderer.result == nil )
+
+            Divider()
+
+            // The same two "Open With" submenus the File menu offers, mirroring the
+            // original/processed split of Save-As/Export above, set apart in their
+            // own group by the dividers around them.
+            OpenWithMenu(
+                title:       "Open Original With",
+                systemImage: "arrow.up.forward.app",
+                source:      .url( self.file.url ),
+                open:        { self.actions.openOriginal( self.file, with: $0.url ) },
+                openOther:   { self.actions.openOriginalWithOther( self.file ) }
+            )
+
+            OpenWithMenu(
+                title:       "Open Rendered Image With",
+                systemImage: "photo",
+                source:      .contentType( .tiff ),
+                open:        { self.actions.openRendered( self.file, with: $0.url ) },
+                openOther:   { self.actions.openRenderedWithOther( self.file ) }
+            )
+            .disabled( self.file.image?.renderer.result == nil )
+
+            Divider()
 
             Button
             {

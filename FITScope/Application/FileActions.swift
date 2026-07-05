@@ -92,6 +92,42 @@ public struct FileActions
         NSWorkspace.shared.activateFileViewerSelecting( [ file.url ] )
     }
 
+    /// Opens the file's original, unmodified FITS file in an external application.
+    ///
+    /// - Parameters:
+    ///   - file:        The file to open.
+    ///   - application: The application bundle URL to open it with.
+    public func openOriginal( _ file: OpenFile, with application: URL )
+    {
+        self.appModel.openOriginalFile( file, with: application )
+    }
+
+    /// Opens the file's original FITS file in a user-chosen application.
+    ///
+    /// - Parameter file: The file to open.
+    public func openOriginalWithOther( _ file: OpenFile )
+    {
+        self.appModel.openOriginalFile( withOther: file )
+    }
+
+    /// Opens the file's rendered image in an external application.
+    ///
+    /// - Parameters:
+    ///   - file:        The file whose rendered image to open.
+    ///   - application: The application bundle URL to open it with.
+    public func openRendered( _ file: OpenFile, with application: URL )
+    {
+        self.appModel.openRenderedImage( of: file, with: application )
+    }
+
+    /// Opens the file's rendered image in a user-chosen application.
+    ///
+    /// - Parameter file: The file whose rendered image to open.
+    public func openRenderedWithOther( _ file: OpenFile )
+    {
+        self.appModel.openRenderedImage( withOther: file )
+    }
+
     /// Closes a file, warning first when it has adjustments that would be lost, so
     /// closing an edited image never discards work silently (mirroring the
     /// window-close confirmation).
