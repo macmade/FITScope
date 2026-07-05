@@ -128,6 +128,70 @@ public enum SessionMetricSeries
         }
     }
 
+    /// The X-axis domain for an acquisition-order chart of `frameCount` frames
+    /// (positions 1…frameCount): the frame range with a small margin each side, so
+    /// the points span almost the full plot width — no empty "nice-bounds" padding —
+    /// while the first and last points' dots still sit just inside the edges.
+    ///
+    /// - Parameter frameCount: The number of frames in the session.
+    /// - Returns: The X-axis domain.
+    public static func acquisitionDomain( frameCount: Int ) -> ClosedRange< Double >
+    {
+        let count = max( frameCount, 1 )
+
+        guard count > 1
+        else
+        {
+            return 0.5 ... 1.5
+        }
+
+        let margin = Double( count - 1 ) * 0.03
+
+        return ( 1 - margin ) ... ( Double( count ) + margin )
+    }
+
+    /// Linearly rescales points' values from their own min–max into the target
+    /// range, preserving each point's position and identity.
+    ///
+    /// Used to co-plot an overlay metric against a differently-scaled primary
+    /// metric: the overlay is mapped onto the primary's value range so it fills the
+    /// same plot area and its *trend* is comparable, even though its absolute units
+    /// differ. A constant series has no trend to stretch, so it sits where it would
+    /// on its own axis: an all-zero series pins to the floor (`range.lowerBound`),
+    /// any other constant to the middle. An empty series stays empty.
+    ///
+    /// - Parameters:
+    ///   - points: The points to rescale.
+    ///   - range:  The target value range (the primary metric's domain).
+    /// - Returns: The points with values mapped into `range`.
+    public static func rescale( _ points: [ Point ], to range: ClosedRange< Double > ) -> [ Point ]
+    {
+        let values = points.map { $0.value }
+
+        guard let low = values.min(), let high = values.max()
+        else
+        {
+            return points
+        }
+
+        guard high > low
+        else
+        {
+            let constant = low == 0 ? range.lowerBound : ( range.lowerBound + range.upperBound ) / 2
+
+            return points.map { Point( id: $0.id, position: $0.position, name: $0.name, value: constant ) }
+        }
+
+        let span = range.upperBound - range.lowerBound
+
+        return points.map
+        {
+            let fraction = ( $0.value - low ) / ( high - low )
+
+            return Point( id: $0.id, position: $0.position, name: $0.name, value: range.lowerBound + fraction * span )
+        }
+    }
+
     /// Orders the samples for plotting: chronologically when every frame carries an
     /// observation date, otherwise unchanged (their opened order).
     ///

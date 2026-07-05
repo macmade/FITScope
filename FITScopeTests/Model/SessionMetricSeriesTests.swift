@@ -168,4 +168,60 @@ struct SessionMetricSeriesTests
         #expect( points.map { $0.position } == [ 1, 3 ] )
         #expect( abs( points[ 1 ].value - 2.0.squareRoot() ) < 1e-9 )
     }
+
+    /// The acquisition-order domain spans the frames with a small margin each side,
+    /// so the points nearly fill the plot rather than leaving empty end slots.
+    @Test
+    func acquisitionDomainMarginsTheFrameRange()
+    {
+        let domain = SessionMetricSeries.acquisitionDomain( frameCount: 5 )
+
+        #expect( abs( domain.lowerBound - 0.88 ) < 1e-9 )
+        #expect( abs( domain.upperBound - 5.12 ) < 1e-9 )
+    }
+
+    /// A single frame gets a symmetric unit window (it cannot span a range).
+    @Test
+    func acquisitionDomainForOneFrameIsCentred()
+    {
+        #expect( SessionMetricSeries.acquisitionDomain( frameCount: 1 ) == 0.5 ... 1.5 )
+        #expect( SessionMetricSeries.acquisitionDomain( frameCount: 0 ) == 0.5 ... 1.5 )
+    }
+
+    // MARK: - Overlay rescaling
+
+    /// Rescaling maps a series' own min–max linearly onto the target range,
+    /// preserving positions — so an overlay fills the primary's plot area and its
+    /// trend stays comparable.
+    @Test
+    func rescaleMapsMinMaxOntoTheTargetRange()
+    {
+        let points   = SessionMetricSeries.points( for: .fwhm, from: [ self.sample( name: "a", fwhm: 1 ), self.sample( name: "b", fwhm: 3 ), self.sample( name: "c", fwhm: 5 ) ] )
+        let rescaled = SessionMetricSeries.rescale( points, to: 0 ... 100 )
+
+        #expect( rescaled.map { $0.position } == [ 1, 2, 3 ] )
+        #expect( rescaled.map { $0.value }    == [ 0, 50, 100 ] )
+    }
+
+    /// A non-zero constant series has no trend to stretch, so it maps to the target
+    /// range's midpoint.
+    @Test
+    func rescaleMapsANonZeroConstantSeriesToTheMidpoint()
+    {
+        let points   = SessionMetricSeries.points( for: .stars, from: [ self.sample( name: "a", stars: 4 ), self.sample( name: "b", stars: 4 ) ] )
+        let rescaled = SessionMetricSeries.rescale( points, to: 0 ... 10 )
+
+        #expect( rescaled.map { $0.value } == [ 5, 5 ] )
+    }
+
+    /// An all-zero constant series pins to the floor (the range's lower bound), so
+    /// it reads as zero rather than floating mid-plot.
+    @Test
+    func rescaleMapsAZeroConstantSeriesToTheFloor()
+    {
+        let points   = SessionMetricSeries.points( for: .stars, from: [ self.sample( name: "a", stars: 0 ), self.sample( name: "b", stars: 0 ) ] )
+        let rescaled = SessionMetricSeries.rescale( points, to: 2 ... 10 )
+
+        #expect( rescaled.map { $0.value } == [ 2, 2 ] )
+    }
 }

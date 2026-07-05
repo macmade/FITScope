@@ -69,9 +69,8 @@ struct SessionMetricsActiveModelView: View
         }
     }
 
-    /// The integration summary strip, the cumulative-SNR curve (when there is
-    /// integration data), and the per-frame metric chart — all fed from one
-    /// snapshot of the open files.
+    /// The integration summary strip, the cumulative-SNR curve, and the per-frame
+    /// metric chart — all fed from one snapshot of the open files.
     private var content: some View
     {
         let samples   = self.model.files.map { SessionMetricSample( file: $0 ) }
@@ -82,15 +81,13 @@ struct SessionMetricsActiveModelView: View
         {
             SessionMetricsSummaryView( summary: summary, reference: self.$reference )
 
-            if summary != nil
-            {
-                Divider()
+            Divider()
 
-                // A fixed height, so only the per-frame metric chart below grows when
-                // the window is resized.
-                SessionMetricsSNRCurveView( points: snrPoints, referenceTitle: self.reference.title )
-                    .frame( height: 180 )
-            }
+            // Always shown at a fixed height (it has its own empty state), so only
+            // the per-frame metric chart below grows when the window is resized, and
+            // the layout doesn't shift when exposure data (dis)appears.
+            SessionMetricsSNRCurveView( points: snrPoints, referenceTitle: self.reference.title, frameCount: samples.count )
+                .frame( height: 180 )
 
             Divider()
 

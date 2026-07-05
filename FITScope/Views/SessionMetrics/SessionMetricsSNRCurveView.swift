@@ -39,6 +39,11 @@ struct SessionMetricsSNRCurveView: View
     /// The reference the curve is relative to, for the caption (e.g. "1 h").
     let referenceTitle: String
 
+    /// The number of frames in the session, so the X axis spans the same
+    /// acquisition-order range as the metric chart (rather than only the frames
+    /// that carry an exposure).
+    let frameCount: Int
+
     /// The curve's dedicated colour, kept clear of the metrics' rainbow palette.
     static let color: Color = .teal
 
@@ -74,12 +79,13 @@ struct SessionMetricsSNRCurveView: View
         {
             point in
 
-            LineMark( x: .value( "Frame", point.position ), y: .value( "Relative SNR", point.value ) )
+            LineMark( x: .value( "Frame", Double( point.position ) ), y: .value( "Relative SNR", point.value ) )
                 .foregroundStyle( Self.color )
 
-            PointMark( x: .value( "Frame", point.position ), y: .value( "Relative SNR", point.value ) )
+            PointMark( x: .value( "Frame", Double( point.position ) ), y: .value( "Relative SNR", point.value ) )
                 .foregroundStyle( Self.color )
         }
+        .chartXScale( domain: SessionMetricSeries.acquisitionDomain( frameCount: self.frameCount ) )
         .chartXAxisLabel( "Acquisition order" )
         .chartYAxisLabel( "Rel. SNR (×)" )
         .accessibilityIdentifier( AccessibilityIdentifier.SessionMetricsWindowView.snrCurve )
@@ -90,13 +96,14 @@ struct SessionMetricsSNRCurveView: View
 {
     SessionMetricsSNRCurveView(
         points: ( 1 ... 8 ).map { SessionMetricSeries.Point( id: UUID(), position: $0, name: "f\( $0 )", value: Double( $0 ).squareRoot() ) },
-        referenceTitle: "1 h"
+        referenceTitle: "1 h",
+        frameCount: 8
     )
     .frame( width: 640, height: 160 )
 }
 
 #Preview( "No data" )
 {
-    SessionMetricsSNRCurveView( points: [], referenceTitle: "1 h" )
+    SessionMetricsSNRCurveView( points: [], referenceTitle: "1 h", frameCount: 0 )
         .frame( width: 640, height: 160 )
 }

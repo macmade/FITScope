@@ -649,6 +649,9 @@ public enum AccessibilityIdentifier
         /// The metric selector.
         public static let metricPicker = "SessionMetricsWindowView.metricPicker"
 
+        /// The menu selecting which other metrics to overlay on the chart.
+        public static let overlaysMenu = "SessionMetricsWindowView.overlaysMenu"
+
         /// The placeholder shown when no files are open.
         public static let unavailable = "SessionMetricsWindowView.unavailable"
     }

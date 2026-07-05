@@ -67,6 +67,10 @@ struct SessionMetricsSummaryView: View
                     .frame( maxWidth: .infinity, alignment: .center )
             }
         }
+        // A fixed minimum height (≥ the populated strip's natural height), so the
+        // "no exposure" placeholder occupies the same height as the populated strip
+        // and the layout doesn't shift when the strip's data (dis)appears.
+        .frame( minHeight: 64 )
         .padding( .horizontal, 16 )
         .padding( .vertical, 10 )
         .accessibilityIdentifier( AccessibilityIdentifier.SessionMetricsWindowView.summary )
