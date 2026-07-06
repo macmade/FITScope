@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Formats — Implementation Plan</title>
+    <style>
+        :root {
+            --bg:          #10141a;
+            --surface:     #1a212b;
+            --surface-2:   #212a36;
+            --border:      #2c3846;
+            --text:        #e6ebf2;
+            --muted:       #9aa7b5;
+            --accent:      #5aa9e6;
+            --accent-2:    #7ee0b0;
+            --cap-todo-bg:   #33404f;
+            --cap-todo-fg:   #c3d0dd;
+            --cap-prog-bg:   #7a5a17;
+            --cap-prog-fg:   #ffd479;
+            --cap-done-bg:   #1f5c3d;
+            --cap-done-fg:   #8ff0bd;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 2.5rem 1.25rem 4rem;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        main { max-width: 900px; margin: 0 auto; }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            margin: 0 0 0.35rem;
+            font-size: 2.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta-line { color: var(--muted); font-size: 0.9rem; margin: 0.1rem 0; }
+        .meta-line code {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.05em 0.4em;
+            font-size: 0.9em;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin: 2.5rem 0 1.25rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        h3.phase {
+            font-size: 1.35rem;
+            color: var(--accent);
+            margin: 2.5rem 0 1rem;
+            letter-spacing: -0.01em;
+        }
+
+        p { margin: 0.75rem 0; }
+
+        code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        p code, li code, td code {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.05em 0.4em;
+            font-size: 0.88em;
+        }
+
+        .overview, .notes { color: var(--text); }
+
+        .qa dt {
+            color: var(--accent-2);
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        .qa dd { margin: 0.25rem 0 0; color: var(--text); }
+
+        .notes ul { margin: 0.5rem 0; padding-left: 1.2rem; }
+        .notes li { margin: 0.35rem 0; }
+
+        .milestone {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .milestone-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .milestone h4 {
+            margin: 0;
+            font-size: 1.15rem;
+            color: var(--accent-2);
+        }
+
+        .capsule {
+            display: inline-block;
+            padding: 0.18em 0.7em;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+        .capsule.todo { background: var(--cap-todo-bg); color: var(--cap-todo-fg); }
+        .capsule.prog { background: var(--cap-prog-bg); color: var(--cap-prog-fg); }
+        .capsule.done { background: var(--cap-done-bg); color: var(--cap-done-fg); }
+
+        .field-label {
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin: 1.1rem 0 0.3rem;
+            font-weight: 600;
+        }
+
+        .goal { margin: 0.5rem 0 0; }
+
+        ul.tasks { list-style: none; margin: 0.3rem 0 0; padding: 0; }
+        ul.tasks li {
+            position: relative;
+            padding-left: 1.6rem;
+            margin: 0.3rem 0;
+        }
+        ul.tasks li::before {
+            content: "\2610";
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-size: 1rem;
+        }
+
+        .completed-date, .impl-notes, .review-comments {
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .dep {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin: 0.4rem 0 0;
+        }
+        .dep strong { color: var(--text); font-style: normal; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.75rem 0;
+            display: block;
+            overflow-x: auto;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 0.5rem 0.7rem;
+            text-align: left;
+            font-size: 0.9rem;
+            vertical-align: top;
+        }
+        th { background: var(--surface-2); color: var(--text); }
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1>Formats — Implementation Plan</h1>
+            <p class="meta-line"><strong>Generated:</strong> 2026-07-06</p>
+            <p class="meta-line"><strong>Source:</strong> <code>Docs/agent-plans/active/2026-07-06-formats/formats.html</code></p>
+        </header>
+
+        <h2>Overview</h2>
+        <div class="overview">
+            <p>
+                FITScope today opens exactly one thing: a single two-dimensional FITS image
+                (<code>NAXIS=2</code>). The whole model pipeline is FITS-typed
+                (<code>OpenFile&nbsp;&rarr;&nbsp;FITSImageLoader&nbsp;&rarr;&nbsp;FITSImage&nbsp;/&nbsp;FITSImageRenderer</code>),
+                <code>ImageProcessor.render</code> hard-rejects anything but <code>NAXIS&nbsp;==&nbsp;2</code>, and
+                the keyword Info window is bound to a FITS-specific metadata model. This plan extends the app to
+                open additional FITS geometries (<code>NAXIS=1</code> and <code>NAXIS=3</code>), the XISF format,
+                and common photographic formats (TIFF, PNG, JPEG, RAW, HEIC).
+            </p>
+            <p>
+                The chosen approach is a <strong>format-agnostic abstraction</strong>: rather than bolting each
+                format onto the FITS path, we first extract the shared pieces — a generalized metadata model
+                behind the Info window, a format-neutral image/loader layer, and a multi-image carousel — then
+                add each format as a conformer of that layer. Decoded pixels flow through the
+                <strong>existing processing pipeline where it is meaningful</strong> (stretch, curves, histogram,
+                and, where a WCS is present, overlays and plate solving), so non-FITS images are first-class rather
+                than display-only. Work is sequenced <strong>FITS geometries first</strong> (they stay within
+                SwiftFITS), then XISF, then the photographic formats.
+            </p>
+        </div>
+
+        <h2>Questions &amp; answers</h2>
+        <dl class="qa">
+            <dt>Which architecture should the plan target for adding non-FITS formats to a fully FITS-typed pipeline?</dt>
+            <dd>A <strong>format-agnostic abstraction</strong> — refactor into a shared loader/image/metadata layer that FITS and every new format conform to, giving one display path.</dd>
+
+            <dt>How much of the existing image-processing UI should apply to non-FITS formats (stretch, curves, histogram, overlays, plate solving, star detection)?</dt>
+            <dd>The <strong>full pipeline where meaningful</strong> — feed decoded pixels through the same processing pipeline as FITS. This requires access to pixel data, not just a <code>CGImage</code>. Astronomy-only features (plate solving, star detection, WCS overlays) apply only where a WCS/relevant metadata is present.</dd>
+
+            <dt>The backlog says to use "the SwiftXISF submodule available in SwiftAstro," but SwiftXISF is not currently a dependency of SwiftAstro nor linked into the app. How should the plan wire it in?</dt>
+            <dd>The user will make the necessary project/target modifications to include SwiftXISF. The plan therefore <strong>assumes <code>SwiftXISF</code> is importable</strong> from the app target and does not include a submodule-wiring milestone; the XISF milestone depends on that linkage being in place.</dd>
+
+            <dt>How should the formats be sequenced?</dt>
+            <dd><strong>FITS geometries first</strong> (<code>NAXIS=1</code>, <code>NAXIS=3</code> RGB, <code>NAXIS=3</code> multiple), then XISF, then the photographic formats — with the shared foundations (metadata-model generalization and the carousel) extracted as early milestones regardless.</dd>
+        </dl>
+
+        <h2>Notes</h2>
+        <div class="notes">
+            <p><strong>Key files &amp; where format assumptions live</strong> (from a codebase survey):</p>
+            <ul>
+                <li><code>FITScope/Image/ImageProcessor.swift</code> — <code>render(data:properties:settings:)</code> hard-requires <code>NAXIS&nbsp;==&nbsp;2</code> (~line 216) before reading <code>NAXIS1</code>/<code>NAXIS2</code>; also BITPIX/BSCALE/BZERO decode and Bayer handling. Central blocker for <code>NAXIS=1</code>/<code>3</code>.</li>
+                <li><code>Submodules/SwiftAstro/SwiftAstro/Preprocessing/FITSImageDecoder.swift</code> — <code>linearImage(from:)</code> / <code>detectionImage(from:)</code> also assume a 2D image (<code>naxis(1)</code>/<code>naxis(2)</code>).</li>
+                <li><code>FITScope/Image/FITSPreviewRenderer.swift</code> — <code>imageHDU(from:)</code> selects a single first <code>.data</code> section; shared by the app render path and the QuickLook extensions.</li>
+                <li><code>FITScope/Model/FITS/</code> — <code>FITSImageLoader</code>, <code>FITSImage</code>, <code>FITSImageRenderer</code> (produces a <code>CGImage</code> plus a <code>PixelBuffer</code> detection image), <code>FITSImageInfo</code>/<code>FITSImageSection</code>/<code>FITSImageProperty</code> (the <code>Codable, Hashable</code> metadata model used as the <code>InfoWindow</code> value type), <code>FITSMetadata</code> typed accessors.</li>
+                <li><code>FITScope/Model/OpenFile.swift</code> — <code>@MainActor</code> class per opened file, owns a <code>FITSImageLoader</code>; the natural seam for a format-neutral loader.</li>
+                <li><code>FITScope/Views/Information/InfoView.swift</code> + <code>InfoViewTable.swift</code> — the keyword window; scene declared in <code>FITScopeApp.swift</code> as <code>WindowGroup(id: "InfoWindow", for: FITSImageInfo.self)</code>. Its value type must stay <code>Codable, Hashable</code>.</li>
+                <li><code>FITScope/Views/Canvas/ImageCanvasView.swift</code> + <code>ZoomableImageView.swift</code> — main display; consumes a <code>CGImage</code>. No carousel / multi-frame UI exists today.</li>
+                <li>Openable-type declarations: <code>FITScope/Extensions/UTType.swift</code> (<code>UTType.fits</code>), <code>FITScope/Info.plist</code> (<code>UTImportedTypeDeclarations</code> + <code>CFBundleDocumentTypes</code>, extensions <code>fits</code>/<code>fit</code>), <code>FITSDocument.readableContentTypes = [.fits]</code>, <code>AppModel.runOpenPanel()</code> <code>allowedContentTypes = [.fits]</code>, and <code>Model/DropAcceptance.swift</code>.</li>
+                <li>Swift Charts is already used (<code>FITScope/Views/SessionMetrics/SessionMetricsChartView.swift</code>) — the reference for the <code>NAXIS=1</code> graph.</li>
+                <li>SwiftFITS (<code>FITSSection.naxis(_:)</code>) already supports arbitrary axis counts, so the parser is not the limitation — the app-side assumptions are.</li>
+            </ul>
+            <p><strong>Conventions to follow</strong> (from <code>CLAUDE.md</code>): one type per file, organized into subfolders; prefer <code>let</code>, no force-unwraps, no raw loops; explicit <code>public</code>/<code>open</code> in framework code; keep the <code>.xcodeproj</code> and any package manifests in sync; build and test via <code>xcodebuild</code>; add SwiftUI previews for every new view; document public <em>and</em> private members.</p>
+            <p><strong>Assumptions &amp; risks</strong></p>
+            <ul>
+                <li>The crux of the refactor is a <strong>normalized pixel representation</strong> that the processing pipeline (currently FITS <code>Data</code> + BITPIX properties) can consume from any format. SwiftPixel's <code>PixelBuffer</code> is already in the pipeline (as the detection image) and is the likely common currency. Getting this abstraction right without regressing FITS rendering/performance is the main risk (Milestone&nbsp;2).</li>
+                <li>Regression safety: the FITS path must remain byte-for-byte behaviourally identical after the refactor. Existing tests under <code>FITScopeTests/</code> are the guard rail; extend them as the abstraction lands.</li>
+                <li>Astronomy features (plate solving, star detection, WCS overlays, north/grid) are gated on the presence of the relevant metadata (WCS keywords). For photographic formats without a WCS these are simply unavailable, not errors — the UI should hide/disable them rather than fail.</li>
+                <li>QuickLook <code>FITScopePreviewExtension</code>/<code>FITScopeThumbnailExtension</code> currently serve FITS. macOS already provides QuickLook for TIFF/PNG/JPEG/HEIC/RAW natively, so extending the extensions is treated as out of scope here (a possible follow-up for XISF); the plan focuses on in-app opening.</li>
+                <li><code>NAXIS=1</code> is inherently a graph, not an image; the pixel-processing pipeline (stretch/curves/histogram) does not apply to it. It takes a distinct display branch.</li>
+                <li>SwiftXISF linkage into the app target is handled by the user; Milestone&nbsp;7 depends on it being present.</li>
+            </ul>
+        </div>
+
+        <h2>Milestones</h2>
+
+        <!-- ============ PHASE 1 ============ -->
+        <h3 class="phase">Phase 1 — Shared foundations</h3>
+
+        <!-- M1 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 1 — Generalize the metadata model &amp; Info window</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> nothing.</p>
+            <p class="goal"><strong>Goal:</strong> Decouple the keyword Info window from FITS so any format can supply grouped key/value metadata. Introduce a format-agnostic, <code>Codable, Hashable</code> metadata model (sections of properties) usable as the <code>InfoWindow</code> value type, and adapt the existing FITS metadata into it with no visible change to the FITS experience.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Design a format-neutral metadata model (e.g. <code>ImageMetadata</code> &rarr; <code>[ImageMetadataSection]</code> &rarr; <code>[ImageMetadataProperty]</code>), <code>Codable, Hashable</code>, one type per file under <code>Model/Metadata/</code> (or similar).</li>
+                <li>Make the existing FITS model (<code>FITSImageInfo</code>/<code>FITSImageSection</code>/<code>FITSImageProperty</code>) produce or conform to the generalized model (adapter or refactor), preserving current fields (name/kind/value/comment) and section titles.</li>
+                <li>Retarget <code>InfoView</code>/<code>InfoViewTable</code>/<code>InfoViewTableCell</code> and the <code>WindowGroup(id: "InfoWindow", …)</code> value type to the generalized model; keep search, section picker, keyword count, and CSV/TSV export working.</li>
+                <li>Update the three Info-window open sites (<code>ImageCommands.swift</code>, <code>Sidebar/ImageInfoPanelView.swift</code>, <code>Controls/FileContextMenu.swift</code>).</li>
+                <li>Add/adjust unit tests for the generalized model and the FITS adapter; add a SwiftUI preview for the retargeted <code>InfoView</code>.</li>
+                <li>Keep <code>FITScope.xcodeproj</code> in sync with any new files; build &amp; run tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
+        <!-- M2 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 2 — Format-agnostic image &amp; loader abstraction</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> Milestone 1.</p>
+            <p class="goal"><strong>Goal:</strong> Introduce a format-neutral image/loader layer so <code>OpenFile</code> dispatches by type and every format produces a common result: one or more frames, each exposing a <em>normalized pixel representation</em> the processing pipeline can consume, plus generalized metadata. FITS becomes the first (and, at this milestone, only) conformer, with identical behaviour.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Define the abstraction: a loaded-image protocol/type exposing <code>frames</code> (each with a normalized pixel buffer + per-frame metadata), overall <code>ImageMetadata</code>, and the render input the pipeline needs. Decide the normalized pixel currency (evaluate SwiftPixel <code>PixelBuffer</code>, already used as the detection image) and document the choice.</li>
+                <li>Introduce a loader dispatch keyed on <code>UTType</code> (a registry / factory) so <code>OpenFile</code> and the loader select the right decoder; make <code>FITSImageLoader</code> the FITS conformer behind it.</li>
+                <li>Refactor <code>ImageProcessor.render</code> and <code>FITSImageRenderer</code> so the pipeline consumes the normalized representation rather than assuming FITS <code>Data</code>+BITPIX directly (keep FITS decode intact underneath).</li>
+                <li>Gate astronomy features on metadata availability (WCS present) so non-FITS formats can later reuse the pipeline without those features erroring.</li>
+                <li>Verify no FITS regression: existing <code>FITScopeTests/</code> pass unchanged; add characterization tests around the new seam if coverage is thin.</li>
+                <li>Keep <code>FITScope.xcodeproj</code> in sync; build &amp; run all tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
+        <!-- M3 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 3 — Multi-image carousel component</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> Milestone 2.</p>
+            <p class="goal"><strong>Goal:</strong> Build a generic carousel/filmstrip UI, shown below the main image view, that lists the frames of the currently open image and lets the user select which one to display. Single-frame images (2D FITS, single-image formats) render exactly as today, with the carousel hidden or collapsed.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Create a reusable carousel view under <code>Views/Canvas/</code> (or a new <code>Views/Carousel/</code>) driven by the frame list from the Milestone&nbsp;2 abstraction, with a selection binding; one view per file per conventions, plus a preview.</li>
+                <li>Wire it into <code>ImageCanvasView</code> so the selected frame drives <code>ZoomableImageView</code> and the processing pipeline; hide the carousel when there is a single frame.</li>
+                <li>Handle per-frame thumbnails/labels and keyboard/pointer navigation; ensure overlays and controls follow the selected frame.</li>
+                <li>Confirm 2D FITS is unaffected (single frame, no carousel). Add tests/preview for multi-frame selection with a stub source.</li>
+                <li>Keep <code>FITScope.xcodeproj</code> in sync; build &amp; run tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
+        <!-- ============ PHASE 2 ============ -->
+        <h3 class="phase">Phase 2 — FITS geometries</h3>
+
+        <!-- M4 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 4 — <code>NAXIS=1</code> support (1D data as a graph)</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> Milestone 2 (relaxed dimensionality &amp; format-neutral loading).</p>
+            <p class="goal"><strong>Goal:</strong> Open one-dimensional FITS data (<code>NAXIS=1</code>) and present it as a graph using Swift Charts instead of an image, adapting the chart to <code>CTYPE1</code> when present and relevant to how the axis should be labelled/scaled.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Detect <code>NAXIS=1</code> during loading and route it to a graph display branch instead of the image pipeline (which does not apply to 1D data).</li>
+                <li>Decode the 1D samples (respecting BITPIX/BSCALE/BZERO) into a series suitable for Swift Charts.</li>
+                <li>Build a 1D graph view (under <code>Views/…</code>, modelled on <code>SessionMetrics</code> chart usage) with a preview; label/scale the axis from <code>CTYPE1</code> (and related keywords) when present and relevant, with a sensible default otherwise.</li>
+                <li>Ensure the Info window still shows the header metadata for 1D files; hide image-only controls/overlays for this branch.</li>
+                <li>Add a 1D FITS test fixture and tests; keep <code>FITScope.xcodeproj</code> in sync; build &amp; run tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
+        <!-- M5 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 5 — <code>NAXIS=3</code> support (separate RGB channels)</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> Milestone 2.</p>
+            <p class="goal"><strong>Goal:</strong> Open three-dimensional FITS data (<code>NAXIS=3</code>) whose third axis holds separate R, G, B planes, and combine them into a single color image. Require <code>CTYPE1</code> and <code>CTYPE2</code> to be present and validated, with no <code>CTYPE3</code>.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Detect the RGB-planes case (<code>NAXIS=3</code>, third axis = 3, <code>CTYPE1</code>/<code>CTYPE2</code> present &amp; valid, no <code>CTYPE3</code>) and validate; reject other <code>NAXIS=3</code> shapes here (handled by Milestone&nbsp;6).</li>
+                <li>Decode the three planes and combine into a single color image, feeding the normalized representation so the processing pipeline (color-aware stretch/curves/histogram) applies.</li>
+                <li>Ensure color rendering, histogram (per-channel where applicable), and overlays behave correctly for a combined color image.</li>
+                <li>Add an RGB <code>NAXIS=3</code> fixture and tests; keep <code>FITScope.xcodeproj</code> in sync; build &amp; run tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
+        <!-- M6 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 6 — <code>NAXIS=3</code> support (multiple images)</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> Milestones 2, 3, and 5.</p>
+            <p class="goal"><strong>Goal:</strong> Open three-dimensional FITS data (<code>NAXIS=3</code>) whose third axis holds multiple distinct images. Validate the configuration on <code>CTYPE</code>, rejecting unknown/unsupported configurations, and present the additional images in the carousel below the main view for selection.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Detect the multi-image case and validate against <code>CTYPE</code>; reject unknown/unsupported configurations with a clear error, distinct from the RGB case (Milestone&nbsp;5).</li>
+                <li>Decode each plane as a separate frame and expose them through the Milestone&nbsp;2 frame list.</li>
+                <li>Surface the frames in the Milestone&nbsp;3 carousel; the selected frame runs through the standard image pipeline and overlays.</li>
+                <li>Add a multi-image <code>NAXIS=3</code> fixture and tests (including rejection of unsupported configs); keep <code>FITScope.xcodeproj</code> in sync; build &amp; run tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
+        <!-- ============ PHASE 3 ============ -->
+        <h3 class="phase">Phase 3 — XISF</h3>
+
+        <!-- M7 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 7 — XISF file support</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> Milestones 1, 2, 3, and SwiftXISF being linked into the app target (handled by the user).</p>
+            <p class="goal"><strong>Goal:</strong> Open XISF files using the <code>SwiftXISF</code> module (ignoring its display function), decoding into the format-neutral image layer. Present XISF metadata (including its FITS keywords and properties) through the generalized Info window, and — since XISF files may contain multiple images — reuse the carousel from Milestone&nbsp;3.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Declare the XISF UTI/extension and register it: <code>UTType</code> extension, <code>Info.plist</code> (<code>UTImportedTypeDeclarations</code> + <code>CFBundleDocumentTypes</code>), <code>FITSDocument.readableContentTypes</code> (or its successor), <code>AppModel.runOpenPanel()</code> allowed types, and drop acceptance.</li>
+                <li>Add a SwiftXISF-backed loader conforming to the Milestone&nbsp;2 abstraction: parse via <code>XISFFile</code>, decode each <code>XISFImage</code>'s pixels into the normalized representation (respecting sample format, byte order, color space, CFA), and <strong>ignore <code>XISFDisplayFunction</code></strong> per the backlog.</li>
+                <li>Map XISF metadata (<code>XISFMetadata</code>/<code>XISFProperty</code>/<code>XISFFITSKeyword</code>) into the generalized <code>ImageMetadata</code> for the Info window.</li>
+                <li>Expose multiple images as frames feeding the carousel; run the selected frame through the standard pipeline where meaningful.</li>
+                <li>Add an XISF fixture and tests; keep <code>FITScope.xcodeproj</code> in sync (given the user-provided SwiftXISF linkage); build &amp; run tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
+        <!-- ============ PHASE 4 ============ -->
+        <h3 class="phase">Phase 4 — Photographic formats</h3>
+
+        <!-- M8 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 8 — TIFF, PNG, and JPEG support</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> Milestones 1 and 2. (Establishes the ImageIO decode + metadata path reused by Milestones 9 and 10.)</p>
+            <p class="goal"><strong>Goal:</strong> Open TIFF, PNG, and JPEG files, decode them into the format-neutral image layer for display and processing (where meaningful), and present their metadata (EXIF and similar) through the generalized Info window.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Register the three UTIs (mostly system-declared): <code>UTType</code>, <code>Info.plist</code> document types, open-panel allowed types, and drop acceptance.</li>
+                <li>Add an ImageIO/<code>CGImageSource</code>-based loader conforming to the Milestone&nbsp;2 abstraction, decoding to the normalized pixel representation so stretch/curves/histogram apply; astronomy-only features stay disabled without a WCS.</li>
+                <li>Extract metadata via <code>CGImageSource</code> properties (EXIF, TIFF, etc.) and map it into the generalized <code>ImageMetadata</code> for the Info window.</li>
+                <li>Add fixtures (one TIFF, one PNG, one JPEG) and tests; keep <code>FITScope.xcodeproj</code> in sync; build &amp; run tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
+        <!-- M9 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 9 — RAW support</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> Milestone 8 (reuses the ImageIO decode + metadata path).</p>
+            <p class="goal"><strong>Goal:</strong> Open camera RAW files, decode them into the format-neutral image layer for display and processing where meaningful, and present their metadata (EXIF and similar) through the generalized Info window.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Register RAW UTIs/extensions (the common RAW family, e.g. <code>public.camera-raw-image</code> and vendor subtypes) across <code>UTType</code>, <code>Info.plist</code>, open panel, and drop acceptance.</li>
+                <li>Decode via ImageIO's RAW support (<code>CGImageSource</code>) into the normalized representation; decide and document default RAW rendering options.</li>
+                <li>Map RAW EXIF/maker metadata into the generalized <code>ImageMetadata</code>.</li>
+                <li>Add at least one RAW fixture and tests; keep <code>FITScope.xcodeproj</code> in sync; build &amp; run tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
+        <!-- M10 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 10 — HEIC support</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> Milestones 3 and 8.</p>
+            <p class="goal"><strong>Goal:</strong> Open HEIC files, decode them into the format-neutral image layer for display and processing where meaningful, and present their metadata (EXIF and similar) through the generalized Info window. Since HEIC files may contain multiple images, reuse the carousel from Milestone&nbsp;3.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Register the HEIC UTI/extension across <code>UTType</code>, <code>Info.plist</code>, open panel, and drop acceptance.</li>
+                <li>Decode via ImageIO/<code>CGImageSource</code> into the normalized representation; enumerate contained images as frames.</li>
+                <li>Surface multiple images through the Milestone&nbsp;3 carousel; run the selected frame through the pipeline where meaningful.</li>
+                <li>Map HEIC EXIF/metadata into the generalized <code>ImageMetadata</code>.</li>
+                <li>Add HEIC fixtures (single- and multi-image) and tests; keep <code>FITScope.xcodeproj</code> in sync; build &amp; run tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
+        <h2>Appendix</h2>
+        <div class="notes">
+            <p><strong>Backlog item &rarr; milestone map</strong></p>
+            <table>
+                <thead>
+                    <tr><th>Backlog item</th><th>Milestone(s)</th><th>Shared foundations relied on</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>NAXIS=1</code> (1D graph)</td><td>M4</td><td>M2</td></tr>
+                    <tr><td><code>NAXIS=3</code> RGB channels</td><td>M5</td><td>M2</td></tr>
+                    <tr><td><code>NAXIS=3</code> multiple images</td><td>M6</td><td>M2, M3, M5</td></tr>
+                    <tr><td>XISF</td><td>M7</td><td>M1, M2, M3 (+ user-linked SwiftXISF)</td></tr>
+                    <tr><td>TIFF / PNG / JPEG</td><td>M8</td><td>M1, M2</td></tr>
+                    <tr><td>RAW</td><td>M9</td><td>M1, M2, M8</td></tr>
+                    <tr><td>HEIC</td><td>M10</td><td>M1, M2, M3, M8</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Cross-cutting checklist applied per format milestone</strong></p>
+            <ul>
+                <li>UTI/extension registration in all five choke points: <code>UTType</code>, <code>Info.plist</code>, <code>readableContentTypes</code>, <code>AppModel.runOpenPanel()</code>, <code>DropAcceptance</code>.</li>
+                <li>Loader conforms to the Milestone&nbsp;2 abstraction and produces the normalized pixel representation + generalized metadata.</li>
+                <li>Astronomy-only features (plate solve, star detection, WCS overlays) hidden/disabled when the required metadata is absent.</li>
+                <li>Test fixtures added under the tests target; <code>FITScope.xcodeproj</code> kept in sync; full build &amp; test via <code>xcodebuild</code>.</li>
+            </ul>
+        </div>
+    </main>
+</body>
+</html>

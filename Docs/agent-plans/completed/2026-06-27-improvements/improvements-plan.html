@@ -979,7 +979,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4><span class="milestone-id">M14</span>Window toolbar &mdash; investigation</h4>
-                <span class="pill todo">Not started</span>
+                <span class="pill done">Completed</span>
             </div>
             <p class="goal">A time-boxed spike to decide whether a proper window toolbar is worth adding, given the existing floating canvas toolbar and minimal window toolbar. Output is a recommendation, not committed UI.</p>
 
@@ -991,11 +991,51 @@
                 <li>Record the recommendation (do it / drop it / partial) in this milestone's notes for a go/no-go decision.</li>
             </ul>
 
-            <div class="meta-row"><span><span class="k">Status:</span> Not started</span><span><span class="k">Completed:</span> &mdash;</span></div>
+            <div class="meta-row"><span><span class="k">Status:</span> Completed</span><span><span class="k">Completed:</span> 2026-07-05</span></div>
             <div class="field-label">Implementation notes</div>
-            <div class="placeholder">To be filled in during implementation.</div>
+            <div class="notes">
+                <p class="lead"><strong>Decision (confirmed in review): do nothing &mdash; firm no-go.</strong> No window toolbar is added, not even the narrow partial. The current split &mdash; floating bar for the framing cluster, minimal window toolbar for Share/Inspector, and the full <em>Image</em> menu + keyboard shortcuts for everything &mdash; is left unchanged. The full inventory, analysis and mockup below record <em>why</em> the idea was investigated and dropped, so the decision needn't be re-litigated later.</p>
+
+                <p class="field-label">1. Inventory of today's controls (read from source, verified)</p>
+                <ul>
+                    <li><strong>Floating canvas toolbar</strong> &mdash; <code>Views/Canvas/ImageToolbarView.swift</code>, hosted top-centre over the image by <code>ImageCanvasView</code> (<code>.overlay( alignment: .top )</code>) and <strong>auto-hiding after 2&nbsp;s of cursor inactivity</strong> (toggleable via <code>Preferences.autoHideFloatingBars</code>). In order: <em>Recenter</em> (<code>scope</code>) &vert; <em>Zoom&nbsp;Out</em> / live <em>zoom&nbsp;%</em> readout / <em>Zoom&nbsp;In</em> &vert; <em>Fit&nbsp;to&nbsp;Window</em>, <em>Actual&nbsp;Size</em> &vert; <em>Compare&nbsp;Before/After</em> &vert; <em>Plate&nbsp;Solve</em> (only when available) &vert; the <strong>per-image overlay toggles</strong> (Reticle, Stars, Objects, Scale&nbsp;bar, North, Equatorial&nbsp;grid &mdash; up to six).</li>
+                    <li><strong>Floating status pill</strong> &mdash; <code>StatusBarView</code>, bottom-centre, same auto-hide behaviour. Not a control: shows status (&ldquo;Ready&rdquo;/&ldquo;Processing&hellip;&rdquo;), the cursor read-out, and the dimensions/bit-depth summary.</li>
+                    <li><strong>Window toolbar</strong> &mdash; the &ldquo;minimal&rdquo; one, declared in <code>MainWindowView.body</code>'s <code>.toolbar</code> (both <code>.primaryAction</code>): <em>Share</em> (<code>ImageShareLink</code> &rarr; system <code>ShareLink</code>, rendered JPEG; disabled placeholder until a result exists) and the <em>Inspector toggle</em> (<code>sidebar.trailing</code>). Windows use <code>.windowStyle(.titleBar)</code> (a real title bar exists), and the <code>NavigationSplitView</code> supplies its own automatic <strong>Files-sidebar toggle</strong> in the leading toolbar region.</li>
+                    <li><strong>Menu bar &mdash; the <em>Image</em> menu</strong> (<code>Application/Commands/ImageCommands.swift</code>) already mirrors nearly everything, keyboard-accessible: Zoom&nbsp;In&nbsp;(&#8984;+), Zoom&nbsp;Out&nbsp;(&#8984;&minus;), Actual&nbsp;Size&nbsp;(&#8984;0), Fit&nbsp;(&#8984;9), Recenter, Compare, every overlay toggle, Rotate&nbsp;L/R, Flip&nbsp;H/V, Invert, Reset&nbsp;View, Levels&hellip;, Curves&hellip;, View&nbsp;FITS&nbsp;Headers&hellip;, Session&nbsp;Metrics&hellip;, and Plate&nbsp;Solve&hellip;&nbsp;(&#8679;&#8984;P).</li>
+                </ul>
+                <p>Key architectural fact: the zoom / overlay / compare state lives in <code>ImageCanvasController</code>, published as a <em>focused scene object</em>, so the floating toolbar and the <em>Image</em> menu already drive the very same state. A window-toolbar item could reach that identical controller with no new plumbing.</p>
+
+                <p class="field-label">2. Which controls benefit from a persistent window toolbar &mdash; and which don't</p>
+                <ul>
+                    <li><strong>Stay floating (image-centric):</strong> Recenter, Zoom&nbsp;Out/In, the <em>live zoom&nbsp;% readout</em>, Fit, Actual&nbsp;Size, Compare. These act on <em>how the image is framed</em> and read best next to the pixels; the zoom&nbsp;% is a live value tied to the canvas, awkward in the title bar. Moving them up would only duplicate them (they are already in the <em>Image</em> menu with shortcuts) and steal the floating bar's reason to exist.</li>
+                    <li><strong>Plausible window-toolbar candidates:</strong> <em>Plate&nbsp;Solve</em> (a heavyweight, file-level action, not a framing gesture &mdash; benefits from being always visible and is already &#8679;&#8984;P) and the <em>overlay toggles</em> (viewing <em>modes</em>, poorly served by auto-hiding icons). Six separate overlay buttons are too many for a title bar, so they would need collapsing into a single <strong>&ldquo;Overlays&rdquo; popover/menu button</strong>.</li>
+                    <li><strong>Redundancy &amp; discoverability trade-off:</strong> every floating/menu action is already reachable from the <em>Image</em> menu, so a window toolbar becomes a <em>third</em> surface for the same commands. Its upside is discoverability: the floating bar's 2&nbsp;s auto-hide means a first-time user may never learn that overlays or plate-solve exist. Its downsides are a permanent chrome strip, visual redundancy with the floating bar sitting just below it, and diluting the deliberate &ldquo;the canvas hosts its own toolbar&rdquo; design stated in <code>MainWindowView</code>'s own doc comment.</li>
+                </ul>
+
+                <p class="field-label">3. Proposed layout (only if pursued)</p>
+                <p>A minimal, non-redundant window toolbar &mdash; keep the framing cluster floating, promote just the two discoverability-sensitive actions:</p>
+                <div class="placeholder" style="font-family: var(--mono); font-style: normal; white-space: pre; overflow-x: auto;">&#9776; Files &#9474;  M31.fits                      [&#9737; Overlays &#9662;] [&#9673; Plate Solve]   [&#9993; Share] [&#9707; Inspector]
+&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;&#8213;
+                    [ &#8635; recenter  &#8722; 100% &#43;  &#8690; fit  &#127310; ]   &#8592; floating bar keeps the framing cluster
+                              (image canvas)                            (Compare stays here too)</div>
+                <p>&ldquo;Overlays&rdquo; is a single popover listing the six toggles (checkmarks), tinted when any is active; &ldquo;Plate&nbsp;Solve&rdquo; carries the same solved / solving states the floating button shows. Both would then be <em>removed</em> from the floating bar, slimming it to the framing cluster + Compare. All items are <code>ToolbarItem</code>s driving the focused <code>ImageCanvasController</code>/<code>OpenFile</code>, so they gain native &ldquo;Customize Toolbar&hellip;&rdquo; support for free.</p>
+
+                <p class="field-label">4. Go / no-go &mdash; decided: do nothing</p>
+                <ul>
+                    <li><strong>Full window toolbar: no.</strong> It would triple-surface the framing controls and undercut the intentional floating-bar design for little gain.</li>
+                    <li><strong>Do nothing: chosen.</strong> The current split (floating bar for framing, minimal window toolbar for share/inspector, full <em>Image</em> menu + shortcuts for everything) is coherent and complete, and is kept as-is. The one genuine weakness &mdash; discoverability under auto-hide &mdash; is cheaper to address <em>within</em> the floating bar (e.g. defaulting <code>autoHideFloatingBars</code> off, or a first-run hint) than by adding a whole new surface, and can be revisited separately if it ever proves to be a real problem.</li>
+                    <li><strong>Narrow partial: not pursued.</strong> The Overlays-popover + Plate-Solve-in-the-window-toolbar option (section&nbsp;3) was considered and declined. It is documented here only as the shape any future revisit would take, should evidence later justify it.</li>
+                </ul>
+
+                <p class="field-label">Process note</p>
+                <p>This milestone is an investigation spike: its deliverable is this recommendation, not code. There is therefore no source change for the automated fresh-context code-review loop to examine, so that loop was not run; instead every claim above was verified directly against the current source (<code>ImageToolbarView</code>, <code>ImageCanvasView</code>, <code>MainWindowView</code>, <code>ImageCommands</code>, <code>ImageShareLink</code>, <code>FITScopeApp</code>).</p>
+            </div>
             <div class="field-label">Review comments</div>
-            <div class="placeholder">Review feedback for this milestone.</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Decision: do nothing.</strong> No window toolbar &mdash; not even the narrow partial. The current split (floating bar for framing, minimal window toolbar for share/inspector, full <em>Image</em> menu + shortcuts) stays as-is; the investigation is closed with a firm no-go.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- ============================ APPENDIX ============================ -->
