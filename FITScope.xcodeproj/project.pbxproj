@@ -23,8 +23,13 @@
 		0579B6152DF23DB7002FDD47 /* FITSImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6142DF23DB3002FDD47 /* FITSImage.swift */; };
 		0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */; };
 		0579B61C2DF245E2002FDD47 /* FITSImageInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B61B2DF245DE002FDD47 /* FITSImageInfo.swift */; };
-		0579B61E2DF249A1002FDD47 /* FITSImageSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B61D2DF24998002FDD47 /* FITSImageSection.swift */; };
-		0579B6202DF249AD002FDD47 /* FITSImageProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B61F2DF249A9002FDD47 /* FITSImageProperty.swift */; };
+		05EE1000000000000000FB01 /* ImageMetadataProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA01 /* ImageMetadataProperty.swift */; };
+		05EE1000000000000000FB02 /* ImageMetadataSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA02 /* ImageMetadataSection.swift */; };
+		05EE1000000000000000FB03 /* ImageMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA03 /* ImageMetadata.swift */; };
+		05EE1000000000000000FB04 /* ImageMetadataProperty+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA04 /* ImageMetadataProperty+FITS.swift */; };
+		05EE1000000000000000FB05 /* ImageMetadataSection+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA05 /* ImageMetadataSection+FITS.swift */; };
+		05EE1000000000000000FB11 /* ImageMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA11 /* ImageMetadataTests.swift */; };
+		05EE1000000000000000FB12 /* ImageMetadataFITSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */; };
 		0579B6222DF24C33002FDD47 /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6212DF24C31002FDD47 /* InfoView.swift */; };
 		0579B6252DF2C149002FDD47 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0579B6232DF2C120002FDD47 /* Preview Assets.xcassets */; };
 		057F611C2DF8B78600EE82D1 /* ImageControlContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 057F611B2DF8B78000EE82D1 /* ImageControlContainer.swift */; };
@@ -451,8 +456,13 @@
 		0579B6142DF23DB3002FDD47 /* FITSImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImage.swift; sourceTree = "<group>"; };
 		0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageLoader.swift; sourceTree = "<group>"; };
 		0579B61B2DF245DE002FDD47 /* FITSImageInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageInfo.swift; sourceTree = "<group>"; };
-		0579B61D2DF24998002FDD47 /* FITSImageSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageSection.swift; sourceTree = "<group>"; };
-		0579B61F2DF249A9002FDD47 /* FITSImageProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageProperty.swift; sourceTree = "<group>"; };
+		05EE1000000000000000FA01 /* ImageMetadataProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataProperty.swift; sourceTree = "<group>"; };
+		05EE1000000000000000FA02 /* ImageMetadataSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataSection.swift; sourceTree = "<group>"; };
+		05EE1000000000000000FA03 /* ImageMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadata.swift; sourceTree = "<group>"; };
+		05EE1000000000000000FA04 /* ImageMetadataProperty+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataProperty+FITS.swift"; sourceTree = "<group>"; };
+		05EE1000000000000000FA05 /* ImageMetadataSection+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataSection+FITS.swift"; sourceTree = "<group>"; };
+		05EE1000000000000000FA11 /* ImageMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataTests.swift; sourceTree = "<group>"; };
+		05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataFITSTests.swift; sourceTree = "<group>"; };
 		0579B6212DF24C31002FDD47 /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
 		0579B6232DF2C120002FDD47 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		057F611B2DF8B78000EE82D1 /* ImageControlContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageControlContainer.swift; sourceTree = "<group>"; };
@@ -1008,6 +1018,7 @@
 				E7410133087261AF83595054 /* ImageInformation.swift */,
 				017FF3966AE1E425A510642E /* DropAcceptance.swift */,
 				B3FD345BB5B137185B9B9D72 /* FITS */,
+				05EE1000000000000000FC01 /* Metadata */,
 				C312A09479352778259D365A /* Preferences */,
 				209B69186583B9C65F810C23 /* HistogramMode.swift */,
 				C9BD5E1A3FC040B4E14E8824 /* HistogramViewOptions.swift */,
@@ -1199,6 +1210,7 @@
 				C07659F02B1A39E7821ED5BE /* ImageInformationTests.swift */,
 				AFBDAF375886651EAEF634B1 /* DropAcceptanceTests.swift */,
 				5DF80E657A81462F0C30D4CF /* FITS */,
+				05EE1000000000000000FC02 /* Metadata */,
 				90974047D195E465718B0A58 /* Preferences */,
 				002C1D9E4346F9D0ADBFF793 /* StarDetectionTests.swift */,
 				FE01A0020000000000000001 /* WeightFormulaTests.swift */,
@@ -1362,12 +1374,21 @@
 			path = Inspector;
 			sourceTree = "<group>";
 		};
+		05EE1000000000000000FC02 /* Metadata */ = {
+			isa = PBXGroup;
+			children = (
+				05EE1000000000000000FA11 /* ImageMetadataTests.swift */,
+			);
+			path = Metadata;
+			sourceTree = "<group>";
+		};
 		5DF80E657A81462F0C30D4CF /* FITS */ = {
 			isa = PBXGroup;
 			children = (
 				05FB1000000000000000A004 /* FITSImageRendererTests.swift */,
 				05FB1000000000000000A00B /* FITSImageLoaderTests.swift */,
 				A8D5C2CDF6BE5D61F992E63B /* FITSMetadataTests.swift */,
+				05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */,
 				20678C2224440A7F70B42B87 /* WCSProjectionTests.swift */,
 			);
 			path = FITS;
@@ -1448,15 +1469,25 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
+		05EE1000000000000000FC01 /* Metadata */ = {
+			isa = PBXGroup;
+			children = (
+				05EE1000000000000000FA03 /* ImageMetadata.swift */,
+				05EE1000000000000000FA01 /* ImageMetadataProperty.swift */,
+				05EE1000000000000000FA02 /* ImageMetadataSection.swift */,
+			);
+			path = Metadata;
+			sourceTree = "<group>";
+		};
 		B3FD345BB5B137185B9B9D72 /* FITS */ = {
 			isa = PBXGroup;
 			children = (
 				0579B6142DF23DB3002FDD47 /* FITSImage.swift */,
 				0579B61B2DF245DE002FDD47 /* FITSImageInfo.swift */,
 				0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */,
-				0579B61F2DF249A9002FDD47 /* FITSImageProperty.swift */,
 				0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */,
-				0579B61D2DF24998002FDD47 /* FITSImageSection.swift */,
+				05EE1000000000000000FA04 /* ImageMetadataProperty+FITS.swift */,
+				05EE1000000000000000FA05 /* ImageMetadataSection+FITS.swift */,
 				4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */,
 				59AF90C07BCB7472F4490908 /* FITSMetadata.swift */,
 				9D588747A79BD6F05EC2CA0F /* WCSProjection.swift */,
@@ -1920,7 +1951,11 @@
 				05BD7A9C2DF3121B00F4AAFC /* HistogramControlView.swift in Sources */,
 				0579B61C2DF245E2002FDD47 /* FITSImageInfo.swift in Sources */,
 				E3444E1C1DE692DC3284E5EF /* WCSProjection.swift in Sources */,
-				0579B61E2DF249A1002FDD47 /* FITSImageSection.swift in Sources */,
+				05EE1000000000000000FB01 /* ImageMetadataProperty.swift in Sources */,
+				05EE1000000000000000FB02 /* ImageMetadataSection.swift in Sources */,
+				05EE1000000000000000FB03 /* ImageMetadata.swift in Sources */,
+				05EE1000000000000000FB04 /* ImageMetadataProperty+FITS.swift in Sources */,
+				05EE1000000000000000FB05 /* ImageMetadataSection+FITS.swift in Sources */,
 				05D710D02DF201C300CE32E3 /* NSBundle.swift in Sources */,
 				05BD7A942DF311F700F4AAFC /* DebayerControlView.swift in Sources */,
 				0AB10000000000000000F002 /* ColorControlView.swift in Sources */,
@@ -1932,7 +1967,6 @@
 				0524AD812DF3457D00180358 /* HistogramView.swift in Sources */,
 				05BD7A982DF3120E00F4AAFC /* StretchControlView.swift in Sources */,
 				05BD7A9A2DF3121600F4AAFC /* WhiteBalanceControlView.swift in Sources */,
-				0579B6202DF249AD002FDD47 /* FITSImageProperty.swift in Sources */,
 				05C4BD722DF2C9A200326B69 /* SearchField.swift in Sources */,
 				0579B6222DF24C33002FDD47 /* InfoView.swift in Sources */,
 				056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */,
@@ -2116,6 +2150,8 @@
 				9A3A3D353F14A85800BD349D /* StatisticsFormatTests.swift in Sources */,
 				0E5DD39F0AAB39B1610489D5 /* DebayerModeTests.swift in Sources */,
 				17B516B64E1F38ED6ECAE45F /* FITSMetadataTests.swift in Sources */,
+				05EE1000000000000000FB11 /* ImageMetadataTests.swift in Sources */,
+				05EE1000000000000000FB12 /* ImageMetadataFITSTests.swift in Sources */,
 				9B163B795274560E48F04CBF /* WCSProjectionTests.swift in Sources */,
 				12D1CA8C4330A87062BA764E /* StarDetectionTests.swift in Sources */,
 				A88DD46D272944AD847BC0FD /* StarsOverlayTests.swift in Sources */,

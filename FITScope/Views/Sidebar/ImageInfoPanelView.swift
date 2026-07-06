@@ -77,7 +77,7 @@ public struct ImageInfoPanelView: View
 
                 Button( "View Full FITS Headers" )
                 {
-                    self.openWindow( id: "InfoWindow", value: info )
+                    self.openWindow( id: "InfoWindow", value: info.imageMetadata )
                 }
                 .frame( maxWidth: .infinity )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoPanelView.viewHeadersButton )

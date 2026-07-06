@@ -78,7 +78,7 @@ public struct FileContextMenu: ViewModifier
             {
                 if let info = self.file.image?.info
                 {
-                    self.openWindow( id: "InfoWindow", value: info )
+                    self.openWindow( id: "InfoWindow", value: info.imageMetadata )
                 }
             }
             label:

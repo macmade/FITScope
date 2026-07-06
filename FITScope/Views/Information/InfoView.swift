@@ -31,7 +31,7 @@ import SwiftUtilities
 public struct InfoView: View
 {
     /// The file metadata being browsed.
-    public let info: FITSImageInfo
+    public let metadata: ImageMetadata
 
     /// The index of the section currently shown in the table.
     @State private var selectedSection = 0
@@ -78,9 +78,9 @@ public struct InfoView: View
     }
 
     /// The section currently selected in the picker, if any.
-    private var currentSection: FITSImageSection?
+    private var currentSection: ImageMetadataSection?
     {
-        self.info.sections.first { $0.index == self.selectedSection }
+        self.metadata.sections.first { $0.index == self.selectedSection }
     }
 
     /// The bottom bar: the section picker, a prominent search field, the keyword
@@ -120,7 +120,7 @@ public struct InfoView: View
     {
         Picker( "Section:", selection: $selectedSection )
         {
-            ForEach( self.info.sections )
+            ForEach( self.metadata.sections )
             {
                 Text( $0.title ).tag( $0.index )
             }
@@ -137,7 +137,7 @@ public struct InfoView: View
     ///   - properties: The properties to filter.
     ///   - text:       The search query; an empty query returns all properties.
     /// - Returns: The matching properties.
-    public nonisolated static func filter( properties: [ FITSImageProperty ], text: String ) -> [ FITSImageProperty ]
+    public nonisolated static func filter( properties: [ ImageMetadataProperty ], text: String ) -> [ ImageMetadataProperty ]
     {
         if text.isEmpty
         {
@@ -185,20 +185,20 @@ public struct InfoView: View
     {
         Menu( "Export…" )
         {
-            if self.info.sections.count > 1
+            if self.metadata.sections.count > 1
             {
                 Button( "Displayed Section as CSV" ) { self.export( sections: self.displayedSections, format: .csv ) }
                 Button( "Displayed Section as TSV" ) { self.export( sections: self.displayedSections, format: .tsv ) }
 
                 Divider()
 
-                Button( "All Sections as CSV" ) { self.export( sections: self.info.sections, format: .csv ) }
-                Button( "All Sections as TSV" ) { self.export( sections: self.info.sections, format: .tsv ) }
+                Button( "All Sections as CSV" ) { self.export( sections: self.metadata.sections, format: .csv ) }
+                Button( "All Sections as TSV" ) { self.export( sections: self.metadata.sections, format: .tsv ) }
             }
             else
             {
-                Button( "As CSV" ) { self.export( sections: self.info.sections, format: .csv ) }
-                Button( "As TSV" ) { self.export( sections: self.info.sections, format: .tsv ) }
+                Button( "As CSV" ) { self.export( sections: self.metadata.sections, format: .csv ) }
+                Button( "As TSV" ) { self.export( sections: self.metadata.sections, format: .tsv ) }
             }
         }
         .fixedSize()
@@ -206,9 +206,9 @@ public struct InfoView: View
     }
 
     /// The sections currently shown in the picker (a single section).
-    private var displayedSections: [ FITSImageSection ]
+    private var displayedSections: [ ImageMetadataSection ]
     {
-        self.info.sections.filter { $0.index == self.selectedSection }
+        self.metadata.sections.filter { $0.index == self.selectedSection }
     }
 
     /// Exports the given sections to a CSV or TSV file the user chooses, in a save
@@ -218,9 +218,9 @@ public struct InfoView: View
     /// - Parameters:
     ///   - sections: The sections to serialize.
     ///   - format:   The output format.
-    private func export( sections: [ FITSImageSection ], format: HeaderExport.Format )
+    private func export( sections: [ ImageMetadataSection ], format: HeaderExport.Format )
     {
-        let suggestedName = "\( self.info.url.deletingPathExtension().lastPathComponent )-headers"
+        let suggestedName = "\( self.metadata.url.deletingPathExtension().lastPathComponent )-headers"
 
         guard let destination = AppModel.runSavePanel( suggestedName: suggestedName, contentTypes: [ format.contentType ] )
         else
@@ -236,7 +236,7 @@ public struct InfoView: View
         }
         catch
         {
-            AppModel.presentFailureAlert( "Could not export the FITS headers.", error: error )
+            AppModel.presentFailureAlert( "Could not export the image metadata.", error: error )
         }
     }
 }
@@ -246,7 +246,7 @@ public struct InfoView: View
     if let url  = PreviewHelper.url( file: .HST_FOS ),
        let file = PreviewHelper.file( file: .HST_FOS )
     {
-        InfoView( info: FITSImageInfo( url: url, file: file ) )
+        InfoView( metadata: FITSImageInfo( url: url, file: file ).imageMetadata )
     }
     else
     {

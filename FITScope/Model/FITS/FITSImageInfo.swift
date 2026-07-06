@@ -27,19 +27,19 @@ import SwiftFITS
 
 /// A `Codable`, `Hashable` snapshot of a FITS file's header metadata, suitable
 /// for passing to an auxiliary window via SwiftUI's value-based scenes.
-public struct FITSImageInfo: Codable, Hashable
+public struct FITSImageInfo: Codable, Hashable, Sendable
 {
     /// The URL of the source file.
     public let url: URL
 
     /// The file's metadata sections (primary header and any extensions), in file
     /// order. Data-only sections are excluded.
-    public let sections: [ FITSImageSection ]
+    public let sections: [ ImageMetadataSection ]
 
     /// Builds the metadata snapshot from a parsed file.
     ///
     /// Only header and extension sections are kept; sections that
-    /// ``FITSImageSection`` cannot represent (e.g. pure data) are dropped.
+    /// ``ImageMetadataSection`` cannot represent (e.g. pure data) are dropped.
     ///
     /// - Parameters:
     ///   - url:  The URL the file was loaded from.
@@ -49,7 +49,7 @@ public struct FITSImageInfo: Codable, Hashable
         self.url      = url
         self.sections = file.sections.enumerated().compactMap
         {
-            FITSImageSection( index: $0.offset, section: $0.element )
+            ImageMetadataSection( index: $0.offset, section: $0.element )
         }
     }
 
@@ -58,10 +58,18 @@ public struct FITSImageInfo: Codable, Hashable
     /// - Parameters:
     ///   - url:      The source URL.
     ///   - sections: The metadata sections.
-    public init( url: URL, sections: [ FITSImageSection ] )
+    public init( url: URL, sections: [ ImageMetadataSection ] )
     {
         self.url      = url
         self.sections = sections
+    }
+
+    /// The file's header metadata as the format-neutral ``ImageMetadata`` the Info
+    /// window consumes, so the FITS path feeds the same window as every other
+    /// format.
+    public var imageMetadata: ImageMetadata
+    {
+        ImageMetadata( url: self.url, sections: self.sections )
     }
 
     /// Whether the image is a colour-filter-array (CFA) image — one that declares

@@ -161,12 +161,12 @@ public struct FITScopeApp: App
             }
         }
 
-        WindowGroup( id: "InfoWindow", for: FITSImageInfo.self )
+        WindowGroup( id: "InfoWindow", for: ImageMetadata.self )
         {
-            if let info = $0.wrappedValue
+            if let metadata = $0.wrappedValue
             {
-                InfoView( info: info )
-                    .navigationTitle( info.url.lastPathComponent )
+                InfoView( metadata: metadata )
+                    .navigationTitle( metadata.url.lastPathComponent )
             }
             else
             {

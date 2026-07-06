@@ -33,12 +33,12 @@ import Testing
 struct InfoViewTests
 {
     /// A small set of header keywords to filter.
-    private static var properties: [ FITSImageProperty ]
+    private static var properties: [ ImageMetadataProperty ]
     {
         [
-            FITSImageProperty( index: 0, name: "SIMPLE", kind: "Logical", value: "T",   comment: "conforms to FITS standard" ),
-            FITSImageProperty( index: 1, name: "BITPIX", kind: "Integer", value: "16",  comment: "bits per pixel"            ),
-            FITSImageProperty( index: 2, name: "OBJECT", kind: "String",  value: "M31", comment: "Andromeda Galaxy"          ),
+            ImageMetadataProperty( index: 0, name: "SIMPLE", kind: "Logical", value: "T",   comment: "conforms to FITS standard" ),
+            ImageMetadataProperty( index: 1, name: "BITPIX", kind: "Integer", value: "16",  comment: "bits per pixel"            ),
+            ImageMetadataProperty( index: 2, name: "OBJECT", kind: "String",  value: "M31", comment: "Andromeda Galaxy"          ),
         ]
     }
 

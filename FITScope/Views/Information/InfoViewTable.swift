@@ -34,16 +34,16 @@ import SwiftUI
 public struct InfoViewTable: View
 {
     /// The keywords to display, in their natural (unsorted) order.
-    public let properties: [ FITSImageProperty ]
+    public let properties: [ ImageMetadataProperty ]
 
     /// The locally sorted copy actually rendered by the table.
-    @State private var sortedProperties   = [ FITSImageProperty ]()
+    @State private var sortedProperties   = [ ImageMetadataProperty ]()
 
     /// The active column sort order, defaulting to ascending index.
-    @State private var sortOrder          = [ KeyPathComparator( \FITSImageProperty.index ) ]
+    @State private var sortOrder          = [ KeyPathComparator( \ImageMetadataProperty.index ) ]
 
     /// The identifiers of the currently selected rows.
-    @State private var selectedProperties = Set< FITSImageProperty.ID >()
+    @State private var selectedProperties = Set< ImageMetadataProperty.ID >()
 
     /// The view's content.
     public var body: some View

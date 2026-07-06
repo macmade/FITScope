@@ -26,30 +26,30 @@
 import Foundation
 import Testing
 
-/// Tests for ``HeaderExport``: serializing FITS header keywords to CSV and TSV,
-/// with the field escaping each format requires.
+/// Tests for ``HeaderExport``: serializing image metadata to CSV and TSV, with
+/// the field escaping each format requires.
 @Suite( "HeaderExport" )
 struct HeaderExportTests
 {
     /// The column header row both formats begin with.
     private static let header = "Section,Index,Name,Kind,Value,Comment"
 
-    /// A small two-section info snapshot for the integration cases.
-    private static func sampleInfo() -> FITSImageInfo
+    /// A small two-section metadata snapshot for the integration cases.
+    private static func sampleInfo() -> ImageMetadata
     {
-        let primary = FITSImageSection(
+        let primary = ImageMetadataSection(
             index:   0,
             title:   "Primary Header",
             properties:
             [
-                FITSImageProperty( index: 0, name: "SIMPLE",  kind: "Logical", value: "T",     comment: "conforms to FITS standard" ),
-                FITSImageProperty( index: 1, name: "OBJECT",  kind: "String",  value: "M31",   comment: "" ),
+                ImageMetadataProperty( index: 0, name: "SIMPLE",  kind: "Logical", value: "T",     comment: "conforms to FITS standard" ),
+                ImageMetadataProperty( index: 1, name: "OBJECT",  kind: "String",  value: "M31",   comment: "" ),
             ]
         )
 
-        let extensionSection = FITSImageSection( index: 1, title: "Extension: IMAGE", properties: [ FITSImageProperty( index: 0, name: "EXTNAME", kind: "String", value: "SCI", comment: "" ) ] )
+        let extensionSection = ImageMetadataSection( index: 1, title: "Extension: IMAGE", properties: [ ImageMetadataProperty( index: 0, name: "EXTNAME", kind: "String", value: "SCI", comment: "" ) ] )
 
-        return FITSImageInfo( url: URL( fileURLWithPath: "/tmp/sample.fits" ), sections: [ primary, extensionSection ] )
+        return ImageMetadata( url: URL( fileURLWithPath: "/tmp/sample.fits" ), sections: [ primary, extensionSection ] )
     }
 
     // MARK: - CSV escaping

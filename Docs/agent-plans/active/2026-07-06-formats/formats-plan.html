@@ -271,7 +271,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4>Milestone 1 — Generalize the metadata model &amp; Info window</h4>
-                <span class="capsule todo">Not started</span>
+                <span class="capsule done">Completed</span>
             </div>
             <p class="dep"><strong>Depends on:</strong> nothing.</p>
             <p class="goal"><strong>Goal:</strong> Decouple the keyword Info window from FITS so any format can supply grouped key/value metadata. Introduce a format-agnostic, <code>Codable, Hashable</code> metadata model (sections of properties) usable as the <code>InfoWindow</code> value type, and adapt the existing FITS metadata into it with no visible change to the FITS experience.</p>
@@ -284,10 +284,31 @@
                 <li>Add/adjust unit tests for the generalized model and the FITS adapter; add a SwiftUI preview for the retargeted <code>InfoView</code>.</li>
                 <li>Keep <code>FITScope.xcodeproj</code> in sync with any new files; build &amp; run tests via <code>xcodebuild</code>.</li>
             </ul>
-            <div class="field-label">Status</div><p class="goal">Not started</p>
-            <div class="field-label">Completed</div><p class="completed-date">—</p>
-            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
-            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+            <div class="field-label">Status</div><p class="goal">Completed</p>
+            <div class="field-label">Completed</div><p class="completed-date">2026-07-06</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <p><strong>Approach:</strong> TDD. Chosen design (confirmed with the user): <em>refactor/rename</em> rather than adapter — the old FITS-specific <code>FITSImageSection</code>/<code>FITSImageProperty</code> were renamed into the format-neutral <code>ImageMetadataSection</code>/<code>ImageMetadataProperty</code> and moved to <code>FITScope/Model/Metadata/</code>, with the FITS-specific constructors and section-title logic pulled into FITS-scoped extension files. No duplicated type families.</p>
+                <ul>
+                    <li>New format-neutral model under <code>Model/Metadata/</code>: <code>ImageMetadataProperty</code> (index/name/kind/value/comment + stable <code>id</code>), <code>ImageMetadataSection</code> (index/title/properties), <code>ImageMetadata</code> (url + sections) — all <code>Codable, Hashable</code>.</li>
+                    <li>FITS adapters under <code>Model/FITS/</code>: <code>ImageMetadataProperty+FITS.swift</code> (<code>init(index:property:)</code> + the per-kind value formatters) and <code>ImageMetadataSection+FITS.swift</code> (<code>init?(index:section:)</code> dropping non-header/xtension sections + <code>title(for:)</code>). Both <code>id</code> formulas from the old types were preserved <em>byte-for-byte</em> — the plain memberwise init keeps <code>value.isEmpty ? "&lt;nil&gt;"</code>, the FITS init keeps <code>value ?? "&lt;nil&gt;"</code> (nil distinct from empty) — verified that a same-module struct extension init can assign all stored properties directly.</li>
+                    <li><code>FITSImageInfo</code> now stores <code>[ImageMetadataSection]</code> and vends an <code>imageMetadata: ImageMetadata</code>; its FITS accessors (<code>isColorFilterArray</code>, <code>metadata</code>, <code>pixelScale</code>) are unchanged.</li>
+                    <li>Retargeted to the neutral model: the <code>WindowGroup(id: "InfoWindow", for: ImageMetadata.self)</code>, <code>InfoView</code>/<code>InfoViewTable</code>, <code>HeaderExport</code> (now <code>export(ImageMetadata)</code> / <code>export([ImageMetadataSection])</code>), and the three open sites (<code>ImageCommands</code>, <code>ImageInfoPanelView</code>, <code>FileContextMenu</code>) which now pass <code>info.imageMetadata</code>. The export failure alert message was generalized ("Could not export the image metadata."). Search, section picker, keyword count, sort, selection and CSV/TSV export are otherwise untouched; accessibility identifiers preserved.</li>
+                    <li><code>PreviewHelper.section/properties/property</code> return the new types.</li>
+                    <li><code>FITScope.xcodeproj</code> hand-edited (the project references files individually — no synchronized groups): added 5 source files + 2 test files with fresh unique IDs, added <code>Metadata</code> groups to the app and test <code>Model</code> groups, and removed the two deleted files from all four locations. <code>plutil -lint</code> passes; ID multiplicities verified.</li>
+                    <li>Tests (19 new): <code>ImageMetadataTests</code> (field mapping, id identity, Codable round-trips) and <code>ImageMetadataFITSTests</code> (per-kind value formatting via <code>FITSValue</code>, dispatch + section/property mapping + data-section rejection via an in-memory FITS file). Existing <code>HeaderExportTests</code> and <code>InfoViewTests</code> updated to the renamed types.</li>
+                </ul>
+                <p><strong>Verification:</strong> green baseline first (478 unit tests). After the change: <code>xcodebuild test -only-testing:FITScopeTests</code> → <strong>497 tests pass, 0 failures</strong>; full-scheme <code>xcodebuild build</code> (app + QuickLook extensions) succeeds. (The <code>FITScopeUITests</code> UI-automation suite fails wholesale in this environment — no UI session — independent of this change.)</p>
+                <p><strong>Automated review loop:</strong> 1 round (converged — an independent fresh-context reviewer reported <em>no</em> Critical/High/Medium findings). It confirmed both <code>id</code> formulas preserved, no row-identity collisions (index unique per section), all callers retargeted, the window value-type change is Codable/Hashable-safe, and the pbxproj is internally consistent. Findings were Low/Info only: (1) Low — the nil-vs-empty <code>id</code> distinction is documented but untested (<strong>test added</strong>); (2) Low — the <code>"Extension: …"</code> title branch is not covered by the adapter tests (<strong>test added</strong>); (3) Info — an inaccurate doc comment in a new test (<strong>fixed</strong>); (4) Info — <code>InfoView</code>/<code>InfoViewTable</code> retain FITS-specific wording/imports and the user-visible "keywords" noun (expected until a non-FITS format reaches the window); (5) Info — the property <code>id</code> formula is now split across two files (inherent to the two-formula design). Items 4 and 5 left as-is for a later milestone.</p>
+                <p><strong>Post-review additions:</strong> per user request, added two tests to <code>ImageMetadataFITSTests</code> — <code>preservesEmptyStringValueIdentity</code> (an empty FITS string <code>''</code> keeps an empty value segment in its <code>id</code>, distinct from the plain init's <code>&lt;nil&gt;</code>, guarding the two-formula contract against drift) and <code>mapsExtensionSection</code> (drives a genuinely parsed <code>IMAGE</code> extension in a synthesized 2-HDU file and asserts the <code>"Extension: IMAGE"</code> title + keyword mapping). Unit total now <strong>499 tests, 0 failures</strong>. Also, per user request, added <code>Sendable</code> to <code>ImageMetadataProperty</code>, <code>ImageMetadataSection</code>, <code>ImageMetadata</code> and <code>FITSImageInfo</code> (compiler-verified under Swift 6; full-scheme build still succeeds).</p>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="review-comments">
+                <ul>
+                    <li>Add the tests for review findings 1 and 2 if they seem necessary. → Done: both added (see Post-review additions above); 499 unit tests pass.</li>
+                    <li>Make the new metadata structs <code>Sendable</code>. → Done: added <code>Sendable</code> to <code>ImageMetadataProperty</code>, <code>ImageMetadataSection</code>, <code>ImageMetadata</code>, and (for a uniform metadata chain) <code>FITSImageInfo</code>. All four are immutable, all-<code>Sendable</code>-member value types, so the conformance is compiler-verified (plain <code>Sendable</code>, not <code>@unchecked</code>). Rationale: Swift 6 language mode is on and public structs don't get implicit <code>Sendable</code>; the codebase already makes comparable snapshots <code>Sendable</code> (<code>FITSPropertySnapshot</code>, <code>FITSMetadata</code>, <code>SessionMetric</code>, …); and Milestone 2's off-main-actor loaders will hand metadata across actors.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- M2 -->

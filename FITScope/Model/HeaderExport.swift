@@ -25,14 +25,14 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// Serializes a file's FITS header keywords to a delimited text table — CSV or
-/// TSV — for export from the headers window.
+/// Serializes an image's metadata to a delimited text table — CSV or TSV — for
+/// export from the headers window.
 ///
-/// Every section (the primary header and any extensions) is included, one row per
-/// keyword, prefixed with its section title so a multi-HDU file stays unambiguous.
-/// The columns mirror the headers table: Section, Index, Name, Kind, Value,
-/// Comment. Fields are escaped per the chosen format so the result opens cleanly
-/// in a spreadsheet.
+/// Every section (for FITS, the primary header and any extensions) is included,
+/// one row per property, prefixed with its section title so a multi-section file
+/// stays unambiguous. The columns mirror the headers table: Section, Index, Name,
+/// Kind, Value, Comment. Fields are escaped per the chosen format so the result
+/// opens cleanly in a spreadsheet.
 public enum HeaderExport
 {
     /// A delimited text format, with its delimiters, file extension and UTI.
@@ -101,25 +101,25 @@ public enum HeaderExport
     /// The column header row, in output order.
     static let columns = [ "Section", "Index", "Name", "Kind", "Value", "Comment" ]
 
-    /// Serializes a file's header keywords to the given format.
+    /// Serializes an image's metadata to the given format.
     ///
     /// - Parameters:
-    ///   - info:   The file's parsed header metadata.
-    ///   - format: The output format.
+    ///   - metadata: The image's metadata.
+    ///   - format:   The output format.
     /// - Returns: The serialized table as a string.
-    public static func export( _ info: FITSImageInfo, as format: Format ) -> String
+    public static func export( _ metadata: ImageMetadata, as format: Format ) -> String
     {
-        Self.export( info.sections, as: format )
+        Self.export( metadata.sections, as: format )
     }
 
-    /// Serializes the given header sections to the given format.
+    /// Serializes the given metadata sections to the given format.
     ///
     /// - Parameters:
     ///   - sections: The sections to export (one section for the displayed section,
     ///               all of them for the whole file).
     ///   - format:   The output format.
     /// - Returns: The serialized table as a string.
-    public static func export( _ sections: [ FITSImageSection ], as format: Format ) -> String
+    public static func export( _ sections: [ ImageMetadataSection ], as format: Format ) -> String
     {
         let header = Self.row( Self.columns, for: format )
 

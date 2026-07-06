@@ -25,57 +25,21 @@
 import Foundation
 import SwiftFITS
 
-/// A display-ready, `Codable` snapshot of a single FITS header keyword.
-///
-/// Flattens a `FITSProperty` into plain strings — the keyword, its value
-/// formatted for display, its type description and comment — so it can populate
-/// a `Table` and travel across SwiftUI's value-based scenes.
-public struct FITSImageProperty: Codable, Hashable, Identifiable
+/// FITS adapter for ``ImageMetadataProperty``: builds a format-neutral display
+/// property from a parsed FITS header keyword, flattening its value into a
+/// display string and describing its value type.
+public extension ImageMetadataProperty
 {
-    /// A stable identity combining the index, name, kind, value and comment, so
-    /// distinct rows never collide even when keywords repeat.
-    public let id: String
-
-    /// The property's position within its section.
-    public let index: Int
-
-    /// The keyword name (e.g. `BITPIX`).
-    public let name: String
-
-    /// A human-readable description of the value's type (logical, integer, …).
-    public let kind: String
-
-    /// The value formatted as a display string, or `""` when absent.
-    public let value: String
-
-    /// The keyword's comment, or `""` when absent.
-    public let comment: String
-
-    /// Builds a display property directly from its display strings, for tests,
-    /// previews and serialization fixtures.
+    /// Builds a display property from a parsed FITS header property.
     ///
-    /// - Parameters:
-    ///   - index:   The property's position within its section.
-    ///   - name:    The keyword name.
-    ///   - kind:    The value-type description.
-    ///   - value:   The display value (`""` when absent).
-    ///   - comment: The comment (`""` when absent).
-    public init( index: Int, name: String, kind: String, value: String, comment: String )
-    {
-        self.index   = index
-        self.name    = name
-        self.kind    = kind
-        self.value   = value
-        self.comment = comment
-        self.id      = "\( index )-\( name )-\( kind )-\( value.isEmpty ? "<nil>" : value )-\( comment.isEmpty ? "<nil>" : comment )"
-    }
-
-    /// Builds a display property from a parsed header property.
+    /// Preserves the exact identity the FITS keyword snapshot used previously:
+    /// the id keeps the value/comment `nil` distinct from an empty string, so an
+    /// undefined-valued keyword never collides with an empty-string one.
     ///
     /// - Parameters:
     ///   - index:    The property's position within its section.
     ///   - property: The parsed FITS header property.
-    public init( index: Int, property: FITSProperty )
+    init( index: Int, property: FITSProperty )
     {
         let value    = Self.stringForPropertyValue( property )
         self.index   = index
@@ -90,7 +54,7 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
     ///
     /// - Parameter property: The header property whose value to format.
     /// - Returns: The formatted value, or `nil` when it cannot be represented.
-    public static func stringForPropertyValue( _ property: FITSProperty ) -> String?
+    static func stringForPropertyValue( _ property: FITSProperty ) -> String?
     {
         switch property.value.kind
         {
@@ -108,7 +72,7 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
     ///
     /// - Parameter value: The value to format.
     /// - Returns: `"T"` / `"F"`, or `nil` when the value is not logical.
-    public static func stringForLogicalValue( _ value: FITSValue ) -> String?
+    static func stringForLogicalValue( _ value: FITSValue ) -> String?
     {
         guard let value = value.logical
         else
@@ -123,7 +87,7 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
     ///
     /// - Parameter value: The value to format.
     /// - Returns: The decimal string, or `nil` when the value is not an integer.
-    public static func stringForIntegerValue( _ value: FITSValue ) -> String?
+    static func stringForIntegerValue( _ value: FITSValue ) -> String?
     {
         guard let value = value.integer
         else
@@ -138,7 +102,7 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
     ///
     /// - Parameter value: The value to format.
     /// - Returns: The formatted string, or `nil` when the value is not a float.
-    public static func stringForFloatValue( _ value: FITSValue ) -> String?
+    static func stringForFloatValue( _ value: FITSValue ) -> String?
     {
         guard let value = value.float
         else
@@ -153,7 +117,7 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
     ///
     /// - Parameter value: The value to format.
     /// - Returns: The underlying string, or `nil` when the value is not a string.
-    public static func stringForStringValue( _ value: FITSValue ) -> String?
+    static func stringForStringValue( _ value: FITSValue ) -> String?
     {
         value.string
     }
@@ -162,7 +126,7 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
     ///
     /// - Parameter value: The value to format (ignored).
     /// - Returns: Always `nil`.
-    public static func stringForUndefinedValue( _ value: FITSValue ) -> String?
+    static func stringForUndefinedValue( _ value: FITSValue ) -> String?
     {
         nil
     }
@@ -171,7 +135,7 @@ public struct FITSImageProperty: Codable, Hashable, Identifiable
     ///
     /// - Parameter value: The value to format.
     /// - Returns: The raw text, or `nil` when the value is not of unknown kind.
-    public static func stringForUnknownValue( _ value: FITSValue ) -> String?
+    static func stringForUnknownValue( _ value: FITSValue ) -> String?
     {
         guard case .unknown( let value ) = value
         else

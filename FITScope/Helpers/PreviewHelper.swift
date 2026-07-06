@@ -161,7 +161,7 @@ public enum PreviewHelper
     ///
     /// - Parameter file: The sample file to inspect.
     /// - Returns: The first section, or `nil` if unavailable.
-    public static func section( file: TestFile ) -> FITSImageSection?
+    public static func section( file: TestFile ) -> ImageMetadataSection?
     {
         self.info( file: file )?.sections.first
     }
@@ -170,7 +170,7 @@ public enum PreviewHelper
     ///
     /// - Parameter file: The sample file to inspect.
     /// - Returns: The properties, or `nil` if unavailable.
-    public static func properties( file: TestFile ) -> [ FITSImageProperty ]?
+    public static func properties( file: TestFile ) -> [ ImageMetadataProperty ]?
     {
         self.section( file: file )?.properties
     }
@@ -179,7 +179,7 @@ public enum PreviewHelper
     ///
     /// - Parameter file: The sample file to inspect.
     /// - Returns: The first property, or `nil` if unavailable.
-    public static func property( file: TestFile ) -> FITSImageProperty?
+    public static func property( file: TestFile ) -> ImageMetadataProperty?
     {
         self.properties( file: file )?.first
     }
