@@ -40,7 +40,7 @@ struct CurvesUnavailableView: View
             Text( "No Image to Adjust" )
                 .font( .headline )
 
-            Text( "Open a FITS file to adjust its tone curve." )
+            Text( "Open an image to adjust its tone curve." )
                 .foregroundStyle( .secondary )
                 .multilineTextAlignment( .center )
         }

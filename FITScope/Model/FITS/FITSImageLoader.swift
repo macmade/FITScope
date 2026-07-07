@@ -28,56 +28,55 @@ import SwiftFITS
 import SwiftUI
 import SwiftUtilities
 
-/// Asynchronously parses a ``FITSDocument`` into a ``FITSImage``, publishing the
-/// result or the failure for a view to observe.
+/// Asynchronously parses a FITS file's bytes into a ``LoadedImage``, publishing
+/// the result or the failure for a view to observe.
 ///
 /// Parsing happens off the main actor; only the `Sendable` metadata and render
 /// input cross back, so the non-`Sendable` `FITSFile` never escapes the
 /// background work.
 @MainActor
-public class FITSImageLoader: ObservableObject
+public class FITSImageLoader: ObservableObject, ImageLoading
 {
     /// The successfully loaded image, or `nil` before loading or after a
     /// failure.
-    @Published public private( set ) var image: FITSImage?
+    @Published public private( set ) var image: LoadedImage?
 
     /// The error from the most recent failed load, or `nil` on success.
     @Published public private( set ) var error: ( any Swift.Error )?
 
-    /// The URL the document was loaded from, retained for metadata.
+    /// Emits the loaded image on every change, bridging the `@Published` ``image``
+    /// projection to the ``ImageLoading`` protocol so it can be observed through
+    /// `any ImageLoading`.
+    public var imagePublisher: AnyPublisher< LoadedImage?, Never >
+    {
+        self.$image.eraseToAnyPublisher()
+    }
+
+    /// The URL the file is (or will be) read from, retained for metadata.
     private let url: URL
 
-    /// The document whose bytes are parsed, when the loader was created from a
-    /// pre-read document. `nil` when the loader reads the URL itself.
-    private let document: FITSDocument?
+    /// The file's raw bytes when supplied already in memory (e.g. by tests). `nil`
+    /// when the loader reads them from ``url`` itself.
+    private let providedData: Data?
 
     /// Forwards the loaded image's change notifications to this object's
     /// observers.
     private var imageObserver: AnyCancellable?
 
-    /// Creates a loader for the given document.
+    /// Creates a loader for the file at the given URL.
     ///
     /// - Parameters:
-    ///   - url:      The URL the document was loaded from.
-    ///   - document: The document holding the raw FITS bytes.
-    public init( url: URL, document: FITSDocument )
+    ///   - url:  The URL the file is (or will be) read from.
+    ///   - data: The file's raw bytes when already in memory; when `nil` (the
+    ///          default) the loader reads them from `url` on load.
+    public init( url: URL, data: Data? = nil )
     {
-        self.url      = url
-        self.document = document
-        self.image    = nil
+        self.url          = url
+        self.providedData = data
+        self.image        = nil
     }
 
-    /// Creates a loader that reads its own bytes from the given URL when loaded.
-    ///
-    /// - Parameter url: The URL to read and parse.
-    public init( url: URL )
-    {
-        self.url      = url
-        self.document = nil
-        self.image    = nil
-    }
-
-    /// Parses the document and publishes the resulting image, or the error on
+    /// Parses the file's bytes and publishes the resulting image, or the error on
     /// failure.
     ///
     /// Successful loads are cached: a repeated call (e.g. a re-triggered
@@ -108,9 +107,9 @@ public class FITSImageLoader: ObservableObject
                         // closure returns rather than living for the window.
                         let data: Data
 
-                        if let document = self.document
+                        if let providedData = self.providedData
                         {
-                            data = document.data
+                            data = providedData
                         }
                         else
                         {
@@ -131,7 +130,7 @@ public class FITSImageLoader: ObservableObject
                         let info        = FITSImageInfo( url: self.url, file: file )
                         let renderInput = Swift.Result
                         {
-                            () -> FITSImageRenderer.RenderInput in
+                            () -> any ImageRenderSource in
 
                             // Build the detection-ready buffer here, while the
                             // non-Sendable file is still in scope; only the
@@ -139,7 +138,7 @@ public class FITSImageLoader: ObservableObject
                             // must not fail the load, so detection is best-effort.
                             let detectionImage = try? FITSImageDecoder.detectionImage( from: file )
 
-                            return try FITSImageRenderer.renderInput( from: file.sections, detectionImage: detectionImage )
+                            return try FITSRenderSource( sections: file.sections, detectionImage: detectionImage )
                         }
 
                         continuation.resume( returning: ( info: info, renderInput: renderInput ) )
@@ -153,8 +152,8 @@ public class FITSImageLoader: ObservableObject
 
             await MainActor.run
             {
-                let renderer       = FITSImageRenderer( input: result.renderInput )
-                let image          = FITSImage( info: result.info, renderer: renderer )
+                let renderer       = ImageRenderer( source: result.renderInput )
+                let image          = LoadedImage( info: result.info, renderer: renderer )
                 self.image         = image
                 self.error         = nil
                 self.imageObserver = image.objectWillChange.sink

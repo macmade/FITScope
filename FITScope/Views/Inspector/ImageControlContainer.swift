@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftFITS
 import SwiftUI
 
 /// A labelled container that stacks a headline above arbitrary control content,

@@ -41,7 +41,7 @@ struct FITSImageLoaderTests
     {
         let url    = TestFixtures.monoImage
         let data   = try Data( contentsOf: url )
-        let loader = FITSImageLoader( url: url, document: FITSDocument( data: data ) )
+        let loader = FITSImageLoader( url: url, data: data )
 
         await loader.load()
 
@@ -54,7 +54,7 @@ struct FITSImageLoaderTests
         #expect( first === second, "a successful load must not be repeated" )
     }
 
-    /// The loader produces a usable `FITSImage` — parsed header info plus a
+    /// The loader produces a usable `LoadedImage` — parsed header info plus a
     /// renderer that renders — built entirely from Sendable values, without the
     /// image retaining the non-Sendable `FITSFile`.
     @Test
@@ -63,13 +63,13 @@ struct FITSImageLoaderTests
     {
         let url    = TestFixtures.monoImage
         let data   = try Data( contentsOf: url )
-        let loader = FITSImageLoader( url: url, document: FITSDocument( data: data ) )
+        let loader = FITSImageLoader( url: url, data: data )
 
         await loader.load()
 
         let image = try #require( loader.image )
 
-        #expect( image.info.sections.isEmpty == false, "the loaded image must carry parsed header info" )
+        #expect( image.metadata.sections.isEmpty == false, "the loaded image must carry parsed header info" )
 
         await image.renderer.render()
 
@@ -89,7 +89,7 @@ struct FITSImageLoaderTests
 
         let image = try #require( loader.image )
 
-        #expect( image.info.sections.isEmpty == false, "the loaded image must carry parsed header info" )
+        #expect( image.metadata.sections.isEmpty == false, "the loaded image must carry parsed header info" )
     }
 
     /// A failed load leaves no image, so the idempotency guard never
@@ -99,7 +99,7 @@ struct FITSImageLoaderTests
     @MainActor
     func failedLoadDoesNotBlockReload() async throws
     {
-        let loader = FITSImageLoader( url: URL( fileURLWithPath: "/dev/null" ), document: FITSDocument( data: Data( "not a FITS file".utf8 ) ) )
+        let loader = FITSImageLoader( url: URL( fileURLWithPath: "/dev/null" ), data: Data( "not a FITS file".utf8 ) )
 
         await loader.load()
 

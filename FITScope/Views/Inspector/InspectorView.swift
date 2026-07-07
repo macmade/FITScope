@@ -30,7 +30,7 @@ import SwiftUI
 public struct InspectorView: View
 {
     /// The image whose renderer/adjustments the controls bind to.
-    @ObservedObject private var image: FITSImage
+    @ObservedObject private var image: LoadedImage
 
     /// The adjustments the controls edit, observed directly so the per-section
     /// reset buttons in the section headers track edits made anywhere (a control,
@@ -46,7 +46,7 @@ public struct InspectorView: View
     /// Creates the inspector.
     ///
     /// - Parameter image: The image to inspect and adjust.
-    public init( image: FITSImage )
+    public init( image: LoadedImage )
     {
         self.image       = image
         self.adjustments = image.renderer.adjustments
@@ -106,7 +106,7 @@ public struct InspectorView: View
                     // The debayer controls only apply to a colour-filter-array
                     // image; a monochrome file has no Bayer pattern to act on, so
                     // the section is hidden entirely for it.
-                    if self.image.info.isColorFilterArray
+                    if self.image.isColorFilterArray
                     {
                         InspectorSectionView(
                             "Debayer",
@@ -190,7 +190,7 @@ public struct InspectorView: View
                     // Saturation only applies to a colour image; a monochrome file
                     // has no colour to scale, so the section is hidden for it (as
                     // with the debayer section).
-                    if self.image.info.isColorFilterArray
+                    if self.image.isColorFilterArray
                     {
                         InspectorSectionView(
                             "Color Balance",

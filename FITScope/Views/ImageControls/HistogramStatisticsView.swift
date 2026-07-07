@@ -62,7 +62,7 @@ public struct HistogramStatisticsView: View
     }
 
     /// The per-channel statistics to display.
-    public let statistics: FITSImageRenderer.HistogramStatistics
+    public let statistics: ImageRenderer.HistogramStatistics
 
     /// Whether to show RGB channels or a single luminance/mono channel.
     public let mode: HistogramControlView.Mode

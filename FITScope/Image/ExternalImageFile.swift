@@ -26,8 +26,8 @@ import CoreGraphics
 import Foundation
 
 /// Writes a rendered image to a temporary lossless TIFF so an external
-/// application can open the *processed* image (as opposed to the original FITS
-/// file).
+/// application can open the *processed* image (as opposed to the original
+/// source file).
 ///
 /// The temp files live in a dedicated subdirectory of the system temporary
 /// directory, and each write clears the previous one, so at most one such file
@@ -42,9 +42,9 @@ public enum ExternalImageFile
     /// The fallback base name used when the source has no usable base name.
     private static let fallbackName = "Image"
 
-    /// The temporary file name for a rendered image, derived from the source
-    /// file's name with a `.tiff` extension (e.g. `M31.fits` → `M31.tiff`).
-    /// Falls back to a generic name when the source has no base name.
+    /// The temporary file name for a rendered image: the source file's base name
+    /// with its extension replaced by `.tiff`. Falls back to a generic name when
+    /// the source has no base name.
     ///
     /// - Parameter source: The source file's name.
     /// - Returns: The temporary file name.

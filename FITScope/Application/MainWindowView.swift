@@ -123,7 +123,7 @@ public struct MainWindowView: View
                         Text( "No File Open" )
                             .font( .title2 ).bold()
 
-                        Text( "Open a FITS file, or drag one here." )
+                        Text( "Open an image, or drag one here." )
                             .foregroundStyle( .secondary )
                     }
                     .frame( maxWidth: .infinity, maxHeight: .infinity )
@@ -306,15 +306,15 @@ public struct MainWindowView: View
     /// - Returns: `true` when at least one file URL was accepted.
     private func handleDrop( providers: [ NSItemProvider ] ) -> Bool
     {
-        let fitsProviders = providers.filter { $0.hasItemConformingToTypeIdentifier( UTType.fileURL.identifier ) }
+        let fileProviders = providers.filter { $0.hasItemConformingToTypeIdentifier( UTType.fileURL.identifier ) }
 
-        guard fitsProviders.isEmpty == false
+        guard fileProviders.isEmpty == false
         else
         {
             return false
         }
 
-        for provider in fitsProviders
+        for provider in fileProviders
         {
             _ = provider.loadObject( ofClass: URL.self )
             {

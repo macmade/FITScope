@@ -32,7 +32,7 @@ import SwiftUI
 /// preferences, then handed to every consumer (the sidebar rows and the canvas).
 /// It owns the trash/close confirmation flow — previously private to
 /// ``FilesSidebarView`` — so a file can be trashed or closed, with the same
-/// warnings, from either menu. Opening the FITS-headers window is not here: it
+/// warnings, from either menu. Opening the metadata window is not here: it
 /// needs the SwiftUI `openWindow` action, so ``FileContextMenu`` handles it.
 @MainActor
 public struct FileActions
@@ -92,7 +92,7 @@ public struct FileActions
         NSWorkspace.shared.activateFileViewerSelecting( [ file.url ] )
     }
 
-    /// Opens the file's original, unmodified FITS file in an external application.
+    /// Opens the file's original, unmodified file in an external application.
     ///
     /// - Parameters:
     ///   - file:        The file to open.
@@ -102,7 +102,7 @@ public struct FileActions
         self.appModel.openOriginalFile( file, with: application )
     }
 
-    /// Opens the file's original FITS file in a user-chosen application.
+    /// Opens the file's original file in a user-chosen application.
     ///
     /// - Parameter file: The file to open.
     public func openOriginalWithOther( _ file: OpenFile )

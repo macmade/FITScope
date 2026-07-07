@@ -28,7 +28,7 @@ import Foundation
 import SwiftUI
 
 /// A single file open in a window: its identity, source URL, and the loader
-/// that parses it into a ``FITSImage``.
+/// that parses it into a ``LoadedImage``.
 ///
 /// Each instance is a distinct entry — opening the same URL twice yields two
 /// independent ``OpenFile`` objects, each with its own renderer and adjustment
@@ -69,8 +69,9 @@ public final class OpenFile: ObservableObject, Identifiable
     /// The source URL of the file.
     public let url: URL
 
-    /// The loader that parses the file into a ``FITSImage``.
-    @Published public private( set ) var loader: FITSImageLoader
+    /// The loader that parses the file into a ``LoadedImage``, selected by the
+    /// file's type through ``ImageLoader``.
+    @Published public private( set ) var loader: any ImageLoading
 
     /// A small, downscaled preview of the rendered image for the sidebar, or
     /// `nil` before one has been generated.
@@ -118,7 +119,7 @@ public final class OpenFile: ObservableObject, Identifiable
     public init( url: URL )
     {
         self.url            = url
-        self.loader         = FITSImageLoader( url: url )
+        self.loader         = ImageLoader.loader( for: url )
         self.loaderObserver = self.loader.objectWillChange.sink
         {
             [ weak self ] _ in self?.objectWillChange.send()
@@ -128,10 +129,10 @@ public final class OpenFile: ObservableObject, Identifiable
         // the loaded image's renderer as it appears (and again after a reload).
         // `$result` only fires on a successful commit, so a failed render keeps
         // the last good thumbnail.
-        self.thumbnailObserver = self.loader.$image
+        self.thumbnailObserver = self.loader.imagePublisher
             .map
             {
-                image -> AnyPublisher< FITSImageRenderer.Result?, Never > in
+                image -> AnyPublisher< ImageRenderer.Result?, Never > in
 
                 guard let renderer = image?.renderer
                 else
@@ -156,7 +157,7 @@ public final class OpenFile: ObservableObject, Identifiable
     }
 
     /// The loaded image, or `nil` before loading or after a failure.
-    public var image: FITSImage?
+    public var image: LoadedImage?
     {
         self.loader.image
     }
@@ -351,7 +352,7 @@ public final class OpenFile: ObservableObject, Identifiable
 
     /// Copies the original, unmodified file to a destination, byte for byte.
     ///
-    /// This is the "Save As…" action: it duplicates the source FITS file exactly,
+    /// This is the "Save As…" action: it duplicates the source file exactly,
     /// with no re-encoding or processing, so the copy is identical to what was
     /// opened. An existing file at the destination is replaced (the save panel
     /// has already confirmed the overwrite with the user). Copying a file onto

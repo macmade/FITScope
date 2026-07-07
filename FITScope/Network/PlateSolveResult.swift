@@ -117,7 +117,7 @@ public struct PlateSolveResult: Sendable
 
     /// The full world-coordinate system parsed from the solved `wcs.fits`, or
     /// `nil` when it could not be downloaded or parsed.
-    public let wcs: FITSMetadata?
+    public let wcs: WorldCoordinateSystem?
 
     /// The public results page for this solve on the service, suitable for
     /// opening in a browser, or `nil` when it cannot be formed.
@@ -132,7 +132,7 @@ public struct PlateSolveResult: Sendable
     ///   - annotations:    The identified objects with their image positions.
     ///   - wcs:            The parsed WCS, if available.
     ///   - resultsURL:     The public results page, if available.
-    public init( jobID: Int, calibration: Calibration, objectsInField: [ String ], annotations: [ Annotation ] = [], wcs: FITSMetadata?, resultsURL: URL? )
+    public init( jobID: Int, calibration: Calibration, objectsInField: [ String ], annotations: [ Annotation ] = [], wcs: WorldCoordinateSystem?, resultsURL: URL? )
     {
         self.jobID          = jobID
         self.calibration    = calibration

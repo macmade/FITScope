@@ -116,7 +116,7 @@ public enum PreviewHelper
         return FITSImageInfo( url: url, file: file )
     }
 
-    /// Builds a ``FITSImage`` (header info plus a renderer) for the given sample
+    /// Builds a ``LoadedImage`` (header info plus a renderer) for the given sample
     /// file, for previewing views that take a loaded image. The renderer has not
     /// rendered yet; call `render()` from the preview's `task` to populate its
     /// histogram and statistics.
@@ -124,7 +124,7 @@ public enum PreviewHelper
     /// - Parameter file: The sample file to build an image for.
     /// - Returns: The image, or `nil` if the file is missing or unparsable.
     @MainActor
-    public static func image( file: TestFile ) -> FITSImage?
+    public static func image( file: TestFile ) -> LoadedImage?
     {
         guard let url      = self.url( file: file ),
               let fitsFile = self.file( file: file )
@@ -134,9 +134,9 @@ public enum PreviewHelper
         }
 
         let info     = FITSImageInfo( url: url, file: fitsFile )
-        let renderer = FITSImageRenderer( file: fitsFile )
+        let renderer = ImageRenderer( file: fitsFile )
 
-        return FITSImage( info: info, renderer: renderer )
+        return LoadedImage( info: info, renderer: renderer )
     }
 
     /// Builds an ``OpenFile`` for the given sample file, for previewing views
@@ -188,21 +188,21 @@ public enum PreviewHelper
     /// for previewing histogram views without rendering a real image.
     ///
     /// - Returns: A histogram with both RGB and luminance channels populated.
-    public static func histogram() -> FITSImageRenderer.Histogram
+    public static func histogram() -> ImageRenderer.Histogram
     {
         let bytes     = self.generateRandomRGBData( count: 1000 )
         let rgb       = Histogram( bytes: bytes, channels: 3, mode: .rgb )
         let luminance = Histogram( bytes: bytes, channels: 3, mode: .luminance )
         let mono      = Histogram( bytes: bytes, channels: 3, mode: .mono )
 
-        return FITSImageRenderer.Histogram( rgb: rgb, luminance: luminance, mono: mono, isMono: false )
+        return ImageRenderer.Histogram( rgb: rgb, luminance: luminance, mono: mono, isMono: false )
     }
 
     /// Builds synthetic per-channel histogram statistics from the same random
     /// data as ``histogram()``, for previewing statistics views.
     ///
     /// - Returns: Statistics for the red, green, blue and luminance channels.
-    public static func statistics() -> FITSImageRenderer.HistogramStatistics
+    public static func statistics() -> ImageRenderer.HistogramStatistics
     {
         let histogram = self.histogram()
         let red       = HistogramStatistics( data: histogram.rgb.data[ 0 ] )
@@ -211,7 +211,7 @@ public enum PreviewHelper
         let luminance = HistogramStatistics( data: histogram.luminance.data[ 0 ] )
         let mono      = HistogramStatistics( data: histogram.mono.data[ 0 ] )
 
-        return FITSImageRenderer.HistogramStatistics(
+        return ImageRenderer.HistogramStatistics(
             red:       red,
             green:     green,
             blue:      blue,

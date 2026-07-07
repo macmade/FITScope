@@ -36,9 +36,9 @@ import Testing
 struct NorthOverlayTests
 {
     /// Builds a WCS metadata from raw keyword/value pairs.
-    private static func wcs( _ pairs: [ String: Double ] ) -> FITSMetadata
+    private static func wcs( _ pairs: [ String: Double ] ) -> WorldCoordinateSystem?
     {
-        FITSMetadata( properties: pairs.map { FITSPropertySnapshot( name: $0.key, value: .float( $0.value ) ) } )
+        FITSMetadata( properties: pairs.map { FITSPropertySnapshot( name: $0.key, value: .float( $0.value ) ) } ).worldCoordinateSystem
     }
 
     /// Whether two on-screen direction vectors point the same way, within a small

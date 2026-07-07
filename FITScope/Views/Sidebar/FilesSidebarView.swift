@@ -75,7 +75,7 @@ public struct FilesSidebarView: View
                 }
                 .buttonStyle( .plain )
                 .foregroundStyle( .secondary )
-                .help( "Open FITS Files…" )
+                .help( "Open Images…" )
                 .accessibilityIdentifier( AccessibilityIdentifier.FilesSidebarView.addButton )
             }
             .padding( .horizontal, 14 )
@@ -179,7 +179,7 @@ public struct FilesSidebarView: View
         )
     }
 
-    /// Presents an open panel and opens the chosen FITS files into the window.
+    /// Presents an open panel and opens the chosen image files into the window.
     ///
     /// Reuses ``AppModel/runOpenPanel()`` so the Open panel is built in one place
     /// rather than duplicated per call site.

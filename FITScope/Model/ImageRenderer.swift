@@ -22,12 +22,11 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftFITS
 import SwiftPixel
 import SwiftUI
 import SwiftUtilities
 
-/// Renders a FITS image HDU into a displayable image with histograms, applying
+/// Renders an image (via its ``ImageRenderSource``) into a displayable image with histograms, applying
 /// the user's ``ImageAdjustments`` and re-rendering on demand.
 ///
 /// Rendering runs off the main actor and is generation-guarded so that rapid
@@ -35,7 +34,7 @@ import SwiftUtilities
 /// render keeps the last good image so controls stay usable while the user
 /// adjusts away from a bad parameter.
 @MainActor
-public class FITSImageRenderer: ObservableObject
+public class ImageRenderer: ObservableObject
 {
     /// The output of a successful render: the image plus its histograms and
     /// statistics.
@@ -82,12 +81,12 @@ public class FITSImageRenderer: ObservableObject
         /// monochrome images in place of the redundant RGB triple.
         public let mono: SwiftPixel.Histogram
 
-        /// Whether the rendered image is monochrome. The pipeline always emits a
-        /// 3-channel buffer (a colour-filter-array image is demosaiced to RGB,
-        /// anything else is replicated from one channel to RGB), so this can't be
-        /// read back from the channel count — it records whether debayering ran.
-        /// When `true`, the inspector presents ``mono`` rather than
-        /// ``rgb``/``luminance``.
+        /// Whether the source image was monochrome (a mono input format). The
+        /// pipeline always emits a 3-channel buffer (a colour-filter-array image is
+        /// demosaiced to RGB, anything else is replicated from one channel to RGB),
+        /// so this can't be read back from the channel count — it records whether
+        /// the source was monochrome, not whether debayering ran. When `true`, the
+        /// inspector presents ``mono`` rather than ``rgb``/``luminance``.
         public let isMono: Bool
 
         public static func == ( lhs: Histogram, rhs: Histogram ) -> Bool
@@ -124,38 +123,6 @@ public class FITSImageRenderer: ObservableObject
 
         /// Per-channel statistics derived from the histograms.
         public let statistics: HistogramStatistics
-    }
-
-    /// The image HDU's bytes and header properties to render.
-    ///
-    /// A `Sendable` value type so it can cross the render concurrency boundary
-    /// without sharing the non-`Sendable` `FITSFile`.
-    public struct RenderInput: Sendable
-    {
-        /// The image HDU's raw pixel bytes.
-        public let data: Data
-
-        /// The owning header's property snapshots, used to interpret the bytes.
-        public let properties: [ FITSPropertySnapshot ]
-
-        /// The detection-ready single-channel linear image — demosaiced to a
-        /// luminance channel for one-shot-colour frames — built once at load time
-        /// via `SwiftAstro.FITSImageDecoder`. `nil` when no detection input is
-        /// needed (e.g. the QuickLook extensions) or it could not be decoded.
-        public let detectionImage: PixelBuffer?
-
-        /// Creates a render input.
-        ///
-        /// - Parameters:
-        ///   - data:           The image HDU's raw pixel bytes.
-        ///   - properties:     The owning header's property snapshots.
-        ///   - detectionImage: The detection-ready single-channel image, or `nil`.
-        public init( data: Data, properties: [ FITSPropertySnapshot ], detectionImage: PixelBuffer? = nil )
-        {
-            self.data           = data
-            self.properties     = properties
-            self.detectionImage = detectionImage
-        }
     }
 
     /// The most recent successful render, or `nil` before the first render.
@@ -200,10 +167,10 @@ public class FITSImageRenderer: ObservableObject
     /// How long to coalesce rapid re-render requests before rendering.
     private static let reRenderDebounce = Duration.milliseconds( 150 )
 
-    /// The render input, or the error captured while extracting it from the
+    /// The render source, or the error captured while extracting it from the
     /// file. Stored as a `Result` so an extraction failure surfaces at render
     /// time rather than at construction.
-    private let input: Swift.Result< RenderInput, any Error >
+    private let source: Swift.Result< any ImageRenderSource, any Error >
 
     /// The in-flight debounced re-render, cancelled when a newer one is
     /// scheduled.
@@ -213,53 +180,21 @@ public class FITSImageRenderer: ObservableObject
     /// start; only the most recently claimed render may commit its outcome.
     private var currentRenderGeneration = 0
 
-    /// Creates a renderer from a render input or the error captured while
+    /// Creates a renderer from a render source or the error captured while
     /// extracting it.
     ///
-    /// - Parameter input: The render input, or the extraction failure.
-    public init( input: Swift.Result< RenderInput, any Error > )
+    /// - Parameter source: The render source, or the extraction failure.
+    public init( source: Swift.Result< any ImageRenderSource, any Error > )
     {
-        self.input = input
+        self.source = source
     }
 
-    /// Creates a renderer from an already-extracted render input.
+    /// Creates a renderer from an already-extracted render source.
     ///
-    /// - Parameter input: The image HDU's bytes and header properties.
-    public convenience init( input: RenderInput )
+    /// - Parameter source: The render source.
+    public convenience init( source: any ImageRenderSource )
     {
-        self.init( input: .success( input ) )
-    }
-
-    /// Creates a renderer from a parsed file, extracting the first renderable
-    /// image HDU. Any extraction failure is captured and surfaces at render
-    /// time.
-    ///
-    /// - Parameter file: The parsed FITS file.
-    public convenience init( file: FITSFile )
-    {
-        self.init( input: Swift.Result { try FITSImageRenderer.renderInput( from: file.sections ) } )
-    }
-
-    /// Selects the first renderable image HDU and snapshots it into a Sendable
-    /// ``RenderInput``.
-    ///
-    /// The HDU-selection rule lives in ``FITSPreviewRenderer/imageHDU(from:)``
-    /// so the app's render path and the QuickLook extensions pick the same image
-    /// HDU; this only wraps the result in the Sendable ``RenderInput``.
-    ///
-    /// - Parameters:
-    ///   - sections:       The file's sections, in file order.
-    ///   - detectionImage: The detection-ready single-channel image to carry
-    ///                     alongside the render bytes, or `nil` when star
-    ///                     detection is not needed for this input.
-    /// - Returns: The data bytes, owning-header property snapshots and optional
-    ///   detection image.
-    /// - Throws: ``RuntimeError`` when the file contains no image data section.
-    nonisolated static func renderInput( from sections: [ FITSSection ], detectionImage: PixelBuffer? = nil ) throws -> RenderInput
-    {
-        let hdu = try FITSPreviewRenderer.imageHDU( from: sections )
-
-        return RenderInput( data: hdu.data, properties: hdu.properties, detectionImage: detectionImage )
+        self.init( source: .success( source ) )
     }
 
     /// Renders the image with the current adjustments and commits the result.
@@ -273,7 +208,7 @@ public class FITSImageRenderer: ObservableObject
 
         do
         {
-            let input          = try self.input.get()
+            let source         = try self.source.get()
             let settings       = self.adjustments.settings
 
             // The histogram's original is orientation-independent, so it is computed
@@ -298,8 +233,8 @@ public class FITSImageRenderer: ObservableObject
                         // pixel-for-pixel with the processed result for the
                         // before/after comparison.
                         let originalSettings = ImageProcessor.Settings( orientation: settings.orientation )
-                        let result           = try Self.makeResult( input: input, settings: settings )
-                        let original         = needsOriginal ? try Self.makeResult( input: input, settings: originalSettings ) : nil
+                        let result           = try Self.makeResult( source: source, settings: settings )
+                        let original         = needsOriginal ? try Self.makeResult( source: source, settings: originalSettings ) : nil
 
                         continuation.resume( returning: ( result, original ) )
                     }
@@ -337,17 +272,18 @@ public class FITSImageRenderer: ObservableObject
     /// statistics. Pure and `nonisolated` so it can run off the main actor.
     ///
     /// - Parameters:
-    ///   - input:    The image HDU bytes and header properties.
+    ///   - source:   The render source to render.
     ///   - settings: The render settings to apply.
     /// - Returns: The rendered image with its histograms and statistics.
     /// - Throws: Any error thrown by the pixel pipeline.
-    private nonisolated static func makeResult( input: RenderInput, settings: ImageProcessor.Settings ) throws -> Result
+    private nonisolated static func makeResult( source: any ImageRenderSource, settings: ImageProcessor.Settings ) throws -> Result
     {
-        let render             = try ImageProcessor.render( data: input.data, properties: input.properties, settings: settings )
-        let rgbHistogram       = Benchmark.run( label: "Histogram (RGB)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .rgb ) }
-        let luminanceHistogram = Benchmark.run( label: "Histogram (L)",   output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .luminance ) }
-        let monoHistogram      = Benchmark.run( label: "Histogram (Mono)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: render.channels, mode: .mono ) }
-        let histogram          = Histogram( rgb: rgbHistogram, luminance: luminanceHistogram, mono: monoHistogram, isMono: render.isMonochrome )
+        let render             = try source.makeResult( settings: settings )
+        let channels           = render.outputPixelFormat.channels
+        let rgbHistogram       = Benchmark.run( label: "Histogram (RGB)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .rgb ) }
+        let luminanceHistogram = Benchmark.run( label: "Histogram (L)",   output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .luminance ) }
+        let monoHistogram      = Benchmark.run( label: "Histogram (Mono)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .mono ) }
+        let histogram          = Histogram( rgb: rgbHistogram, luminance: luminanceHistogram, mono: monoHistogram, isMono: render.inputPixelFormat == .mono )
         let statistics         = HistogramStatistics(
             red:       Benchmark.run( label: "Statistics (R)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 0 ] ) },
             green:     Benchmark.run( label: "Statistics (G)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 1 ] ) },
@@ -426,13 +362,13 @@ public class FITSImageRenderer: ObservableObject
         }
     }
 
-    /// Returns the render input (HDU bytes and header snapshots) for read-only
-    /// uses such as decoding the raw value under the cursor.
+    /// Returns the render source for read-only uses such as decoding the raw value
+    /// under the cursor, or reaching the detection image for star detection.
     ///
-    /// - Returns: The render input.
+    /// - Returns: The render source.
     /// - Throws: The extraction error captured at construction, if any.
-    public func renderInputSnapshot() throws -> RenderInput
+    public func renderSourceSnapshot() throws -> any ImageRenderSource
     {
-        try self.input.get()
+        try self.source.get()
     }
 }

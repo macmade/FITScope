@@ -134,23 +134,19 @@ struct ImageAdjustmentsTests
 
         #expect( adjustments.settings.config( scale: 1, offset: 0, headerPattern: nil ).curves == .uniform( .init( points: [ .init( x: 0, y: 0 ), .init( x: 0.5, y: 0.7 ), .init( x: 1, y: 1 ) ] ) ) )
 
-        // The default .auto debayer selection uses the header pattern.
-        let debayer = try #require( config.debayer )
-
-        #expect( debayer.pattern == .rggb )
-        #expect( debayer.mode    == .bilinear )
+        // The default .auto debayer selection uses the header pattern, giving a
+        // CFA input format the pipeline demosaics.
+        #expect( config.inputFormat == .cfa( pattern: .rggb, mode: .bilinear ) )
 
         // A changed setting flows into a freshly built config, and an explicit
         // debayer pattern overrides the header.
         adjustments.stretch = .arcsinh( 12 )
         adjustments.debayer = .pattern( .grbg )
 
-        let updated        = adjustments.settings.config( scale: 1, offset: 0, headerPattern: .bggr )
-        let updatedDebayer = try #require( updated.debayer )
+        let updated = adjustments.settings.config( scale: 1, offset: 0, headerPattern: .bggr )
 
-        #expect( updated.stretch        == .arcsinh( 12 ) )
-        #expect( updatedDebayer.pattern == .grbg )
-        #expect( updatedDebayer.mode    == .bilinear )
+        #expect( updated.stretch     == .arcsinh( 12 ) )
+        #expect( updated.inputFormat == .cfa( pattern: .grbg, mode: .bilinear ) )
     }
 
     /// `reset()` restores every adjustment to its default in one place, so the

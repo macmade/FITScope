@@ -35,9 +35,9 @@ struct EquatorialGridOverlayTests
 {
     /// A full WCS (reference point, reference pixel, and CD matrix) sufficient for
     /// a projection.
-    private static func wcs() -> FITSMetadata
+    private static func wcs() -> WorldCoordinateSystem?
     {
-        FITSMetadata( properties: [ "CRVAL1": 10.0, "CRVAL2": 20, "CRPIX1": 100, "CRPIX2": 100, "CD1_1": -0.001, "CD1_2": 0, "CD2_1": 0, "CD2_2": 0.001 ].map { FITSPropertySnapshot( name: $0.key, value: .float( $0.value ) ) } )
+        FITSMetadata( properties: [ "CRVAL1": 10.0, "CRVAL2": 20, "CRPIX1": 100, "CRPIX2": 100, "CD1_1": -0.001, "CD1_2": 0, "CD2_1": 0, "CD2_2": 0.001 ].map { FITSPropertySnapshot( name: $0.key, value: .float( $0.value ) ) } ).worldCoordinateSystem
     }
 
     @Test
@@ -53,7 +53,7 @@ struct EquatorialGridOverlayTests
         // unavailable and its toggle is hidden.
         let metadata = FITSMetadata( properties: [ "CD1_1", "CD1_2", "CD2_1", "CD2_2" ].map { FITSPropertySnapshot( name: $0, value: .float( 0.001 ) ) } )
 
-        #expect( EquatorialGridOverlay( wcs: metadata ).isAvailable == false )
+        #expect( EquatorialGridOverlay( wcs: metadata.worldCoordinateSystem ).isAvailable == false )
     }
 
     @Test

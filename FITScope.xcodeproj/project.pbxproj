@@ -19,8 +19,8 @@
 		056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
 		056E5C522DDF1356003254C7 /* SwiftFITS.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
-		0579B6122DF220D1002FDD47 /* FITSImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */; };
-		0579B6152DF23DB7002FDD47 /* FITSImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6142DF23DB3002FDD47 /* FITSImage.swift */; };
+		0579B6122DF220D1002FDD47 /* ImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6112DF220CD002FDD47 /* ImageRenderer.swift */; };
+		0579B6152DF23DB7002FDD47 /* LoadedImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6142DF23DB3002FDD47 /* LoadedImage.swift */; };
 		0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */; };
 		0579B61C2DF245E2002FDD47 /* FITSImageInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B61B2DF245DE002FDD47 /* FITSImageInfo.swift */; };
 		05EE1000000000000000FB01 /* ImageMetadataProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA01 /* ImageMetadataProperty.swift */; };
@@ -28,6 +28,15 @@
 		05EE1000000000000000FB03 /* ImageMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA03 /* ImageMetadata.swift */; };
 		05EE1000000000000000FB04 /* ImageMetadataProperty+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA04 /* ImageMetadataProperty+FITS.swift */; };
 		05EE1000000000000000FB05 /* ImageMetadataSection+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA05 /* ImageMetadataSection+FITS.swift */; };
+		05DD1000000000000000FB01 /* ImageLoading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA01 /* ImageLoading.swift */; };
+		05DD1000000000000000FB02 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA02 /* ImageLoader.swift */; };
+		05DD1000000000000000FB07 /* UnsupportedImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA05 /* UnsupportedImageLoader.swift */; };
+		05DD1000000000000000FB08 /* ImageLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA06 /* ImageLoaderTests.swift */; };
+		05DD1000000000000000FB03 /* LoadedImage+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA03 /* LoadedImage+FITS.swift */; };
+		05DD1000000000000000FB0B /* ImageInformation+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA09 /* ImageInformation+FITS.swift */; };
+		05DD1000000000000000FB0C /* WCSProjection+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0A /* WCSProjection+FITS.swift */; };
+		05DD1000000000000000FB0D /* ImageRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0B /* ImageRenderSource.swift */; };
+		05DD1000000000000000FB0E /* FITSRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0C /* FITSRenderSource.swift */; };
 		05EE1000000000000000FB11 /* ImageMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA11 /* ImageMetadataTests.swift */; };
 		05EE1000000000000000FB12 /* ImageMetadataFITSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */; };
 		0579B6222DF24C33002FDD47 /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6212DF24C31002FDD47 /* InfoView.swift */; };
@@ -51,6 +60,9 @@
 		05A1B2C30000000000000B03 /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
 		05A1B2C30000000000000B04 /* FITSPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */; };
 		05A1B2C30000000000000B05 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8E2DE0C41800550A87 /* ImageProcessor.swift */; };
+		05DD1000000000000000FB04 /* RenderResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA04 /* RenderResult.swift */; };
+		05DD1000000000000000FB05 /* RenderResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA04 /* RenderResult.swift */; };
+		05DD1000000000000000FB06 /* RenderResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA04 /* RenderResult.swift */; };
 		05A1B2C30000000000000B06 /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
 		05A1B2C30000000000000B07 /* ImageExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000007 /* ImageExporter.swift */; };
 		05A1B2C30000000000000B08 /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */; };
@@ -87,7 +99,6 @@
 		05D710C62DF2007D00CE32E3 /* FITScopeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */; };
 		05D710CE2DF2012500CE32E3 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710CC2DF2012500CE32E3 /* AboutView.swift */; };
 		05D710D02DF201C300CE32E3 /* NSBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710CF2DF201C100CE32E3 /* NSBundle.swift */; };
-		05D710D22DF2049B00CE32E3 /* FITSDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710D12DF2049800CE32E3 /* FITSDocument.swift */; };
 		05DC79A12DF2F82A003E2AFA /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DC79A02DF2F827003E2AFA /* ErrorView.swift */; };
 		05DC79A32DF2FCF8003E2AFA /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DC79A22DF2FCF4003E2AFA /* LoadingView.swift */; };
 		05DC79A72DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits in Resources */ = {isa = PBXBuildFile; fileRef = 05DC79A62DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits */; };
@@ -96,7 +107,7 @@
 		05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A0E1 /* AppModelTests.swift */; };
 		05FB1000000000000000B002 /* FITSTestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A002 /* FITSTestData.swift */; };
 		05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A003 /* ImageProcessorTests.swift */; };
-		05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A004 /* FITSImageRendererTests.swift */; };
+		05FB1000000000000000B004 /* ImageRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A004 /* ImageRendererTests.swift */; };
 		05FB1000000000000000B005 /* ImageAdjustmentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */; };
 		05FB1000000000000000B006 /* StretchControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A006 /* StretchControlViewTests.swift */; };
 		05FB1000000000000000B008 /* WhiteBalanceControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A008 /* WhiteBalanceControlViewTests.swift */; };
@@ -232,6 +243,9 @@
 		96EA446873D37147B8016912 /* OpenMeteoError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5027679A560AAAF4691B21F0 /* OpenMeteoError.swift */; };
 		96F3B0118BB78136877CC208 /* OpenFileRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 428EA4C0C0663914C3C8F4C4 /* OpenFileRowView.swift */; };
 		9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7410133087261AF83595054 /* ImageInformation.swift */; };
+		05DD1000000000000000FB09 /* Coordinate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA07 /* Coordinate.swift */; };
+		05DD1000000000000000FB30 /* CDMatrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA30 /* CDMatrix.swift */; };
+		05DD1000000000000000FB0A /* WorldCoordinateSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA08 /* WorldCoordinateSystem.swift */; };
 		9A3A3D353F14A85800BD349D /* StatisticsFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0752B6126A583839BB8F8BEF /* StatisticsFormatTests.swift */; };
 		9A6163E1CF83BC9A5A891040 /* OverlayAppearanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9301C5FD2FCFBAC78AAA11 /* OverlayAppearanceTests.swift */; };
 		9B163B795274560E48F04CBF /* WCSProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20678C2224440A7F70B42B87 /* WCSProjectionTests.swift */; };
@@ -390,6 +404,7 @@
 		0457D28C6A4D379B1D149226 /* SunTwilightView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SunTwilightView.swift; sourceTree = "<group>"; };
 		050F383F2DEEC2F000E84F97 /* SwiftPixel.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftPixel.xcodeproj; path = Submodules/SwiftAstro/Submodules/SwiftPixel/SwiftPixel.xcodeproj; sourceTree = "<group>"; };
 		05206B8E2DE0C41800550A87 /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
+		05DD1000000000000000FA04 /* RenderResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderResult.swift; sourceTree = "<group>"; };
 		0524AD7D2DF3450200180358 /* HistogramStatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramStatisticsView.swift; sourceTree = "<group>"; };
 		0524AD802DF3457C00180358 /* HistogramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramView.swift; sourceTree = "<group>"; };
 		05398CE22DEECF4F005904EC /* SwiftUtilities.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SwiftUtilities.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -452,8 +467,8 @@
 		056E5C3F2DDF104D003254C7 /* SwiftFITS.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftFITS.xcodeproj; path = Submodules/SwiftAstro/Submodules/SwiftFITS/SwiftFITS.xcodeproj; sourceTree = "<group>"; };
 		056E5C4E2DDF130E003254C7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		056E5C642DDFA8EB003254C7 /* UTType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UTType.swift; sourceTree = "<group>"; };
-		0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageRenderer.swift; sourceTree = "<group>"; };
-		0579B6142DF23DB3002FDD47 /* FITSImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImage.swift; sourceTree = "<group>"; };
+		0579B6112DF220CD002FDD47 /* ImageRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRenderer.swift; sourceTree = "<group>"; };
+		0579B6142DF23DB3002FDD47 /* LoadedImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadedImage.swift; sourceTree = "<group>"; };
 		0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageLoader.swift; sourceTree = "<group>"; };
 		0579B61B2DF245DE002FDD47 /* FITSImageInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageInfo.swift; sourceTree = "<group>"; };
 		05EE1000000000000000FA01 /* ImageMetadataProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataProperty.swift; sourceTree = "<group>"; };
@@ -461,6 +476,15 @@
 		05EE1000000000000000FA03 /* ImageMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadata.swift; sourceTree = "<group>"; };
 		05EE1000000000000000FA04 /* ImageMetadataProperty+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataProperty+FITS.swift"; sourceTree = "<group>"; };
 		05EE1000000000000000FA05 /* ImageMetadataSection+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataSection+FITS.swift"; sourceTree = "<group>"; };
+		05DD1000000000000000FA01 /* ImageLoading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoading.swift; sourceTree = "<group>"; };
+		05DD1000000000000000FA02 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
+		05DD1000000000000000FA05 /* UnsupportedImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsupportedImageLoader.swift; sourceTree = "<group>"; };
+		05DD1000000000000000FA06 /* ImageLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoaderTests.swift; sourceTree = "<group>"; };
+		05DD1000000000000000FA03 /* LoadedImage+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LoadedImage+FITS.swift"; sourceTree = "<group>"; };
+		05DD1000000000000000FA09 /* ImageInformation+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageInformation+FITS.swift"; sourceTree = "<group>"; };
+		05DD1000000000000000FA0A /* WCSProjection+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WCSProjection+FITS.swift"; sourceTree = "<group>"; };
+		05DD1000000000000000FA0B /* ImageRenderSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRenderSource.swift; sourceTree = "<group>"; };
+		05DD1000000000000000FA0C /* FITSRenderSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSRenderSource.swift; sourceTree = "<group>"; };
 		05EE1000000000000000FA11 /* ImageMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataTests.swift; sourceTree = "<group>"; };
 		05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataFITSTests.swift; sourceTree = "<group>"; };
 		0579B6212DF24C31002FDD47 /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
@@ -505,7 +529,6 @@
 		05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeApp.swift; sourceTree = "<group>"; };
 		05D710CC2DF2012500CE32E3 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		05D710CF2DF201C100CE32E3 /* NSBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSBundle.swift; sourceTree = "<group>"; };
-		05D710D12DF2049800CE32E3 /* FITSDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSDocument.swift; sourceTree = "<group>"; };
 		05DC79A02DF2F827003E2AFA /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
 		05DC79A22DF2FCF4003E2AFA /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		05DC79A62DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits */ = {isa = PBXFileReference; lastKnownFileType = text; name = "2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits"; path = "Submodules/SwiftAstro/Submodules/SwiftFITS/Test Files/2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits"; sourceTree = SOURCE_ROOT; };
@@ -514,7 +537,7 @@
 		05FB0B01000000000000FB01 /* BannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerView.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A002 /* FITSTestData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSTestData.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A003 /* ImageProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessorTests.swift; sourceTree = "<group>"; };
-		05FB1000000000000000A004 /* FITSImageRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageRendererTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A004 /* ImageRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRendererTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageAdjustmentsTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A006 /* StretchControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchControlViewTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A008 /* WhiteBalanceControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteBalanceControlViewTests.swift; sourceTree = "<group>"; };
@@ -688,6 +711,9 @@
 		E0A86A0DF44489494DEF2C5C /* StarDetection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarDetection.swift; sourceTree = "<group>"; };
 		E1F91AFD2DCC5C268AFBC52F /* SessionMetricSeriesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionMetricSeriesTests.swift; sourceTree = "<group>"; };
 		E7410133087261AF83595054 /* ImageInformation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInformation.swift; sourceTree = "<group>"; };
+		05DD1000000000000000FA07 /* Coordinate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinate.swift; sourceTree = "<group>"; };
+		05DD1000000000000000FA30 /* CDMatrix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CDMatrix.swift; sourceTree = "<group>"; };
+		05DD1000000000000000FA08 /* WorldCoordinateSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldCoordinateSystem.swift; sourceTree = "<group>"; };
 		E777059D8151CFA76FB977B9 /* AppDelegateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegateTests.swift; sourceTree = "<group>"; };
 		EB3715CBB030149A29AA873A /* StarsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarsView.swift; sourceTree = "<group>"; };
 		EB9DD79B3B4350B42B48B2B2 /* SegmentedControlView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SegmentedControlView.swift; sourceTree = "<group>"; };
@@ -792,6 +818,7 @@
 			isa = PBXGroup;
 			children = (
 				05206B8E2DE0C41800550A87 /* ImageProcessor.swift */,
+				05DD1000000000000000FA04 /* RenderResult.swift */,
 				05A1B2C30000000000000007 /* ImageExporter.swift */,
 				05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */,
 				05A1B2C300000000000000F1 /* RenderedImageShareItem.swift */,
@@ -1013,12 +1040,20 @@
 			children = (
 				05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */,
 				9696A9D7B24CC9A58998C7AC /* OpenFile.swift */,
+				0579B6142DF23DB3002FDD47 /* LoadedImage.swift */,
+				0579B6112DF220CD002FDD47 /* ImageRenderer.swift */,
+				05DD1000000000000000FA0B /* ImageRenderSource.swift */,
+				9D588747A79BD6F05EC2CA0F /* WCSProjection.swift */,
 				92EEE3EEA80B1B8809982F35 /* WindowModel.swift */,
 				0E6A0CA25BD529178F2F9432 /* CursorReadout.swift */,
 				E7410133087261AF83595054 /* ImageInformation.swift */,
+				05DD1000000000000000FA07 /* Coordinate.swift */,
+				05DD1000000000000000FA30 /* CDMatrix.swift */,
+				05DD1000000000000000FA08 /* WorldCoordinateSystem.swift */,
 				017FF3966AE1E425A510642E /* DropAcceptance.swift */,
 				B3FD345BB5B137185B9B9D72 /* FITS */,
 				05EE1000000000000000FC01 /* Metadata */,
+				05DD1000000000000000FC01 /* Loading */,
 				C312A09479352778259D365A /* Preferences */,
 				209B69186583B9C65F810C23 /* HistogramMode.swift */,
 				C9BD5E1A3FC040B4E14E8824 /* HistogramViewOptions.swift */,
@@ -1140,7 +1175,6 @@
 		05D710C52DF2007D00CE32E3 /* Application */ = {
 			isa = PBXGroup;
 			children = (
-				05D710D12DF2049800CE32E3 /* FITSDocument.swift */,
 				05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */,
 				DF3765F1937F36620A92317F /* MainWindowView.swift */,
 				77051EA6E847507556D8B2B0 /* AppModel.swift */,
@@ -1208,9 +1242,12 @@
 				0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */,
 				641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */,
 				C07659F02B1A39E7821ED5BE /* ImageInformationTests.swift */,
+				05FB1000000000000000A004 /* ImageRendererTests.swift */,
+				20678C2224440A7F70B42B87 /* WCSProjectionTests.swift */,
 				AFBDAF375886651EAEF634B1 /* DropAcceptanceTests.swift */,
 				5DF80E657A81462F0C30D4CF /* FITS */,
 				05EE1000000000000000FC02 /* Metadata */,
+				05DD1000000000000000FC02 /* Loading */,
 				90974047D195E465718B0A58 /* Preferences */,
 				002C1D9E4346F9D0ADBFF793 /* StarDetectionTests.swift */,
 				FE01A0020000000000000001 /* WeightFormulaTests.swift */,
@@ -1385,11 +1422,9 @@
 		5DF80E657A81462F0C30D4CF /* FITS */ = {
 			isa = PBXGroup;
 			children = (
-				05FB1000000000000000A004 /* FITSImageRendererTests.swift */,
 				05FB1000000000000000A00B /* FITSImageLoaderTests.swift */,
 				A8D5C2CDF6BE5D61F992E63B /* FITSMetadataTests.swift */,
 				05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */,
-				20678C2224440A7F70B42B87 /* WCSProjectionTests.swift */,
 			);
 			path = FITS;
 			sourceTree = "<group>";
@@ -1479,18 +1514,37 @@
 			path = Metadata;
 			sourceTree = "<group>";
 		};
+		05DD1000000000000000FC01 /* Loading */ = {
+			isa = PBXGroup;
+			children = (
+				05DD1000000000000000FA01 /* ImageLoading.swift */,
+				05DD1000000000000000FA02 /* ImageLoader.swift */,
+				05DD1000000000000000FA05 /* UnsupportedImageLoader.swift */,
+			);
+			path = Loading;
+			sourceTree = "<group>";
+		};
+		05DD1000000000000000FC02 /* Loading */ = {
+			isa = PBXGroup;
+			children = (
+				05DD1000000000000000FA06 /* ImageLoaderTests.swift */,
+			);
+			path = Loading;
+			sourceTree = "<group>";
+		};
 		B3FD345BB5B137185B9B9D72 /* FITS */ = {
 			isa = PBXGroup;
 			children = (
-				0579B6142DF23DB3002FDD47 /* FITSImage.swift */,
+				05DD1000000000000000FA03 /* LoadedImage+FITS.swift */,
+				05DD1000000000000000FA09 /* ImageInformation+FITS.swift */,
+				05DD1000000000000000FA0A /* WCSProjection+FITS.swift */,
+				05DD1000000000000000FA0C /* FITSRenderSource.swift */,
 				0579B61B2DF245DE002FDD47 /* FITSImageInfo.swift */,
 				0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */,
-				0579B6112DF220CD002FDD47 /* FITSImageRenderer.swift */,
 				05EE1000000000000000FA04 /* ImageMetadataProperty+FITS.swift */,
 				05EE1000000000000000FA05 /* ImageMetadataSection+FITS.swift */,
 				4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */,
 				59AF90C07BCB7472F4490908 /* FITSMetadata.swift */,
-				9D588747A79BD6F05EC2CA0F /* WCSProjection.swift */,
 			);
 			path = FITS;
 			sourceTree = "<group>";
@@ -1942,7 +1996,7 @@
 				05FB1000000000000000E302 /* APIKeyFieldView.swift in Sources */,
 				05C0A75E2DDE64E0005DECEF /* Benchmarking.swift in Sources */,
 				0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */,
-				0579B6122DF220D1002FDD47 /* FITSImageRenderer.swift in Sources */,
+				0579B6122DF220D1002FDD47 /* ImageRenderer.swift in Sources */,
 				0524AD7E2DF3450400180358 /* HistogramStatisticsView.swift in Sources */,
 				05DC79A12DF2F82A003E2AFA /* ErrorView.swift in Sources */,
 				05FB0B02000000000000FB02 /* BannerView.swift in Sources */,
@@ -1956,6 +2010,14 @@
 				05EE1000000000000000FB03 /* ImageMetadata.swift in Sources */,
 				05EE1000000000000000FB04 /* ImageMetadataProperty+FITS.swift in Sources */,
 				05EE1000000000000000FB05 /* ImageMetadataSection+FITS.swift in Sources */,
+				05DD1000000000000000FB01 /* ImageLoading.swift in Sources */,
+				05DD1000000000000000FB02 /* ImageLoader.swift in Sources */,
+				05DD1000000000000000FB07 /* UnsupportedImageLoader.swift in Sources */,
+				05DD1000000000000000FB03 /* LoadedImage+FITS.swift in Sources */,
+				05DD1000000000000000FB0B /* ImageInformation+FITS.swift in Sources */,
+				05DD1000000000000000FB0C /* WCSProjection+FITS.swift in Sources */,
+				05DD1000000000000000FB0D /* ImageRenderSource.swift in Sources */,
+				05DD1000000000000000FB0E /* FITSRenderSource.swift in Sources */,
 				05D710D02DF201C300CE32E3 /* NSBundle.swift in Sources */,
 				05BD7A942DF311F700F4AAFC /* DebayerControlView.swift in Sources */,
 				0AB10000000000000000F002 /* ColorControlView.swift in Sources */,
@@ -1972,12 +2034,12 @@
 				056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */,
 				05A1B2C30000000000000002 /* View.swift in Sources */,
 				05206B8F2DE0C41C00550A87 /* ImageProcessor.swift in Sources */,
+				05DD1000000000000000FB04 /* RenderResult.swift in Sources */,
 				05A1B2C30000000000000008 /* ImageExporter.swift in Sources */,
 				05A1B2C30000000000000A02 /* FITSPreviewRenderer.swift in Sources */,
 				05A1B2C300000000000000F2 /* RenderedImageShareItem.swift in Sources */,
-				05D710D22DF2049B00CE32E3 /* FITSDocument.swift in Sources */,
 				05DC79A32DF2FCF8003E2AFA /* LoadingView.swift in Sources */,
-				0579B6152DF23DB7002FDD47 /* FITSImage.swift in Sources */,
+				0579B6152DF23DB7002FDD47 /* LoadedImage.swift in Sources */,
 				05C4BD742DF2E4FD00326B69 /* InfoViewTable.swift in Sources */,
 				05C4BD782DF2E7D600326B69 /* InfoViewTableCell.swift in Sources */,
 				057F611C2DF8B78600EE82D1 /* ImageControlContainer.swift in Sources */,
@@ -2009,6 +2071,9 @@
 				0AB10000000000000000D102 /* LevelsUnavailableView.swift in Sources */,
 				0AB10000000000000000D002 /* LevelsActiveModelView.swift in Sources */,
 				9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */,
+				05DD1000000000000000FB09 /* Coordinate.swift in Sources */,
+				05DD1000000000000000FB30 /* CDMatrix.swift in Sources */,
+				05DD1000000000000000FB0A /* WorldCoordinateSystem.swift in Sources */,
 				FE01A0010000000000000002 /* WeightFormula.swift in Sources */,
 				5A516E0150000000000000B1 /* ImageWeighting.swift in Sources */,
 				5A516E0150000000000000C2 /* FileSortable.swift in Sources */,
@@ -2122,7 +2187,8 @@
 				05A1B2C30000000000000006 /* ImageExporterTests.swift in Sources */,
 				05A1B2C30000000000000A04 /* FITSPreviewRendererTests.swift in Sources */,
 				05A1B2C300000000000000F4 /* RenderedImageShareItemTests.swift in Sources */,
-				05FB1000000000000000B004 /* FITSImageRendererTests.swift in Sources */,
+				05FB1000000000000000B004 /* ImageRendererTests.swift in Sources */,
+				05DD1000000000000000FB08 /* ImageLoaderTests.swift in Sources */,
 				05FB1000000000000000B00B /* FITSImageLoaderTests.swift in Sources */,
 				05FB1000000000000000B00C /* SliderTests.swift in Sources */,
 				05FB1000000000000000B00D /* PreviewHelperTests.swift in Sources */,
@@ -2206,6 +2272,7 @@
 				05A1B2C30000000000000B08 /* Benchmarking.swift in Sources */,
 				05A1B2C30000000000000B01 /* FITSPreviewRenderer.swift in Sources */,
 				05A1B2C30000000000000B02 /* ImageProcessor.swift in Sources */,
+				05DD1000000000000000FB05 /* RenderResult.swift in Sources */,
 				05AA5D942FF85F9E00FCF406 /* BinaryFloatingPoint.swift in Sources */,
 				05A1B2C30000000000000B03 /* FITSPropertySnapshot.swift in Sources */,
 				05B189F92FEAE7BC0056553A /* ThumbnailProvider.swift in Sources */,
@@ -2220,6 +2287,7 @@
 				05A1B2C30000000000000B09 /* Benchmarking.swift in Sources */,
 				05A1B2C30000000000000B04 /* FITSPreviewRenderer.swift in Sources */,
 				05A1B2C30000000000000B05 /* ImageProcessor.swift in Sources */,
+				05DD1000000000000000FB06 /* RenderResult.swift in Sources */,
 				05A1B2C30000000000000B06 /* FITSPropertySnapshot.swift in Sources */,
 				05A1B2C30000000000000B07 /* ImageExporter.swift in Sources */,
 				05B18A002FEAE7BE0056553A /* PreviewProvider.swift in Sources */,

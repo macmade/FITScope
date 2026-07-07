@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftFITS
 import SwiftPixel
 import SwiftUI
 

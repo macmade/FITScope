@@ -43,7 +43,7 @@ public struct FileContextMenu: ViewModifier
     /// The actions the menu items invoke.
     private let actions: FileActions
 
-    /// Opens the auxiliary FITS-headers window for the "View FITS Headers" item;
+    /// Opens the auxiliary metadata window for the "View Metadata" item;
     /// this action lives in the environment rather than in ``FileActions``.
     @Environment( \.openWindow ) private var openWindow
 
@@ -74,18 +74,25 @@ public struct FileContextMenu: ViewModifier
                 Label( "Open in New Window", systemImage: "macwindow.badge.plus" )
             }
 
-            Button
+            if let metadata = self.file.image?.metadata
             {
-                if let info = self.file.image?.info
+                Button
                 {
-                    self.openWindow( id: "InfoWindow", value: info.imageMetadata )
+                    self.openWindow( id: "InfoWindow", value: metadata )
+                }
+                label:
+                {
+                    Label( "View Metadata\u{2026}", systemImage: "tablecells" )
                 }
             }
-            label:
+            else
             {
-                Label( "View FITS Headers", systemImage: "tablecells" )
+                Button( action: {} )
+                {
+                    Label( "View Metadata\u{2026}", systemImage: "tablecells" )
+                }
+                .disabled( true )
             }
-            .disabled( self.file.image?.info == nil )
 
             Divider()
 

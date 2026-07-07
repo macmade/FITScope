@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftFITS
 import SwiftUI
 
 /// A single text cell used inside ``InfoViewTable``, rendering a string at a
@@ -38,7 +37,7 @@ public struct InfoViewTableCell: View
     /// The foreground shape style (e.g. `.primary`, `.secondary`).
     public let style: any ShapeStyle
 
-    /// Whether to render in a monospaced font, so columns of fixed-format FITS
+    /// Whether to render in a monospaced font, so columns of fixed-width metadata
     /// values (index, keyword name, value) align cleanly.
     public let monospaced: Bool
 

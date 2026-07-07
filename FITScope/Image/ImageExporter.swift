@@ -30,7 +30,7 @@ import UniformTypeIdentifiers
 /// Encodes a rendered `CGImage` to a raster file using `ImageIO`.
 ///
 /// This exports the *rendered* image (the display-ready pixels), not the
-/// original FITS data — see ``OpenFile/copyOriginalFile(to:)`` for the latter.
+/// original source data — see ``OpenFile/copyOriginalFile(to:)`` for the latter.
 public enum ImageExporter
 {
     /// A raster image format the rendered image can be exported to.

@@ -86,7 +86,7 @@ public actor AstrometryClient
     /// fail the solve, since the calibration alone is a useful result.
     ///
     /// - Parameters:
-    ///   - imageData:  The image bytes to upload (the original FITS file).
+    ///   - imageData:  The image bytes to upload (the original source file bytes).
     ///   - fileName:   The file name to label the upload with.
     ///   - apiKey:     The Astrometry.net API key.
     ///   - onProgress: Called as each coarse phase begins.
@@ -120,7 +120,7 @@ public actor AstrometryClient
         let calibration = try await self.calibration( jobID: jobID )
         let objects     = ( try? await self.objectsInField( jobID: jobID ) ) ?? []
         let annotations = ( try? await self.annotations( jobID: jobID ) ) ?? []
-        let wcs         = ( try? await self.wcsMetadata( jobID: jobID ) ) ?? nil
+        let wcs         = try? await self.wcsMetadata( jobID: jobID )
 
         return PlateSolveResult( jobID: jobID, calibration: calibration, objectsInField: objects, annotations: annotations, wcs: wcs, resultsURL: self.resultsURL( submissionID: submissionID ) )
     }
@@ -267,9 +267,12 @@ public actor AstrometryClient
         }
     }
 
-    /// Downloads a solved job's `wcs.fits` and parses it into a ``FITSMetadata``,
-    /// or `nil` when it cannot be downloaded or parsed.
-    public func wcsMetadata( jobID: Int ) async throws -> FITSMetadata?
+    /// Downloads a solved job's `wcs.fits` and parses it into a neutral
+    /// ``WorldCoordinateSystem``, or `nil` when it cannot be downloaded or parsed.
+    /// The `wcs.fits` payload is itself a FITS file, so parsing it through
+    /// ``FITSMetadata`` internally is expected; only the neutral WCS crosses the
+    /// API boundary.
+    public func wcsMetadata( jobID: Int ) async throws -> WorldCoordinateSystem?
     {
         guard let url = self.wcsEndpoint( jobID: jobID )
         else
@@ -279,7 +282,7 @@ public actor AstrometryClient
 
         let data = try await self.dataForSuccess( URLRequest( url: url ) )
 
-        return Self.metadata( fromFITS: data )
+        return Self.metadata( fromFITS: data )?.worldCoordinateSystem
     }
 
     // MARK: - Request building

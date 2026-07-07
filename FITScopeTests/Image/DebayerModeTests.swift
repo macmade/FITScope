@@ -37,7 +37,7 @@ struct DebayerModeTests
         let settings = ImageProcessor.Settings( debayer: .pattern( .rggb ), debayerMode: .vng )
         let config   = settings.config( scale: 1, offset: 0, headerPattern: nil )
 
-        #expect( config.debayer?.mode == .vng )
+        #expect( config.inputFormat == .cfa( pattern: .rggb, mode: .vng ) )
     }
 
     @Test
@@ -46,6 +46,6 @@ struct DebayerModeTests
         let settings = ImageProcessor.Settings( debayer: .pattern( .rggb ) )
         let config   = settings.config( scale: 1, offset: 0, headerPattern: nil )
 
-        #expect( config.debayer?.mode == .bilinear )
+        #expect( config.inputFormat == .cfa( pattern: .rggb, mode: .bilinear ) )
     }
 }

@@ -272,11 +272,11 @@ public struct ImageCanvasView: View
         }
         else if let error = self.file.error
         {
-            ErrorView( title: "Error Loading FITS File", message: error.localizedDescription )
+            ErrorView( title: "Error Loading Image", message: error.localizedDescription )
         }
         else
         {
-            LoadingView( title: "Loading FITS file..." )
+            LoadingView( title: "Loading image..." )
         }
     }
 
@@ -359,8 +359,7 @@ public struct ImageCanvasView: View
     /// is loaded.
     private var dimensionsSummary: String?
     {
-        guard let info = self.file.image?.info,
-              let summary = ImageInformation( info: info )
+        guard let summary = self.file.image?.information
         else
         {
             return nil
@@ -394,18 +393,18 @@ public struct ImageCanvasView: View
             // The plate scale prefers the plate solve's calibration (most accurate)
             // and falls back to the value derived from the file's header. Tapped with
             // no scale, it explains that through its warning.
-            ScaleBarOverlay( pixelScale: self.file.plateSolve?.calibration.pixscale ?? self.file.image?.info.pixelScale, appearance: self.overlayAppearance( ScaleBarOverlay.identifier, default: ScaleBarOverlay.defaultAppearance ) ),
+            ScaleBarOverlay( pixelScale: self.file.plateSolve?.calibration.pixscale ?? self.file.image?.pixelScale, appearance: self.overlayAppearance( ScaleBarOverlay.identifier, default: ScaleBarOverlay.defaultAppearance ) ),
             // The north / east compass, derived from the WCS — the plate solve's
             // (most authoritative) when present, else the file header's. Mapped
             // through the same committed-render orientation as the stars and
             // objects, so it turns with the image. Tapped without a known
             // orientation, it proposes a plate solve through the app model.
-            NorthOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( NorthOverlay.identifier, default: NorthOverlay.defaultAppearance ) ),
+            NorthOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.wcs, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( NorthOverlay.identifier, default: NorthOverlay.defaultAppearance ) ),
             // The RA/Dec coordinate grid, projected from the same WCS (plate solve
             // preferred, else the file header) through the committed-render
             // orientation. Tapped with no usable WCS, it proposes a plate solve
             // through the app model.
-            EquatorialGridOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.info.metadata, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( EquatorialGridOverlay.identifier, default: EquatorialGridOverlay.defaultAppearance ) ),
+            EquatorialGridOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.wcs, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( EquatorialGridOverlay.identifier, default: EquatorialGridOverlay.defaultAppearance ) ),
         ]
     }
 
@@ -468,12 +467,12 @@ public struct ImageCanvasView: View
     /// The cursor coordinate comes from the *displayed* image, which a rotation
     /// or flip may have reoriented relative to the source data. It is mapped
     /// back to the source pixel so both the reported coordinate and its value
-    /// refer to the same sample in the FITS file.
+    /// refer to the same sample in the source image.
     private func report( coordinate: ( x: Int, y: Int )? )
     {
         guard let coordinate,
-              let renderer = self.file.image?.renderer,
-              let input    = try? renderer.renderInputSnapshot()
+              let renderer     = self.file.image?.renderer,
+              let renderSource = try? renderer.renderSourceSnapshot()
         else
         {
             self.readout = .empty
@@ -484,7 +483,7 @@ public struct ImageCanvasView: View
         let orientation = renderer.adjustments.orientation
         let source:        ( x: Int, y: Int )
 
-        if orientation.isIdentity == false, let size = ImageProcessor.imageDimensions( from: input.properties )
+        if orientation.isIdentity == false, let size = renderSource.dimensions
         {
             source = orientation.sourceCoordinate( displayX: coordinate.x, displayY: coordinate.y, sourceWidth: size.width, sourceHeight: size.height )
         }
@@ -493,7 +492,7 @@ public struct ImageCanvasView: View
             source = coordinate
         }
 
-        let pixel = ImageProcessor.rawPixelValue( data: input.data, properties: input.properties, x: source.x, y: source.y )
+        let pixel = renderSource.pixelValue( atX: source.x, y: source.y )
 
         self.readout = CursorReadout( x: source.x, y: source.y, value: pixel?.value, fraction: pixel?.fraction )
     }

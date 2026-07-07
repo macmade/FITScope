@@ -51,7 +51,7 @@ struct LevelsEditorView: View
 
     /// The image whose levels are being edited; observed so the histogram tracks
     /// the committed render.
-    @ObservedObject private var image: FITSImage
+    @ObservedObject private var image: LoadedImage
 
     /// The shared adjustments the editor writes to, observed so the editor also
     /// follows a change made from outside it — a menu/inspector Reset View, say —
@@ -137,7 +137,7 @@ struct LevelsEditorView: View
     /// levels.
     ///
     /// - Parameter image: The image whose levels are edited.
-    init( image: FITSImage )
+    init( image: LoadedImage )
     {
         self.image       = image
         self.adjustments = image.renderer.adjustments
@@ -243,7 +243,7 @@ struct LevelsEditorView: View
         .disabled( self.image.renderer.isRendering )
         .padding( 16 )
         .frame( maxWidth: .infinity, alignment: .top )
-        .navigationTitle( "Levels — \( self.image.info.url.lastPathComponent )" )
+        .navigationTitle( "Levels — \( self.image.url.lastPathComponent )" )
         .accessibilityElement( children: .contain )
         .accessibilityIdentifier( AccessibilityIdentifier.LevelsWindowView.editor )
         // Follow a change made from outside the editor (e.g. a Reset View): pull

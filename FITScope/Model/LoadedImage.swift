@@ -28,21 +28,49 @@ import SwiftPixel
 import SwiftUI
 import SwiftUtilities
 
-/// A loaded FITS image, pairing its header metadata with the renderer that
+/// A loaded image, pairing its format-neutral metadata with the renderer that
 /// produces displayable pixels.
 ///
 /// Acts as a façade: it re-publishes the renderer's `objectWillChange` so a view
 /// observing the image refreshes when the rendered result changes, without
 /// observing the renderer directly.
 @MainActor
-public class FITSImage: ObservableObject
+public class LoadedImage: ObservableObject
 {
-    /// The file's header metadata, grouped into sections.
-    @Published public private( set ) var info: FITSImageInfo
+    /// The source file's URL.
+    public let url: URL
 
-    /// The renderer that turns the image HDU into displayable pixels and
-    /// histograms.
-    @Published public private( set ) var renderer: FITSImageRenderer
+    /// The file's metadata as the format-neutral grouped model the Info window
+    /// consumes.
+    public let metadata: ImageMetadata
+
+    /// The world-coordinate system the astrometric overlays (north, grid) read, or
+    /// `nil` when the image carries none.
+    public let wcs: WorldCoordinateSystem?
+
+    /// When the image was captured, or `nil` when unknown.
+    public let observationDate: Date?
+
+    /// The exposure time in seconds, or `nil` when unknown.
+    public let exposureTime: Double?
+
+    /// The observing site's geographic coordinate, or `nil` when unknown.
+    public let coordinate: Coordinate?
+
+    /// The image's plate scale in arc-seconds per pixel, or `nil` when it cannot
+    /// be derived.
+    public let pixelScale: Double?
+
+    /// Whether the image is a colour-filter-array (Bayer) image, so the inspector
+    /// offers the debayer controls.
+    public let isColorFilterArray: Bool
+
+    /// A display-ready summary of the image's key metadata, for the sidebar Image
+    /// Information panel and the file row, or `nil` when it cannot be built.
+    public let information: ImageInformation?
+
+    /// The renderer that turns the image into displayable pixels and histograms.
+    @Published public private( set ) var renderer: ImageRenderer
 
     /// The detected stars and their aggregate metrics, populated asynchronously
     /// after the image loads. `nil` until detection has run, or when detection
@@ -87,17 +115,33 @@ public class FITSImage: ObservableObject
     /// Forwards the renderer's change notifications to this object's observers.
     private var rendererObserver: AnyCancellable?
 
-    /// Creates an image from its metadata and renderer, wiring up change
-    /// forwarding.
+    /// Creates a loaded image from its format-neutral metadata and renderer,
+    /// wiring up change forwarding from the renderer.
     ///
     /// - Parameters:
-    ///   - info:     The file's header metadata.
-    ///   - renderer: The renderer for the image HDU.
-    public init( info: FITSImageInfo, renderer: FITSImageRenderer )
+    ///   - url:                The source file's URL.
+    ///   - metadata:           The grouped, format-neutral metadata for the Info window.
+    ///   - wcs:                The WCS metadata for astrometric overlays, or `nil`.
+    ///   - observationDate:    When the image was captured, or `nil`.
+    ///   - exposureTime:       The exposure time in seconds, or `nil`.
+    ///   - coordinate:         The observing site's geographic coordinate, or `nil`.
+    ///   - pixelScale:         The plate scale in arc-seconds per pixel, or `nil`.
+    ///   - isColorFilterArray: Whether the image is a colour-filter-array image.
+    ///   - information:        The display-ready metadata summary, or `nil`.
+    ///   - renderer:           The renderer for the image.
+    public init( url: URL, metadata: ImageMetadata, wcs: WorldCoordinateSystem?, observationDate: Date?, exposureTime: Double?, coordinate: Coordinate?, pixelScale: Double?, isColorFilterArray: Bool, information: ImageInformation?, renderer: ImageRenderer )
     {
-        self.info             = info
-        self.renderer         = renderer
-        self.rendererObserver = self.renderer.objectWillChange.sink
+        self.url                = url
+        self.metadata           = metadata
+        self.wcs                = wcs
+        self.observationDate    = observationDate
+        self.exposureTime       = exposureTime
+        self.coordinate         = coordinate
+        self.pixelScale         = pixelScale
+        self.isColorFilterArray = isColorFilterArray
+        self.information        = information
+        self.renderer           = renderer
+        self.rendererObserver   = self.renderer.objectWillChange.sink
         {
             [ weak self ] _ in self?.objectWillChange.send()
         }
@@ -113,7 +157,7 @@ public class FITSImage: ObservableObject
     /// returning.
     public func detectStars() async
     {
-        guard let input = try? self.renderer.renderInputSnapshot()
+        guard let input = try? self.renderer.renderSourceSnapshot()
         else
         {
             return

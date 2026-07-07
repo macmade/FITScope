@@ -38,7 +38,7 @@ struct ImageInformationTests
         let file = try FITSFile( url: url, options: .lenient )
         let info = FITSImageInfo( url: url, file: file )
 
-        let summary = try #require( ImageInformation( info: info ) )
+        let summary = try #require( ImageInformation( fitsMetadata: info.imageMetadata ) )
 
         #expect( summary.dimensions.contains( "×" ), "dimensions read NAXIS1 × NAXIS2" )
         #expect( summary.bitDepth.contains( "bit" ), "bit depth reads BITPIX" )
@@ -71,7 +71,7 @@ struct ImageInformationTests
         let url  = URL( fileURLWithPath: "/tmp/none.fits" )
         let info = FITSImageInfo( url: url, sections: [] )
 
-        #expect( ImageInformation( info: info ) == nil )
+        #expect( ImageInformation( fitsMetadata: info.imageMetadata ) == nil )
     }
 
     @Test
@@ -102,7 +102,7 @@ struct ImageInformationTests
         let file = try FITSFile( url: url, options: .lenient )
         let info = FITSImageInfo( url: url, file: file )
 
-        let summary = try #require( ImageInformation( info: info ) )
+        let summary = try #require( ImageInformation( fitsMetadata: info.imageMetadata ) )
 
         // Every emitted row must have a non-empty value (no "—" placeholders).
         #expect( summary.rows.allSatisfy { $0.value.isEmpty == false } )
@@ -115,7 +115,7 @@ struct ImageInformationTests
     @Test
     func rowsFollowTheRequestedFieldOrder() throws
     {
-        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+        let summary = try #require( ImageInformation( fitsMetadata: Self.makeInfo().imageMetadata ) )
 
         let rows = summary.rows( for: [ .channels, .dimensions, .bitDepth ] )
 
@@ -127,7 +127,7 @@ struct ImageInformationTests
     @Test
     func rowsOmitFieldsNotRequested() throws
     {
-        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+        let summary = try #require( ImageInformation( fitsMetadata: Self.makeInfo().imageMetadata ) )
 
         let rows = summary.rows( for: [ .dimensions ] )
 
@@ -140,7 +140,7 @@ struct ImageInformationTests
     func rowsOmitRequestedButAbsentFields() throws
     {
         // Geometry only — no OBJECT or FILTER keyword.
-        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+        let summary = try #require( ImageInformation( fitsMetadata: Self.makeInfo().imageMetadata ) )
 
         let rows = summary.rows( for: [ .object, .dimensions, .filter ] )
 
@@ -152,7 +152,7 @@ struct ImageInformationTests
     func rowsIncludeRequestedPresentFields() throws
     {
         let info    = try Self.makeInfo( keywords: [ ( "OBJECT", "'M31'" ), ( "EXPTIME", "30" ) ] )
-        let summary = try #require( ImageInformation( info: info ) )
+        let summary = try #require( ImageInformation( fitsMetadata: info.imageMetadata ) )
 
         let rows = summary.rows( for: [ .object, .exposure ] )
 
@@ -165,7 +165,7 @@ struct ImageInformationTests
     func samplingRowShowsScaleAndClassification() throws
     {
         let info    = try Self.makeInfo( keywords: [ ( "CDELT2", "0.0005" ) ] )
-        let summary = try #require( ImageInformation( info: info ) )
+        let summary = try #require( ImageInformation( fitsMetadata: info.imageMetadata ) )
 
         let rows = summary.rows( for: [ .sampling ] )
 
@@ -177,7 +177,7 @@ struct ImageInformationTests
     @Test
     func samplingRowIsOmittedWhenPixelScaleUnavailable() throws
     {
-        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+        let summary = try #require( ImageInformation( fitsMetadata: Self.makeInfo().imageMetadata ) )
 
         #expect( summary.rows( for: [ .sampling ] ).isEmpty )
     }
@@ -187,7 +187,7 @@ struct ImageInformationTests
     @Test
     func rowsIncludeInjectedAdditionalValues() throws
     {
-        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+        let summary = try #require( ImageInformation( fitsMetadata: Self.makeInfo().imageMetadata ) )
 
         let rows = summary.rows( for: [ .dimensions, .weight ], additionalValues: [ .weight: "75.0" ] )
 
@@ -199,7 +199,7 @@ struct ImageInformationTests
     @Test
     func rowsOmitAFieldWithoutHeaderOrInjectedValue() throws
     {
-        let summary = try #require( ImageInformation( info: Self.makeInfo() ) )
+        let summary = try #require( ImageInformation( fitsMetadata: Self.makeInfo().imageMetadata ) )
 
         let rows = summary.rows( for: [ .dimensions, .weight ] )
 

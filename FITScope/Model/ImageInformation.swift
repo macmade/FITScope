@@ -23,11 +23,11 @@
  ******************************************************************************/
 
 import Foundation
-import SwiftFITS
 
-/// A display-ready summary of a FITS image's key header values, extracted from a
-/// ``FITSImageInfo`` for the sidebar's Image Information panel and the file row
-/// metadata line.
+/// A display-ready summary of an image's key metadata values, for the sidebar's
+/// Image Information panel and the file row metadata line. The summary itself is
+/// format-neutral; each format builds one from its own metadata (see the FITS
+/// adapter in `ImageInformation+FITS.swift`).
 public struct ImageInformation
 {
     /// A single labelled field shown in the Image Information panel.
@@ -88,10 +88,10 @@ public struct ImageInformation
     /// The present-only rows for the given fields, in the given order, with extra
     /// computed values merged in.
     ///
-    /// `additionalValues` supplies values for fields not derived from the header —
+    /// `additionalValues` supplies values for fields not derived from the metadata —
     /// notably the per-image weight, which the window computes. An entry there
-    /// takes precedence over any header value for the same field, and a field with
-    /// neither a header nor an injected value is still omitted.
+    /// takes precedence over any metadata value for the same field, and a field with
+    /// neither a metadata-derived nor an injected value is still omitted.
     ///
     /// - Parameters:
     ///   - fields:           The fields to show, in display order.
@@ -105,88 +105,18 @@ public struct ImageInformation
         }
     }
 
-    /// Builds the summary from header info, returning `nil` when the required
-    /// geometry keywords (`NAXIS1`/`NAXIS2`/`BITPIX`) are absent.
+    /// Creates a summary from already-extracted, display-ready values.
     ///
-    /// - Parameter info: The header info to summarize.
-    public init?( info: FITSImageInfo )
+    /// - Parameters:
+    ///   - dimensions: The image dimensions, e.g. `"6240 × 4160"`.
+    ///   - bitDepth:   The bit depth, e.g. `"16-bit"`.
+    ///   - channels:   The channel description, e.g. `"1 (Grayscale)"`.
+    ///   - values:     The present value for each field, keyed by ``InfoField``.
+    public init( dimensions: String, bitDepth: String, channels: String, values: [ InfoField: String ] )
     {
-        let properties = info.sections.flatMap { $0.properties }
-
-        func value( _ names: [ String ] ) -> String?
-        {
-            for name in names
-            {
-                if let value = properties.first( where: { $0.name == name } )?.value.trimmingCharacters( in: .whitespaces ), value.isEmpty == false
-                {
-                    return value
-                }
-            }
-
-            return nil
-        }
-
-        guard let width  = value( [ "NAXIS1" ] ),
-              let height = value( [ "NAXIS2" ] ),
-              let bitPix = value( [ "BITPIX" ] )
-        else
-        {
-            return nil
-        }
-
-        let bayer       = value( [ "BAYERPAT" ] )
-        self.dimensions = "\( width ) × \( height )"
-        self.bitDepth   = "\( bitPix.replacingOccurrences( of: "-", with: "" ) )-bit"
-        self.channels   = bayer == nil ? "1 (Grayscale)" : "1 (CFA)"
-
-        var values: [ InfoField: String ] =
-            [
-                .dimensions: self.dimensions,
-                .bitDepth:   self.bitDepth,
-                .channels:   self.channels,
-            ]
-
-        func add( _ field: InfoField, _ names: [ String ], suffix: String = "" )
-        {
-            if let value = value( names )
-            {
-                values[ field ] = suffix.isEmpty ? value : "\( value )\( suffix )"
-            }
-        }
-
-        if let bayer = bayer
-        {
-            values[ .bayer ] = bayer
-        }
-
-        add( .object,            [ "OBJECT" ] )
-        add( .rightAscension,    [ "OBJCTRA", "RA", "CRVAL1" ] )
-        add( .declination,       [ "OBJCTDEC", "DEC", "CRVAL2" ] )
-        add( .date,              [ "DATE-OBS" ] )
-        add( .exposure,          [ "EXPTIME", "EXPOSURE" ], suffix: " s" )
-        add( .filter,            [ "FILTER" ] )
-        add( .telescope,         [ "TELESCOP" ] )
-        add( .instrument,        [ "INSTRUME" ] )
-        add( .focalLength,       [ "FOCALLEN" ] )
-        add( .gain,              [ "GAIN", "EGAIN" ] )
-        add( .offset,            [ "OFFSET", "BLKLEVEL" ] )
-        add( .sensorTemperature, [ "CCD-TEMP" ] )
-
-        // The plate scale and its sampling classification reuse FITSMetadata's
-        // unit-aware derivation (CDELT → CD matrix → focal length + pixel size)
-        // rather than re-implementing it here. The display strings carry enough
-        // precision for a value shown to two decimals.
-        let metadata = FITSMetadata(
-            properties: properties.map { FITSPropertySnapshot( name: $0.name, value: .string( $0.value ) ) }
-        )
-
-        if let scale = metadata.pixelScale, let sampling = metadata.sampling
-        {
-            let formatted = String( format: "%.2f", scale )
-
-            values[ .sampling ] = "\( formatted )″/px · \( sampling.label )"
-        }
-
-        self.values = values
+        self.dimensions = dimensions
+        self.bitDepth   = bitDepth
+        self.channels   = channels
+        self.values     = values
     }
 }

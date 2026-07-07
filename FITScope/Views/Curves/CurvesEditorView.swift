@@ -40,7 +40,7 @@ struct CurvesEditorView: View
 
     /// The image whose tone curve is being edited; observed so the editor tracks
     /// the committed render.
-    @ObservedObject private var image: FITSImage
+    @ObservedObject private var image: LoadedImage
 
     /// The shared adjustments the editor writes to, observed so the editor also
     /// follows a change made from outside it — a menu/inspector Reset View, say —
@@ -88,7 +88,7 @@ struct CurvesEditorView: View
     /// tone curve.
     ///
     /// - Parameter image: The image whose tone curve is edited.
-    init( image: FITSImage )
+    init( image: LoadedImage )
     {
         self.image       = image
         self.adjustments = image.renderer.adjustments
@@ -169,7 +169,7 @@ struct CurvesEditorView: View
         .disabled( self.image.renderer.isRendering )
         .padding( 16 )
         .frame( maxWidth: .infinity, alignment: .top )
-        .navigationTitle( "Curves — \( self.image.info.url.lastPathComponent )" )
+        .navigationTitle( "Curves — \( self.image.url.lastPathComponent )" )
         .accessibilityElement( children: .contain )
         .accessibilityIdentifier( AccessibilityIdentifier.CurvesWindowView.editor )
         // Follow a change made from outside the editor (e.g. a Reset View): pull

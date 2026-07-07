@@ -36,7 +36,7 @@ import UniformTypeIdentifiers
 /// exists.
 ///
 /// The two *Open With* submenus mirror that split: "Open Original With" hands the
-/// unmodified FITS file to another app (like "Save As…", so it only needs a
+/// unmodified file to another app (like "Save As…", so it only needs a
 /// selected file), while "Open Rendered Image With" hands the processed image
 /// (like "Export…", so it needs a committed render result). Each lists the
 /// applications the system associates with that file kind, plus an *Other…* entry
@@ -91,7 +91,7 @@ struct FileCommands: View
 
         Divider()
 
-        // Open the *original* FITS file in another app — enabled whenever a file
+        // Open the *original* file in another app — enabled whenever a file
         // is selected, like "Save As…". When no file is selected the menu is
         // disabled, so the `.fits` fallback source is never used.
         OpenWithMenu(

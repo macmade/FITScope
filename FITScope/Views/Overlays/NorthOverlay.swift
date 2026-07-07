@@ -89,7 +89,7 @@ public struct NorthOverlay: CanvasOverlay
     ///                       Defaults to `nil`.
     ///   - appearance:       The compass's colour and opacity. Defaults to
     ///                       ``NorthOverlay/defaultAppearance``.
-    public init( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil, appearance: OverlayAppearance = NorthOverlay.defaultAppearance )
+    public init( wcs: WorldCoordinateSystem?, orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil, appearance: OverlayAppearance = NorthOverlay.defaultAppearance )
     {
         self.compass          = Self.compass( wcs: wcs, orientation: orientation )
         self.onUnavailableTap = onUnavailableTap
@@ -125,7 +125,7 @@ public struct NorthOverlay: CanvasOverlay
     ///   - wcs:         The world-coordinate system, or `nil`.
     ///   - orientation: The orientation applied to the displayed image.
     /// - Returns: The on-screen compass, or `nil` when north is unknown.
-    public static func compass( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation ) -> Compass?
+    public static func compass( wcs: WorldCoordinateSystem?, orientation: Processors.Orient.Orientation ) -> Compass?
     {
         guard let source = Self.sourceCompass( wcs: wcs )
         else
@@ -149,9 +149,9 @@ public struct NorthOverlay: CanvasOverlay
     ///
     /// - Parameter wcs: The world-coordinate system, or `nil`.
     /// - Returns: The source-space compass, or `nil`.
-    public static func sourceCompass( wcs: FITSMetadata? ) -> Compass?
+    public static func sourceCompass( wcs: WorldCoordinateSystem? ) -> Compass?
     {
-        guard let wcs, let cd = WCSProjection.cdMatrix( metadata: wcs )
+        guard let wcs, let cd = wcs.cdMatrix
         else
         {
             return nil

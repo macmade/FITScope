@@ -22,36 +22,27 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftUI
+import Foundation
 
-/// The placeholder shown in the Session Metrics window when no files are open to
-/// chart.
-struct SessionMetricsUnavailableView: View
+/// A geographic coordinate pair — the observing site's latitude and longitude,
+/// in decimal degrees. Format-neutral: any image format that records where it was
+/// captured supplies one.
+public struct Coordinate: Equatable, Sendable
 {
-    /// The view's content.
-    var body: some View
+    /// The latitude, in decimal degrees (positive north).
+    public let latitude: Double
+
+    /// The longitude, in decimal degrees (positive east).
+    public let longitude: Double
+
+    /// Creates a coordinate.
+    ///
+    /// - Parameters:
+    ///   - latitude:  The latitude, in decimal degrees.
+    ///   - longitude: The longitude, in decimal degrees.
+    public init( latitude: Double, longitude: Double )
     {
-        VStack( spacing: 10 )
-        {
-            Image( systemName: "chart.line.uptrend.xyaxis" )
-                .font( .system( size: 38 ) )
-                .foregroundStyle( .secondary )
-
-            Text( "No Session Metrics" )
-                .font( .headline )
-
-            Text( "Open images to chart their metrics across the session." )
-                .foregroundStyle( .secondary )
-                .multilineTextAlignment( .center )
-        }
-        .padding( 40 )
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
-        .accessibilityIdentifier( AccessibilityIdentifier.SessionMetricsWindowView.unavailable )
+        self.latitude  = latitude
+        self.longitude = longitude
     }
-}
-
-#Preview
-{
-    SessionMetricsUnavailableView()
-        .frame( width: 640, height: 420 )
 }

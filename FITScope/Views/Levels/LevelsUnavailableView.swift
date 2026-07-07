@@ -40,7 +40,7 @@ struct LevelsUnavailableView: View
             Text( "No Image to Adjust" )
                 .font( .headline )
 
-            Text( "Open a FITS file to adjust its levels." )
+            Text( "Open an image to adjust its levels." )
                 .foregroundStyle( .secondary )
                 .multilineTextAlignment( .center )
         }

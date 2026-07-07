@@ -22,36 +22,31 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftUI
+import Foundation
 
-/// The placeholder shown in the Session Metrics window when no files are open to
-/// chart.
-struct SessionMetricsUnavailableView: View
+/// The 2×2 linear transform of a world-coordinate system, mapping pixel offsets
+/// to intermediate world coordinates, in degrees per pixel.
+///
+/// Format-neutral: a data model (``WorldCoordinateSystem``) carries one and the
+/// ``WCSProjection`` algorithm consumes one, so it is shared between them rather
+/// than owned by either.
+public struct CDMatrix: Sendable, Equatable
 {
-    /// The view's content.
-    var body: some View
+    /// The transform element at row 1, column 1.
+    public let cd11: Double
+
+    /// The transform element at row 1, column 2.
+    public let cd12: Double
+
+    /// The transform element at row 2, column 1.
+    public let cd21: Double
+
+    /// The transform element at row 2, column 2.
+    public let cd22: Double
+
+    /// The matrix determinant.
+    public var determinant: Double
     {
-        VStack( spacing: 10 )
-        {
-            Image( systemName: "chart.line.uptrend.xyaxis" )
-                .font( .system( size: 38 ) )
-                .foregroundStyle( .secondary )
-
-            Text( "No Session Metrics" )
-                .font( .headline )
-
-            Text( "Open images to chart their metrics across the session." )
-                .foregroundStyle( .secondary )
-                .multilineTextAlignment( .center )
-        }
-        .padding( 40 )
-        .frame( maxWidth: .infinity, maxHeight: .infinity )
-        .accessibilityIdentifier( AccessibilityIdentifier.SessionMetricsWindowView.unavailable )
+        ( self.cd11 * self.cd22 ) - ( self.cd12 * self.cd21 )
     }
-}
-
-#Preview
-{
-    SessionMetricsUnavailableView()
-        .frame( width: 640, height: 420 )
 }

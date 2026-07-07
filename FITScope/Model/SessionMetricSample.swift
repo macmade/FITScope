@@ -105,7 +105,7 @@ public extension SessionMetricSample
     /// Snapshots an open file's current metrics.
     ///
     /// Reads the same star-field medians and noise estimate the per-image weight
-    /// uses, plus the star count and the acquisition date from the FITS header.
+    /// uses, plus the star count and the acquisition date from the image metadata.
     /// Any metric the file's analysis has not (yet) produced is left `nil`.
     ///
     /// - Parameter file: The open file to snapshot.
@@ -117,14 +117,14 @@ public extension SessionMetricSample
         self.init(
             id:              file.id,
             name:            file.displayName,
-            observationDate: image?.info.metadata.observationDate,
+            observationDate: image?.observationDate,
             starCount:       starField.map { $0.count },
             noise:           image?.signalToNoise?.noise,
             fwhm:            starField?.medianFWHM,
             hfr:             starField?.medianHFR,
             eccentricity:    starField?.medianEccentricity,
             background:      image?.skyBackground?.relativeLevel,
-            exposure:        image?.info.metadata.exposureTime
+            exposure:        image?.exposureTime
         )
     }
 }

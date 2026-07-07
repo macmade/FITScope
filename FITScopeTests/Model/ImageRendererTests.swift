@@ -28,11 +28,11 @@ import SwiftFITS
 import SwiftPixel
 import Testing
 
-/// Behavioural tests for `FITSImageRenderer`: HDU selection error paths, the
+/// Behavioural tests for `ImageRenderer`: HDU selection error paths, the
 /// Sendable render boundary, debounced re-rendering, and the non-destructive
 /// handling of render failures.
-@Suite( "FITSImageRenderer" )
-struct FITSImageRendererTests
+@Suite( "ImageRenderer" )
+struct ImageRendererTests
 {
     /// A minimal header-only FITS file (`NAXIS=0`, single section) must surface
     /// a clean, typed error and never trap: with a single section there is no
@@ -48,7 +48,7 @@ struct FITSImageRendererTests
         // A single header section, no data section.
         try #require( file.sections.count == 1 )
 
-        let renderer = FITSImageRenderer( file: file )
+        let renderer = ImageRenderer( file: file )
 
         await renderer.render()
 
@@ -66,7 +66,7 @@ struct FITSImageRendererTests
     func unsupportedBitpixProducesClearError() async throws
     {
         let file     = try FITSFile( data: FITSTestData.bitpix64(), options: .lenient )
-        let renderer = FITSImageRenderer( file: file )
+        let renderer = ImageRenderer( file: file )
 
         await renderer.render()
 
@@ -77,7 +77,7 @@ struct FITSImageRendererTests
         #expect( message.contains( "BITPIX 64 is not supported" ), "expected a clear unsupported-BITPIX error, got: \"\( message )\"" )
     }
 
-    /// The render boundary accepts only Sendable values: a `RenderInput` built
+    /// The render boundary accepts only Sendable values: a render source built
     /// off the main actor renders the same histogram as a direct render of the
     /// same input. Pins behaviour across the Sendable-boundary refactor.
     @Test
@@ -92,11 +92,11 @@ struct FITSImageRendererTests
         {
             let file = try FITSFile( data: Data( contentsOf: url ), options: .lenient )
 
-            return try FITSImageRenderer.renderInput( from: file.sections )
+            return try FITSRenderSource( sections: file.sections )
         }
         .value
 
-        let renderer = FITSImageRenderer( input: input )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -121,11 +121,11 @@ struct FITSImageRendererTests
         {
             let file = try FITSFile( data: Data( contentsOf: url ), options: .lenient )
 
-            return try FITSImageRenderer.renderInput( from: file.sections )
+            return try FITSRenderSource( sections: file.sections )
         }
         .value
 
-        let renderer = FITSImageRenderer( input: input )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -145,8 +145,8 @@ struct FITSImageRendererTests
     func reRenderWithChangedAdjustmentsProducesNewResult() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -169,8 +169,8 @@ struct FITSImageRendererTests
     func rapidReRendersCancelThePriorPending() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         renderer.scheduleReRender()
         let first = try #require( renderer.pendingRender )
@@ -193,8 +193,8 @@ struct FITSImageRendererTests
     func rapidChangesRenderOnlyTheFinalState() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         // An intermediate change, immediately superseded by the final one before
         // the debounce elapses.
@@ -218,8 +218,8 @@ struct FITSImageRendererTests
     func failedRenderRetainsLastGoodResult() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -245,8 +245,8 @@ struct FITSImageRendererTests
     func validRenderAfterFailureRecovers() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         renderer.adjustments.stretch = .arcsinh( 0 )
 
@@ -268,7 +268,7 @@ struct FITSImageRendererTests
     @MainActor
     func firstLoadFailureHasNoResult() async throws
     {
-        let renderer = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: Data(), properties: [] ) )
+        let renderer = ImageRenderer( source: FITSRenderSource( data: Data(), properties: [] ) )
 
         await renderer.render()
 
@@ -284,8 +284,8 @@ struct FITSImageRendererTests
     func laterStartedRenderWinsRegardlessOfCommitOrder() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -315,8 +315,8 @@ struct FITSImageRendererTests
     func staleRenderDoesNotClobberNewerResult() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -341,14 +341,14 @@ struct FITSImageRendererTests
     func histogramChannelCountMatchesRenderedBuffer() async throws
     {
         let ( data, properties ) = FITSTestData.gradient()
-        let renderer             = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: data, properties: properties ) )
+        let renderer             = ImageRenderer( source: FITSRenderSource( data: data, properties: properties ) )
 
         await renderer.render()
 
         let result = try #require( renderer.result )
         let direct = try ImageProcessor.render( data: data, properties: properties )
 
-        #expect( result.histogram.rgb.data.count == direct.channels, "the histogram must use the rendered buffer's channel count" )
+        #expect( result.histogram.rgb.data.count == direct.outputPixelFormat.channels, "the histogram must use the rendered buffer's channel count" )
     }
 
     /// A non-debayered image is flagged monochrome and carries a single-channel
@@ -361,16 +361,16 @@ struct FITSImageRendererTests
     func nonDebayeredImageIsFlaggedMono() async throws
     {
         let ( data, properties ) = FITSTestData.gradient()
-        let renderer             = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: data, properties: properties ) )
+        let renderer             = ImageRenderer( source: FITSRenderSource( data: data, properties: properties ) )
 
         await renderer.render()
 
         let result = try #require( renderer.result )
         let direct = try ImageProcessor.render( data: data, properties: properties )
 
-        #expect( direct.isMonochrome, "an image with no Bayer pattern must render as monochrome" )
+        #expect( direct.inputPixelFormat == .mono, "an image with no Bayer pattern must render as monochrome" )
         #expect( result.histogram.isMono, "a non-debayered render must be flagged mono" )
-        #expect( result.histogram.mono == SwiftPixel.Histogram( bytes: direct.bytes, channels: direct.channels, mode: .mono ) )
+        #expect( result.histogram.mono == SwiftPixel.Histogram( bytes: direct.bytes, channels: direct.outputPixelFormat.channels, mode: .mono ) )
         #expect( result.histogram.mono.data.count == 1 )
         #expect( result.statistics.mono.count == result.statistics.luminance.count )
     }
@@ -386,14 +386,14 @@ struct FITSImageRendererTests
         // A Bayer pattern makes the default `.auto` debayer demosaic to true RGB.
         let properties = baseProperties + [ FITSPropertySnapshot( name: "BAYERPAT", value: .string( "RGGB" ) ) ]
 
-        let renderer = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: data, properties: properties ) )
+        let renderer = ImageRenderer( source: FITSRenderSource( data: data, properties: properties ) )
 
         await renderer.render()
 
         let result = try #require( renderer.result )
         let direct = try ImageProcessor.render( data: data, properties: properties )
 
-        #expect( direct.isMonochrome == false, "an image with a Bayer pattern must render as colour" )
+        #expect( direct.inputPixelFormat == .cfa, "an image with a Bayer pattern must render as colour" )
         #expect( result.histogram.isMono == false, "a debayered render must not be flagged mono" )
     }
 
@@ -405,8 +405,8 @@ struct FITSImageRendererTests
     func colorFixtureRendersAsColor() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.colorImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -424,13 +424,13 @@ struct FITSImageRendererTests
     func histogramComparesByIdentityNotContents() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
         let histogram = try #require( renderer.result?.histogram )
-        let sameData  = FITSImageRenderer.Histogram( rgb: histogram.rgb, luminance: histogram.luminance, mono: histogram.mono, isMono: histogram.isMono )
+        let sameData  = ImageRenderer.Histogram( rgb: histogram.rgb, luminance: histogram.luminance, mono: histogram.mono, isMono: histogram.isMono )
 
         #expect( histogram == histogram, "the same histogram instance is equal to itself" )
         #expect( histogram != sameData,  "a distinct histogram with identical bins is not equal — compared by identity, so SwiftUI never deep-compares the bins" )
@@ -441,7 +441,7 @@ struct FITSImageRendererTests
     @MainActor
     func isRenderingStartsFalse() throws
     {
-        let renderer = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: Data(), properties: [] ) )
+        let renderer = ImageRenderer( source: FITSRenderSource( data: Data(), properties: [] ) )
 
         #expect( renderer.isRendering == false )
     }
@@ -453,8 +453,8 @@ struct FITSImageRendererTests
     func renderClearsIsRenderingWhenComplete() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -469,8 +469,8 @@ struct FITSImageRendererTests
     func committingTheLatestGenerationClearsIsRendering() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -492,8 +492,8 @@ struct FITSImageRendererTests
     func staleCommitLeavesIsRenderingForTheInFlightRender() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -513,8 +513,8 @@ struct FITSImageRendererTests
     func comparisonImageIsReadyAfterRender() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -533,8 +533,8 @@ struct FITSImageRendererTests
     func theComparisonImageIsReusedAcrossReRenders() async throws
     {
         let file     = try FITSFile( data: Data( contentsOf: TestFixtures.monoImage ), options: .lenient )
-        let input    = try FITSImageRenderer.renderInput( from: file.sections )
-        let renderer = FITSImageRenderer( input: input )
+        let input    = try FITSRenderSource( sections: file.sections )
+        let renderer = ImageRenderer( source: input )
 
         await renderer.render()
 
@@ -556,7 +556,7 @@ struct FITSImageRendererTests
     {
         // A non-square image so a 90° rotation is observable as swapped dimensions.
         let ( data, properties ) = FITSTestData.gradient( width: 16, height: 8 )
-        let renderer             = FITSImageRenderer( input: FITSImageRenderer.RenderInput( data: data, properties: properties ) )
+        let renderer             = ImageRenderer( source: FITSRenderSource( data: data, properties: properties ) )
 
         await renderer.render()
 

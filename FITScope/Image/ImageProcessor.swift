@@ -28,11 +28,14 @@ import SwiftFITS
 import SwiftPixel
 import SwiftUtilities
 
-/// Turns a FITS image HDU's raw bytes and header keywords into a displayable
-/// `CGImage`, driving the `SwiftPixel` pipeline.
+/// Turns an image's raw bytes into a displayable `CGImage`, driving the
+/// `SwiftPixel` pipeline.
 ///
 /// A namespace of static functions and the value types describing the user's
-/// render choices; it holds no state.
+/// render choices; it holds no state. The current input entry,
+/// ``render(data:properties:settings:)``, is FITS-facing (it takes the header
+/// keywords as `[FITSPropertySnapshot]`) and delegates to a private,
+/// format-agnostic core that consumes only the decoded bytes and pipeline config.
 public enum ImageProcessor
 {
     /// The user's debayering choice, independent of the file's `BAYERPAT`.
@@ -156,9 +159,13 @@ public enum ImageProcessor
                 case .pattern( let p ): p
             }
 
+            // A resolved Bayer pattern means a colour-filter-array source to
+            // demosaic; its absence means a monochrome source expanded to RGB.
+            let inputFormat: PixelPipeline.Config.InputFormat = pattern.map { .cfa( pattern: $0, mode: self.debayerMode ) } ?? .mono
+
             return PixelPipeline.Config(
                 scale:              ( scale, offset ),
-                debayer:            pattern.map { ( pattern: $0, mode: self.debayerMode ) },
+                inputFormat:        inputFormat,
                 normalize:          self.normalize,
                 stretch:            self.stretch,
                 correctGamma:       nil,
@@ -188,12 +195,13 @@ public enum ImageProcessor
     ///   - data:       The image HDU's raw pixel bytes.
     ///   - properties: The owning header's property snapshots.
     ///   - settings:   The user-tunable render settings.
-    /// - Returns: The rendered image, its 8-bit bytes and its channel count
-    ///   (the bytes and channel count feed histogram computation).
+    /// - Returns: The ``RenderResult`` with the display image, its 8-bit bytes,
+    ///   and the input/output pixel formats (the bytes and formats feed histogram
+    ///   computation and the mono-vs-colour display choice).
     /// - Throws: ``RuntimeError`` for a missing or unsupported `BITPIX`, a
     ///   non-2-D image, invalid dimensions, truncated data, or an unsupported
     ///   `BAYERPAT`.
-    public static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> ( image: CGImage, bytes: [ UInt8 ], channels: Int, isMonochrome: Bool )
+    public static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> RenderResult
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.integer
         else
@@ -256,22 +264,55 @@ public enum ImageProcessor
 
         let ( scale, offset ) = ImageProcessor.scaling( from: properties )
 
-        let config   = settings.config( scale: scale, offset: offset, headerPattern: bayerPattern )
+        let config = settings.config( scale: scale, offset: offset, headerPattern: bayerPattern )
+
+        return try Self.render( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel, config: config )
+    }
+
+    /// Renders decoded samples through the configured pixel pipeline, independent
+    /// of any source file format.
+    ///
+    /// This is the format-agnostic core: the FITS-facing
+    /// ``render(data:properties:settings:)`` builds the ``PixelPipeline/Config``
+    /// from the header keywords and delegates here, and other formats can build
+    /// their own configuration and reuse this same core.
+    ///
+    /// - Parameters:
+    ///   - data:         The raw sample bytes to decode and process.
+    ///   - width:        The image width in pixels.
+    ///   - height:       The image height in pixels.
+    ///   - bitsPerPixel: The sample format of `data`.
+    ///   - config:       The configured pipeline stages, including the input
+    ///                   format that selects the channel-forming step.
+    /// - Returns: The ``RenderResult`` with the display image, its 8-bit bytes
+    ///   and the input/output pixel formats.
+    /// - Throws: Any error thrown by the pixel pipeline.
+    private static func render( data: Data, width: Int, height: Int, bitsPerPixel: BitsPerPixel, config: PixelPipeline.Config ) throws -> RenderResult
+    {
         let pipeline = PixelPipeline( config: config )
 
-        // The pipeline always emits a 3-channel buffer: a colour-filter-array
-        // image is demosaiced to RGB, while everything else is expanded from a
-        // single channel to RGB. The image is therefore monochrome — the three
-        // channels are replicated from one — exactly when no debayering ran.
-        let isMonochrome = config.debayer == nil
+        // The result's colour interpretation follows the input layout: a mono
+        // source is replicated across three channels (shown as mono), while a CFA
+        // or RGB source is genuine colour.
+        let inputPixelFormat: RenderResult.InputPixelFormat = switch config.inputFormat
+        {
+            case .mono:       .mono
+            case .cfa:        .cfa
+            case .rgb:        .rgb
+
+            // `InputFormat` is a non-frozen enum in a separate module, so a future
+            // case must be handled. Treat any unknown layout as genuine colour —
+            // the only behavioural effect is that it is not shown as monochrome.
+            @unknown default: .rgb
+        }
 
         return try Benchmark.run( label: "Rendering Image", output: Benchmarking.log )
         {
-            let buffer = try pipeline.run( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel )
+            let buffer = try pipeline.run( data: data, width: width, height: height, bitsPerPixel: bitsPerPixel )
             let bytes  = try buffer.convertTo8Bits()
             let image  = try PixelBuffer.createCGImage( bytes: bytes, width: buffer.width, height: buffer.height, channels: buffer.channels )
 
-            return ( image, bytes, buffer.channels, isMonochrome )
+            return RenderResult( image: image, bytes: bytes, inputPixelFormat: inputPixelFormat, outputPixelFormat: .rgb )
         }
     }
 
@@ -339,7 +380,7 @@ public enum ImageProcessor
     /// sample format's full scale.
     public struct PixelValue: Equatable
     {
-        /// The raw value after `BSCALE`/`BZERO` scaling.
+        /// The decoded, scaled sample value.
         public let value: Double
 
         /// The value as a fraction (`0...1`) of the integer format's full scale,

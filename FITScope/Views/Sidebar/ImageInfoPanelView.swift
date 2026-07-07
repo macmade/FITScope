@@ -25,7 +25,7 @@
 import SwiftUI
 
 /// The sidebar's bottom panel: the selected file's Image Information grid and a
-/// button that opens the full FITS headers window.
+/// button that opens the full metadata window.
 public struct ImageInfoPanelView: View
 {
     /// The file whose information is shown.
@@ -56,7 +56,7 @@ public struct ImageInfoPanelView: View
                 .foregroundStyle( Color.secondary )
                 .kerning( 1.2 )
 
-            if let info = self.file.image?.info, let summary = ImageInformation( info: info )
+            if let image = self.file.image, let summary = image.information
             {
                 Grid( alignment: .leading, horizontalSpacing: 12, verticalSpacing: 3 )
                 {
@@ -75,12 +75,12 @@ public struct ImageInfoPanelView: View
                 // with many fields it collapses and the button follows the grid.
                 Spacer( minLength: 0 )
 
-                Button( "View Full FITS Headers" )
+                Button( "View Metadata" )
                 {
-                    self.openWindow( id: "InfoWindow", value: info.imageMetadata )
+                    self.openWindow( id: "InfoWindow", value: image.metadata )
                 }
                 .frame( maxWidth: .infinity )
-                .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoPanelView.viewHeadersButton )
+                .accessibilityIdentifier( AccessibilityIdentifier.ImageInfoPanelView.viewMetadataButton )
             }
             else
             {

@@ -22,10 +22,9 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import SwiftFITS
 import SwiftUI
 
-/// A sortable, selectable table of FITS header keywords, with columns for
+/// A sortable, selectable table of image metadata properties, with columns for
 /// index, name, kind, value and comment.
 ///
 /// Keeps a locally sorted copy of the input that re-sorts when the sort order or
@@ -109,10 +108,10 @@ public struct InfoViewTable: View
 
     /// The capsule tint for a value-type kind, so each kind reads at a glance.
     ///
-    /// The kind strings are the `description`s of SwiftFITS' `FITSValue.Kind`
-    /// (`"Logical"`, `"Integer"`, `"Float"`, `"String"`, `"Undefined"`,
-    /// `"Unknown"`). Undefined, Unknown and any unrecognized kind share a neutral
-    /// grey.
+    /// The kind strings are the value-type descriptions carried by
+    /// ``ImageMetadataProperty`` (`"Logical"`, `"Integer"`, `"Float"`,
+    /// `"String"`, `"Undefined"`, `"Unknown"`). Undefined, Unknown and any
+    /// unrecognized kind share a neutral grey.
     ///
     /// - Parameter kind: The value-type description.
     /// - Returns: The pill tint for that kind.

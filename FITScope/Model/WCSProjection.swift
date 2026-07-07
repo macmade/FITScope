@@ -26,11 +26,10 @@ import CoreGraphics
 import Foundation
 
 /// A gnomonic (TAN) world-coordinate projection between sky coordinates and
-/// FITScope's source-display pixel space, built from a FITS WCS.
+/// FITScope's source-display pixel space, built from a ``WorldCoordinateSystem``.
 ///
-/// The projection needs the reference sky point (`CRVAL1`/`CRVAL2`), the
-/// reference pixel (`CRPIX1`/`CRPIX2`), and the linear transform — the `CD`
-/// matrix when present, otherwise synthesised from the `CDELT` + `CROTA2` form.
+/// The projection needs the reference sky point, the reference pixel, and a
+/// non-degenerate linear transform — all supplied by the ``WorldCoordinateSystem``.
 /// It assumes the TAN projection that plate solvers (and most capture software)
 /// emit; other projections are approximated by it near the field centre.
 ///
@@ -41,16 +40,16 @@ import Foundation
 /// sky display), since FITScope shows row 0 at the top.
 public struct WCSProjection: Sendable, Equatable
 {
-    /// The reference right ascension (`CRVAL1`), in degrees.
+    /// The reference right ascension, in degrees.
     public let referenceRA: Double
 
-    /// The reference declination (`CRVAL2`), in degrees.
+    /// The reference declination, in degrees.
     public let referenceDec: Double
 
-    /// The reference pixel along axis 1 (`CRPIX1`), 1-based.
+    /// The reference pixel along axis 1, 1-based.
     private let referencePixelX: Double
 
-    /// The reference pixel along axis 2 (`CRPIX2`), 1-based.
+    /// The reference pixel along axis 2, 1-based.
     private let referencePixelY: Double
 
     /// The `CD` matrix elements, in degrees per pixel.
@@ -65,40 +64,18 @@ public struct WCSProjection: Sendable, Equatable
     private let inverse21: Double
     private let inverse22: Double
 
-    /// The four elements of a WCS linear transform (`CD` matrix), in degrees per
-    /// pixel.
-    public struct CDMatrix: Sendable, Equatable
-    {
-        /// The `CD1_1` element.
-        public let cd11: Double
-
-        /// The `CD1_2` element.
-        public let cd12: Double
-
-        /// The `CD2_1` element.
-        public let cd21: Double
-
-        /// The `CD2_2` element.
-        public let cd22: Double
-
-        /// The matrix determinant.
-        public var determinant: Double
-        {
-            ( self.cd11 * self.cd22 ) - ( self.cd12 * self.cd21 )
-        }
-    }
-
-    /// Creates a projection from a WCS, or returns `nil` when the WCS lacks a
-    /// reference point, a reference pixel, or a non-degenerate linear transform.
+    /// Creates a projection from a world-coordinate system, or returns `nil` when
+    /// it lacks a reference point, a reference pixel, or a non-degenerate linear
+    /// transform.
     ///
-    /// - Parameter metadata: The world-coordinate system.
-    public init?( metadata: FITSMetadata )
+    /// - Parameter wcs: The world-coordinate system.
+    public init?( _ wcs: WorldCoordinateSystem )
     {
-        guard let referenceRA  = metadata.crval1,
-              let referenceDec = metadata.crval2,
-              let crpix1       = metadata.crpix1,
-              let crpix2       = metadata.crpix2,
-              let cd           = Self.cdMatrix( metadata: metadata )
+        guard let referenceRA  = wcs.referenceRA,
+              let referenceDec = wcs.referenceDec,
+              let crpix1       = wcs.referencePixelX,
+              let crpix2       = wcs.referencePixelY,
+              let cd           = wcs.cdMatrix
         else
         {
             return nil
@@ -124,36 +101,6 @@ public struct WCSProjection: Sendable, Equatable
         self.inverse12       = -cd.cd12 / determinant
         self.inverse21       = -cd.cd21 / determinant
         self.inverse22       =  cd.cd11 / determinant
-    }
-
-    /// The WCS linear transform: the `CD` matrix when all four elements are
-    /// present, otherwise the standard AIPS `CDELT` + `CROTA2` synthesis. Returns
-    /// `nil` when neither form is available.
-    ///
-    /// - Parameter metadata: The world-coordinate system.
-    /// - Returns: The transform, or `nil`.
-    public static func cdMatrix( metadata: FITSMetadata ) -> CDMatrix?
-    {
-        if let cd11 = metadata.cd1_1, let cd12 = metadata.cd1_2, let cd21 = metadata.cd2_1, let cd22 = metadata.cd2_2
-        {
-            return CDMatrix( cd11: cd11, cd12: cd12, cd21: cd21, cd22: cd22 )
-        }
-
-        guard let cdelt1 = metadata.cdelt1, let cdelt2 = metadata.cdelt2
-        else
-        {
-            return nil
-        }
-
-        // CROTA2 is the rotation of the second axis; absent, the axes are aligned.
-        let rotation = ( metadata.crota2 ?? 0 ) * .pi / 180
-
-        return CDMatrix(
-            cd11:  cdelt1 * cos( rotation ),
-            cd12: -cdelt2 * sin( rotation ),
-            cd21:  cdelt1 * sin( rotation ),
-            cd22:  cdelt2 * cos( rotation )
-        )
     }
 
     /// The source-space pixel a sky position projects to, or `nil` when the

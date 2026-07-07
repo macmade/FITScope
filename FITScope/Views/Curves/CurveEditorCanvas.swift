@@ -65,7 +65,7 @@ struct CurveEditorCanvas: View
     /// backdrop, or `nil` before the first render. Uses the same ``HistogramView``
     /// as the Levels editor, with its own grid suppressed so only this canvas's
     /// grid shows through.
-    let histogram: FITSImageRenderer.Histogram?
+    let histogram: ImageRenderer.Histogram?
 
     /// Called after any change to the points, so the owner can commit + re-render.
     let onChange: () -> Void

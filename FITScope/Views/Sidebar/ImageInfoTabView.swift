@@ -191,8 +191,8 @@ public struct ImageInfoTabView: View
     /// content height into ``infoContentHeight``.
     ///
     /// It is removed from the accessibility tree: being a second copy of the panel,
-    /// it would otherwise duplicate every identifier inside it (e.g. the "View Full
-    /// FITS Headers" button), so a UI test resolving an identifier could match this
+    /// it would otherwise duplicate every identifier inside it (e.g. the "View
+    /// Metadata" button), so a UI test resolving an identifier could match this
     /// non-interactive probe instead of the visible panel. `.hidden()` alone does
     /// not exclude it, so `.accessibilityHidden(true)` is applied explicitly.
     private var heightProbe: some View
@@ -207,7 +207,7 @@ public struct ImageInfoTabView: View
     /// The selected image's capture date (`DATE-OBS`), or `nil` when absent.
     private var observationDate: Date?
     {
-        self.file.image?.info.metadata.observationDate
+        self.file.image?.observationDate
     }
 
     /// The SF Symbol for a tab. The Moon tab uses the current phase shape when the
@@ -233,7 +233,7 @@ public struct ImageInfoTabView: View
     /// when its header carries no observing-site coordinates.
     private var coordinate: CLLocationCoordinate2D?
     {
-        guard let coordinate = self.file.image?.info.metadata.coordinate
+        guard let coordinate = self.file.image?.coordinate
         else
         {
             return nil
@@ -247,7 +247,7 @@ public struct ImageInfoTabView: View
     /// sun & twilight computation.
     private var skyLocation: GeographicLocation?
     {
-        guard let coordinate = self.file.image?.info.metadata.coordinate
+        guard let coordinate = self.file.image?.coordinate
         else
         {
             return nil

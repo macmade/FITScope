@@ -91,28 +91,6 @@ public struct FITSMetadata: Sendable
         }
     }
 
-    /// A geographic coordinate pair — the observing site's latitude and
-    /// longitude, in decimal degrees.
-    public struct Coordinate: Equatable, Sendable
-    {
-        /// The latitude, in decimal degrees (positive north).
-        public let latitude: Double
-
-        /// The longitude, in decimal degrees (positive east).
-        public let longitude: Double
-
-        /// Creates a coordinate.
-        ///
-        /// - Parameters:
-        ///   - latitude:  The latitude, in decimal degrees.
-        ///   - longitude: The longitude, in decimal degrees.
-        public init( latitude: Double, longitude: Double )
-        {
-            self.latitude  = latitude
-            self.longitude = longitude
-        }
-    }
-
     /// The header values, keyed by upper-cased keyword name. The first
     /// occurrence of a repeated keyword wins.
     private let values: [ String: FITSValue ]
@@ -179,6 +157,30 @@ public struct FITSMetadata: Sendable
 
     /// The coordinate type of axis 2 (`CTYPE2`), e.g. `"DEC--TAN"`.
     public var ctype2: String? { self.string( "CTYPE2" ) }
+
+    /// The header's world-coordinate system as the format-neutral
+    /// ``WorldCoordinateSystem`` the astrometric overlays consume, or `nil` when
+    /// the header carries no WCS at all. Both the reference point (`CRVAL`/`CRPIX`)
+    /// and the linear transform (the `CD` matrix, or the `CDELT` + `CROTA2`
+    /// synthesis) are optional, so an orientation-only header still yields one.
+    public var worldCoordinateSystem: WorldCoordinateSystem?
+    {
+        let cd = WCSProjection.cdMatrix( metadata: self )
+
+        guard cd != nil || self.crval1 != nil || self.crval2 != nil || self.crpix1 != nil || self.crpix2 != nil
+        else
+        {
+            return nil
+        }
+
+        return WorldCoordinateSystem(
+            referenceRA:     self.crval1,
+            referenceDec:    self.crval2,
+            referencePixelX: self.crpix1,
+            referencePixelY: self.crpix2,
+            cdMatrix:        cd
+        )
+    }
 
     // MARK: - Derived astrometry
 

@@ -178,7 +178,7 @@ struct AstrometryClientTests
 
         let wcs = try #require( result.wcs )
 
-        #expect( abs( ( wcs.rightAscension ?? 0 ) - 182.625_706 ) < 0.001 )
+        #expect( abs( ( wcs.referenceRA ?? 0 ) - 182.625_706 ) < 0.001 )
 
         let phases = await recorder.phases
 
@@ -237,7 +237,7 @@ struct AstrometryClientTests
     }
 
     /// Downloading and parsing a solved job's `wcs.fits` yields a populated
-    /// ``FITSMetadata`` — the WCS the overlays read.
+    /// ``WorldCoordinateSystem`` — the WCS the overlays read.
     @Test
     func wcsMetadataParsesWCSKeywords() async throws
     {
@@ -245,8 +245,8 @@ struct AstrometryClientTests
         let client    = AstrometryClient( transport: transport, pollInterval: .zero )
         let wcs       = try #require( await client.wcsMetadata( jobID: 42 ) )
 
-        #expect( abs( ( wcs.rightAscension ?? 0 ) - 182.625_706 ) < 0.001 )
-        #expect( abs( ( wcs.declination ?? 0 ) - 39.412_337 ) < 0.001 )
-        #expect( ( wcs.pixelScale ?? 0 ) > 0 )
+        #expect( abs( ( wcs.referenceRA ?? 0 ) - 182.625_706 ) < 0.001 )
+        #expect( abs( ( wcs.referenceDec ?? 0 ) - 39.412_337 ) < 0.001 )
+        #expect( wcs.cdMatrix != nil )
     }
 }

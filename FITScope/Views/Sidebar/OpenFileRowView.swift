@@ -23,9 +23,11 @@
  ******************************************************************************/
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// A single row in the files sidebar: a thumbnail placeholder, the file name,
-/// and a one-line metadata summary (`FITS • 16-bit • W × H`).
+/// and a one-line metadata summary (`Type • 16-bit • W × H`), whose leading type
+/// label is derived from the file's UTI so any format labels itself.
 public struct OpenFileRowView: View
 {
     /// The file this row represents.
@@ -158,17 +160,32 @@ public struct OpenFileRowView: View
         self.file.hasAdjustments
     }
 
-    /// A one-line summary derived from the loaded image's header, or a neutral
-    /// placeholder while loading or on error.
+    /// A one-line summary derived from the loaded image's metadata, prefixed with
+    /// the file's type, or a neutral placeholder while loading or on error.
     private var metadataSummary: String
     {
-        guard let info = self.file.image?.info,
-              let summary = ImageInformation( info: info )
+        guard let summary = self.file.image?.information
         else
         {
             return self.file.error == nil ? "Loading…" : "Failed to load"
         }
 
-        return "FITS • \( summary.bitDepth ) • \( summary.dimensions )"
+        return "\( self.typeLabel ) • \( summary.bitDepth ) • \( summary.dimensions )"
+    }
+
+    /// A concise, format-neutral label for the file's type, resolved from its
+    /// `UTType` so any format labels itself rather than a hard-coded name. Prefers
+    /// the type's localized description, falling back to the upper-cased filename
+    /// extension when the type is unknown.
+    private var typeLabel: String
+    {
+        let type = UTType( filenameExtension: self.file.url.pathExtension )
+
+        if let description = type?.localizedDescription, description.isEmpty == false
+        {
+            return description
+        }
+
+        return self.file.url.pathExtension.uppercased()
     }
 }

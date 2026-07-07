@@ -452,8 +452,8 @@ public enum AccessibilityIdentifier
     /// Identifiers applied by ``FITScope/ImageInfoPanelView``.
     public enum ImageInfoPanelView
     {
-        /// The button that opens the full FITS headers window.
-        public static let viewHeadersButton = "ImageInfoPanelView.viewHeadersButton"
+        /// The button that opens the full metadata window.
+        public static let viewMetadataButton = "ImageInfoPanelView.viewMetadataButton"
     }
 
     /// Identifiers applied by ``FITScope/ImageInfoTabView`` (the info-panel tab
@@ -466,7 +466,7 @@ public enum AccessibilityIdentifier
         /// No container-level identifier is applied to the tab host's root: a
         /// container `accessibilityIdentifier` propagates to every descendant
         /// element, which would override the identifiers the inner views set (e.g.
-        /// the Info panel's "View Full FITS Headers" button), so it is omitted.
+        /// the Info panel's "View Metadata" button), so it is omitted.
         public static let tabs = "ImageInfoTabView.tabs"
     }
 
@@ -544,7 +544,7 @@ public enum AccessibilityIdentifier
         public static let icon = "SkyBackgroundView.icon"
     }
 
-    /// Identifiers applied by ``FITScope/InfoView`` (the FITS headers window).
+    /// Identifiers applied by ``FITScope/InfoView`` (the metadata window).
     public enum InfoView
     {
         /// The header-keyword table.

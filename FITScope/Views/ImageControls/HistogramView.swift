@@ -31,7 +31,7 @@ import SwiftUI
 public struct HistogramView: View
 {
     /// The histograms to draw.
-    public let histogram: FITSImageRenderer.Histogram
+    public let histogram: ImageRenderer.Histogram
 
     /// Whether to draw the RGB channels in separate stacked strips rather than
     /// overlaid. Only honoured in RGB mode.
@@ -59,7 +59,7 @@ public struct HistogramView: View
     ///   - logScale:         Whether to scale bar heights logarithmically.
     ///   - showsGrid:        Whether to draw the reference grid (default `true`);
     ///                       pass `false` when overlaying another grid.
-    public init( histogram: FITSImageRenderer.Histogram, separateChannels: Bool, mode: HistogramControlView.Mode, logScale: Bool, showsGrid: Bool = true )
+    public init( histogram: ImageRenderer.Histogram, separateChannels: Bool, mode: HistogramControlView.Mode, logScale: Bool, showsGrid: Bool = true )
     {
         self.histogram        = histogram
         self.separateChannels = separateChannels

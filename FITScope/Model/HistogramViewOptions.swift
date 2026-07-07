@@ -25,7 +25,7 @@
 import Combine
 
 /// The per-image histogram view options the inspector reads and writes. Held per
-/// image (see ``FITSImage``) so a file keeps its own choices — selected channels,
+/// image (see ``LoadedImage``) so a file keeps its own choices — selected channels,
 /// and which panels are shown — as the user switches between open images and the
 /// inspector is rebuilt for each.
 @MainActor

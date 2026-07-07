@@ -71,12 +71,57 @@ struct ImageCommands: View
         self.file?.image != nil
     }
 
-    /// The menu items: zoom, overlay toggles, orientation, invert / reset, the
-    /// Levels and Curves editors, the FITS-headers window, then plate solving.
+    /// The *Image* menu, as an ordered outline: zoom, the before/after compare
+    /// toggle, overlay toggles, orientation, invert / reset, the Levels and Curves
+    /// editors, the metadata window, session metrics, then plate solving. Each
+    /// item is built by its own method, and each carries the same SF Symbol as its
+    /// toolbar / inspector button so the menu reads as the same actions elsewhere.
     var body: some View
     {
-        // Each item carries the same SF Symbol as its toolbar / inspector button,
-        // so the menu reads as the same actions in a different place.
+        self.zoomInButton()
+        self.zoomOutButton()
+        self.actualSizeButton()
+        self.fitButton()
+        self.recenterButton()
+
+        Divider()
+
+        self.compareToggle()
+        self.overlayToggles()
+
+        Divider()
+
+        self.rotateLeftButton()
+        self.rotateRightButton()
+        self.flipHorizontalButton()
+        self.flipVerticalButton()
+
+        Divider()
+
+        self.invertToggle()
+        self.resetButton()
+
+        Divider()
+
+        self.levelsButton()
+        self.curvesButton()
+
+        Divider()
+
+        self.headersButton()
+
+        Divider()
+
+        self.sessionMetricsButton()
+
+        Divider()
+
+        self.plateSolveButton()
+    }
+
+    /// Zooms the canvas in.
+    private func zoomInButton() -> some View
+    {
         Button
         {
             self.canvas?.zoomIn()
@@ -87,7 +132,11 @@ struct ImageCommands: View
         }
         .keyboardShortcut( "+", modifiers: .command )
         .disabled( self.canvas == nil )
+    }
 
+    /// Zooms the canvas out.
+    private func zoomOutButton() -> some View
+    {
         Button
         {
             self.canvas?.zoomOut()
@@ -98,7 +147,11 @@ struct ImageCommands: View
         }
         .keyboardShortcut( "-", modifiers: .command )
         .disabled( self.canvas == nil || self.canvas?.canZoomOut == false )
+    }
 
+    /// Restores the canvas to its actual pixel size.
+    private func actualSizeButton() -> some View
+    {
         Button
         {
             self.canvas?.actualSize()
@@ -109,7 +162,11 @@ struct ImageCommands: View
         }
         .keyboardShortcut( "0", modifiers: .command )
         .disabled( self.canvas == nil )
+    }
 
+    /// Fits the image to the window.
+    private func fitButton() -> some View
+    {
         Button
         {
             self.canvas?.fit()
@@ -120,7 +177,11 @@ struct ImageCommands: View
         }
         .keyboardShortcut( "9", modifiers: .command )
         .disabled( self.canvas == nil )
+    }
 
+    /// Recenters the image in the window.
+    private func recenterButton() -> some View
+    {
         Button
         {
             self.canvas?.recenter()
@@ -130,28 +191,33 @@ struct ImageCommands: View
             Label( "Recenter", systemImage: "scope" )
         }
         .disabled( self.canvas == nil )
+    }
 
-        Divider()
-
-        // The before/after comparison — a canvas view aid, so it toggles the same
-        // controller state the floating toolbar's compare button drives. The
-        // binding ignores the new value and routes to the shared toggle, so both
-        // places behave identically. Needs a rendered image, like the orientation
-        // and editor items below.
+    /// Toggles the before/after comparison — a canvas-view aid, so the binding
+    /// ignores the new value and routes to the shared controller toggle, mirroring
+    /// the floating toolbar's compare button. Needs a rendered image, like the
+    /// orientation and editor items.
+    private func compareToggle() -> some View
+    {
         Toggle( isOn: Binding( get: { self.canvas?.isComparing ?? false }, set: { _ in self.canvas?.toggleComparison() } ) )
         {
             Label( "Compare Before/After", systemImage: "rectangle.split.2x1" )
         }
         .disabled( self.canvas == nil || self.hasImage == false )
+    }
 
+    /// The overlay toggles, one per available overlay, shown (with a leading
+    /// divider) only when the canvas has overlays. Each mirrors its toolbar toggle:
+    /// the binding ignores the new value and routes to the shared tap handler, so an
+    /// overlay with no data explains itself (or proposes a plate solve) instead of
+    /// switching on, exactly as tapping its toolbar button does.
+    @ViewBuilder
+    private func overlayToggles() -> some View
+    {
         if let canvas = self.canvas, canvas.overlays.isEmpty == false
         {
             Divider()
 
-            // Each overlay mirrors its toolbar toggle — same icon, and a binding that
-            // ignores the new value and routes to the shared tap handler, so an
-            // overlay with no data explains itself (or proposes a plate solve)
-            // instead of switching on, exactly as tapping its toolbar button does.
             ForEach( canvas.overlays, id: \.id )
             {
                 overlay in
@@ -162,11 +228,12 @@ struct ImageCommands: View
                 }
             }
         }
+    }
 
-        Divider()
-
-        // Orientation — the same actions and icons as the inspector's orientation
-        // control, driving the shared adjustments so the inspector stays in step.
+    /// Rotates the image 90° counter-clockwise, driving the shared adjustments so
+    /// the inspector's orientation control stays in step.
+    private func rotateLeftButton() -> some View
+    {
         Button
         {
             self.file?.image?.rotateLeft()
@@ -176,7 +243,11 @@ struct ImageCommands: View
             Label( "Rotate Left", systemImage: "rotate.left" )
         }
         .disabled( self.hasImage == false )
+    }
 
+    /// Rotates the image 90° clockwise.
+    private func rotateRightButton() -> some View
+    {
         Button
         {
             self.file?.image?.rotateRight()
@@ -186,7 +257,11 @@ struct ImageCommands: View
             Label( "Rotate Right", systemImage: "rotate.right" )
         }
         .disabled( self.hasImage == false )
+    }
 
+    /// Flips the image horizontally.
+    private func flipHorizontalButton() -> some View
+    {
         Button
         {
             self.file?.image?.flipHorizontal()
@@ -196,7 +271,11 @@ struct ImageCommands: View
             Label( "Flip Horizontal", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right" )
         }
         .disabled( self.hasImage == false )
+    }
 
+    /// Flips the image vertically.
+    private func flipVerticalButton() -> some View
+    {
         Button
         {
             self.file?.image?.flipVertical()
@@ -206,17 +285,23 @@ struct ImageCommands: View
             Label( "Flip Vertical", systemImage: "arrow.up.and.down.righttriangle.up.righttriangle.down" )
         }
         .disabled( self.hasImage == false )
+    }
 
-        Divider()
-
-        // Invert mirrors the inspector's toggle: the binding ignores the new value
-        // and routes to the shared action, which also reseeds the inspector.
+    /// Toggles the photographic-negative inversion, mirroring the inspector's
+    /// toggle: the binding ignores the new value and routes to the shared action,
+    /// which also reseeds the inspector.
+    private func invertToggle() -> some View
+    {
         Toggle( isOn: Binding( get: { self.file?.image?.renderer.adjustments.invert ?? false }, set: { _ in self.file?.image?.toggleInvert() } ) )
         {
             Label( "Invert", systemImage: "circle.righthalf.filled" )
         }
         .disabled( self.hasImage == false )
+    }
 
+    /// Resets every image adjustment to its default.
+    private func resetButton() -> some View
+    {
         Button
         {
             self.file?.image?.resetAdjustments()
@@ -226,9 +311,11 @@ struct ImageCommands: View
             Label( "Reset View", systemImage: "arrow.counterclockwise" )
         }
         .disabled( self.hasImage == false )
+    }
 
-        Divider()
-
+    /// Opens the Levels editor window.
+    private func levelsButton() -> some View
+    {
         Button
         {
             self.openWindow( id: "LevelsWindow" )
@@ -238,7 +325,11 @@ struct ImageCommands: View
             Label( "Levels\u{2026}", systemImage: "slider.horizontal.below.rectangle" )
         }
         .disabled( self.hasImage == false )
+    }
 
+    /// Opens the Curves editor window.
+    private func curvesButton() -> some View
+    {
         Button
         {
             self.openWindow( id: "CurvesWindow" )
@@ -248,28 +339,41 @@ struct ImageCommands: View
             Label( "Curves\u{2026}", systemImage: "point.topleft.down.to.point.bottomright.curvepath" )
         }
         .disabled( self.hasImage == false )
+    }
 
-        Divider()
-
-        Button
+    /// Opens the metadata window for the focused image. The metadata is captured
+    /// here so the button's action holds a non-optional value; when there is no image
+    /// a disabled placeholder is shown instead.
+    @ViewBuilder
+    private func headersButton() -> some View
+    {
+        if let metadata = self.file?.image?.metadata
         {
-            if let info = self.file?.image?.info
+            Button
             {
-                self.openWindow( id: "InfoWindow", value: info.imageMetadata )
+                self.openWindow( id: "InfoWindow", value: metadata )
+            }
+            label:
+            {
+                Label( "View Metadata\u{2026}", systemImage: "tablecells" )
             }
         }
-        label:
+        else
         {
-            Label( "View FITS Headers\u{2026}", systemImage: "tablecells" )
+            Button( action: {} )
+            {
+                Label( "View Metadata\u{2026}", systemImage: "tablecells" )
+            }
+            .disabled( true )
         }
-        .disabled( self.hasImage == false )
+    }
 
-        Divider()
-
-        // Trends every open file's metrics, so it only needs a window with files —
-        // not the selected image finished rendering — and stays available while the
-        // session is still being analysed. It is session-scoped rather than tied to
-        // the shown image, so it sits in its own group, apart from the headers item.
+    /// Opens the Session Metrics window. It trends every open file's metrics, so it
+    /// only needs a window with files — not the selected image finished rendering —
+    /// and stays available while the session is still being analysed, which is why it
+    /// sits in its own group apart from the headers item.
+    private func sessionMetricsButton() -> some View
+    {
         Button
         {
             self.openWindow( id: "SessionMetricsWindow" )
@@ -279,9 +383,11 @@ struct ImageCommands: View
             Label( "Session Metrics\u{2026}", systemImage: "chart.line.uptrend.xyaxis" )
         }
         .disabled( self.file == nil )
+    }
 
-        Divider()
-
+    /// Starts plate-solving the focused file with the configured Astrometry.net key.
+    private func plateSolveButton() -> some View
+    {
         Button
         {
             if let file = self.file

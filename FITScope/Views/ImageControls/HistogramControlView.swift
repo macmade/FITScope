@@ -47,14 +47,14 @@ public struct HistogramControlView: View
     @ObservedObject private var options: HistogramViewOptions
 
     /// The processed histograms to display.
-    public let histogram: FITSImageRenderer.Histogram
+    public let histogram: ImageRenderer.Histogram
 
     /// The per-channel statistics for the processed image.
-    public let statistics: FITSImageRenderer.HistogramStatistics
+    public let statistics: ImageRenderer.HistogramStatistics
 
     /// The original (unprocessed) histogram and statistics, or `nil` if not yet
     /// computed. When present, the user can switch the display to it.
-    public let original: FITSImageRenderer.HistogramSet?
+    public let original: ImageRenderer.HistogramSet?
 
     /// Creates the histogram control.
     ///
@@ -63,7 +63,7 @@ public struct HistogramControlView: View
     ///   - statistics: The per-channel statistics for the processed image.
     ///   - original:   The original histogram and statistics, or `nil`.
     ///   - options:    The image's persistent histogram view options.
-    public init( histogram: FITSImageRenderer.Histogram, statistics: FITSImageRenderer.HistogramStatistics, original: FITSImageRenderer.HistogramSet?, options: HistogramViewOptions )
+    public init( histogram: ImageRenderer.Histogram, statistics: ImageRenderer.HistogramStatistics, original: ImageRenderer.HistogramSet?, options: HistogramViewOptions )
     {
         self.histogram  = histogram
         self.statistics = statistics
@@ -195,7 +195,7 @@ public struct HistogramControlView: View
 
     /// The histograms to draw: the original when "Show Original" is on and the
     /// original is available, otherwise the processed ones.
-    private var displayedHistogram: FITSImageRenderer.Histogram
+    private var displayedHistogram: ImageRenderer.Histogram
     {
         if self.options.showOriginal, let original = self.original
         {
@@ -206,7 +206,7 @@ public struct HistogramControlView: View
     }
 
     /// The statistics to show, matching ``displayedHistogram``.
-    private var displayedStatistics: FITSImageRenderer.HistogramStatistics
+    private var displayedStatistics: ImageRenderer.HistogramStatistics
     {
         if self.options.showOriginal, let original = self.original
         {
@@ -222,7 +222,7 @@ public struct HistogramControlView: View
     HistogramControlView(
         histogram:  PreviewHelper.histogram(),
         statistics: PreviewHelper.statistics(),
-        original:   FITSImageRenderer.HistogramSet( histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() ),
+        original:   ImageRenderer.HistogramSet( histogram: PreviewHelper.histogram(), statistics: PreviewHelper.statistics() ),
         options:    HistogramViewOptions()
     )
     .frame( maxWidth: .infinity, alignment: .leading )

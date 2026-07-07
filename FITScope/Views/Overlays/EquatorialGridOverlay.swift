@@ -68,9 +68,9 @@ public struct EquatorialGridOverlay: CanvasOverlay
     ///                       Defaults to `nil`.
     ///   - appearance:       The grid's colour and its label/line opacities. Defaults
     ///                       to ``EquatorialGridOverlay/defaultAppearance``.
-    public init( wcs: FITSMetadata?, orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil, appearance: OverlayAppearance = EquatorialGridOverlay.defaultAppearance )
+    public init( wcs: WorldCoordinateSystem?, orientation: Processors.Orient.Orientation = .identity, onUnavailableTap: ( () -> Void )? = nil, appearance: OverlayAppearance = EquatorialGridOverlay.defaultAppearance )
     {
-        self.projection       = wcs.flatMap { WCSProjection( metadata: $0 ) }
+        self.projection       = wcs.flatMap { WCSProjection( $0 ) }
         self.orientation      = orientation
         self.onUnavailableTap = onUnavailableTap
         self.appearance       = appearance

@@ -289,8 +289,8 @@ public final class AppModel: ObservableObject
         self.openWindowWithURLs?( urls )
     }
 
-    /// Presents a Save panel and copies the file's original, unmodified FITS
-    /// bytes to the chosen location. Presents an alert if the copy fails, so a
+    /// Presents a Save panel and copies the file's original, unmodified bytes
+    /// to the chosen location. Presents an alert if the copy fails, so a
     /// save never fails silently. A cancelled panel is a no-op.
     ///
     /// The copy is byte-identical to the opened file — no re-encoding — so this
@@ -299,7 +299,9 @@ public final class AppModel: ObservableObject
     /// - Parameter file: The open file to copy.
     public func saveCopy( of file: OpenFile )
     {
-        guard let destination = Self.runSavePanel( suggestedName: file.displayName, contentTypes: [ .fits ] )
+        let contentType = UTType( filenameExtension: file.url.pathExtension ) ?? .fits
+
+        guard let destination = Self.runSavePanel( suggestedName: file.displayName, contentTypes: [ contentType ] )
         else
         {
             return
@@ -320,7 +322,7 @@ public final class AppModel: ObservableObject
     /// Presents an alert if encoding fails, so an export never fails silently. A
     /// cancelled panel is a no-op.
     ///
-    /// Unlike ``saveCopy(of:)``, which duplicates the original FITS bytes, this
+    /// Unlike ``saveCopy(of:)``, which duplicates the original bytes, this
     /// encodes the display-ready pixels. If the image has not finished rendering
     /// there is nothing to export, so the user is told to try again rather than
     /// shown an empty panel.
@@ -372,7 +374,7 @@ public final class AppModel: ObservableObject
         }
     }
 
-    /// Opens the file's *original*, unmodified FITS file in the given external
+    /// Opens the file's *original*, unmodified file in the given external
     /// application. The launch errors are surfaced in an alert so an *Open With*
     /// never fails silently.
     ///
@@ -391,7 +393,7 @@ public final class AppModel: ObservableObject
     ///
     /// The display-ready pixels are written to a temporary lossless TIFF (via
     /// ``ExternalImageFile``) and that file is opened, so the external app sees
-    /// the processed result rather than the raw FITS data. If the image has not
+    /// the processed result rather than the raw source data. If the image has not
     /// finished rendering there is nothing to open, so the user is told to try
     /// again. Encoding and launch errors are surfaced in an alert.
     ///
@@ -420,7 +422,7 @@ public final class AppModel: ObservableObject
         }
     }
 
-    /// Presents an application chooser and opens the file's *original* FITS file
+    /// Presents an application chooser and opens the file's *original* file
     /// with the picked application. A cancelled chooser is a no-op. Backs the
     /// *Open With ▸ Other…* menu item.
     ///
@@ -597,7 +599,7 @@ public final class AppModel: ObservableObject
         alert.runModal()
     }
 
-    /// Presents an Open panel for FITS files.
+    /// Presents an Open panel for opening images.
     ///
     /// - Returns: The chosen URLs, or an empty array if cancelled.
     public func runOpenPanel() -> [ URL ]

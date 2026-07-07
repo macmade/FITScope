@@ -310,9 +310,9 @@ final class FITScopeUITests: XCTestCase
             "The image canvas did not appear after opening a fixture."
         )
 
-        let openHeaders = UITestSupport.element( app, AccessibilityIdentifier.ImageInfoPanelView.viewHeadersButton )
+        let openHeaders = UITestSupport.element( app, AccessibilityIdentifier.ImageInfoPanelView.viewMetadataButton )
 
-        XCTAssertTrue( openHeaders.waitForExistence( timeout: 10 ), "The 'View Full FITS Headers' button did not appear." )
+        XCTAssertTrue( openHeaders.waitForExistence( timeout: 10 ), "The 'View Metadata' button did not appear." )
 
         openHeaders.click()
 
@@ -809,7 +809,7 @@ final class FITScopeUITests: XCTestCase
 
         row.rightClick()
 
-        UITestSupport.clickMenuItem( "View FITS Headers", in: app )
+        UITestSupport.clickMenuItem( "View Metadata\u{2026}", in: app )
 
         XCTAssertTrue(
             UITestSupport.element( app, AccessibilityIdentifier.InfoView.searchField ).waitForExistence( timeout: 10 ),
@@ -1249,9 +1249,9 @@ final class FITScopeUITests: XCTestCase
             "The image canvas did not appear after opening a fixture."
         )
 
-        let openHeaders = UITestSupport.element( app, AccessibilityIdentifier.ImageInfoPanelView.viewHeadersButton )
+        let openHeaders = UITestSupport.element( app, AccessibilityIdentifier.ImageInfoPanelView.viewMetadataButton )
 
-        XCTAssertTrue( openHeaders.waitForExistence( timeout: 10 ), "The 'View Full FITS Headers' button did not appear." )
+        XCTAssertTrue( openHeaders.waitForExistence( timeout: 10 ), "The 'View Metadata' button did not appear." )
         openHeaders.click()
 
         let table = UITestSupport.element( app, AccessibilityIdentifier.InfoView.table )
@@ -1301,9 +1301,9 @@ final class FITScopeUITests: XCTestCase
             "The image canvas did not appear after opening a fixture."
         )
 
-        let openHeaders = UITestSupport.element( app, AccessibilityIdentifier.ImageInfoPanelView.viewHeadersButton )
+        let openHeaders = UITestSupport.element( app, AccessibilityIdentifier.ImageInfoPanelView.viewMetadataButton )
 
-        XCTAssertTrue( openHeaders.waitForExistence( timeout: 10 ), "The 'View Full FITS Headers' button did not appear." )
+        XCTAssertTrue( openHeaders.waitForExistence( timeout: 10 ), "The 'View Metadata' button did not appear." )
         openHeaders.click()
 
         let picker = UITestSupport.element( app, AccessibilityIdentifier.InfoView.sectionPicker )
