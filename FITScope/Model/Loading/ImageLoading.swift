@@ -39,7 +39,16 @@ import Combine
 public protocol ImageLoading: AnyObject
 {
     /// The successfully loaded image, or `nil` before loading or after a failure.
+    ///
+    /// For a multi-frame file this is the primary (first) frame; ``frames`` holds
+    /// the full list.
     var image: LoadedImage? { get }
+
+    /// The frames the file decoded into, in display order — one per image the file
+    /// holds. Single-image formats vend exactly one; a file that has not loaded (or
+    /// failed) vends none. A multi-image format (a FITS cube, XISF, HEIC) overrides
+    /// the default to vend one ``LoadedImage`` per contained image.
+    var frames: [ LoadedImage ] { get }
 
     /// The error from the most recent failed load, or `nil` on success.
     var error: ( any Swift.Error )? { get }
@@ -58,4 +67,15 @@ public protocol ImageLoading: AnyObject
     /// failure. Successful loads are cached; a repeated call once an image exists
     /// is a no-op, while a prior failure still retries.
     func load() async
+}
+
+public extension ImageLoading
+{
+    /// The default single-frame derivation: a loaded image is the file's one and
+    /// only frame; no image means no frames. Multi-image loaders override this to
+    /// vend a frame per contained image.
+    var frames: [ LoadedImage ]
+    {
+        self.image.map { [ $0 ] } ?? []
+    }
 }

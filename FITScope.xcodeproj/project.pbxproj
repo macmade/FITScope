@@ -38,6 +38,11 @@
 		05DD1000000000000000FB0D /* ImageRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0B /* ImageRenderSource.swift */; };
 		05DD1000000000000000FB0E /* FITSRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0C /* FITSRenderSource.swift */; };
 		05EE1000000000000000FB11 /* ImageMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA11 /* ImageMetadataTests.swift */; };
+		CA1100000000000000000011 /* ImageCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000001 /* ImageCarouselView.swift */; };
+		CA1100000000000000000012 /* ImageCarouselCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000002 /* ImageCarouselCellView.swift */; };
+		CA1100000000000000000013 /* ImageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000003 /* ImageDetailView.swift */; };
+		CA1100000000000000000014 /* OpenFileFramesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000004 /* OpenFileFramesTests.swift */; };
+		CA1100000000000000000015 /* ImageCarouselViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000005 /* ImageCarouselViewTests.swift */; };
 		05EE1000000000000000FB12 /* ImageMetadataFITSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */; };
 		0579B6222DF24C33002FDD47 /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6212DF24C31002FDD47 /* InfoView.swift */; };
 		0579B6252DF2C149002FDD47 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0579B6232DF2C120002FDD47 /* Preview Assets.xcassets */; };
@@ -682,6 +687,11 @@
 		B614AFC866925D60CB8F2447 /* SessionMetricSeries.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionMetricSeries.swift; sourceTree = "<group>"; };
 		B7D60429E4049D1D16B5EBDE /* ImageCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCommands.swift; sourceTree = "<group>"; };
 		B8A0C09D641F9B35838FED0C /* ImageCanvasView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCanvasView.swift; sourceTree = "<group>"; };
+		CA1100000000000000000001 /* ImageCarouselView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCarouselView.swift; sourceTree = "<group>"; };
+		CA1100000000000000000002 /* ImageCarouselCellView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCarouselCellView.swift; sourceTree = "<group>"; };
+		CA1100000000000000000003 /* ImageDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageDetailView.swift; sourceTree = "<group>"; };
+		CA1100000000000000000004 /* OpenFileFramesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFileFramesTests.swift; sourceTree = "<group>"; };
+		CA1100000000000000000005 /* ImageCarouselViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCarouselViewTests.swift; sourceTree = "<group>"; };
 		B99961EC2EE358190E67BC3B /* IntegrationSummary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IntegrationSummary.swift; sourceTree = "<group>"; };
 		BBBCB4D2D5516802BA905E2D /* ZoomableImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ZoomableImageView.swift; sourceTree = "<group>"; };
 		BC4F968A60C95EEA5AACE036 /* SkyCondition.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SkyCondition.swift; sourceTree = "<group>"; };
@@ -1195,6 +1205,7 @@
 				05BD7A922DF311EB00F4AAFC /* ImageControls */,
 				05FB1000000000000000E001 /* Preferences */,
 				29CF4F59A9465A612A5624AF /* Canvas */,
+				CA1100000000000000000021 /* Carousel */,
 				496659C51FF28D7460E37320 /* Inspector */,
 				8E1696B3AAF027B04286257D /* Information */,
 				0633E24765CD2CB4146DDA59 /* Sidebar */,
@@ -1239,6 +1250,7 @@
 			children = (
 				05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */,
 				FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */,
+				CA1100000000000000000004 /* OpenFileFramesTests.swift */,
 				0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */,
 				641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */,
 				C07659F02B1A39E7821ED5BE /* ImageInformationTests.swift */,
@@ -1269,6 +1281,7 @@
 			children = (
 				05FB1000000000000000C005 /* ImageControls */,
 				6317902288B95FCED889978F /* Canvas */,
+				CA1100000000000000000022 /* Carousel */,
 				83A3FB9C9D3342458B744782 /* Overlays */,
 				1E14CF146FA3005EA2F8FD4D /* Controls */,
 				05FB1000000000000000C200 /* Information */,
@@ -1369,6 +1382,23 @@
 			path = Controls;
 			sourceTree = "<group>";
 		};
+		CA1100000000000000000021 /* Carousel */ = {
+			isa = PBXGroup;
+			children = (
+				CA1100000000000000000001 /* ImageCarouselView.swift */,
+				CA1100000000000000000002 /* ImageCarouselCellView.swift */,
+			);
+			path = Carousel;
+			sourceTree = "<group>";
+		};
+		CA1100000000000000000022 /* Carousel */ = {
+			isa = PBXGroup;
+			children = (
+				CA1100000000000000000005 /* ImageCarouselViewTests.swift */,
+			);
+			path = Carousel;
+			sourceTree = "<group>";
+		};
 		29CF4F59A9465A612A5624AF /* Canvas */ = {
 			isa = PBXGroup;
 			children = (
@@ -1382,6 +1412,7 @@
 				BBBCB4D2D5516802BA905E2D /* ZoomableImageView.swift */,
 				60B4D5CF1AA92231B4FCA5B6 /* PlateSolveToolbarButton.swift */,
 				FFC8D19544EBB1A50302A2E1 /* ImageCanvasController.swift */,
+				CA1100000000000000000003 /* ImageDetailView.swift */,
 			);
 			path = Canvas;
 			sourceTree = "<group>";
@@ -2058,6 +2089,9 @@
 				C13E4F74949472B2970E39C7 /* CursorReadout.swift in Sources */,
 				0B8F6AE680E1526BC19F3E4A /* StatusBarView.swift in Sources */,
 				DE3E4CDC3C96EE6242C8D3CF /* ImageCanvasView.swift in Sources */,
+				CA1100000000000000000011 /* ImageCarouselView.swift in Sources */,
+				CA1100000000000000000012 /* ImageCarouselCellView.swift in Sources */,
+				CA1100000000000000000013 /* ImageDetailView.swift in Sources */,
 				C0FFEE000000000000000012 /* ImageComparisonLayer.swift in Sources */,
 				E79B56F2683FA70FC52D6AFA /* InspectorSectionView.swift in Sources */,
 				C7C9D58AF79A7584E987A03B /* InspectorView.swift in Sources */,
@@ -2198,6 +2232,8 @@
 				05FB1000000000000000B009 /* DebayerControlViewTests.swift in Sources */,
 				05FB1000000000000000B00A /* HistogramViewTests.swift in Sources */,
 				1B8A22E86CD946413A1C30D9 /* OpenFileTests.swift in Sources */,
+				CA1100000000000000000014 /* OpenFileFramesTests.swift in Sources */,
+				CA1100000000000000000015 /* ImageCarouselViewTests.swift in Sources */,
 				52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */,
 				05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */,
 				D6356B42DB94E8CAD3027923 /* AppUpdaterTests.swift in Sources */,

@@ -131,8 +131,7 @@ public struct MainWindowView: View
                 }
                 else if let file = self.model.selectedFile
                 {
-                    ImageCanvasView( file: file )
-                        .fileContextMenu( for: file, actions: fileActions )
+                    ImageDetailView( file: file, actions: fileActions )
                 }
             }
         }

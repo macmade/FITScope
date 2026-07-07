@@ -74,6 +74,12 @@ public class LoadedImage: ObservableObject
     /// Information panel and the file row, or `nil` when it cannot be built.
     public let information: ImageInformation?
 
+    /// A short label identifying this frame among the file's frames — shown in the
+    /// multi-image carousel — or `nil` when the file has a single, unlabelled frame
+    /// (the carousel falls back to a 1-based frame number). Multi-image formats
+    /// (a FITS cube's planes, XISF or HEIC sub-images) set it from their own naming.
+    public let frameTitle: String?
+
     /// The renderer that turns the image into displayable pixels and histograms.
     @Published public private( set ) var renderer: ImageRenderer
 
@@ -134,8 +140,9 @@ public class LoadedImage: ObservableObject
     ///   - pixelScale:         The plate scale in arc-seconds per pixel, or `nil`.
     ///   - isColorFilterArray: Whether the image is a colour-filter-array image.
     ///   - information:        The display-ready metadata summary, or `nil`.
+    ///   - frameTitle:         The frame's carousel label, or `nil` for an unlabelled frame.
     ///   - renderer:           The renderer for the image.
-    public init( url: URL, metadata: ImageMetadata, wcs: WorldCoordinateSystem?, observationDate: Date?, exposureTime: Double?, coordinate: Coordinate?, target: EquatorialCoordinate?, pixelScale: Double?, isColorFilterArray: Bool, information: ImageInformation?, renderer: ImageRenderer )
+    public init( url: URL, metadata: ImageMetadata, wcs: WorldCoordinateSystem?, observationDate: Date?, exposureTime: Double?, coordinate: Coordinate?, target: EquatorialCoordinate?, pixelScale: Double?, isColorFilterArray: Bool, information: ImageInformation?, frameTitle: String? = nil, renderer: ImageRenderer )
     {
         self.url                = url
         self.metadata           = metadata
@@ -147,6 +154,7 @@ public class LoadedImage: ObservableObject
         self.pixelScale         = pixelScale
         self.isColorFilterArray = isColorFilterArray
         self.information        = information
+        self.frameTitle         = frameTitle
         self.renderer           = renderer
         self.rendererObserver   = self.renderer.objectWillChange.sink
         {

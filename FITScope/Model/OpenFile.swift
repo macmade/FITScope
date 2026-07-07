@@ -73,6 +73,11 @@ public final class OpenFile: ObservableObject, Identifiable
     /// file's type through ``ImageLoader``.
     @Published public private( set ) var loader: any ImageLoading
 
+    /// The index of the frame currently shown, into ``frames``. `0` for a
+    /// single-frame file; changed through ``selectFrame(_:)`` when the user picks
+    /// another frame in the carousel.
+    @Published public private( set ) var selectedFrameIndex = 0
+
     /// A small, downscaled preview of the rendered image for the sidebar, or
     /// `nil` before one has been generated.
     @Published public private( set ) var thumbnail: CGImage?
@@ -101,6 +106,28 @@ public final class OpenFile: ObservableObject, Identifiable
     /// loaded image across a reload via `switchToLatest`.
     private var thumbnailObserver: AnyCancellable?
 
+    /// Re-establishes ``selectedFrameObserver`` whenever the loader's loaded image
+    /// changes — it first appears after loading, or is replaced on a reload — so the
+    /// initial frame is observed as soon as it loads.
+    private var loadedImageObserver: AnyCancellable?
+
+    /// Forwards the currently selected frame's own change notifications to this
+    /// object's observers, rebuilt on every selection change and image
+    /// (re)appearance.
+    ///
+    /// A loader forwards only its *primary* frame's changes, so a lazily prepared,
+    /// non-primary frame's render or star detection would otherwise not refresh the
+    /// views observing this file (the canvas, the sidebar weight). Observing the
+    /// selected frame directly closes that gap; the forwarding is harmlessly
+    /// redundant for the primary frame, which the loader already forwards.
+    private var selectedFrameObserver: AnyCancellable?
+
+    /// The render throttle the window prepares files through, retained from
+    /// ``prepare(throttle:priority:)`` so on-demand carousel frame selection routes
+    /// its render/detect work through the same throttle. `nil` until the file is
+    /// first prepared (e.g. in tests that drive selection directly).
+    private var renderThrottle: RenderThrottle?
+
     /// The in-flight (or finished) load → render → thumbnail work, owned by the
     /// model rather than any view. `nil` until ``prepare(throttle:)`` is called.
     private( set ) var preparation: Task< Void, Never >?
@@ -110,16 +137,35 @@ public final class OpenFile: ObservableObject, Identifiable
     /// preparation and tests can await the current thumbnail settling.
     private( set ) var thumbnailTask: Task< Void, Never >?
 
+    /// The in-flight preparation of a newly selected frame — rendering and, if
+    /// needed, detecting it on demand. Internal so tests can await the selected
+    /// frame settling.
+    private( set ) var frameSelectionTask: Task< Void, Never >?
+
     /// The longest-side pixel size of the generated sidebar thumbnail.
     private static let thumbnailDimension = 64
 
-    /// Creates an open file for the given URL.
+    /// Creates an open file for the given URL, selecting the loader for its type.
     ///
     /// - Parameter url: The source URL of the file.
-    public init( url: URL )
+    public convenience init( url: URL )
+    {
+        self.init( url: url, loader: ImageLoader.loader( for: url ) )
+    }
+
+    /// Creates an open file backed by a specific loader.
+    ///
+    /// The public ``init(url:)`` selects the loader by file type; this designated
+    /// initializer takes one directly so tests can inject a stub — e.g. a
+    /// multi-frame loader that no real format produces yet.
+    ///
+    /// - Parameters:
+    ///   - url:    The source URL of the file.
+    ///   - loader: The loader that parses the file.
+    init( url: URL, loader: any ImageLoading )
     {
         self.url            = url
-        self.loader         = ImageLoader.loader( for: url )
+        self.loader         = loader
         self.loaderObserver = self.loader.objectWillChange.sink
         {
             [ weak self ] _ in self?.objectWillChange.send()
@@ -148,6 +194,13 @@ public final class OpenFile: ObservableObject, Identifiable
             {
                 [ weak self ] _ in self?.regenerateThumbnail()
             }
+
+        // Observe the selected frame directly (see ``selectedFrameObserver``),
+        // re-establishing the observation as the loaded image appears or is replaced.
+        self.loadedImageObserver = self.loader.imagePublisher.sink
+        {
+            [ weak self ] _ in self?.observeSelectedFrame()
+        }
     }
 
     /// The file name shown in the sidebar and window title.
@@ -156,10 +209,110 @@ public final class OpenFile: ObservableObject, Identifiable
         self.url.lastPathComponent
     }
 
-    /// The loaded image, or `nil` before loading or after a failure.
+    /// The file's frames, in display order — one per image it holds. A single
+    /// image (a 2D FITS, a photograph) has one frame; a multi-image file (a FITS
+    /// cube, XISF, HEIC) has several, surfaced in the carousel.
+    public var frames: [ LoadedImage ]
+    {
+        self.loader.frames
+    }
+
+    /// The loaded image currently shown — the frame at ``selectedFrameIndex`` — or
+    /// `nil` before loading or after a failure. Falls back to the loader's primary
+    /// image when the selection is out of range (e.g. before the frames appear).
     public var image: LoadedImage?
     {
-        self.loader.image
+        let frames = self.frames
+
+        guard frames.indices.contains( self.selectedFrameIndex )
+        else
+        {
+            return self.loader.image
+        }
+
+        return frames[ self.selectedFrameIndex ]
+    }
+
+    /// Shows the frame at the given index, if it is in range and not already
+    /// selected, and prepares it (renders and, if needed, detects it) on demand so
+    /// the newly shown frame produces a displayable result.
+    ///
+    /// - Parameter index: The index of the frame to show, into ``frames``.
+    public func selectFrame( _ index: Int )
+    {
+        guard self.frames.indices.contains( index ), index != self.selectedFrameIndex
+        else
+        {
+            return
+        }
+
+        self.selectedFrameIndex = index
+
+        self.observeSelectedFrame()
+        self.prepareSelectedFrame()
+    }
+
+    /// Subscribes to the currently selected frame's change notifications and
+    /// forwards them to this object's observers, replacing any prior subscription.
+    /// Clears the subscription when no frame is available yet.
+    private func observeSelectedFrame()
+    {
+        self.selectedFrameObserver = self.image?.objectWillChange.sink
+        {
+            [ weak self ] _ in self?.objectWillChange.send()
+        }
+    }
+
+    /// Renders the selected frame if it has not rendered yet, then detects its
+    /// stars if detection has not run — so a frame is prepared lazily, the first
+    /// time it is shown, rather than every frame being processed up front.
+    ///
+    /// A frame already rendered (the initial frame, or one revisited) is left
+    /// untouched, so switching back to it is instant and keeps its adjustments.
+    ///
+    /// The work is user-driven, so it acquires the render throttle at ``high``
+    /// priority (ahead of background file preparations) but still through the
+    /// throttle, so scrubbing the carousel can never spawn unbounded concurrent
+    /// renders. Any prior in-flight selection is cancelled first, `self` is held
+    /// weakly, and cancellation is honoured before the expensive detection step, so
+    /// closing the file (or a rapid re-selection) stops the work promptly.
+    private func prepareSelectedFrame()
+    {
+        self.frameSelectionTask?.cancel()
+
+        let throttle = self.renderThrottle
+        let id       = self.id
+
+        self.frameSelectionTask = Task
+        {
+            [ weak self ] in
+
+            await throttle?.acquire( key: id, priority: .high )
+
+            defer { throttle?.release() }
+
+            guard let image = self?.image, Task.isCancelled == false
+            else
+            {
+                return
+            }
+
+            if image.renderer.result == nil, image.renderer.error == nil
+            {
+                await image.renderer.render()
+            }
+
+            guard Task.isCancelled == false
+            else
+            {
+                return
+            }
+
+            if image.hasDetectedStars == false, image.isDetectingStars == false
+            {
+                await image.detectStars()
+            }
+        }
     }
 
     /// The image's weighting metrics, derived from star detection and the noise
@@ -298,6 +451,10 @@ public final class OpenFile: ObservableObject, Identifiable
             return
         }
 
+        // Retained so on-demand carousel frame selection can route through the very
+        // same throttle rather than saturating the CPU alongside file preparations.
+        self.renderThrottle = throttle
+
         let id = self.id
 
         self.preparation = Task
@@ -342,12 +499,14 @@ public final class OpenFile: ObservableObject, Identifiable
         }
     }
 
-    /// Cancels any in-flight preparation, e.g. when the file is closed. The
-    /// preparation task captures `self` weakly, so an un-cancelled task simply
+    /// Cancels any in-flight preparation — the initial load/render/thumbnail work
+    /// and any on-demand carousel frame-selection render — e.g. when the file is
+    /// closed. The tasks capture `self` weakly, so an un-cancelled task simply
     /// bails once the file is released — this just stops the work sooner.
     func cancelPreparation()
     {
         self.preparation?.cancel()
+        self.frameSelectionTask?.cancel()
     }
 
     /// Copies the original, unmodified file to a destination, byte for byte.
@@ -377,14 +536,19 @@ public final class OpenFile: ObservableObject, Identifiable
         try FileManager.default.copyItem( at: self.url, to: destination )
     }
 
-    /// Generates a thumbnail from the current rendered image, downscaled so its
-    /// longest side is at most `maxDimension` pixels. A no-op when nothing has
+    /// Generates a thumbnail from the primary frame's rendered image, downscaled so
+    /// its longest side is at most `maxDimension` pixels. A no-op when nothing has
     /// rendered yet.
+    ///
+    /// The sidebar row represents the file, so its thumbnail tracks the primary
+    /// (first) frame rather than the carousel selection — matching the render the
+    /// ``thumbnailObserver`` watches. For a single-frame file the primary frame is
+    /// the only frame, so this is the displayed image.
     ///
     /// - Parameter maxDimension: The maximum width or height of the thumbnail.
     public func makeThumbnail( maxDimension: Int ) async
     {
-        guard let source = self.image?.renderer.result?.image
+        guard let source = self.loader.image?.renderer.result?.image
         else
         {
             return

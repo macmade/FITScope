@@ -48,6 +48,23 @@ public enum AccessibilityIdentifier
         public static let canvas = "ImageCanvasView.canvas"
     }
 
+    /// Identifiers applied by ``FITScope/ImageCarouselView``.
+    public enum ImageCarouselView
+    {
+        /// The multi-frame filmstrip shown below the canvas.
+        public static let strip = "ImageCarouselView.strip"
+
+        /// A single frame cell, suffixed with the frame's index (e.g.
+        /// `"ImageCarouselView.frame.0"`).
+        ///
+        /// - Parameter index: The frame's index into the file's frames.
+        /// - Returns: The cell's identifier.
+        public static func frame( _ index: Int ) -> String
+        {
+            "ImageCarouselView.frame.\( index )"
+        }
+    }
+
     /// Identifiers applied by ``FITScope/ImageComparisonLayer``.
     public enum ImageComparisonLayer
     {
