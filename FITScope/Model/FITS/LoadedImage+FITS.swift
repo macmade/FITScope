@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 
 /// Builds a format-neutral ``LoadedImage`` from parsed FITS header info, keeping
 /// the FITS-specific extraction out of the neutral model. This is the bridge the
@@ -42,6 +43,7 @@ public extension LoadedImage
     convenience init( info: FITSImageInfo, renderer: ImageRenderer )
     {
         let metadata = info.metadata
+        let target   = Self.target( metadata: metadata )
 
         self.init(
             url:                info.url,
@@ -50,10 +52,27 @@ public extension LoadedImage
             observationDate:    metadata.observationDate,
             exposureTime:       metadata.exposureTime,
             coordinate:         metadata.coordinate,
+            target:             target,
             pixelScale:         metadata.pixelScale,
             isColorFilterArray: info.isColorFilterArray,
             information:        ImageInformation( fitsMetadata: info.imageMetadata ),
             renderer:           renderer
         )
+    }
+
+    /// The imaged target's celestial coordinate from a FITS header's reference right
+    /// ascension and declination, present only when both are available.
+    ///
+    /// - Parameter metadata: The parsed FITS metadata.
+    /// - Returns: The target's equatorial coordinate, or `nil`.
+    private static func target( metadata: FITSMetadata ) -> EquatorialCoordinate?
+    {
+        guard let rightAscension = metadata.rightAscension, let declination = metadata.declination
+        else
+        {
+            return nil
+        }
+
+        return EquatorialCoordinate( rightAscension: rightAscension, declination: declination )
     }
 }

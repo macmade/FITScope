@@ -57,6 +57,11 @@ public class LoadedImage: ObservableObject
     /// The observing site's geographic coordinate, or `nil` when unknown.
     public let coordinate: Coordinate?
 
+    /// The imaged target's celestial coordinate — the sky position of the object
+    /// being photographed — or `nil` when the image carries none. Distinct from
+    /// ``coordinate``, which is the observing site on the ground.
+    public let target: EquatorialCoordinate?
+
     /// The image's plate scale in arc-seconds per pixel, or `nil` when it cannot
     /// be derived.
     public let pixelScale: Double?
@@ -125,11 +130,12 @@ public class LoadedImage: ObservableObject
     ///   - observationDate:    When the image was captured, or `nil`.
     ///   - exposureTime:       The exposure time in seconds, or `nil`.
     ///   - coordinate:         The observing site's geographic coordinate, or `nil`.
+    ///   - target:             The imaged target's celestial coordinate, or `nil`.
     ///   - pixelScale:         The plate scale in arc-seconds per pixel, or `nil`.
     ///   - isColorFilterArray: Whether the image is a colour-filter-array image.
     ///   - information:        The display-ready metadata summary, or `nil`.
     ///   - renderer:           The renderer for the image.
-    public init( url: URL, metadata: ImageMetadata, wcs: WorldCoordinateSystem?, observationDate: Date?, exposureTime: Double?, coordinate: Coordinate?, pixelScale: Double?, isColorFilterArray: Bool, information: ImageInformation?, renderer: ImageRenderer )
+    public init( url: URL, metadata: ImageMetadata, wcs: WorldCoordinateSystem?, observationDate: Date?, exposureTime: Double?, coordinate: Coordinate?, target: EquatorialCoordinate?, pixelScale: Double?, isColorFilterArray: Bool, information: ImageInformation?, renderer: ImageRenderer )
     {
         self.url                = url
         self.metadata           = metadata
@@ -137,6 +143,7 @@ public class LoadedImage: ObservableObject
         self.observationDate    = observationDate
         self.exposureTime       = exposureTime
         self.coordinate         = coordinate
+        self.target             = target
         self.pixelScale         = pixelScale
         self.isColorFilterArray = isColorFilterArray
         self.information        = information

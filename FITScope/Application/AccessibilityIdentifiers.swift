@@ -483,6 +483,9 @@ public enum AccessibilityIdentifier
     /// Identifiers applied by ``FITScope/MoonPhaseView``.
     public enum MoonPhaseView
     {
+        /// The tab's outer container.
+        public static let container = "MoonPhaseView.container"
+
         /// The large lunar-phase symbol.
         public static let icon = "MoonPhaseView.icon"
     }

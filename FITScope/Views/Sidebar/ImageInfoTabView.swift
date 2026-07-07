@@ -160,7 +160,7 @@ public struct ImageInfoTabView: View
                 .allowsHitTesting( self.tab == .sun )
                 .accessibilityHidden( self.tab != .sun )
 
-            MoonPhaseView( date: self.observationDate )
+            MoonPhaseView( location: self.skyLocation, date: self.observationDate, target: self.target )
                 .padding( .horizontal, 14 )
                 .padding( .bottom, 14 )
                 .opacity( self.tab == .moon ? 1 : 0 )
@@ -254,5 +254,12 @@ public struct ImageInfoTabView: View
         }
 
         return GeographicLocation( latitude: coordinate.latitude, longitude: coordinate.longitude )
+    }
+
+    /// The selected image's imaged target as a celestial coordinate, or `nil` when
+    /// its header records none. Drives the Moon tab's Moon-to-target separation.
+    private var target: EquatorialCoordinate?
+    {
+        self.file.image?.target
     }
 }
