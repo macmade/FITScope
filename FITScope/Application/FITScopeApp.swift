@@ -177,9 +177,9 @@ public struct FITScopeApp: App
         .windowStyle( .titleBar )
         .restorationBehavior( .disabled )
 
-        WindowGroup( id: "PlateSolveWindow", for: OpenFile.ID.self )
+        WindowGroup( id: "PlateSolveWindow", for: PlateSolveTarget.self )
         {
-            PlateSolveWindowView( fileID: $0.wrappedValue )
+            PlateSolveWindowView( target: $0.wrappedValue )
                 .environmentObject( self.appDelegate.appModel )
         }
         .windowStyle( .titleBar )

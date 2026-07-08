@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import Combine
 import SwiftUI
 
 /// The shared source of truth for a window's image-canvas interaction, so the
@@ -51,8 +52,23 @@ public final class ImageCanvasController: ObservableObject
     /// Bumped by ``issue(_:)`` so the same command can be requested twice in a row.
     @Published public private( set ) var command = CanvasCommand( kind: .fit, token: 0 )
 
-    /// The identifiers of the overlays the user has turned on for this file.
-    @Published public var enabledOverlays = Set< String >()
+    /// The image whose overlays the controller currently drives — the shown frame.
+    /// Overlay enablement is stored on the image itself (``LoadedImage/enabledOverlays``),
+    /// so it is per-image; the controller reads and toggles that set for whichever
+    /// image is shown. `nil` when no image is displayed. Set through ``setImage(_:)``.
+    private weak var image: LoadedImage?
+
+    /// Forwards the shown image's overlay-enablement changes to the controller's own
+    /// observers, so the toolbar and the *Image* menu (which observe the controller)
+    /// refresh when an overlay is toggled or the shown image changes.
+    private var overlaysObserver: AnyCancellable?
+
+    /// The identifiers of the overlays the user has turned on for the shown image, or
+    /// an empty set when no image is shown. Backed by the image so it is per-image.
+    public var enabledOverlays: Set< String >
+    {
+        self.image?.enabledOverlays ?? []
+    }
 
     /// Whether the before/after comparison is active. When on, the canvas reveals
     /// the captured "before" image on one side of a draggable vertical divider,
@@ -185,13 +201,32 @@ public final class ImageCanvasController: ObservableObject
             return
         }
 
-        if self.enabledOverlays.contains( id )
+        // Toggle on the shown image, so the selection is remembered per-image.
+        if self.image?.enabledOverlays.contains( id ) == true
         {
-            self.enabledOverlays.remove( id )
+            self.image?.enabledOverlays.remove( id )
         }
         else
         {
-            self.enabledOverlays.insert( id )
+            self.image?.enabledOverlays.insert( id )
+        }
+    }
+
+    /// Points the controller at the currently shown image (the selected frame), so
+    /// overlay toggles operate on that image's own ``LoadedImage/enabledOverlays`` and
+    /// the toolbar / *Image* menu track it.
+    ///
+    /// Subscribing to the image's `enabledOverlays` re-broadcasts the controller's own
+    /// change notification whenever the set changes — and once immediately, so the UI
+    /// refreshes to the newly shown image's overlays.
+    ///
+    /// - Parameter image: The shown image, or `nil` when none is displayed.
+    public func setImage( _ image: LoadedImage? )
+    {
+        self.image            = image
+        self.overlaysObserver = image?.$enabledOverlays.sink
+        {
+            [ weak self ] _ in self?.objectWillChange.send()
         }
     }
 

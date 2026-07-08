@@ -131,12 +131,19 @@ public struct ImageCanvasView: View
                 // within view updates".
                 DispatchQueue.main.async
                 {
-                    self.readout                    = .empty
-                    self.controller.enabledOverlays = []
-                    self.controller.isComparing     = false
+                    self.readout                = .empty
+                    self.controller.isComparing = false
 
                     self.revealBars()
                 }
+            }
+            // Point the controller at the shown frame so overlay toggles operate on —
+            // and remember — that image's own overlay set. Fires on load, on a carousel
+            // frame change, and when a different file is selected. Keyed on the image's
+            // identity (a reference is not Equatable) and run initially to wire it up.
+            .onChange( of: self.file.image.map( ObjectIdentifier.init ), initial: true )
+            {
+                _, _ in self.controller.setImage( self.file.image )
             }
             // Keep the controller's overlay mirror current for the *Image* menu,
             // which reaches this window's canvas through the focused controller.
@@ -241,8 +248,8 @@ public struct ImageCanvasView: View
                             onZoomIn:           { self.controller.zoomIn() },
                             onZoomOut:          { self.controller.zoomOut() },
                             onPlateSolve:       { self.plateSolve() },
-                            isPlateSolved:      self.file.plateSolve != nil,
-                            isPlateSolving:     self.file.isPlateSolving,
+                            isPlateSolved:      self.file.image?.plateSolve != nil,
+                            isPlateSolving:     self.file.image?.isPlateSolving ?? false,
                             isComparing:        self.controller.isComparing,
                             onToggleComparison: { self.controller.toggleComparison() },
                             overlays:           self.toolbarOverlays,
@@ -389,22 +396,22 @@ public struct ImageCanvasView: View
             // committed-render orientation as the stars, so the labels track the
             // image under rotate/flip. Tapped with no objects, it proposes a plate
             // solve through the app model.
-            ObjectsOverlay( annotations: self.file.plateSolve?.annotations ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( ObjectsOverlay.identifier, default: ObjectsOverlay.defaultAppearance ) ),
+            ObjectsOverlay( annotations: self.file.image?.plateSolve?.annotations ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( ObjectsOverlay.identifier, default: ObjectsOverlay.defaultAppearance ) ),
             // The plate scale prefers the plate solve's calibration (most accurate)
             // and falls back to the value derived from the file's header. Tapped with
             // no scale, it explains that through its warning.
-            ScaleBarOverlay( pixelScale: self.file.plateSolve?.calibration.pixscale ?? self.file.image?.pixelScale, appearance: self.overlayAppearance( ScaleBarOverlay.identifier, default: ScaleBarOverlay.defaultAppearance ) ),
+            ScaleBarOverlay( pixelScale: self.file.image?.plateSolve?.calibration.pixscale ?? self.file.image?.pixelScale, appearance: self.overlayAppearance( ScaleBarOverlay.identifier, default: ScaleBarOverlay.defaultAppearance ) ),
             // The north / east compass, derived from the WCS — the plate solve's
             // (most authoritative) when present, else the file header's. Mapped
             // through the same committed-render orientation as the stars and
             // objects, so it turns with the image. Tapped without a known
             // orientation, it proposes a plate solve through the app model.
-            NorthOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.wcs, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( NorthOverlay.identifier, default: NorthOverlay.defaultAppearance ) ),
+            NorthOverlay( wcs: self.file.image?.plateSolve?.wcs ?? self.file.image?.wcs, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( NorthOverlay.identifier, default: NorthOverlay.defaultAppearance ) ),
             // The RA/Dec coordinate grid, projected from the same WCS (plate solve
             // preferred, else the file header) through the committed-render
             // orientation. Tapped with no usable WCS, it proposes a plate solve
             // through the app model.
-            EquatorialGridOverlay( wcs: self.file.plateSolve?.wcs ?? self.file.image?.wcs, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( EquatorialGridOverlay.identifier, default: EquatorialGridOverlay.defaultAppearance ) ),
+            EquatorialGridOverlay( wcs: self.file.image?.plateSolve?.wcs ?? self.file.image?.wcs, orientation: self.file.image?.renderer.result?.orientation ?? .identity, onUnavailableTap: self.requestPlateSolve, appearance: self.overlayAppearance( EquatorialGridOverlay.identifier, default: EquatorialGridOverlay.defaultAppearance ) ),
         ]
     }
 

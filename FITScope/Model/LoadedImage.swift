@@ -133,9 +133,28 @@ public class LoadedImage: ObservableObject
     /// ``hasDetectedStars``, since the two measurements run concurrently.
     @Published public private( set ) var hasMeasuredBackground = false
 
+    /// The plate-solve result for *this* image, set once a solve succeeds. It carries
+    /// the field calibration and the WCS the astrometric overlays read. `nil` until
+    /// the image has been successfully plate-solved. Per-image (per frame), since a
+    /// multi-image file's frames are distinct images each solved independently.
+    @Published public internal( set ) var plateSolve: PlateSolveResult?
+
+    /// Whether a plate solve is currently running for this image, so the toolbar's
+    /// plate-solve button can show a live, in-progress state. Per-image, like
+    /// ``plateSolve``.
+    @Published public internal( set ) var isPlateSolving = false
+
     /// The image's histogram view options, kept here so each file retains its own
     /// histogram display choices across selection changes.
     public let histogramOptions = HistogramViewOptions()
+
+    /// The identifiers of the canvas overlays the user has turned on for *this*
+    /// image. Kept per-image (per carousel frame) rather than on the shared canvas
+    /// controller, so each frame shows — and remembers — its own overlay selection;
+    /// switching frames never carries one frame's overlays onto another. Empty for a
+    /// freshly loaded image. The canvas controller reads and toggles this for the
+    /// currently shown image.
+    @Published public var enabledOverlays = Set< String >()
 
     /// Forwards the renderer's change notifications to this object's observers.
     private var rendererObserver: AnyCancellable?

@@ -26,6 +26,7 @@
 		E012C1F7693DE7C8AC9ED3DC /* GraphSeriesFITSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110F63821980B8EE7718494F /* GraphSeriesFITSTests.swift */; };
 		A77E039CE95232CF3DAD4969 /* FITSImageLoaderGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 175A64B30C566653D8539B3F /* FITSImageLoaderGraphTests.swift */; };
 		A77E039CE95232CF3DAD4970 /* FITSImageLoaderRGBTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 175A64B30C566653D8539B40 /* FITSImageLoaderRGBTests.swift */; };
+		B6A1D2E3F40516273849AB01 /* FITSImageLoaderMultiImageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6A1D2E3F40516273849AB02 /* FITSImageLoaderMultiImageTests.swift */; };
 		A3A4243F6B062C0617771CCE /* OpenFileGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D3B1E5D795A567DB27F4F31 /* OpenFileGraphTests.swift */; };
 		C814CC1A2E52AE18B83B03A0 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA32D0C16D896A413618C33 /* GraphView.swift */; };
 		0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */; };
@@ -257,6 +258,7 @@
 		9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7410133087261AF83595054 /* ImageInformation.swift */; };
 		05DD1000000000000000FB09 /* Coordinate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA07 /* Coordinate.swift */; };
 		05DD1000000000000000FB30 /* CDMatrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA30 /* CDMatrix.swift */; };
+		05DD1000000000000000FD30 /* PlateSolveTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FC30 /* PlateSolveTarget.swift */; };
 		05DD1000000000000000FB0A /* WorldCoordinateSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA08 /* WorldCoordinateSystem.swift */; };
 		9A3A3D353F14A85800BD349D /* StatisticsFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0752B6126A583839BB8F8BEF /* StatisticsFormatTests.swift */; };
 		9A6163E1CF83BC9A5A891040 /* OverlayAppearanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9301C5FD2FCFBAC78AAA11 /* OverlayAppearanceTests.swift */; };
@@ -486,6 +488,7 @@
 		110F63821980B8EE7718494F /* GraphSeriesFITSTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GraphSeriesFITSTests.swift; sourceTree = "<group>"; };
 		175A64B30C566653D8539B3F /* FITSImageLoaderGraphTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FITSImageLoaderGraphTests.swift; sourceTree = "<group>"; };
 		175A64B30C566653D8539B40 /* FITSImageLoaderRGBTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FITSImageLoaderRGBTests.swift; sourceTree = "<group>"; };
+		B6A1D2E3F40516273849AB02 /* FITSImageLoaderMultiImageTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FITSImageLoaderMultiImageTests.swift; sourceTree = "<group>"; };
 		2D3B1E5D795A567DB27F4F31 /* OpenFileGraphTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFileGraphTests.swift; sourceTree = "<group>"; };
 		FBA32D0C16D896A413618C33 /* GraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
 		0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageLoader.swift; sourceTree = "<group>"; };
@@ -737,6 +740,7 @@
 		E7410133087261AF83595054 /* ImageInformation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInformation.swift; sourceTree = "<group>"; };
 		05DD1000000000000000FA07 /* Coordinate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinate.swift; sourceTree = "<group>"; };
 		05DD1000000000000000FA30 /* CDMatrix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CDMatrix.swift; sourceTree = "<group>"; };
+		05DD1000000000000000FC30 /* PlateSolveTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlateSolveTarget.swift; sourceTree = "<group>"; };
 		05DD1000000000000000FA08 /* WorldCoordinateSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldCoordinateSystem.swift; sourceTree = "<group>"; };
 		E777059D8151CFA76FB977B9 /* AppDelegateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegateTests.swift; sourceTree = "<group>"; };
 		EB3715CBB030149A29AA873A /* StarsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarsView.swift; sourceTree = "<group>"; };
@@ -1074,6 +1078,7 @@
 				E7410133087261AF83595054 /* ImageInformation.swift */,
 				05DD1000000000000000FA07 /* Coordinate.swift */,
 				05DD1000000000000000FA30 /* CDMatrix.swift */,
+				05DD1000000000000000FC30 /* PlateSolveTarget.swift */,
 				05DD1000000000000000FA08 /* WorldCoordinateSystem.swift */,
 				017FF3966AE1E425A510642E /* DropAcceptance.swift */,
 				B3FD345BB5B137185B9B9D72 /* FITS */,
@@ -1481,6 +1486,7 @@
 				110F63821980B8EE7718494F /* GraphSeriesFITSTests.swift */,
 				175A64B30C566653D8539B3F /* FITSImageLoaderGraphTests.swift */,
 				175A64B30C566653D8539B40 /* FITSImageLoaderRGBTests.swift */,
+				B6A1D2E3F40516273849AB02 /* FITSImageLoaderMultiImageTests.swift */,
 				05FB1000000000000000A00B /* FITSImageLoaderTests.swift */,
 				A8D5C2CDF6BE5D61F992E63B /* FITSMetadataTests.swift */,
 				05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */,
@@ -2139,6 +2145,7 @@
 				9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */,
 				05DD1000000000000000FB09 /* Coordinate.swift in Sources */,
 				05DD1000000000000000FB30 /* CDMatrix.swift in Sources */,
+				05DD1000000000000000FD30 /* PlateSolveTarget.swift in Sources */,
 				05DD1000000000000000FB0A /* WorldCoordinateSystem.swift in Sources */,
 				FE01A0010000000000000002 /* WeightFormula.swift in Sources */,
 				5A516E0150000000000000B1 /* ImageWeighting.swift in Sources */,
@@ -2268,6 +2275,7 @@
 				E012C1F7693DE7C8AC9ED3DC /* GraphSeriesFITSTests.swift in Sources */,
 				A77E039CE95232CF3DAD4969 /* FITSImageLoaderGraphTests.swift in Sources */,
 				A77E039CE95232CF3DAD4970 /* FITSImageLoaderRGBTests.swift in Sources */,
+				B6A1D2E3F40516273849AB01 /* FITSImageLoaderMultiImageTests.swift in Sources */,
 				A3A4243F6B062C0617771CCE /* OpenFileGraphTests.swift in Sources */,
 				CA1100000000000000000015 /* ImageCarouselViewTests.swift in Sources */,
 				52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */,

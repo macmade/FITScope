@@ -57,10 +57,11 @@ public final class AppModel: ObservableObject
     /// new window carrying initial URLs.
     public var openWindowWithURLs: ( ( [ URL ] ) -> Void )?
 
-    /// The in-flight or finished plate-solve sessions, keyed by the file they
-    /// solve. The results window resolves the live session for a file from here,
-    /// so the long-running solve outlives the view that started it.
-    @Published public private( set ) var plateSolveSessions: [ OpenFile.ID: PlateSolveSession ] = [ : ]
+    /// The in-flight or finished plate-solve sessions, keyed by the frame they
+    /// solve (plate solving is per-frame). The results window resolves the live
+    /// session for a frame from here, so the long-running solve outlives the view
+    /// that started it.
+    @Published public private( set ) var plateSolveSessions: [ PlateSolveTarget: PlateSolveSession ] = [ : ]
 
     /// The Preferences tab to show, bound by ``PreferencesView``'s `TabView` so a
     /// call site outside the window — the "no API key" alert — can open
@@ -86,13 +87,22 @@ public final class AppModel: ObservableObject
     public init()
     {}
 
-    /// The plate-solve session for a file, or `nil` when none has been started.
+    /// The plate-solve session for a frame, or `nil` when none has been started.
     ///
-    /// - Parameter id: The file's identifier.
+    /// - Parameter target: The frame's plate-solve target.
     /// - Returns: The session, if one exists.
-    public func plateSolveSession( for id: OpenFile.ID ) -> PlateSolveSession?
+    public func plateSolveSession( for target: PlateSolveTarget ) -> PlateSolveSession?
     {
-        self.plateSolveSessions[ id ]
+        self.plateSolveSessions[ target ]
+    }
+
+    /// The plate-solve target for a file's currently shown frame.
+    ///
+    /// - Parameter file: The file.
+    /// - Returns: The target identifying the selected frame.
+    private func target( for file: OpenFile ) -> PlateSolveTarget
+    {
+        PlateSolveTarget( fileID: file.id, frameIndex: file.selectedFrameIndex )
     }
 
     /// Begins a plate solve for a file, returning whether it could be started.
@@ -118,32 +128,42 @@ public final class AppModel: ObservableObject
             return false
         }
 
-        let session = PlateSolveSession( file: file, apiKey: apiKey, client: client )
+        guard let frame = file.image
+        else
+        {
+            return false
+        }
 
-        self.plateSolveSessions[ file.id ] = session
+        let target  = self.target( for: file )
+        let session = PlateSolveSession( frame: frame, fileName: file.displayName, fileURL: file.url, frameCount: file.frames.count, apiKey: apiKey, client: client )
+
+        self.plateSolveSessions[ target ] = session
 
         session.start()
 
         return true
     }
 
-    /// Ends the plate solve for a file: cancels any in-flight solve and forgets the
-    /// session, so a closed file leaves nothing behind. Safe to call for a file
-    /// that has no session. The results window keyed to the file is dismissed
-    /// separately by the caller, since that needs SwiftUI's dismiss action.
+    /// Ends every plate solve for a file — one per frame — cancelling each in-flight
+    /// solve and forgetting its session, so a closed file leaves nothing behind. Safe
+    /// to call for a file that has no session. Returns the targets whose sessions were
+    /// removed, so the caller can dismiss each frame's results window (which needs
+    /// SwiftUI's dismiss action).
     ///
     /// - Parameter id: The file's identifier.
-    public func endPlateSolve( for id: OpenFile.ID )
+    /// - Returns: The frame targets whose sessions were ended.
+    @discardableResult
+    public func endPlateSolve( for id: OpenFile.ID ) -> [ PlateSolveTarget ]
     {
-        guard let session = self.plateSolveSessions[ id ]
-        else
+        let targets = self.plateSolveSessions.keys.filter { $0.fileID == id }
+
+        targets.forEach
         {
-            return
+            self.plateSolveSessions[ $0 ]?.cancel()
+            self.plateSolveSessions[ $0 ] = nil
         }
 
-        session.cancel()
-
-        self.plateSolveSessions[ id ] = nil
+        return targets
     }
 
     /// Shows the plate-solving results window for a file, starting a solve only
@@ -161,9 +181,11 @@ public final class AppModel: ObservableObject
     ///   - openWindow: The action that opens the results window.
     public func presentPlateSolve( for file: OpenFile, apiKey: String, openWindow: OpenWindowAction )
     {
-        if self.plateSolveSession( for: file.id ) != nil
+        let target = self.target( for: file )
+
+        if self.plateSolveSession( for: target ) != nil
         {
-            openWindow( id: "PlateSolveWindow", value: file.id )
+            openWindow( id: "PlateSolveWindow", value: target )
 
             return
         }
@@ -174,7 +196,7 @@ public final class AppModel: ObservableObject
             return
         }
 
-        openWindow( id: "PlateSolveWindow", value: file.id )
+        openWindow( id: "PlateSolveWindow", value: target )
     }
 
     /// Responds to a solve-dependent overlay being tapped with nothing to reveal.
@@ -189,9 +211,9 @@ public final class AppModel: ObservableObject
     ///   - openWindow: The action that opens the results window.
     public func presentPlateSolveOrProgress( for file: OpenFile, openWindow: OpenWindowAction )
     {
-        if self.plateSolveSession( for: file.id )?.phase.isInProgress == true
+        if self.plateSolveSession( for: self.target( for: file ) )?.phase.isInProgress == true
         {
-            openWindow( id: "PlateSolveWindow", value: file.id )
+            openWindow( id: "PlateSolveWindow", value: self.target( for: file ) )
         }
         else
         {
@@ -213,7 +235,7 @@ public final class AppModel: ObservableObject
     /// been solved (but yielded nothing for the tapped overlay) or not solved at all.
     public var plateSolvePromptMessage: String
     {
-        self.plateSolvePromptFile?.plateSolve == nil
+        self.plateSolvePromptFile?.image?.plateSolve == nil
             ? "This image hasn’t been plate-solved yet. Plate solve it to map its field — labelling the objects in view and showing the sky orientation."
             : "The plate solve didn’t provide what this overlay needs. You can run the plate solve again from the results window."
     }

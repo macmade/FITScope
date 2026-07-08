@@ -23,6 +23,8 @@
  ******************************************************************************/
 
 @testable import FITScope
+import Foundation
+import SwiftFITS
 import SwiftUI
 import Testing
 
@@ -49,6 +51,19 @@ struct ImageCanvasControllerTests
         var onUnavailableTap: ( () -> Void )? = nil
 
         func draw( in context: inout GraphicsContext, canvasSize: CGSize, imageSize: CGSize, displayedRect: CGRect ) {}
+    }
+
+    /// Builds a real ``LoadedImage`` from the mono fixture, so the controller has an
+    /// image to store overlay enablement on (overlays are per-image).
+    @MainActor
+    private static func makeImage() throws -> LoadedImage
+    {
+        let url      = TestFixtures.monoImage
+        let file     = try FITSFile( data: Data( contentsOf: url ), options: .lenient )
+        let info     = FITSImageInfo( url: url, file: file )
+        let renderer = ImageRenderer( file: file )
+
+        return LoadedImage( info: info, renderer: renderer )
     }
 
     @Test
@@ -89,10 +104,15 @@ struct ImageCanvasControllerTests
     }
 
     @Test
-    func tappingAnAvailableOverlayTogglesItOnAndOff()
+    func tappingAnAvailableOverlayTogglesItOnAndOff() throws
     {
         let controller = ImageCanvasController()
 
+        // Overlay enablement is stored per-image, so the controller needs a shown
+        // image; the controller holds it weakly, so keep a strong reference here.
+        let image = try Self.makeImage()
+
+        controller.setImage( image )
         controller.overlays = [ StubOverlay( id: "stars", title: "Stars", isAvailable: true ) ]
 
         #expect( controller.isOverlayEnabled( "stars" ) == false )
@@ -102,6 +122,28 @@ struct ImageCanvasControllerTests
 
         controller.overlayTapped( "stars" )
         #expect( controller.isOverlayEnabled( "stars" ) == false )
+    }
+
+    @Test
+    func overlayEnablementIsPerImageAndRemembered() throws
+    {
+        let controller = ImageCanvasController()
+        let first      = try Self.makeImage()
+        let second     = try Self.makeImage()
+
+        controller.overlays = [ StubOverlay( id: "grid", title: "Grid", isAvailable: true ) ]
+
+        controller.setImage( first )
+        controller.overlayTapped( "grid" )
+        #expect( controller.isOverlayEnabled( "grid" ) )
+
+        // Switching to another image shows that image's own (empty) overlay set.
+        controller.setImage( second )
+        #expect( controller.isOverlayEnabled( "grid" ) == false, "a different image does not inherit the first image's overlays" )
+
+        // Returning to the first image restores what was enabled there.
+        controller.setImage( first )
+        #expect( controller.isOverlayEnabled( "grid" ), "an image remembers its own overlays" )
     }
 
     @Test

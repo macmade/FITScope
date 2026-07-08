@@ -91,6 +91,14 @@ enum TestFixtures
         self.url( "Spectrum1D.fits" )
     }
 
+    /// A real multi-image `NAXIS = 3` cube (`BITPIX = 16`) whose third axis holds
+    /// four distinct 2-D image planes — not RGB colour planes — so it loads as four
+    /// separate frames surfaced in the carousel.
+    static var multiImageCube: URL
+    {
+        self.url( "MultiImage3D.fits" )
+    }
+
     /// A one-dimensional (`NAXIS = 1`) file with an unsupported `BITPIX = 64`: it
     /// parses (so its header metadata is available) but its samples cannot be
     /// decoded, exercising the graceful-degradation path — the file loads with its

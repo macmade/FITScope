@@ -192,6 +192,66 @@ enum FITSTestData
         return data
     }
 
+    /// A minimal, valid multi-image `NAXIS=3` cube FITS file (`BITPIX=8`): a stack
+    /// of `planes` band-sequential `width × height` images, as a header block plus a
+    /// block-padded data segment.
+    ///
+    /// The third axis is a plain frame index — no `CTYPE3` — and the plane count is
+    /// *not* 3, so the file matches the multi-image rule
+    /// (``ImageProcessor/isMultiImageCube(properties:)``) rather than the RGB rule.
+    /// Each plane is filled with a distinct per-plane ramp (`plane p` starts at
+    /// `(p + 1) · 20`) so a decoded frame is individually identifiable.
+    ///
+    /// Extra header records are inserted verbatim before `END`, so a caller can add
+    /// keywords (e.g. `CTYPE3` to exercise the physical-cube rejection path, or a
+    /// WCS).
+    ///
+    /// - Parameters:
+    ///   - width:        The plane width in pixels.
+    ///   - height:       The plane height in pixels.
+    ///   - planes:       The number of stacked images (the third-axis length).
+    ///   - extraRecords: Additional header records to insert before `END`.
+    /// - Returns: The complete FITS file bytes.
+    static func multiImageCube( width: Int = 2, height: Int = 2, planes: Int = 4, extraRecords: [ String ] = [] ) -> Data
+    {
+        let count   = max( width * height, 1 )
+        let samples = ( 0 ..< planes ).flatMap
+        {
+            plane in
+
+            ( 0 ..< count ).map { UInt8( truncatingIfNeeded: ( plane + 1 ) * 20 + $0 ) }
+        }
+
+        let records =
+            [
+                "SIMPLE  = T",
+                "BITPIX  = 8",
+                "NAXIS   = 3",
+                "NAXIS1  = \( width )",
+                "NAXIS2  = \( height )",
+                "NAXIS3  = \( planes )",
+            ]
+            + extraRecords
+            + [ "END" ]
+
+        let header = records.map { $0.padding( toLength: 80, withPad: " ", startingAt: 0 ) }.joined()
+
+        var data    = Data( header.padding( toLength: FITSFile.blockSize, withPad: " ", startingAt: 0 ).utf8 )
+        var payload = Data( samples )
+
+        // Pad the data segment up to a whole FITS block.
+        let remainder = payload.count % FITSFile.blockSize
+
+        if remainder != 0
+        {
+            payload.append( Data( count: FITSFile.blockSize - remainder ) )
+        }
+
+        data.append( payload )
+
+        return data
+    }
+
     /// A minimal, valid header-only FITS file
     /// (`SIMPLE=T / BITPIX=8 / NAXIS=0 / END`) as a single space-padded block.
     static func headerOnly() -> Data

@@ -92,6 +92,10 @@ public struct ImageCarouselView: View
             }
             .focusable()
             .focused( self.$isFocused )
+            // Keep the strip focusable for arrow-key navigation, but suppress the
+            // system focus ring: on a full-width scroll view it draws as a blue
+            // border spanning the whole window when the strip takes focus.
+            .focusEffectDisabled()
             .onKeyPress( .leftArrow )
             {
                 self.move( by: -1 )

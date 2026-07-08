@@ -165,20 +165,25 @@ struct AppModelTests
     }
 
     @Test
-    func endingAPlateSolveCancelsAndForgetsTheSession() throws
+    func endingAPlateSolveCancelsAndForgetsTheSession() async throws
     {
         let app    = AppModel()
         let client = AstrometryClient( transport: MockAstrometryTransport { _, _ in throw URLError( .cancelled ) } )
         let file   = OpenFile( url: TestFixtures.monoImage )
 
+        // Plate solving is per-frame, so the file must have loaded a frame to solve.
+        await file.load()
+
+        let target = PlateSolveTarget( fileID: file.id, frameIndex: 0 )
+
         #expect( app.beginPlateSolve( of: file, apiKey: "key", client: client ) )
-        #expect( app.plateSolveSession( for: file.id ) != nil )
+        #expect( app.plateSolveSession( for: target ) != nil )
 
         // Closing the file ends its solve: the session is cancelled and forgotten,
         // so nothing is left referencing the no-longer-open file.
         app.endPlateSolve( for: file.id )
 
-        #expect( app.plateSolveSession( for: file.id ) == nil )
+        #expect( app.plateSolveSession( for: target ) == nil )
     }
 
     @Test

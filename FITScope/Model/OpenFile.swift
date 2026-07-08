@@ -88,16 +88,6 @@ public final class OpenFile: ObservableObject, Identifiable
     /// assigned by the owning ``WindowModel`` as files and metrics change.
     @Published public internal( set ) var weight: Double?
 
-    /// The plate-solve result for this file, set once a solve succeeds. It carries
-    /// the field calibration and the WCS the astrometric overlays read. `nil`
-    /// until the file has been successfully plate-solved.
-    @Published public internal( set ) var plateSolve: PlateSolveResult?
-
-    /// Whether a plate solve is currently running for this file. Published so the
-    /// toolbar's plate-solve button can show a live, in-progress state without
-    /// observing the session directly.
-    @Published public internal( set ) var isPlateSolving = false
-
     /// Forwards the loader's change notifications to this object's observers.
     private var loaderObserver: AnyCancellable?
 
@@ -141,6 +131,12 @@ public final class OpenFile: ObservableObject, Identifiable
     /// needed, detecting it on demand. Internal so tests can await the selected
     /// frame settling.
     private( set ) var frameSelectionTask: Task< Void, Never >?
+
+    /// The in-flight background render of the non-primary frames, so the carousel
+    /// shows a thumbnail preview for every frame rather than only the visited ones.
+    /// Render-only (no star detection); `nil` for a single-frame file. Internal so
+    /// tests can await the previews settling.
+    private( set ) var framePreviewsTask: Task< Void, Never >?
 
     /// The longest-side pixel size of the generated sidebar thumbnail.
     private static let thumbnailDimension = 64
@@ -495,6 +491,65 @@ public final class OpenFile: ObservableObject, Identifiable
             // ``thumbnailObserver``; wait for that regeneration so the prepared
             // file has its sidebar thumbnail ready, without a second render.
             await self.thumbnailTask?.value
+
+            // Fill in the carousel previews for the remaining frames in the
+            // background, once the primary frame the user is looking at is ready.
+            self.prepareFramePreviews()
+        }
+    }
+
+    /// Renders every not-yet-rendered frame in the background, so the carousel shows
+    /// a thumbnail preview for each frame rather than only the ones the user has
+    /// selected. A no-op for a single-frame file.
+    ///
+    /// Render only: star detection stays lazy (see ``prepareSelectedFrame()``), so
+    /// opening a multi-image cube does not run the full analysis on every plane up
+    /// front. Each frame's render goes through the same ``RenderThrottle`` at normal
+    /// priority, behind the selected frame's high-priority work, so filling the strip
+    /// can never saturate the CPU or outrank what the user is waiting on. Frames that
+    /// have already rendered (or failed) are skipped, and the pass bails promptly on
+    /// cancellation (e.g. the file being closed).
+    private func prepareFramePreviews()
+    {
+        let frames = self.frames
+
+        guard frames.count > 1, let throttle = self.renderThrottle
+        else
+        {
+            return
+        }
+
+        let id = self.id
+
+        self.framePreviewsTask = Task
+        {
+            for frame in frames
+            {
+                guard Task.isCancelled == false
+                else
+                {
+                    return
+                }
+
+                // Skip a frame that already has a result (the primary frame, or one
+                // the user has visited) or that has already failed.
+                if frame.renderer.result != nil || frame.renderer.error != nil
+                {
+                    continue
+                }
+
+                await throttle.acquire( key: id, priority: .normal )
+
+                defer { throttle.release() }
+
+                guard Task.isCancelled == false, frame.renderer.result == nil, frame.renderer.error == nil
+                else
+                {
+                    continue
+                }
+
+                await frame.renderer.render()
+            }
         }
     }
 
@@ -523,6 +578,7 @@ public final class OpenFile: ObservableObject, Identifiable
     {
         self.preparation?.cancel()
         self.frameSelectionTask?.cancel()
+        self.framePreviewsTask?.cancel()
     }
 
     /// Copies the original, unmodified file to a destination, byte for byte.

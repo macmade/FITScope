@@ -26,25 +26,25 @@ import SwiftUI
 import SwiftUtilities
 
 /// The plate-solving results window: resolves the live ``PlateSolveSession`` for
-/// the file it was opened for and hands it to ``PlateSolveResultView``.
+/// the frame it was opened for and hands it to ``PlateSolveResultView``.
 ///
-/// The window carries only the file's identifier (a value SwiftUI can restore);
-/// the session itself lives on the ``AppModel`` so the long-running solve
+/// The window carries only the frame's ``PlateSolveTarget`` (a value SwiftUI can
+/// restore); the session itself lives on the ``AppModel`` so the long-running solve
 /// survives the window opening, closing, and reopening.
 public struct PlateSolveWindowView: View
 {
-    /// The identifier of the file being solved, supplied by the scene's value.
-    private let fileID: OpenFile.ID?
+    /// The target frame being solved, supplied by the scene's value.
+    private let target: PlateSolveTarget?
 
     /// The app-wide model that owns the plate-solve sessions.
     @EnvironmentObject private var appModel: AppModel
 
     /// Creates the window view.
     ///
-    /// - Parameter fileID: The identifier of the file to show the solve for.
-    public init( fileID: OpenFile.ID? )
+    /// - Parameter target: The frame to show the solve for.
+    public init( target: PlateSolveTarget? )
     {
-        self.fileID = fileID
+        self.target = target
     }
 
     /// The view's content.
@@ -52,7 +52,7 @@ public struct PlateSolveWindowView: View
     {
         Group
         {
-            if let fileID = self.fileID, let session = self.appModel.plateSolveSession( for: fileID )
+            if let target = self.target, let session = self.appModel.plateSolveSession( for: target )
             {
                 PlateSolveResultView( session: session )
             }
@@ -78,6 +78,6 @@ public struct PlateSolveWindowView: View
 
 #Preview
 {
-    PlateSolveWindowView( fileID: nil )
+    PlateSolveWindowView( target: nil )
         .environmentObject( AppModel() )
 }

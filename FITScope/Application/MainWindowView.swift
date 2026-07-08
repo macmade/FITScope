@@ -246,10 +246,11 @@ public struct MainWindowView: View
         }
         .onAppear
         {
-            // When a file is closed, dismiss its plate-solve results window and end
-            // its solve, so the window is never left behind referencing a
-            // no-longer-open file. Captured explicitly (not the whole view) since
-            // the closure outlives this call, and set before any file can close.
+            // When a file is closed, end every frame's solve and dismiss each frame's
+            // results window, so none is left behind referencing a no-longer-open
+            // file. `endPlateSolve` returns the ended frames' targets to dismiss.
+            // Captured explicitly (not the whole view) since the closure outlives this
+            // call, and set before any file can close.
             let appModel = self.appModel
             let dismiss  = self.dismissWindow
 
@@ -257,8 +258,10 @@ public struct MainWindowView: View
             {
                 id in
 
-                appModel.endPlateSolve( for: id )
-                dismiss( id: "PlateSolveWindow", value: id )
+                appModel.endPlateSolve( for: id ).forEach
+                {
+                    dismiss( id: "PlateSolveWindow", value: $0 )
+                }
             }
 
             guard self.model.files.isEmpty, self.initialURLs.isEmpty == false

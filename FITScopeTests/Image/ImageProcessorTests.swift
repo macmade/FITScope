@@ -65,8 +65,11 @@ struct ImageProcessorTests
         #expect( scaling.offset == 32768 )
     }
 
-    /// A non-2-D geometry (a 3-D cube / multi-plane image) is rejected with a
-    /// diagnostic that names the offending `NAXIS` value, rather than rendering.
+    /// `render` itself handles only a single 2-D image (or an RGB colour cube); a
+    /// whole `NAXIS=3` cube passed to it directly is rejected with a diagnostic that
+    /// names the offending `NAXIS` value. (A multi-image cube is split into per-plane
+    /// 2-D render sources by the loader, so `render` never sees the whole cube for a
+    /// supported file — see `FITSImageLoaderMultiImageTests`.)
     @Test
     func nonTwoDimensionalGeometryIsRejected() throws
     {
@@ -86,7 +89,7 @@ struct ImageProcessorTests
 
         let message = "\( error )"
 
-        #expect( message.contains( "only 2-dimensional images are supported" ), "expected an unsupported-geometry error, got: \"\( message )\"" )
+        #expect( message.contains( "Unsupported image geometry" ), "expected an unsupported-geometry error, got: \"\( message )\"" )
         #expect( message.contains( "NAXIS = 3" ), "the error must report the offending NAXIS value, got: \"\( message )\"" )
     }
 
@@ -136,8 +139,9 @@ struct ImageProcessorTests
         #expect( result.outputPixelFormat == .rgb )
     }
 
-    /// The RGB-planes rule accepts only `NAXIS=3` with a third axis of 3, both
-    /// spatial `CTYPE`s present and no `CTYPE3`.
+    /// The RGB-planes rule accepts any `NAXIS=3` with a third axis of exactly 3 and
+    /// no `CTYPE3`. The spatial `CTYPE1`/`CTYPE2` are *not* required — many real RGB
+    /// FITS files carry no WCS — so a bare 3-plane cube is still recognised as colour.
     @Test
     func rgbPlanesDetectionRule() throws
     {
@@ -158,17 +162,80 @@ struct ImageProcessorTests
 
         #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3 ) ) )
         #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 5 ) ) == false, "the third axis must be 3" )
-        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype1: nil ) ) == false, "CTYPE1 must be present" )
-        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype2: "  " ) ) == false, "CTYPE2 must be non-empty" )
+        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype1: nil, ctype2: nil ) ), "a bare 3-plane cube (no WCS) is still RGB" )
+        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype2: "  " ) ), "a blank CTYPE2 no longer disqualifies RGB" )
         #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype3: "WAVE" ) ) == false, "a present CTYPE3 rules out the RGB-planes case" )
         #expect( ImageProcessor.isRGBPlanes( properties: FITSTestData.gradient().properties ) == false, "a 2-D image is not RGB planes" )
     }
 
-    /// A `NAXIS=3` file that is *not* the RGB-planes shape (here the third axis is
-    /// not 3) is still rejected, left for the multi-image milestone rather than
-    /// mis-rendered as colour.
+    /// The multi-image rule accepts a `NAXIS=3` cube whose third axis is a plain
+    /// frame index: `NAXIS3 ≥ 2` and `≠ 3` (a count of 3 is claimed as RGB) and no
+    /// `CTYPE3` (whose presence marks a physical data cube).
     @Test
-    func nonRGBThreeDimensionalGeometryIsStillRejected() throws
+    func multiImageCubeDetectionRule() throws
+    {
+        func properties( naxis: Int64 = 3, naxis3: Int64, ctype3: String? = nil ) -> [ FITSPropertySnapshot ]
+        {
+            var props: [ FITSPropertySnapshot ] =
+                [
+                    FITSPropertySnapshot( name: "NAXIS",  value: .integer( naxis ) ),
+                    FITSPropertySnapshot( name: "NAXIS3", value: .integer( naxis3 ) ),
+                ]
+
+            ctype3.map { props.append( FITSPropertySnapshot( name: "CTYPE3", value: .string( $0 ) ) ) }
+
+            return props
+        }
+
+        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 2 ) ), "2 planes with no physical third axis is a multi-image cube" )
+        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 7 ) ), "7 planes is a multi-image cube" )
+        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 3 ) ) == false, "a 3-plane cube is claimed by the RGB rule, not multi-image" )
+        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 1 ) ) == false, "a single plane is not a stack" )
+        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 4, ctype3: "WAVE" ) ) == false, "a physical CTYPE3 marks a data cube, not separate images" )
+        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis: 2, naxis3: 0 ) ) == false, "a 2-D image is not a multi-image cube" )
+
+        // The RGB and multi-image rules are mutually exclusive over every NAXIS=3 shape.
+        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 4 ) ) == false )
+        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 3 ) ) == false )
+    }
+
+    /// `cubePlanes` splits a multi-image cube into one 2-D HDU per plane: each plane
+    /// carries a `NAXIS=2` header (no `NAXIS3`) and its own contiguous byte slice, so
+    /// the existing 2-D render path renders each frame unchanged.
+    @Test
+    func cubePlanesSplitsIntoTwoDimensionalHDUs() throws
+    {
+        // Three 2×2 planes filled with distinct constants: 1, 2, 3.
+        let planeBytes: [ [ UInt8 ] ] = [ [ 1, 1, 1, 1 ], [ 2, 2, 2, 2 ], [ 3, 3, 3, 3 ] ]
+        let data                      = Data( planeBytes.flatMap { $0 } )
+        let properties: [ FITSPropertySnapshot ] =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 3 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS3", value: .integer( 4 ) ),
+            ]
+
+        let planes = ImageProcessor.cubePlanes( data: data, properties: properties )
+
+        // NAXIS3 says 4 but only 3 planes of data are present; the truncated plane is
+        // dropped rather than surfaced as a broken frame.
+        #expect( planes.count == 3, "one HDU per plane actually present in the data" )
+
+        for ( index, plane ) in planes.enumerated()
+        {
+            #expect( plane.properties.first { $0.name == "NAXIS"  }?.value.integer == 2, "each plane is a 2-D HDU" )
+            #expect( plane.properties.contains { $0.name == "NAXIS3" } == false, "the third-axis keyword is dropped from a plane" )
+            #expect( Array( plane.data ) == planeBytes[ index ], "each plane carries its own contiguous slice" )
+        }
+    }
+
+    /// A `NAXIS=3` file with a physical `CTYPE3` is neither RGB nor a multi-image
+    /// stack; `render` rejects it with a message that names it as a data cube,
+    /// distinct from the RGB / multi-image cases.
+    @Test
+    func physicalDataCubeIsRejected() throws
     {
         let properties: [ FITSPropertySnapshot ] =
             [
@@ -177,16 +244,21 @@ struct ImageProcessorTests
                 FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
                 FITSPropertySnapshot( name: "NAXIS2", value: .integer( 2 ) ),
                 FITSPropertySnapshot( name: "NAXIS3", value: .integer( 5 ) ),
-                FITSPropertySnapshot( name: "CTYPE1", value: .string( "RA---TAN" ) ),
-                FITSPropertySnapshot( name: "CTYPE2", value: .string( "DEC--TAN" ) ),
+                FITSPropertySnapshot( name: "CTYPE3", value: .string( "WAVE" ) ),
             ]
+
+        #expect( ImageProcessor.isRGBPlanes( properties: properties ) == false )
+        #expect( ImageProcessor.isMultiImageCube( properties: properties ) == false )
 
         let error = try #require( throws: ( any Error ).self )
         {
             _ = try ImageProcessor.render( data: Data(), properties: properties )
         }
 
-        #expect( "\( error )".contains( "NAXIS = 3" ), "expected the unsupported-geometry error, got: \"\( error )\"" )
+        let message = "\( error )"
+
+        #expect( message.contains( "NAXIS = 3" ), "expected the unsupported-geometry error, got: \"\( message )\"" )
+        #expect( message.contains( "cube" ), "the message must identify it as a data cube, got: \"\( message )\"" )
     }
 
     /// A non-positive `NAXIS2` is rejected with a diagnostic that names the

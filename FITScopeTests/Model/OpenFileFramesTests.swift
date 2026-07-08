@@ -195,6 +195,27 @@ struct OpenFileFramesTests
         #expect( frames[ 1 ].renderer.result != nil, "selecting a not-yet-rendered frame must render it" )
     }
 
+    /// Preparing a multi-frame file renders every frame in the background, so the
+    /// carousel can show a thumbnail preview for each frame — not only the primary or
+    /// the frames the user has visited.
+    @Test
+    @MainActor
+    func preparingRendersPreviewsForAllFrames() async throws
+    {
+        let frames   = [ try Self.makeImage(), try Self.makeImage(), try Self.makeImage() ]
+        let file     = OpenFile( url: TestFixtures.monoImage, loader: StubMultiFrameLoader( frames: frames ) )
+        let throttle = RenderThrottle( limit: 2 )
+
+        #expect( frames.allSatisfy { $0.renderer.result == nil } )
+
+        file.prepare( throttle: throttle )
+
+        await file.preparation?.value
+        await file.framePreviewsTask?.value
+
+        #expect( frames.allSatisfy { $0.renderer.result != nil }, "every frame must render so the carousel can preview it" )
+    }
+
     /// The file republishes when the selected (non-primary) frame renders, so the
     /// views observing the file — the canvas — refresh once the lazily prepared
     /// frame commits its result. Guards the selected-frame change forwarding.

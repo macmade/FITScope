@@ -39,8 +39,16 @@ import SwiftUtilities
 public class FITSImageLoader: ObservableObject, ImageLoading
 {
     /// The successfully loaded image, or `nil` before loading or after a
-    /// failure.
+    /// failure. For a multi-image cube this is the primary (first) frame; ``frames``
+    /// holds the full list.
     @Published public private( set ) var image: LoadedImage?
+
+    /// The frames the file decoded into, in display order — one per image it holds.
+    /// A single-image file (a 2-D image, an RGB colour cube) vends exactly one; a
+    /// multi-image `NAXIS=3` cube vends one per plane, surfaced in the carousel.
+    /// Empty before loading or after a failure. Overrides the ``ImageLoading``
+    /// single-frame default with the real, decoded frame list.
+    @Published public private( set ) var frames: [ LoadedImage ] = []
 
     /// The error from the most recent failed load, or `nil` on success.
     @Published public private( set ) var error: ( any Swift.Error )?
@@ -146,27 +154,44 @@ public class FITSImageLoader: ObservableObject, ImageLoading
                         let hdu         = try? FITSPreviewRenderer.imageHDU( from: file.sections )
                         let isRGBImage  = hdu.map { ImageProcessor.isRGBPlanes( properties: $0.properties ) } ?? false
 
-                        let renderInput = Swift.Result
+                        // One render source per frame. A multi-image NAXIS=3 cube
+                        // decodes into one 2-D source per plane (each becoming a
+                        // carousel frame); everything else — a 2-D image, an RGB cube,
+                        // a graph, or an unsupported geometry — is a single source.
+                        let frameSources: [ Swift.Result< any ImageRenderSource, any Swift.Error > ]
+
+                        if graph == nil, let hdu, let planeSources = Self.multiImageFrameSources( forImageHDU: hdu )
                         {
-                            () -> any ImageRenderSource in
+                            frameSources = planeSources.map { .success( $0 ) }
+                        }
+                        else
+                        {
+                            frameSources =
+                                [
+                                    Swift.Result
+                                    {
+                                        () -> any ImageRenderSource in
 
-                            guard let hdu
-                            else
-                            {
-                                throw RuntimeError( message: "FITS file contains no image HDU" )
-                            }
+                                        guard let hdu
+                                        else
+                                        {
+                                            throw RuntimeError( message: "FITS file contains no image HDU" )
+                                        }
 
-                            // Build the detection-ready buffer here, while the
-                            // non-Sendable file is still in scope; only the
-                            // Sendable PixelBuffer crosses back. A decode failure
-                            // must not fail the load, so detection is best-effort. A
-                            // graph is never rendered and has no detection image.
-                            let detectionImage = graph == nil ? Self.detectionImage( forImageHDU: hdu, file: file ) : nil
+                                        // Build the detection-ready buffer here, while
+                                        // the non-Sendable file is still in scope; only
+                                        // the Sendable PixelBuffer crosses back. A decode
+                                        // failure must not fail the load, so detection is
+                                        // best-effort. A graph is never rendered and has
+                                        // no detection image.
+                                        let detectionImage = graph == nil ? Self.detectionImage( forImageHDU: hdu, file: file ) : nil
 
-                            return FITSRenderSource( data: hdu.data, properties: hdu.properties, detectionImage: detectionImage )
+                                        return FITSRenderSource( data: hdu.data, properties: hdu.properties, detectionImage: detectionImage )
+                                    },
+                                ]
                         }
 
-                        continuation.resume( returning: ( info: info, renderInput: renderInput, graph: graph, isRGBImage: isRGBImage ) )
+                        continuation.resume( returning: ( info: info, frameSources: frameSources, graph: graph, isRGBImage: isRGBImage ) )
                     }
                     catch
                     {
@@ -177,11 +202,24 @@ public class FITSImageLoader: ObservableObject, ImageLoading
 
             await MainActor.run
             {
-                let renderer       = ImageRenderer( source: result.renderInput )
-                let image          = LoadedImage( info: result.info, graph: result.graph, isRGBImage: result.isRGBImage, renderer: renderer )
-                self.image         = image
+                // Each frame is an independent LoadedImage over its own render source;
+                // they share the file's metadata (a cube has one header). The primary
+                // frame is the first, and the loader forwards only its changes — the
+                // owning OpenFile observes the selected frame separately.
+                let frames = result.frameSources.map
+                {
+                    sourceResult -> LoadedImage in
+
+                    let renderer = ImageRenderer( source: sourceResult )
+
+                    return LoadedImage( info: result.info, graph: result.graph, isRGBImage: result.isRGBImage, renderer: renderer )
+                }
+
+                let primary        = frames.first
+                self.frames        = frames
+                self.image         = primary
                 self.error         = nil
-                self.imageObserver = image.objectWillChange.sink
+                self.imageObserver = primary?.objectWillChange.sink
                 {
                     [ weak self ] _ in self?.objectWillChange.send()
                 }
@@ -190,6 +228,7 @@ public class FITSImageLoader: ObservableObject, ImageLoading
         catch
         {
             self.image         = nil
+            self.frames        = []
             self.error         = error
             self.imageObserver = nil
         }
@@ -256,5 +295,40 @@ public class FITSImageLoader: ObservableObject, ImageLoading
         }
 
         return try? FITSImageDecoder.detectionImage( from: file )
+    }
+
+    /// Builds one render source per plane for a multi-image `NAXIS=3` cube, or `nil`
+    /// when the HDU is not such a cube (so the caller uses the single-source path).
+    ///
+    /// Each plane becomes a two-dimensional ``FITSRenderSource`` over its own byte
+    /// slice, carrying a detection image built from that plane's scaled-linear
+    /// samples (the whole-file decoder cannot address a single plane). The decode is
+    /// best-effort: a plane whose detection image cannot be built simply has none, so
+    /// star detection is skipped for that frame rather than failing the load.
+    ///
+    /// - Parameter hdu: The cube HDU's bytes and header properties.
+    /// - Returns: One render source per plane, or `nil` when the HDU is not a
+    ///   multi-image cube or no whole plane is present.
+    private nonisolated static func multiImageFrameSources( forImageHDU hdu: ( data: Data, properties: [ FITSPropertySnapshot ] ) ) -> [ FITSRenderSource ]?
+    {
+        guard ImageProcessor.isMultiImageCube( properties: hdu.properties )
+        else
+        {
+            return nil
+        }
+
+        let sources = ImageProcessor.cubePlanes( data: hdu.data, properties: hdu.properties ).map
+        {
+            plane -> FITSRenderSource in
+
+            let detectionImage = ImageProcessor.linearImage( data: plane.data, properties: plane.properties ).flatMap
+            {
+                try? PixelBuffer( width: $0.width, height: $0.height, channels: 1, pixels: $0.samples, isNormalized: false )
+            }
+
+            return FITSRenderSource( data: plane.data, properties: plane.properties, detectionImage: detectionImage )
+        }
+
+        return sources.isEmpty ? nil : sources
     }
 }

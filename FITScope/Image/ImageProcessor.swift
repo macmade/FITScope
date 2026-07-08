@@ -211,8 +211,10 @@ public enum ImageProcessor
     ///
     /// Supports a two-dimensional image (`NAXIS = 2`) and an RGB colour-planes cube
     /// (`NAXIS = 3` with a third axis of 3 — see ``isRGBPlanes(properties:)``),
-    /// whose planes are combined into one colour image. Any other `NAXIS = 3`
-    /// geometry is rejected (left to a later milestone).
+    /// whose planes are combined into one colour image. A multi-image cube (see
+    /// ``isMultiImageCube(properties:)``) is split into per-plane 2-D sources by the
+    /// loader, so each plane reaches here as a 2-D image; any remaining `NAXIS = 3`
+    /// geometry (a physical data cube) is rejected.
     ///
     /// - Parameters:
     ///   - data:       The image HDU's raw pixel bytes.
@@ -255,7 +257,16 @@ public enum ImageProcessor
         guard nAxis == 2
         else
         {
-            throw RuntimeError( message: "Unsupported image geometry: only 2-dimensional images are supported, but this file has NAXIS = \( nAxis ). 3-D cubes and multi-plane images are not yet supported." )
+            // `render` handles only a single image directly: a 2-D image or an RGB
+            // colour cube. A multi-image cube is split into per-plane 2-D sources by
+            // the loader before reaching here, so a cube arriving whole (e.g. the
+            // QuickLook path) is not renderable directly. A present CTYPE3 identifies
+            // a physical data cube specifically.
+            let detail = Self.trimmedString( named: "CTYPE3", in: properties ) != nil
+                ? "it is a data cube with a physical third axis (CTYPE3), which is not supported"
+                : "only a single 2-D image or an RGB colour cube can be rendered directly"
+
+            throw RuntimeError( message: "Unsupported image geometry: this file has NAXIS = \( nAxis ); \( detail )." )
         }
 
         guard let nAxis1 = properties.first( where: { $0.name == "NAXIS1" } )?.value.integer
@@ -393,10 +404,13 @@ public enum ImageProcessor
     /// Whether the header describes a three-dimensional HDU whose third axis holds
     /// separate red, green and blue image planes.
     ///
-    /// The rule (per the plan): `NAXIS = 3`, the third axis `NAXIS3 = 3`, both
-    /// spatial coordinate types `CTYPE1` and `CTYPE2` present and non-empty, and no
-    /// `CTYPE3` (whose presence would mark the third axis as a genuine coordinate,
-    /// i.e. a multi-plane cube handled elsewhere).
+    /// The rule: `NAXIS = 3`, the third axis `NAXIS3 = 3`, and no present, non-empty
+    /// `CTYPE3` (whose presence would mark the third axis as a genuine physical
+    /// coordinate — a data cube, not colour planes). The spatial coordinate types
+    /// `CTYPE1`/`CTYPE2` are deliberately *not* required: many real RGB FITS files
+    /// carry no world-coordinate system, so a bare three-plane cube is still colour.
+    /// Distinguishing three planes (colour) from any other plane count (a stack of
+    /// separate images, see ``isMultiImageCube(properties:)``) is the plane count.
     ///
     /// - Parameter properties: The image HDU's header properties.
     /// - Returns: `true` when the header matches the RGB-planes shape.
@@ -411,14 +425,126 @@ public enum ImageProcessor
 
         // A present, non-empty CTYPE3 marks the third axis as its own coordinate —
         // that is a multi-plane cube, not colour planes.
-        guard Self.trimmedString( named: "CTYPE3", in: properties ) == nil
+        return Self.trimmedString( named: "CTYPE3", in: properties ) == nil
+    }
+
+    /// Whether the header describes a `NAXIS = 3` cube whose third axis holds
+    /// multiple distinct images (a stack), rather than RGB colour planes or a
+    /// physical data cube.
+    ///
+    /// The rule: `NAXIS = 3`, the plane count `NAXIS3 ≥ 2` and `≠ 3` (a count of 3
+    /// with no physical third axis is claimed as colour by ``isRGBPlanes(properties:)``),
+    /// and no present, non-empty `CTYPE3` (whose presence marks the third axis as a
+    /// physical coordinate — a spectral / velocity data cube, which is not a set of
+    /// separate images and is rejected). The two rules are mutually exclusive over
+    /// every `NAXIS = 3` shape.
+    ///
+    /// - Parameter properties: The image HDU's header properties.
+    /// - Returns: `true` when the header matches the multi-image cube shape.
+    public static func isMultiImageCube( properties: [ FITSPropertySnapshot ] ) -> Bool
+    {
+        guard properties.first( where: { $0.name == "NAXIS" } )?.value.integer == 3,
+              let nAxis3 = properties.first( where: { $0.name == "NAXIS3" } )?.value.integer,
+              nAxis3 >= 2, nAxis3 != 3
         else
         {
             return false
         }
 
-        return Self.trimmedString( named: "CTYPE1", in: properties ) != nil
-            && Self.trimmedString( named: "CTYPE2", in: properties ) != nil
+        // A present, non-empty CTYPE3 marks the third axis as a physical coordinate —
+        // a data cube, not a stack of separate images.
+        return Self.trimmedString( named: "CTYPE3", in: properties ) == nil
+    }
+
+    /// Splits a multi-image `NAXIS = 3` cube into one two-dimensional image HDU per
+    /// plane, in third-axis order, so each plane feeds the existing 2-D render path
+    /// unchanged (as its own frame).
+    ///
+    /// Each returned HDU carries the plane's own contiguous byte slice and a header
+    /// synthesised from the cube's — `NAXIS` set to 2 and `NAXIS3` dropped, every
+    /// other keyword (dimensions, scaling, Bayer pattern, WCS) preserved. Planes are
+    /// returned only for the data actually present: a cube truncated below its
+    /// declared `NAXIS3` yields the fully present planes rather than broken frames,
+    /// so the caller can fall back gracefully when none are.
+    ///
+    /// - Parameters:
+    ///   - data:       The cube HDU's raw pixel bytes (band-sequential planes).
+    ///   - properties: The cube HDU's header properties.
+    /// - Returns: One 2-D HDU per fully present plane, empty when the geometry is
+    ///   missing/invalid or no whole plane is present.
+    public static func cubePlanes( data: Data, properties: [ FITSPropertySnapshot ] ) -> [ ( data: Data, properties: [ FITSPropertySnapshot ] ) ]
+    {
+        guard let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
+              let bitsPerPixel = BitsPerPixel.from( value: bitPix ),
+              let ( width, height ) = Self.imageDimensions( from: properties ),
+              let nAxis3       = properties.first( where: { $0.name == "NAXIS3" } )?.value.integer,
+              let planeCount   = Int( exactly: nAxis3 ), planeCount > 0
+        else
+        {
+            return []
+        }
+
+        let planeSize = bitsPerPixel.size( numberOfPixels: width * height )
+
+        guard planeSize > 0
+        else
+        {
+            return []
+        }
+
+        // Only whole planes actually present in the data become frames; a truncated
+        // cube drops its incomplete tail rather than surfacing broken frames.
+        let availablePlanes = min( planeCount, data.count / planeSize )
+
+        // The per-plane header is the cube's, made two-dimensional: NAXIS = 2 and the
+        // third-axis length removed, so the 2-D render path accepts it.
+        let planeProperties = properties.compactMap
+        {
+            property -> FITSPropertySnapshot? in
+
+            switch property.name
+            {
+                case "NAXIS":  return FITSPropertySnapshot( name: "NAXIS", value: .integer( 2 ) )
+                case "NAXIS3": return nil
+                default:       return property
+            }
+        }
+
+        return ( 0 ..< availablePlanes ).map
+        {
+            plane in
+
+            // Re-wrap each plane slice into a fresh, zero-based Data so the downstream
+            // readers index it in isolation.
+            let slice = Data( data.dropFirst( plane * planeSize ).prefix( planeSize ) )
+
+            return ( data: slice, properties: planeProperties )
+        }
+    }
+
+    /// Decodes a two-dimensional image HDU into its scaled-linear samples (raw values
+    /// with `BSCALE`/`BZERO` applied), for building a single-channel detection image.
+    ///
+    /// - Parameters:
+    ///   - data:       The image HDU's raw pixel bytes.
+    ///   - properties: The image HDU's header properties.
+    /// - Returns: The dimensions and scaled-linear samples, or `nil` for a missing /
+    ///   unsupported `BITPIX`, invalid dimensions, or truncated data.
+    public static func linearImage( data: Data, properties: [ FITSPropertySnapshot ] ) -> ( width: Int, height: Int, samples: [ Double ] )?
+    {
+        guard let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
+              let bitsPerPixel = BitsPerPixel.from( value: bitPix ),
+              let ( width, height ) = Self.imageDimensions( from: properties ),
+              let raw          = try? PixelUtilities.readRawPixels( data: data, width: width, height: height, bitsPerPixel: bitsPerPixel )
+        else
+        {
+            return nil
+        }
+
+        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
+        let samples           = raw.map { $0 * scale + offset }
+
+        return ( width: width, height: height, samples: samples )
     }
 
     /// Renders an RGB `NAXIS=3` image HDU: the three band-sequential colour planes

@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftFITS
 import Testing
 
 /// Tests for ``PlateSolveSession``: the observable state machine that drives a
@@ -35,6 +36,17 @@ import Testing
 @MainActor
 struct PlateSolveSessionTests
 {
+    /// Loads a real, renderable frame from the mono fixture — the image a session
+    /// solves and writes its result back onto.
+    private func makeFrame() async throws -> LoadedImage
+    {
+        let loader = FITSImageLoader( url: TestFixtures.monoImage, data: try Data( contentsOf: TestFixtures.monoImage ) )
+
+        await loader.load()
+
+        return try #require( loader.image )
+    }
+
     /// A transport that runs the whole flow straight through to a solved job.
     private func successTransport() -> MockAstrometryTransport
     {
@@ -61,9 +73,10 @@ struct PlateSolveSessionTests
     @Test
     func succeedsAndPersistsResultOntoFile() async throws
     {
-        let file      = OpenFile( url: TestFixtures.monoImage )
-        let client    = AstrometryClient( transport: self.successTransport(), pollInterval: .zero )
-        let session   = PlateSolveSession( file: file, apiKey: "key", client: client )
+        let frame   = try await self.makeFrame()
+        let client  = AstrometryClient( transport: self.successTransport(), pollInterval: .zero )
+        // A multi-frame file (frameCount 2) uploads a rendered PNG.
+        let session = PlateSolveSession( frame: frame, fileName: "mono", fileURL: TestFixtures.monoImage, frameCount: 2, apiKey: "key", client: client )
 
         await session.run()
 
@@ -73,14 +86,14 @@ struct PlateSolveSessionTests
 
         #expect( result.jobID == 42 )
         #expect( result.wcs != nil )
-        #expect( file.plateSolve != nil )
-        #expect( file.plateSolve?.jobID == 42 )
+        #expect( frame.plateSolve != nil )
+        #expect( frame.plateSolve?.jobID == 42 )
     }
 
     /// A failed solve ends in the `failed` phase and leaves the file's stored
     /// result untouched.
     @Test
-    func reportsFailureAndLeavesFileUntouched() async
+    func reportsFailureAndLeavesFileUntouched() async throws
     {
         let transport = MockAstrometryTransport
         {
@@ -96,9 +109,9 @@ struct PlateSolveSessionTests
             }
         }
 
-        let file    = OpenFile( url: TestFixtures.monoImage )
+        let frame   = try await self.makeFrame()
         let client  = AstrometryClient( transport: transport, pollInterval: .zero )
-        let session = PlateSolveSession( file: file, apiKey: "key", client: client )
+        let session = PlateSolveSession( frame: frame, fileName: "mono", fileURL: TestFixtures.monoImage, frameCount: 1, apiKey: "key", client: client )
 
         await session.run()
 
@@ -110,7 +123,50 @@ struct PlateSolveSessionTests
             return
         }
 
-        #expect( file.plateSolve == nil )
+        #expect( frame.plateSolve == nil )
+    }
+
+    /// A solve writes its result onto its own target frame only, leaving the file's
+    /// other frames untouched — so each frame of a multi-image file is solved
+    /// independently.
+    @Test
+    func solvesOnlyItsTargetFrame() async throws
+    {
+        let target  = try await self.makeFrame()
+        let other   = try await self.makeFrame()
+        let client  = AstrometryClient( transport: self.successTransport(), pollInterval: .zero )
+        let session = PlateSolveSession( frame: target, fileName: "mono", fileURL: TestFixtures.monoImage, frameCount: 1, apiKey: "key", client: client )
+
+        await session.run()
+
+        #expect( target.plateSolve != nil, "the solved frame receives the result" )
+        #expect( other.plateSolve == nil, "another frame is not affected by a different frame's solve" )
+    }
+
+    /// A single-image FITS file (frameCount 1) uploads the original file's bytes
+    /// as-is and still solves end to end — exercising the original-file upload path
+    /// rather than the rendered-PNG path.
+    @Test
+    func uploadsTheOriginalFileForASingleImageFITS() async throws
+    {
+        let frame   = try await self.makeFrame()
+        let client  = AstrometryClient( transport: self.successTransport(), pollInterval: .zero )
+        let session = PlateSolveSession( frame: frame, fileName: "mono", fileURL: TestFixtures.monoImage, frameCount: 1, apiKey: "key", client: client )
+
+        await session.run()
+
+        #expect( session.phase == .succeeded )
+        #expect( frame.plateSolve != nil )
+    }
+
+    /// The upload-strategy decision: only a single-image FITS file uploads its
+    /// original bytes; a multi-image cube and non-FITS formats upload a rendered PNG.
+    @Test
+    func onlyASingleImageFITSUploadsItsOriginalFile()
+    {
+        #expect( PlateSolveSession.shouldUploadOriginalFile( url: TestFixtures.monoImage, frameCount: 1 ) )
+        #expect( PlateSolveSession.shouldUploadOriginalFile( url: TestFixtures.monoImage, frameCount: 4 ) == false, "a multi-image cube cannot be uploaded whole" )
+        #expect( PlateSolveSession.shouldUploadOriginalFile( url: URL( fileURLWithPath: "/tmp/photo.png" ), frameCount: 1 ) == false, "a non-FITS format uploads a PNG" )
     }
 
     /// After a solve has finished, `restart` re-runs it from scratch — resetting
@@ -118,21 +174,21 @@ struct PlateSolveSessionTests
     @Test
     func restartReSolvesAfterCompletion() async throws
     {
-        let file    = OpenFile( url: TestFixtures.monoImage )
+        let frame   = try await self.makeFrame()
         let client  = AstrometryClient( transport: self.successTransport(), pollInterval: .zero )
-        let session = PlateSolveSession( file: file, apiKey: "key", client: client )
+        let session = PlateSolveSession( frame: frame, fileName: "mono", fileURL: TestFixtures.monoImage, frameCount: 1, apiKey: "key", client: client )
 
         await session.run()
 
         #expect( session.phase == .succeeded )
 
-        file.plateSolve = nil
+        frame.plateSolve = nil
 
         session.restart()
 
         await session.task?.value
 
         #expect( session.phase == .succeeded )
-        #expect( file.plateSolve != nil )
+        #expect( frame.plateSolve != nil )
     }
 }
