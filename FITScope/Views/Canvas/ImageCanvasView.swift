@@ -189,6 +189,33 @@ public struct ImageCanvasView: View
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageCanvasView.canvas )
                 .overlay
                 {
+                    // The before/after comparison wipe: reveals the captured
+                    // "before" on the left of a draggable divider, registered to
+                    // the same displayed rectangle as the result so it tracks
+                    // zoom, pan, rotate and flip. Shown only once the before image
+                    // is ready and matches the result's dimensions — it re-renders
+                    // on a rotation, briefly mismatching until the new one commits.
+                    // Layered directly on the result and beneath the annotation
+                    // overlays below, so the overlays stay visible on both sides.
+                    // The "before" image is captured eagerly by the renderer (at
+                    // load and on every orientation change), so it is always ready
+                    // and registered with the result — the comparison needs no
+                    // on-demand preparation when it is entered.
+                    if self.controller.isComparing,
+                       let before = image.renderer.originalImage,
+                       before.width  == result.image.width,
+                       before.height == result.image.height
+                    {
+                        ImageComparisonLayer(
+                            beforeImage:      before,
+                            displayedRect:    self.displayedImageRect,
+                            fraction:         self.controller.comparisonFraction,
+                            onFractionChange: { self.controller.setComparisonFraction( $0 ) }
+                        )
+                    }
+                }
+                .overlay
+                {
                     // The annotation overlays, registered to image space through
                     // the reported displayed-image rectangle. Hit-test transparent,
                     // so the cursor read-out and panning underneath keep working.
@@ -210,31 +237,6 @@ public struct ImageCanvasView: View
                         .allowsHitTesting( false )
                     }
                 }
-                .overlay
-                {
-                    // The before/after comparison wipe: reveals the captured
-                    // "before" on the left of a draggable divider, registered to
-                    // the same displayed rectangle as the result so it tracks
-                    // zoom, pan, rotate and flip. Shown only once the before image
-                    // is ready and matches the result's dimensions — it re-renders
-                    // on a rotation, briefly mismatching until the new one commits.
-                    if self.controller.isComparing,
-                       let before = image.renderer.originalImage,
-                       before.width  == result.image.width,
-                       before.height == result.image.height
-                    {
-                        ImageComparisonLayer(
-                            beforeImage:      before,
-                            displayedRect:    self.displayedImageRect,
-                            fraction:         self.controller.comparisonFraction,
-                            onFractionChange: { self.controller.setComparisonFraction( $0 ) }
-                        )
-                    }
-                }
-                // The "before" image is captured eagerly by the renderer (at load
-                // and on every orientation change), so it is always ready and
-                // registered with the result — the comparison needs no on-demand
-                // preparation when it is entered.
                 .overlay( alignment: .top )
                 {
                     self.floatingBar
