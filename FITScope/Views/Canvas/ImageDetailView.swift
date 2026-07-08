@@ -53,18 +53,28 @@ public struct ImageDetailView: View
         self.actions = actions
     }
 
-    /// The view's content.
-    public var body: some View
+    /// The view's content: the one-dimensional graph for a `NAXIS=1` file, otherwise
+    /// the image canvas with the multi-frame carousel beneath it when the file holds
+    /// more than one frame.
+    @ViewBuilder     public var body: some View
     {
-        VStack( spacing: 0 )
+        if let graph = self.file.image?.graph
         {
-            ImageCanvasView( file: self.file )
+            GraphView( series: graph )
                 .fileContextMenu( for: self.file, actions: self.actions )
-
-            if self.file.frames.count > 1
+        }
+        else
+        {
+            VStack( spacing: 0 )
             {
-                ImageCarouselView( frames: self.file.frames, selection: self.frameSelection )
-                    .frame( height: Self.carouselHeight )
+                ImageCanvasView( file: self.file )
+                    .fileContextMenu( for: self.file, actions: self.actions )
+
+                if self.file.frames.count > 1
+                {
+                    ImageCarouselView( frames: self.file.frames, selection: self.frameSelection )
+                        .frame( height: Self.carouselHeight )
+                }
             }
         }
     }

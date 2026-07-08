@@ -128,6 +128,15 @@ public class FITSImageLoader: ObservableObject, ImageLoading
 
                         let file        = try FITSFile( data: data, options: .lenient )
                         let info        = FITSImageInfo( url: self.url, file: file )
+
+                        // A NAXIS=1 HDU is one-dimensional data, decoded here (while
+                        // the non-Sendable file is in scope) into a Sendable series
+                        // shown as a graph; `nil` for a normal image. The decode is
+                        // best-effort: a genuine but undecodable 1-D HDU (bad BITPIX,
+                        // truncated) yields `nil` and falls through to the raster path,
+                        // so the file still loads with its metadata and surfaces the
+                        // error at render — matching how a malformed 2-D file degrades.
+                        let graph       = Self.decodeGraph( from: file.sections )
                         let renderInput = Swift.Result
                         {
                             () -> any ImageRenderSource in
@@ -135,13 +144,14 @@ public class FITSImageLoader: ObservableObject, ImageLoading
                             // Build the detection-ready buffer here, while the
                             // non-Sendable file is still in scope; only the
                             // Sendable PixelBuffer crosses back. A decode failure
-                            // must not fail the load, so detection is best-effort.
-                            let detectionImage = try? FITSImageDecoder.detectionImage( from: file )
+                            // must not fail the load, so detection is best-effort. A
+                            // graph is never rendered and has no 2-D detection image.
+                            let detectionImage = graph == nil ? try? FITSImageDecoder.detectionImage( from: file ) : nil
 
                             return try FITSRenderSource( sections: file.sections, detectionImage: detectionImage )
                         }
 
-                        continuation.resume( returning: ( info: info, renderInput: renderInput ) )
+                        continuation.resume( returning: ( info: info, renderInput: renderInput, graph: graph ) )
                     }
                     catch
                     {
@@ -153,7 +163,7 @@ public class FITSImageLoader: ObservableObject, ImageLoading
             await MainActor.run
             {
                 let renderer       = ImageRenderer( source: result.renderInput )
-                let image          = LoadedImage( info: result.info, renderer: renderer )
+                let image          = LoadedImage( info: result.info, graph: result.graph, renderer: renderer )
                 self.image         = image
                 self.error         = nil
                 self.imageObserver = image.objectWillChange.sink
@@ -168,5 +178,36 @@ public class FITSImageLoader: ObservableObject, ImageLoading
             self.error         = error
             self.imageObserver = nil
         }
+    }
+
+    /// Decodes a `NAXIS=1` image HDU into a graph series, matching the HDU-selection
+    /// rule of ``FITSPreviewRenderer/imageHDU(from:)`` (the first data section and
+    /// its owning header). Returns `nil` when the image HDU is absent or not
+    /// one-dimensional, so the caller falls through to the raster path.
+    ///
+    /// The decode is best-effort: a genuine 1-D HDU that cannot be decoded (an
+    /// unsupported `BITPIX`, truncated data) returns `nil` rather than throwing, so
+    /// the caller falls through to the raster path — the file then loads with its
+    /// metadata and surfaces the error at render time, matching a malformed 2-D file.
+    ///
+    /// - Parameter sections: The file's sections, in file order.
+    /// - Returns: The decoded series for a decodable 1-D HDU, or `nil` otherwise.
+    private nonisolated static func decodeGraph( from sections: [ FITSSection ] ) -> GraphSeries?
+    {
+        guard let dataIndex = sections.firstIndex( where: { $0.kind == .data } ), dataIndex > 0
+        else
+        {
+            return nil
+        }
+
+        let header = sections[ dataIndex - 1 ]
+
+        guard let nAxis = header.naxis, nAxis == 1
+        else
+        {
+            return nil
+        }
+
+        return try? GraphSeries( oneDimensionalHeader: header, data: sections[ dataIndex ].data )
     }
 }

@@ -48,6 +48,13 @@ public enum AccessibilityIdentifier
         public static let canvas = "ImageCanvasView.canvas"
     }
 
+    /// Identifiers applied by ``FITScope/GraphView``.
+    public enum GraphView
+    {
+        /// The one-dimensional data graph shown in the detail region.
+        public static let chart = "GraphView.chart"
+    }
+
     /// Identifiers applied by ``FITScope/ImageCarouselView``.
     public enum ImageCarouselView
     {

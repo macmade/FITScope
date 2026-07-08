@@ -64,11 +64,20 @@ struct ImageCommands: View
         self.apiKeyStore = apiKeyStore
     }
 
-    /// Whether the frontmost window has a loaded image, gating the file-targeted
-    /// items (orientation, invert, reset, the editors, and the headers window).
+    /// Whether the frontmost window has a loaded *raster* image, gating the
+    /// pixel-oriented items (orientation, invert, reset, the editors, compare, plate
+    /// solve). A one-dimensional graph file (`NAXIS=1`) has a loaded image but no
+    /// pixels, so those items disable for it. The metadata window is gated separately
+    /// on metadata, which a graph does have.
     private var hasImage: Bool
     {
-        self.file?.image != nil
+        guard let image = self.file?.image
+        else
+        {
+            return false
+        }
+
+        return image.graph == nil
     }
 
     /// The *Image* menu, as an ordered outline: zoom, the before/after compare
@@ -131,7 +140,7 @@ struct ImageCommands: View
             Label( "Zoom In", systemImage: "plus" )
         }
         .keyboardShortcut( "+", modifiers: .command )
-        .disabled( self.canvas == nil )
+        .disabled( self.canDriveCanvas == false )
     }
 
     /// Zooms the canvas out.
@@ -146,7 +155,7 @@ struct ImageCommands: View
             Label( "Zoom Out", systemImage: "minus" )
         }
         .keyboardShortcut( "-", modifiers: .command )
-        .disabled( self.canvas == nil || self.canvas?.canZoomOut == false )
+        .disabled( self.canDriveCanvas == false || self.canvas?.canZoomOut == false )
     }
 
     /// Restores the canvas to its actual pixel size.
@@ -161,7 +170,7 @@ struct ImageCommands: View
             Label( "Actual Size", systemImage: "1.magnifyingglass" )
         }
         .keyboardShortcut( "0", modifiers: .command )
-        .disabled( self.canvas == nil )
+        .disabled( self.canDriveCanvas == false )
     }
 
     /// Fits the image to the window.
@@ -176,7 +185,7 @@ struct ImageCommands: View
             Label( "Fit to Window", systemImage: "arrow.up.left.and.arrow.down.right" )
         }
         .keyboardShortcut( "9", modifiers: .command )
-        .disabled( self.canvas == nil )
+        .disabled( self.canDriveCanvas == false )
     }
 
     /// Recenters the image in the window.
@@ -190,7 +199,16 @@ struct ImageCommands: View
         {
             Label( "Recenter", systemImage: "scope" )
         }
-        .disabled( self.canvas == nil )
+        .disabled( self.canDriveCanvas == false )
+    }
+
+    /// Whether the canvas-driven zoom items apply: there is a canvas controller AND a
+    /// raster image is shown. A graph file (`NAXIS=1`) shows no canvas, but the
+    /// window's previously-focused ``ImageCanvasController`` can linger as the focused
+    /// object, so gating on ``hasImage`` too keeps zoom/fit/recenter disabled for it.
+    private var canDriveCanvas: Bool
+    {
+        self.canvas != nil && self.hasImage
     }
 
     /// Toggles the before/after comparison — a canvas-view aid, so the binding
@@ -203,7 +221,7 @@ struct ImageCommands: View
         {
             Label( "Compare Before/After", systemImage: "rectangle.split.2x1" )
         }
-        .disabled( self.canvas == nil || self.hasImage == false )
+        .disabled( self.canDriveCanvas == false )
     }
 
     /// The overlay toggles, one per available overlay, shown (with a leading
@@ -214,7 +232,7 @@ struct ImageCommands: View
     @ViewBuilder
     private func overlayToggles() -> some View
     {
-        if let canvas = self.canvas, canvas.overlays.isEmpty == false
+        if let canvas = self.canvas, self.hasImage, canvas.overlays.isEmpty == false
         {
             Divider()
 
@@ -400,6 +418,6 @@ struct ImageCommands: View
             Label( "Plate Solve\u{2026}", systemImage: "point.3.connected.trianglepath.dotted" )
         }
         .keyboardShortcut( "p", modifiers: [ .command, .shift ] )
-        .disabled( self.file == nil )
+        .disabled( self.hasImage == false )
     }
 }

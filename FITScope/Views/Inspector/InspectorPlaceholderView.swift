@@ -25,19 +25,31 @@
 import SwiftUI
 
 /// The inspector content shown when a file has no adjustable image — because it
-/// failed to load or to render.
+/// failed to load or to render, or because it is one-dimensional graph data with no
+/// adjustments to make.
 public struct InspectorPlaceholderView: View
 {
+    /// The explanatory message shown in place of the adjustment controls.
+    private let message: String
+
+    /// The default message, shown when a file could not be loaded or rendered.
+    public static let defaultMessage = "No adjustments — this file couldn't be loaded or rendered."
+
     /// Creates the placeholder.
-    public init()
-    {}
+    ///
+    /// - Parameter message: The explanatory message to show. Defaults to the
+    ///   load/render-failure message.
+    public init( message: String = InspectorPlaceholderView.defaultMessage )
+    {
+        self.message = message
+    }
 
     /// The view's content.
     public var body: some View
     {
         InspectorSectionView( "Adjustments" )
         {
-            Text( "No adjustments — this file couldn't be loaded or rendered." )
+            Text( self.message )
                 .font( .system( size: 11 ) )
                 .foregroundStyle( .secondary )
                 .frame( maxWidth: .infinity, alignment: .leading )

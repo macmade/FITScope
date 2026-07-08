@@ -80,6 +80,13 @@ public class LoadedImage: ObservableObject
     /// (a FITS cube's planes, XISF or HEIC sub-images) set it from their own naming.
     public let frameTitle: String?
 
+    /// The decoded one-dimensional data series, present only for a `NAXIS=1` FITS
+    /// file that is shown as a graph rather than a raster image; `nil` for a normal
+    /// image. When set, the file takes the graph display branch and the raster
+    /// features (adjustments, overlays, star detection, plate solving) do not apply —
+    /// the ``renderer`` is still constructed but is never rendered.
+    public let graph: GraphSeries?
+
     /// The renderer that turns the image into displayable pixels and histograms.
     @Published public private( set ) var renderer: ImageRenderer
 
@@ -141,8 +148,9 @@ public class LoadedImage: ObservableObject
     ///   - isColorFilterArray: Whether the image is a colour-filter-array image.
     ///   - information:        The display-ready metadata summary, or `nil`.
     ///   - frameTitle:         The frame's carousel label, or `nil` for an unlabelled frame.
+    ///   - graph:              The decoded 1-D series for a graph file, or `nil` for an image.
     ///   - renderer:           The renderer for the image.
-    public init( url: URL, metadata: ImageMetadata, wcs: WorldCoordinateSystem?, observationDate: Date?, exposureTime: Double?, coordinate: Coordinate?, target: EquatorialCoordinate?, pixelScale: Double?, isColorFilterArray: Bool, information: ImageInformation?, frameTitle: String? = nil, renderer: ImageRenderer )
+    public init( url: URL, metadata: ImageMetadata, wcs: WorldCoordinateSystem?, observationDate: Date?, exposureTime: Double?, coordinate: Coordinate?, target: EquatorialCoordinate?, pixelScale: Double?, isColorFilterArray: Bool, information: ImageInformation?, frameTitle: String? = nil, graph: GraphSeries? = nil, renderer: ImageRenderer )
     {
         self.url                = url
         self.metadata           = metadata
@@ -155,6 +163,7 @@ public class LoadedImage: ObservableObject
         self.isColorFilterArray = isColorFilterArray
         self.information        = information
         self.frameTitle         = frameTitle
+        self.graph              = graph
         self.renderer           = renderer
         self.rendererObserver   = self.renderer.objectWillChange.sink
         {

@@ -39,11 +39,18 @@ public extension LoadedImage
     ///
     /// - Parameters:
     ///   - info:     The parsed FITS header info.
+    ///   - graph:    The decoded 1-D series when the file is a `NAXIS=1` graph, or
+    ///               `nil` for a normal image. When set, the summary is built for a
+    ///               one-dimensional data set.
     ///   - renderer: The renderer for the image.
-    convenience init( info: FITSImageInfo, renderer: ImageRenderer )
+    convenience init( info: FITSImageInfo, graph: GraphSeries? = nil, renderer: ImageRenderer )
     {
         let metadata = info.metadata
-        let target   = Self.target( metadata: metadata )
+
+        // A graph summarises as a sample count (a 1-D data set has no width × height);
+        // an image uses the geometry-based summary.
+        let information = graph.map { ImageInformation( oneDimensionalMetadata: info.imageMetadata, sampleCount: $0.points.count ) }
+            ?? ImageInformation( fitsMetadata: info.imageMetadata )
 
         self.init(
             url:                info.url,
@@ -52,10 +59,11 @@ public extension LoadedImage
             observationDate:    metadata.observationDate,
             exposureTime:       metadata.exposureTime,
             coordinate:         metadata.coordinate,
-            target:             target,
+            target:             Self.target( metadata: metadata ),
             pixelScale:         metadata.pixelScale,
             isColorFilterArray: info.isColorFilterArray,
-            information:        ImageInformation( fitsMetadata: info.imageMetadata ),
+            information:        information,
+            graph:              graph,
             renderer:           renderer
         )
     }

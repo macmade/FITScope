@@ -47,7 +47,16 @@ public struct InspectorColumnView: View
     /// The view's content.
     public var body: some View
     {
-        if let image = self.file.image
+        if let image = self.file.image, image.graph != nil
+        {
+            // One-dimensional graph data has no pixels to adjust, so the inspector
+            // shows a clear placeholder rather than the (inapplicable) controls.
+            ScrollView
+            {
+                InspectorPlaceholderView( message: "No adjustments — this file is one-dimensional graph data." )
+            }
+        }
+        else if let image = self.file.image
         {
             // Tie the inspector's identity to the image, so switching the selected
             // file recreates the controls rather than reusing them. The controls

@@ -52,6 +52,59 @@ enum FITSTestData
         return ( Data( bytes ), properties )
     }
 
+    /// A minimal, valid one-dimensional (`NAXIS=1`) `BITPIX=16` FITS file carrying
+    /// the given signed 16-bit samples, big-endian, as a header block plus a
+    /// block-padded data segment.
+    ///
+    /// Extra header records (e.g. `"CTYPE1  = 'WAVE'"`, `"CDELT1  = 2.5"`) are
+    /// inserted verbatim before `END`, so a caller can attach world-coordinate or
+    /// scaling keywords. The samples take the graph branch (`NAXIS=1`) rather than
+    /// the image pipeline.
+    ///
+    /// - Parameters:
+    ///   - samples:      The signed 16-bit samples, in order.
+    ///   - extraRecords: Additional header records to insert before `END`.
+    /// - Returns: The complete FITS file bytes.
+    static func oneDimensional( samples: [ Int16 ], extraRecords: [ String ] = [] ) -> Data
+    {
+        let records =
+            [
+                "SIMPLE  = T",
+                "BITPIX  = 16",
+                "NAXIS   = 1",
+                "NAXIS1  = \( samples.count )",
+            ]
+            + extraRecords
+            + [ "END" ]
+
+        let header = records.map { $0.padding( toLength: 80, withPad: " ", startingAt: 0 ) }.joined()
+
+        var data = Data( header.padding( toLength: FITSFile.blockSize, withPad: " ", startingAt: 0 ).utf8 )
+
+        // Big-endian 16-bit samples.
+        var payload = samples.reduce( into: Data() )
+        {
+            payload, sample in
+
+            let bits = UInt16( bitPattern: sample )
+
+            payload.append( UInt8( bits >> 8 ) )
+            payload.append( UInt8( bits & 0xFF ) )
+        }
+
+        // Pad the data segment up to a whole FITS block.
+        let remainder = payload.count % FITSFile.blockSize
+
+        if remainder != 0
+        {
+            payload.append( Data( count: FITSFile.blockSize - remainder ) )
+        }
+
+        data.append( payload )
+
+        return data
+    }
+
     /// A minimal, valid header-only FITS file
     /// (`SIMPLE=T / BITPIX=8 / NAXIS=0 / END`) as a single space-padded block.
     static func headerOnly() -> Data

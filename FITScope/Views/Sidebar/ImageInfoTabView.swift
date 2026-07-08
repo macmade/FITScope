@@ -112,12 +112,17 @@ public struct ImageInfoTabView: View
     /// number of fields rather than the window.
     @State private var infoContentHeight = 0.0
 
-    /// The minimum height of the info area, so the Location map is never tiny.
-    private static let minContentHeight = 200.0
+    /// The minimum height of the info area. Floored high enough that the tallest tab
+    /// (the Analysis metrics) is never clipped and a sparse file's panel is never
+    /// squeezed until its tabs vanish — the fix for the "info area too small / tabs
+    /// disappear" report. A definite value is required because the Location map fills
+    /// its space, so the area cannot simply size to its content.
+    private static let minContentHeight = 340.0
 
     /// The info area's height: the Image Information content's natural height,
     /// floored at ``minContentHeight``. A definite value (not a flexible fill), so
-    /// the area grows with the field count yet never stretches with the window.
+    /// the area grows with the field count yet never stretches with the window and
+    /// never drops below the floor that keeps every tab's content visible.
     private var contentHeight: Double
     {
         max( self.infoContentHeight, Self.minContentHeight )
@@ -137,7 +142,7 @@ public struct ImageInfoTabView: View
                 .opacity( self.tab == .info ? 1 : 0 )
                 .accessibilityHidden( self.tab != .info )
 
-            AnalysisView( starField: self.file.image?.starField, hasDetected: self.file.image?.hasDetectedStars ?? false, skyBackground: self.file.image?.skyBackground, hasMeasuredBackground: self.file.image?.hasMeasuredBackground ?? false )
+            self.analysisContent
                 .padding( .horizontal, 14 )
                 .padding( .bottom, 14 )
                 .opacity( self.tab == .analysis ? 1 : 0 )
@@ -202,6 +207,23 @@ public struct ImageInfoTabView: View
             .hidden()
             .accessibilityHidden( true )
             .onGeometryChange( for: Double.self, of: { $0.size.height }, action: { self.infoContentHeight = $0 } )
+    }
+
+    /// The Analysis tab's content: the star-detection and sky-background metrics for
+    /// a raster image, or a clear "not applicable" message for one-dimensional graph
+    /// data — which has no pixels to detect stars in or measure a background on, so
+    /// detection never runs and the metrics would otherwise sit forever in their
+    /// "detecting…" state.
+    @ViewBuilder     private var analysisContent: some View
+    {
+        if self.file.image?.graph != nil
+        {
+            StatusMessageView( systemImage: "sparkles", title: "Analysis Unavailable", message: "Star detection and sky-background measurement apply to images, not one-dimensional data." )
+        }
+        else
+        {
+            AnalysisView( starField: self.file.image?.starField, hasDetected: self.file.image?.hasDetectedStars ?? false, skyBackground: self.file.image?.skyBackground, hasMeasuredBackground: self.file.image?.hasMeasuredBackground ?? false )
+        }
     }
 
     /// The selected image's capture date (`DATE-OBS`), or `nil` when absent.

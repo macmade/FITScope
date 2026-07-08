@@ -61,6 +61,12 @@ public struct OpenWithMenu: View
     /// Opens the file with a user-picked application (the *Other…* item).
     private let openOther: () -> Void
 
+    /// Whether the menu is enabled, taken from the environment so a caller's
+    /// `.disabled(…)` drives it. A submenu (`Menu`) in the macOS menu bar stays
+    /// openable when only its items are disabled, so when disabled this renders a
+    /// plain disabled button instead — which greys the whole entry as expected.
+    @Environment( \.isEnabled ) private var isEnabled
+
     /// Creates an *Open With* submenu.
     ///
     /// - Parameters:
@@ -79,8 +85,27 @@ public struct OpenWithMenu: View
     }
 
     /// The submenu: one item per candidate application (name + icon), a divider,
-    /// then *Other…*.
-    public var body: some View
+    /// then *Other…*. When disabled it collapses to a plain, greyed button so the
+    /// whole entry reads as disabled rather than an openable submenu of disabled
+    /// items.
+    @ViewBuilder     public var body: some View
+    {
+        if self.isEnabled
+        {
+            self.menu
+        }
+        else
+        {
+            Button( action: {} )
+            {
+                Label( self.title, systemImage: self.systemImage )
+            }
+            .disabled( true )
+        }
+    }
+
+    /// The enabled submenu.
+    private var menu: some View
     {
         Menu
         {

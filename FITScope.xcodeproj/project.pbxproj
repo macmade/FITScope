@@ -21,6 +21,12 @@
 		056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
 		0579B6122DF220D1002FDD47 /* ImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6112DF220CD002FDD47 /* ImageRenderer.swift */; };
 		0579B6152DF23DB7002FDD47 /* LoadedImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6142DF23DB3002FDD47 /* LoadedImage.swift */; };
+		48D14800E7408E69C1BE9998 /* GraphSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 170E04A3A163A9DF3923D3BA /* GraphSeries.swift */; };
+		02A4A321E9BC8A3FE0EB9985 /* GraphSeries+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78474D4B5F7E35F2052130FC /* GraphSeries+FITS.swift */; };
+		E012C1F7693DE7C8AC9ED3DC /* GraphSeriesFITSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110F63821980B8EE7718494F /* GraphSeriesFITSTests.swift */; };
+		A77E039CE95232CF3DAD4969 /* FITSImageLoaderGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 175A64B30C566653D8539B3F /* FITSImageLoaderGraphTests.swift */; };
+		A3A4243F6B062C0617771CCE /* OpenFileGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D3B1E5D795A567DB27F4F31 /* OpenFileGraphTests.swift */; };
+		C814CC1A2E52AE18B83B03A0 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA32D0C16D896A413618C33 /* GraphView.swift */; };
 		0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */; };
 		0579B61C2DF245E2002FDD47 /* FITSImageInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B61B2DF245DE002FDD47 /* FITSImageInfo.swift */; };
 		05EE1000000000000000FB01 /* ImageMetadataProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA01 /* ImageMetadataProperty.swift */; };
@@ -474,6 +480,12 @@
 		056E5C642DDFA8EB003254C7 /* UTType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UTType.swift; sourceTree = "<group>"; };
 		0579B6112DF220CD002FDD47 /* ImageRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRenderer.swift; sourceTree = "<group>"; };
 		0579B6142DF23DB3002FDD47 /* LoadedImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadedImage.swift; sourceTree = "<group>"; };
+		170E04A3A163A9DF3923D3BA /* GraphSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphSeries.swift; sourceTree = "<group>"; };
+		78474D4B5F7E35F2052130FC /* GraphSeries+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GraphSeries+FITS.swift"; sourceTree = "<group>"; };
+		110F63821980B8EE7718494F /* GraphSeriesFITSTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GraphSeriesFITSTests.swift; sourceTree = "<group>"; };
+		175A64B30C566653D8539B3F /* FITSImageLoaderGraphTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FITSImageLoaderGraphTests.swift; sourceTree = "<group>"; };
+		2D3B1E5D795A567DB27F4F31 /* OpenFileGraphTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenFileGraphTests.swift; sourceTree = "<group>"; };
+		FBA32D0C16D896A413618C33 /* GraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
 		0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageLoader.swift; sourceTree = "<group>"; };
 		0579B61B2DF245DE002FDD47 /* FITSImageInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageInfo.swift; sourceTree = "<group>"; };
 		05EE1000000000000000FA01 /* ImageMetadataProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataProperty.swift; sourceTree = "<group>"; };
@@ -1048,6 +1060,7 @@
 		0579B6132DF23D79002FDD47 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				170E04A3A163A9DF3923D3BA /* GraphSeries.swift */,
 				05C0A75B2DDE64E0005DECEF /* ImageAdjustments.swift */,
 				9696A9D7B24CC9A58998C7AC /* OpenFile.swift */,
 				0579B6142DF23DB3002FDD47 /* LoadedImage.swift */,
@@ -1205,6 +1218,7 @@
 				05BD7A922DF311EB00F4AAFC /* ImageControls */,
 				05FB1000000000000000E001 /* Preferences */,
 				29CF4F59A9465A612A5624AF /* Canvas */,
+				F0A39E61E99BC3E34B0F1B2E /* Graph */,
 				CA1100000000000000000021 /* Carousel */,
 				496659C51FF28D7460E37320 /* Inspector */,
 				8E1696B3AAF027B04286257D /* Information */,
@@ -1248,6 +1262,7 @@
 		05FB1000000000000000C003 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				2D3B1E5D795A567DB27F4F31 /* OpenFileGraphTests.swift */,
 				05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */,
 				FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */,
 				CA1100000000000000000004 /* OpenFileFramesTests.swift */,
@@ -1382,6 +1397,14 @@
 			path = Controls;
 			sourceTree = "<group>";
 		};
+		F0A39E61E99BC3E34B0F1B2E /* Graph */ = {
+			isa = PBXGroup;
+			children = (
+				FBA32D0C16D896A413618C33 /* GraphView.swift */,
+			);
+			path = Graph;
+			sourceTree = "<group>";
+		};
 		CA1100000000000000000021 /* Carousel */ = {
 			isa = PBXGroup;
 			children = (
@@ -1453,6 +1476,8 @@
 		5DF80E657A81462F0C30D4CF /* FITS */ = {
 			isa = PBXGroup;
 			children = (
+				110F63821980B8EE7718494F /* GraphSeriesFITSTests.swift */,
+				175A64B30C566653D8539B3F /* FITSImageLoaderGraphTests.swift */,
 				05FB1000000000000000A00B /* FITSImageLoaderTests.swift */,
 				A8D5C2CDF6BE5D61F992E63B /* FITSMetadataTests.swift */,
 				05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */,
@@ -1566,6 +1591,7 @@
 		B3FD345BB5B137185B9B9D72 /* FITS */ = {
 			isa = PBXGroup;
 			children = (
+				78474D4B5F7E35F2052130FC /* GraphSeries+FITS.swift */,
 				05DD1000000000000000FA03 /* LoadedImage+FITS.swift */,
 				05DD1000000000000000FA09 /* ImageInformation+FITS.swift */,
 				05DD1000000000000000FA0A /* WCSProjection+FITS.swift */,
@@ -2071,6 +2097,9 @@
 				05A1B2C300000000000000F2 /* RenderedImageShareItem.swift in Sources */,
 				05DC79A32DF2FCF8003E2AFA /* LoadingView.swift in Sources */,
 				0579B6152DF23DB7002FDD47 /* LoadedImage.swift in Sources */,
+				48D14800E7408E69C1BE9998 /* GraphSeries.swift in Sources */,
+				02A4A321E9BC8A3FE0EB9985 /* GraphSeries+FITS.swift in Sources */,
+				C814CC1A2E52AE18B83B03A0 /* GraphView.swift in Sources */,
 				05C4BD742DF2E4FD00326B69 /* InfoViewTable.swift in Sources */,
 				05C4BD782DF2E7D600326B69 /* InfoViewTableCell.swift in Sources */,
 				057F611C2DF8B78600EE82D1 /* ImageControlContainer.swift in Sources */,
@@ -2233,6 +2262,9 @@
 				05FB1000000000000000B00A /* HistogramViewTests.swift in Sources */,
 				1B8A22E86CD946413A1C30D9 /* OpenFileTests.swift in Sources */,
 				CA1100000000000000000014 /* OpenFileFramesTests.swift in Sources */,
+				E012C1F7693DE7C8AC9ED3DC /* GraphSeriesFITSTests.swift in Sources */,
+				A77E039CE95232CF3DAD4969 /* FITSImageLoaderGraphTests.swift in Sources */,
+				A3A4243F6B062C0617771CCE /* OpenFileGraphTests.swift in Sources */,
 				CA1100000000000000000015 /* ImageCarouselViewTests.swift in Sources */,
 				52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */,
 				05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */,

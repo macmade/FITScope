@@ -72,4 +72,22 @@ enum TestFixtures
     {
         self.url( "InvalidImage.fits" )
     }
+
+    /// A real one-dimensional (`NAXIS = 1`) synthetic spectrum: a `BITPIX = -32`
+    /// flux array of 512 samples with a `WAVE` world-coordinate axis
+    /// (`CRVAL1`/`CRPIX1`/`CDELT1`/`CUNIT1`) and a `BUNIT`, so it loads as a graph
+    /// rather than a raster image.
+    static var spectrum1D: URL
+    {
+        self.url( "Spectrum1D.fits" )
+    }
+
+    /// A one-dimensional (`NAXIS = 1`) file with an unsupported `BITPIX = 64`: it
+    /// parses (so its header metadata is available) but its samples cannot be
+    /// decoded, exercising the graceful-degradation path — the file loads with its
+    /// metadata and surfaces the error at render, like a malformed 2-D file.
+    static var invalidSpectrum1D: URL
+    {
+        self.url( "InvalidSpectrum1D.fits" )
+    }
 }

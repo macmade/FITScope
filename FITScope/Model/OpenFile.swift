@@ -378,7 +378,14 @@ public final class OpenFile: ObservableObject, Identifiable
     /// result rather than the parsed image.
     public var renderPhase: RenderPhase
     {
-        Self.renderPhase(
+        // A graph is decoded at load and has no render pipeline, so it is ready as
+        // soon as its image exists — never "rendering", so the sidebar spinner stops.
+        if self.image?.graph != nil
+        {
+            return .ready
+        }
+
+        return Self.renderPhase(
             hasImage:    self.image != nil,
             hasResult:   self.image?.renderer.result != nil,
             hasError:    self.error != nil || self.image?.renderer.error != nil,
@@ -472,6 +479,15 @@ public final class OpenFile: ObservableObject, Identifiable
             }
 
             await self.load()
+
+            // A graph (a NAXIS=1 file) has no render pipeline, no pixels to detect
+            // stars in, and no raster thumbnail — it is fully prepared once decoded.
+            guard self.image?.graph == nil
+            else
+            {
+                return
+            }
+
             await self.image?.renderer.render()
             await self.image?.detectStars()
 

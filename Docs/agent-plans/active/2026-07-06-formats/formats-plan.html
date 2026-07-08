@@ -438,7 +438,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4>Milestone 4 — <code>NAXIS=1</code> support (1D data as a graph)</h4>
-                <span class="capsule todo">Not started</span>
+                <span class="capsule done">Completed</span>
             </div>
             <p class="dep"><strong>Depends on:</strong> Milestone 2 (relaxed dimensionality &amp; format-neutral loading).</p>
             <p class="goal"><strong>Goal:</strong> Open one-dimensional FITS data (<code>NAXIS=1</code>) and present it as a graph using Swift Charts instead of an image, adapting the chart to <code>CTYPE1</code> when present and relevant to how the axis should be labelled/scaled.</p>
@@ -450,10 +450,38 @@
                 <li>Ensure the Info window still shows the header metadata for 1D files; hide image-only controls/overlays for this branch.</li>
                 <li>Add a 1D FITS test fixture and tests; keep <code>FITScope.xcodeproj</code> in sync; build &amp; run tests via <code>xcodebuild</code>.</li>
             </ul>
-            <div class="field-label">Status</div><p class="goal">Not started</p>
-            <div class="field-label">Completed</div><p class="completed-date">—</p>
-            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
-            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+            <div class="field-label">Status</div><p class="goal">Completed</p>
+            <div class="field-label">Completed</div><p class="completed-date">2026-07-08</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <p><strong>Approach:</strong> TDD. The model design was decided with the user across <em>two</em> scope-trimming rounds — see the Review comments — landing on the <strong>least-invasive shape</strong>: a <code>NAXIS=1</code> file still loads as an ordinary ``LoadedImage`` (so it keeps carrying all the neutral header metadata the Info window and header tabs already read), gaining a single optional <code>graph: GraphSeries?</code> that is non-<code>nil</code> only for 1-D data. Its <code>renderer</code> is still constructed but never rendered. <strong>No new protocol, no parallel content type</strong> — the raster/render flow and every other format are untouched.</p>
+                <ul>
+                    <li><strong>Decode (FITS-scoped):</strong> new neutral <code>GraphSeries</code> (<code>Model/GraphSeries.swift</code>, <code>Sendable</code>: points + axis labels) and its FITS decoder <code>GraphSeries+FITS.swift</code>. Samples are decoded big-endian per <code>BITPIX</code> by reusing SwiftPixel's <code>PixelUtilities.readRawPixels</code>, then rescaled by <code>BSCALE</code>/<code>BZERO</code>. The horizontal axis is physical — <code>CRVAL1 + (pixel − CRPIX1)·CDELT1</code>, one-based pixels, labelled from <code>CTYPE1</code>/<code>CUNIT1</code> — when a coordinate type and a non-zero increment are present; otherwise a one-based sample number labelled "Sample". The value axis is labelled from <code>BUNIT</code>, else "Value". Block padding is trimmed to <code>NAXIS1</code> samples with an exact-size guard.</li>
+                    <li><strong>Loader:</strong> <code>FITSImageLoader</code> gained a <code>nonisolated</code> <code>decodeGraph(from:)</code> that mirrors <code>FITSPreviewRenderer.imageHDU</code>'s HDU selection and returns a series only for a <code>NAXIS=1</code> HDU. The background parse now returns <code>(info, renderInput, graph)</code>; the main-actor build calls <code>LoadedImage(info:graph:renderer:)</code>. <code>LoadedImage+FITS</code> gained a defaulted <code>graph:</code> parameter and builds a 1-D summary (<code>ImageInformation(oneDimensionalMetadata:sampleCount:)</code> — "N samples", bit depth, "1 (1D)") when a graph is present.</li>
+                    <li><strong>OpenFile:</strong> <code>renderPhase</code> returns <code>.ready</code> immediately for a graph (no render to wait on, so the sidebar spinner stops), and <code>prepare()</code> skips the render/detect/thumbnail steps for a graph. <code>warning</code>/<code>hasAdjustments</code> already read correctly (no render result, no error).</li>
+                    <li><strong>Display &amp; gating:</strong> <code>GraphView</code> (<code>Views/Graph/</code>, Swift Charts <code>LineMark</code>, black field + forced dark colour scheme, axis domains pinned to the data range so the curve fills the plot); <code>ImageDetailView</code> shows it when <code>image.graph != nil</code>. <code>InspectorColumnView</code> shows an <code>InspectorPlaceholderView</code> with a graph-specific message (the placeholder view was parameterised with a <code>message</code>). The Analysis tab shows a clear "Analysis Unavailable" message for a graph. <code>ImageCommands.hasImage</code> is now raster-only (<code>graph == nil</code>), and a <code>canDriveCanvas</code> helper (<code>canvas != nil &amp;&amp; hasImage</code>) gates zoom / fit / actual-size / recenter / compare / overlays / plate-solve, so a lingering focused canvas controller can't leave them enabled for a graph. <code>OpenWithMenu</code> collapses to a disabled button when disabled (reads <code>\.isEnabled</code>), so the "Open Rendered Image With" submenu greys as a whole rather than opening to disabled items.</li>
+                    <li><strong>Fixture:</strong> a real <code>Spectrum1D.fits</code> (<code>BITPIX=-32</code>, 512-sample synthetic emission spectrum with a full <code>WAVE</code>/<code>CRVAL1</code>/<code>CRPIX1</code>/<code>CDELT1</code>/<code>CUNIT1</code>/<code>BUNIT</code> axis plus <code>OBJECT</code>/<code>DATE-OBS</code>/<code>EXPTIME</code>) was crafted into <code>FITScopeUITests/Fixtures/</code> next to the others, with a <code>TestFixtures.spectrum1D</code> accessor. (No existing <code>NAXIS=1</code> file exists in the repo or the SwiftAstro/SwiftFITS submodules — even the NASA FOS/HRS spectra are stored as small <code>NAXIS=2</code> arrays.)</li>
+                    <li><strong>Tests:</strong> <code>GraphSeriesFITSTests</code> (scaling, physical-vs-sample axis, reference pixel, unit/value labels, stable indices), <code>FITSImageLoaderGraphTests</code> (1-D → graph, 2-D unchanged, idempotency, the bundled fixture), <code>OpenFileGraphTests</code> (loads-as-graph, ready without rendering), and a <code>FITSTestData.oneDimensional(samples:extraRecords:)</code> in-memory builder.</li>
+                    <li><strong><code>FITScope.xcodeproj</code>:</strong> added <code>GraphSeries.swift</code>, <code>GraphSeries+FITS.swift</code>, <code>GraphView.swift</code> (in a new <code>Views/Graph</code> group) and the three test files, with fresh unique IDs. Fixtures are path-resolved (not bundled), so <code>Spectrum1D.fits</code> needed no project entry. <code>plutil -lint</code> passes.</li>
+                </ul>
+                <p><strong>Verification:</strong> green baseline first (512 tests). After the change: <code>xcodebuild test -only-testing:FITScopeTests</code> → <strong>527 tests pass, 0 failures</strong>; full-scheme <code>xcodebuild build</code> (app + both QuickLook extensions) succeeds.</p>
+                <p><strong>Automated review loop:</strong> 1 round (independent fresh-context reviewer) — <em>no</em> Critical/High findings; the raster path and off-main-actor concurrency were confirmed intact. Findings: (1) <strong>Medium</strong> — a malformed 1-D file failed the whole load (losing the Info window), unlike a malformed 2-D file which degrades gracefully (<strong>fixed</strong> — the decode is now best-effort, see Review comments); (2) <em>Low</em> — a graph shows a blank sidebar thumbnail (left as-is); (3) <em>Info</em> — <code>GraphView</code>'s empty-state is unreachable in practice; (4) <em>Info</em> — redundant conditions in the x-coordinate computation.</p>
+                <p><strong>Interactive review (in-app testing by the user):</strong> all feedback addressed — see the Review comments below for the full list (the Analysis tab, the graph filling the plot, the Image-menu zoom/overlay gating, the "Open Rendered Image With" submenu, the malformed-1D degradation + fixture, and the info-panel minimum height). The Analysis tab keeps its "Analysis Unavailable" message for a graph (the user approved the result). Final state approved by the user.</p>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="review-comments">
+                <ul>
+                    <li><strong>Over-engineering / scope (design).</strong> The first design introduced a neutral <code>LoadedContent</code> protocol, a parallel <code>LoadedGraph</code> type, a <code>LoadedGraph+FITS</code> adapter, and a shared <code>FITSMetadata+Target</code>/<code>equatorialTarget</code> helper. The user pushed back that this over-engineers a FITS-only, one-time case, specifically calling out that <code>FITSMetadata+Target</code>/<code>equatorialTarget</code> has nothing to do with graphs, and proposed keeping the current flow for everything else and switching in the view. → <strong>Redesigned</strong>: a graph is now just a ``LoadedImage`` carrying an optional <code>graph: GraphSeries?</code> (so all header UI works unchanged); deleted <code>LoadedContent.swift</code>, <code>LoadedGraph.swift</code>, <code>LoadedGraph+FITS.swift</code>, <code>FITSMetadata+Target.swift</code>, and reverted <code>LoadedImage+FITS</code>, <code>ImageInformation+FITS</code>, <code>ImageInfoTabView</code>, <code>ImageInfoPanelView</code>, <code>OpenFileRowView</code>, <code>FileContextMenu</code> to baseline. Rasters and other formats untouched.</li>
+                    <li><strong>Nil-data handling &amp; inspector.</strong> Info tabs should react to nil data with a clear message; the inspector should show a placeholder view with a clear message rather than an empty column. → The neutral tabs read the header metadata the graph still carries; the inspector shows <code>InspectorPlaceholderView</code> with a graph-specific message ("No adjustments — this file is one-dimensional graph data.").</li>
+                    <li><strong>Test fixture.</strong> "Do we have a NAXIS=1 test file already?" — and, after checking, "there are also files in SwiftAstro or its submodules, check", then "craft one in FITScope test files". → Verified none of the repo/submodule FITS files are <code>NAXIS=1</code>; crafted <code>Spectrum1D.fits</code> into <code>FITScopeUITests/Fixtures/</code> with a <code>TestFixtures.spectrum1D</code> accessor and an integration test.</li>
+                    <li><strong>Analysis tab.</strong> For a graph the Analysis tab showed "detecting stars" / "measuring background" forever (detection never runs, so the "in progress" flags stay false). → The Analysis tab now shows a clear "Analysis Unavailable" message for a graph.</li>
+                    <li><strong>Graph sizing.</strong> The graph didn't take the whole width/height. → Swift Charts was auto-including zero in both domains; the axes are now pinned to the data's own range (X exactly, Y with a 5% margin), so the curve fills the plot.</li>
+                    <li><strong>Image menu.</strong> Zoom / Fit / Actual Size / Recenter and the overlay toggles were still enabled for a graph. → They gated only on the focused canvas controller, which lingers from a previously-viewed image; now gated on <code>canDriveCanvas</code> (a raster image must be shown), disabling them for a graph.</li>
+                    <li><strong>Open Rendered Image With.</strong> In the context menu and File menu the "Open Rendered Image With" submenu was still openable (its sub-items were disabled, but the submenu itself was not) — the whole menu should be disabled. → <code>OpenWithMenu</code> now reads <code>\.isEnabled</code> and renders a plain disabled button (not an openable <code>Menu</code>) when disabled, so the whole entry greys. (Export, a plain button, was already correctly disabled via <code>renderer.result == nil</code>.)</li>
+                    <li><strong>Malformed 1-D file.</strong> A parseable-but-undecodable 1-D file (bad <code>BITPIX</code>, truncated) originally failed the whole load, losing the Info window — unlike a malformed 2-D file, which loads with its metadata and only errors at render. The user asked to make it behave the "same as failed 2d", and to generate such a fixture. → <code>decodeGraph</code> is now best-effort (<code>try?</code>): an undecodable 1-D HDU yields <code>nil</code> and falls through to the raster path, so the file loads with its metadata and surfaces the error at render. Added a real <code>InvalidSpectrum1D.fits</code> fixture (<code>NAXIS=1</code>, unsupported <code>BITPIX=64</code>), a <code>TestFixtures.invalidSpectrum1D</code> accessor, and a test asserting it loads with metadata, no graph, and errors at render.</li>
+                    <li><strong>Info panel minimum height.</strong> The info area can be too small and its tabs can disappear when a file has few info fields; it should have a <strong>minimum height</strong>. The user explicitly rejected a proposed <em>scrolling</em> area — the fix must be a minimum height only, not a scroll view. → Removed the "size to the Info tab's measured height" logic (which locked the area to the Info tab and clipped taller tabs such as Analysis) and gave the info area a firm minimum height so it never collapses and the tabs never vanish. <em>No scroll view.</em> (Flagged by the user as pre-existing/shared UI, but fixed on this branch at their request.)</li>
+                </ul>
+            </div>
         </div>
 
         <!-- M5 -->
@@ -590,6 +618,32 @@
             <div class="field-label">Review comments</div><p class="review-comments">—</p>
         </div>
 
+        <!-- ============ PHASE 5 ============ -->
+        <h3 class="phase">Phase 5 — Multi-spectrum FITS (follow-up)</h3>
+
+        <!-- M11 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <h4>Milestone 11 — <code>NAXIS=2</code> stacked spectra (multi-line graph)</h4>
+                <span class="capsule todo">Not started</span>
+            </div>
+            <p class="dep"><strong>Depends on:</strong> Milestone 4 (the graph foundation). Added mid-plan as a follow-up and sequenced after the <code>NAXIS=3</code> work (Milestones 5–6); numbered 11 so the existing milestone numbers — referenced by the completed milestones' notes — do not shift.</p>
+            <p class="goal"><strong>Goal:</strong> Open a <code>NAXIS=2</code> FITS file that represents a <em>stack of one-dimensional spectra</em> — one row per spectrum/order, as in the NASA FOS/HRS samples (<code>2064&nbsp;&times;&nbsp;2</code>, <code>2000&nbsp;&times;&nbsp;4</code>) — and present the rows as multiple overlaid lines in a single Swift Charts graph, reusing the Milestone&nbsp;4 <code>GraphSeries</code>/<code>GraphView</code> foundation. Only where the file is genuinely a spectra stack — <strong>never</strong> a normal 2-D image, which must keep rendering as an image.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li><strong>Decide the detection rule first (open design question).</strong> There is no reliable universal signal distinguishing a spectra stack from an ordinary 2-D image: <code>NAXIS=2</code> is overwhelmingly an image; a spectral <code>CTYPE1</code> is a hint but not dependable (the FOS/HRS samples use <code>CTYPE1='PIXEL'</code>); a small second axis is ambiguous (a 2000&times;4 image strip vs a 4-order spectrum). Pure auto-detection risks regressing real images into line charts. Evaluate a narrow convention (spectral <code>CTYPE1</code> + no spatial <code>CTYPE2</code>) versus a user-driven "view as graph" affordance, and settle it before writing code. Regression safety of the 2-D image path is the hard constraint.</li>
+                <li>Extend the graph model to carry multiple named lines — only once this milestone provides a real producer (no speculative multi-series model before then, per the single-line decision in Milestone&nbsp;4).</li>
+                <li>Extend <code>GraphView</code> to draw one <code>LineMark</code> series per row with a naming legend, modelled on <code>SessionMetricsChartView</code>'s multi-series charting.</li>
+                <li>Decode each row respecting <code>BITPIX</code>/<code>BSCALE</code>/<code>BZERO</code> and the shared world-coordinate axis (<code>CTYPE1</code>/<code>CDELT1</code>/&hellip;), reusing the Milestone&nbsp;4 decode.</li>
+                <li>Hide the image-only controls/overlays for the graph branch (as in Milestone&nbsp;4), and verify a normal 2-D image is unaffected.</li>
+                <li>Add a <code>NAXIS=2</code> stacked-spectrum fixture and tests (including that a normal 2-D image is <em>not</em> misclassified); keep <code>FITScope.xcodeproj</code> in sync; build &amp; run tests via <code>xcodebuild</code>.</li>
+            </ul>
+            <div class="field-label">Status</div><p class="goal">Not started</p>
+            <div class="field-label">Completed</div><p class="completed-date">—</p>
+            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
+            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+        </div>
+
         <h2>Appendix</h2>
         <div class="notes">
             <p><strong>Backlog item &rarr; milestone map</strong></p>
@@ -605,6 +659,7 @@
                     <tr><td>TIFF / PNG / JPEG</td><td>M8</td><td>M1, M2</td></tr>
                     <tr><td>RAW</td><td>M9</td><td>M1, M2, M8</td></tr>
                     <tr><td>HEIC</td><td>M10</td><td>M1, M2, M3, M8</td></tr>
+                    <tr><td><code>NAXIS=2</code> stacked spectra (multi-line graph) — <em>follow-up, not in original backlog</em></td><td>M11</td><td>M4</td></tr>
                 </tbody>
             </table>
             <p><strong>Cross-cutting checklist applied per format milestone</strong></p>

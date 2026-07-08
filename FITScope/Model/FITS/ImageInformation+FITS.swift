@@ -114,4 +114,40 @@ public extension ImageInformation
 
         self.init( dimensions: dimensions, bitDepth: bitDepth, channels: channels, values: values )
     }
+
+    /// Builds the summary for a one-dimensional FITS data set (`NAXIS=1`), shown as a
+    /// graph. Returns `nil` when `BITPIX` is absent.
+    ///
+    /// A 1-D data set has no `width × height`, so its "dimensions" read as a sample
+    /// count (e.g. `"4096 samples"`) and it declares a single sample channel.
+    ///
+    /// - Parameters:
+    ///   - oneDimensionalMetadata: The grouped FITS header metadata to summarize.
+    ///   - sampleCount:            The number of decoded samples.
+    init?( oneDimensionalMetadata: ImageMetadata, sampleCount: Int )
+    {
+        let properties = oneDimensionalMetadata.sections.flatMap { $0.properties }
+
+        guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.trimmingCharacters( in: .whitespaces ), bitPix.isEmpty == false
+        else
+        {
+            return nil
+        }
+
+        let dimensions = sampleCount == 1 ? "1 sample" : "\( sampleCount ) samples"
+        let bitDepth   = "\( bitPix.replacingOccurrences( of: "-", with: "" ) )-bit"
+        let channels   = "1 (1D)"
+
+        self.init(
+            dimensions: dimensions,
+            bitDepth:   bitDepth,
+            channels:   channels,
+            values:
+            [
+                .dimensions: dimensions,
+                .bitDepth:   bitDepth,
+                .channels:   channels,
+            ]
+        )
+    }
 }
