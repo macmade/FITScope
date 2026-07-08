@@ -43,15 +43,16 @@ public protocol ImageRenderSource: Sendable
     /// - Throws: Any error thrown while decoding or running the pipeline.
     func makeResult( settings: ImageProcessor.Settings ) throws -> ImageProcessor.RenderResult
 
-    /// The decoded sample value at source-image coordinates `(x, y)`, for the
-    /// cursor read-out, or `nil` for out-of-bounds coordinates or a source that
-    /// exposes no per-pixel values.
+    /// The decoded sample value(s) at source-image coordinates `(x, y)`, for the
+    /// cursor read-out: one value for a single-channel source, or one per channel
+    /// (red, green, blue) for a colour source, or `nil` for out-of-bounds
+    /// coordinates or a source that exposes no per-pixel values.
     ///
     /// - Parameters:
     ///   - x: The zero-based column, left to right.
     ///   - y: The zero-based row, top to bottom.
-    /// - Returns: The decoded value, or `nil`.
-    func pixelValue( atX x: Int, y: Int ) -> ImageProcessor.PixelValue?
+    /// - Returns: The decoded per-channel values, or `nil`.
+    func pixelValues( atX x: Int, y: Int ) -> [ ImageProcessor.PixelValue ]?
 
     /// The source image's pixel dimensions, or `nil` when they cannot be
     /// determined. Used to map a display coordinate back to source space under a

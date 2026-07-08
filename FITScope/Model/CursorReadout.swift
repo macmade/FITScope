@@ -24,8 +24,12 @@
 
 import Foundation
 
-/// A formatted snapshot of the cursor position and raw pixel value for the
-/// status bar. An absent position yields placeholder text.
+/// A formatted snapshot of the cursor position and pixel value(s) for the status
+/// bar. An absent position yields placeholder text.
+///
+/// The value(s) are carried per channel: a single entry for a monochrome or
+/// colour-filter-array source (shown as one `Value:` field), or three entries for
+/// a colour (RGB) source (shown as `R:`/`G:`/`B:` fields).
 public struct CursorReadout: Equatable, Sendable
 {
     /// The column under the cursor, or `nil` when off-image.
@@ -34,22 +38,27 @@ public struct CursorReadout: Equatable, Sendable
     /// The row under the cursor, or `nil` when off-image.
     public let y: Int?
 
-    /// The raw pixel value, or `nil` when off-image.
-    public let value: Double?
+    /// The decoded pixel value(s) under the cursor: empty when off-image, one entry
+    /// for a single-channel source, or three (red, green, blue) for a colour source.
+    public let values: [ ImageProcessor.PixelValue ]
 
-    /// The value's fraction of full scale, or `nil`.
-    public let fraction: Double?
+    /// The channel labels for a three-channel (RGB) read-out.
+    private static let rgbLabels = [ "R", "G", "B" ]
 
     /// The empty readout, shown when the cursor is off-image.
-    public static let empty = CursorReadout( x: nil, y: nil, value: nil, fraction: nil )
+    public static let empty = CursorReadout( x: nil, y: nil, values: [] )
 
     /// Creates a readout.
-    public init( x: Int?, y: Int?, value: Double?, fraction: Double? )
+    ///
+    /// - Parameters:
+    ///   - x:      The column under the cursor, or `nil` when off-image.
+    ///   - y:      The row under the cursor, or `nil` when off-image.
+    ///   - values: The per-channel pixel values (empty, one, or three).
+    public init( x: Int?, y: Int?, values: [ ImageProcessor.PixelValue ] )
     {
-        self.x        = x
-        self.y        = y
-        self.value    = value
-        self.fraction = fraction
+        self.x      = x
+        self.y      = y
+        self.values = values
     }
 
     /// The `x:` field text.
@@ -64,25 +73,60 @@ public struct CursorReadout: Equatable, Sendable
         "y: \( self.y.map( String.init ) ?? "—" )"
     }
 
-    /// The `Value:` field text, with a percentage when a fraction is present.
-    public var valueText: String
+    /// The value field(s): a single `Value:` segment for a single-channel (or
+    /// off-image) read-out, or an `R:`/`G:`/`B:` segment per channel for a
+    /// three-channel colour read-out. Each segment carries a percentage when the
+    /// channel has a full-scale fraction.
+    public var valueSegments: [ String ]
     {
-        guard let value = self.value
+        guard self.values.isEmpty == false
         else
         {
-            return "Value: —"
+            return [ Self.segment( label: nil, value: nil, fraction: nil ) ]
+        }
+
+        guard self.values.count == 3
+        else
+        {
+            return self.values.map { Self.segment( label: nil, value: $0.value, fraction: $0.fraction ) }
+        }
+
+        return zip( Self.rgbLabels, self.values ).map
+        {
+            Self.segment( label: $0, value: $1.value, fraction: $1.fraction )
+        }
+    }
+
+    /// Formats one value segment: `"<name>: <value> (<percent>)"`, where `name`
+    /// defaults to `"Value"`, the value falls back to a dash, and the percentage is
+    /// shown only when a fraction is present.
+    ///
+    /// - Parameters:
+    ///   - label:    The channel label, or `nil` for the generic `"Value"` field.
+    ///   - value:    The value, or `nil` for a placeholder.
+    ///   - fraction: The full-scale fraction, or `nil` to omit the percentage.
+    /// - Returns: The formatted segment text.
+    private static func segment( label: String?, value: Double?, fraction: Double? ) -> String
+    {
+        let name = label ?? "Value"
+
+        guard let value
+        else
+        {
+            return "\( name ): —"
         }
 
         let valueString = Self.formatted( value )
 
-        if let fraction = self.fraction
+        guard let fraction
+        else
         {
-            let percent = String( format: "%.2f%%", fraction * 100 )
-
-            return "Value: \( valueString ) (\( percent ))"
+            return "\( name ): \( valueString )"
         }
 
-        return "Value: \( valueString )"
+        let percent = String( format: "%.2f%%", fraction * 100 )
+
+        return "\( name ): \( valueString ) (\( percent ))"
     }
 
     /// Formats a value as an integer when whole, otherwise with up to three

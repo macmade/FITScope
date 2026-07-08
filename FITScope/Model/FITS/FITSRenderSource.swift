@@ -84,11 +84,17 @@ public struct FITSRenderSource: ImageRenderSource
         try ImageProcessor.render( data: self.data, properties: self.properties, settings: settings )
     }
 
-    /// The decoded sample at image coordinates `(x, y)`, or `nil` when the
+    /// The decoded sample(s) at image coordinates `(x, y)`: three per-channel values
+    /// for an RGB colour-planes image, a single value otherwise, or `nil` when the
     /// coordinate or geometry is unavailable.
-    public func pixelValue( atX x: Int, y: Int ) -> ImageProcessor.PixelValue?
+    public func pixelValues( atX x: Int, y: Int ) -> [ ImageProcessor.PixelValue ]?
     {
-        ImageProcessor.rawPixelValue( data: self.data, properties: self.properties, x: x, y: y )
+        if let rgb = ImageProcessor.rgbPixelValues( data: self.data, properties: self.properties, x: x, y: y )
+        {
+            return rgb
+        }
+
+        return ImageProcessor.rawPixelValue( data: self.data, properties: self.properties, x: x, y: y ).map { [ $0 ] }
     }
 
     /// The image's pixel dimensions read from the header, or `nil` when they

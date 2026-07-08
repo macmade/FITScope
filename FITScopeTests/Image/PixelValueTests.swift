@@ -85,4 +85,49 @@ struct PixelValueTests
         #expect( ImageProcessor.rawPixelValue( data: data, properties: headers, x: 0, y: 2 ) == nil )
         #expect( ImageProcessor.rawPixelValue( data: data, properties: headers, x: -1, y: 0 ) == nil )
     }
+
+    /// The per-channel read-out of an RGB-planes image decodes the sample from each
+    /// band-sequential plane at the same `(x, y)`, in red/green/blue order.
+    @Test
+    func rgbPixelValuesReadEachPlaneAtTheCoordinate() throws
+    {
+        let ( data, properties ) = FITSTestData.rgbPlanes( width: 2, height: 2 )
+
+        // Planes: red = 10, 20, 30, 40 ; green = 50, 60, 70, 80 ; blue = 90, 100, 110, 120.
+        let values = try #require( ImageProcessor.rgbPixelValues( data: data, properties: properties, x: 1, y: 0 ) )
+
+        #expect( values.count == 3 )
+        #expect( values[ 0 ].value == 20, "red plane sample at (1, 0)" )
+        #expect( values[ 1 ].value == 60, "green plane sample at (1, 0)" )
+        #expect( values[ 2 ].value == 100, "blue plane sample at (1, 0)" )
+    }
+
+    /// The per-channel read-out is `nil` outside the image bounds.
+    @Test
+    func rgbPixelValuesReturnNilForOutOfBounds() throws
+    {
+        let ( data, properties ) = FITSTestData.rgbPlanes( width: 2, height: 2 )
+
+        #expect( ImageProcessor.rgbPixelValues( data: data, properties: properties, x: 2, y: 0 ) == nil )
+        #expect( ImageProcessor.rgbPixelValues( data: data, properties: properties, x: 0, y: -1 ) == nil )
+    }
+
+    /// The RGB luminance detection samples are the per-pixel mean of the three
+    /// planes, with `BSCALE`/`BZERO` applied.
+    @Test
+    func rgbLinearLuminanceIsTheScaledChannelMean() throws
+    {
+        var ( data, properties ) = FITSTestData.rgbPlanes( width: 2, height: 2 )
+
+        properties.append( FITSPropertySnapshot( name: "BSCALE", value: .integer( 2 ) ) )
+        properties.append( FITSPropertySnapshot( name: "BZERO",  value: .integer( 1 ) ) )
+
+        let luminance = try #require( ImageProcessor.rgbLinearLuminance( data: data, properties: properties ) )
+
+        #expect( luminance.width  == 2 )
+        #expect( luminance.height == 2 )
+
+        // Pixel 0: red 10, green 50, blue 90 → mean 50 → 50 * 2 + 1 = 101.
+        #expect( abs( luminance.samples[ 0 ] - 101 ) < 1e-9 )
+    }
 }

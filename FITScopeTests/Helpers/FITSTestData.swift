@@ -105,6 +105,93 @@ enum FITSTestData
         return data
     }
 
+    /// An RGB colour-planes image (`NAXIS=3`, third axis = 3) and its header
+    /// properties, ready to feed straight into `ImageProcessor.render`.
+    ///
+    /// The three `width × height` planes are stored band-sequential (all of the
+    /// red plane, then green, then blue — the FITS convention) with distinct
+    /// per-channel ramps so the channels are individually identifiable. The header
+    /// carries `CTYPE1`/`CTYPE2` and no `CTYPE3`, so it matches the RGB-planes
+    /// detection rule.
+    ///
+    /// - Parameters:
+    ///   - width:  The plane width in pixels.
+    ///   - height: The plane height in pixels.
+    /// - Returns: The band-sequential bytes and the header properties.
+    static func rgbPlanes( width: Int = 2, height: Int = 2 ) -> ( data: Data, properties: [ FITSPropertySnapshot ] )
+    {
+        let count = max( width * height, 1 )
+
+        // Distinct 8-bit ramps per channel so a decoded channel is identifiable:
+        // red 10, 20, …; green 50, 60, …; blue 90, 100, …
+        let red   = ( 0 ..< count ).map { UInt8( truncatingIfNeeded: 10 + $0 * 10 ) }
+        let green = ( 0 ..< count ).map { UInt8( truncatingIfNeeded: 50 + $0 * 10 ) }
+        let blue  = ( 0 ..< count ).map { UInt8( truncatingIfNeeded: 90 + $0 * 10 ) }
+
+        let properties =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 3 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( Int64( width ) ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( Int64( height ) ) ),
+                FITSPropertySnapshot( name: "NAXIS3", value: .integer( 3 ) ),
+                FITSPropertySnapshot( name: "CTYPE1", value: .string( "RA---TAN" ) ),
+                FITSPropertySnapshot( name: "CTYPE2", value: .string( "DEC--TAN" ) ),
+            ]
+
+        return ( Data( red + green + blue ), properties )
+    }
+
+    /// A minimal, valid RGB colour-planes FITS file (`NAXIS=3`, third axis = 3,
+    /// `BITPIX=8`): three `width × height` band-sequential planes as a header block
+    /// plus a block-padded data segment.
+    ///
+    /// Extra header records are inserted verbatim before `END`, so a caller can
+    /// attach or override keywords (e.g. drop `CTYPE1`, or add `CTYPE3`, to exercise
+    /// the non-RGB `NAXIS=3` rejection path).
+    ///
+    /// - Parameters:
+    ///   - width:        The plane width in pixels.
+    ///   - height:       The plane height in pixels.
+    ///   - extraRecords: Additional header records to insert before `END`.
+    /// - Returns: The complete FITS file bytes.
+    static func rgbCube( width: Int = 2, height: Int = 2, extraRecords: [ String ] = [ "CTYPE1  = 'RA---TAN'", "CTYPE2  = 'DEC--TAN'" ] ) -> Data
+    {
+        let count = max( width * height, 1 )
+        let red   = ( 0 ..< count ).map { UInt8( truncatingIfNeeded: 10 + $0 * 10 ) }
+        let green = ( 0 ..< count ).map { UInt8( truncatingIfNeeded: 50 + $0 * 10 ) }
+        let blue  = ( 0 ..< count ).map { UInt8( truncatingIfNeeded: 90 + $0 * 10 ) }
+
+        let records =
+            [
+                "SIMPLE  = T",
+                "BITPIX  = 8",
+                "NAXIS   = 3",
+                "NAXIS1  = \( width )",
+                "NAXIS2  = \( height )",
+                "NAXIS3  = 3",
+            ]
+            + extraRecords
+            + [ "END" ]
+
+        let header = records.map { $0.padding( toLength: 80, withPad: " ", startingAt: 0 ) }.joined()
+
+        var data    = Data( header.padding( toLength: FITSFile.blockSize, withPad: " ", startingAt: 0 ).utf8 )
+        var payload = Data( red + green + blue )
+
+        // Pad the data segment up to a whole FITS block.
+        let remainder = payload.count % FITSFile.blockSize
+
+        if remainder != 0
+        {
+            payload.append( Data( count: FITSFile.blockSize - remainder ) )
+        }
+
+        data.append( payload )
+
+        return data
+    }
+
     /// A minimal, valid header-only FITS file
     /// (`SIMPLE=T / BITPIX=8 / NAXIS=0 / END`) as a single space-padded block.
     static func headerOnly() -> Data

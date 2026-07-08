@@ -57,7 +57,11 @@ public struct StatusBarView: View
 
             self.segment( self.readout.xText )
             self.segment( self.readout.yText )
-            self.segment( self.readout.valueText )
+
+            ForEach( Array( self.readout.valueSegments.enumerated() ), id: \.offset )
+            {
+                self.segment( $0.element )
+            }
 
             if let dimensions = self.dimensions
             {
@@ -86,7 +90,7 @@ public struct StatusBarView: View
 
 #Preview
 {
-    StatusBarView( status: "Ready", readout: CursorReadout( x: 3120, y: 2080, value: 1823, fraction: 1823.0 / 65535.0 ), dimensions: "6240 × 4160 • 16-bit" )
+    StatusBarView( status: "Ready", readout: CursorReadout( x: 3120, y: 2080, values: [ ImageProcessor.PixelValue( value: 1823, fraction: 1823.0 / 65535.0 ) ] ), dimensions: "6240 × 4160 • 16-bit" )
         .padding()
         .background( .black )
 }

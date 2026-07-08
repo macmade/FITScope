@@ -187,10 +187,11 @@ public struct InspectorView: View
 
                     Divider()
 
-                    // Saturation only applies to a colour image; a monochrome file
-                    // has no colour to scale, so the section is hidden for it (as
-                    // with the debayer section).
-                    if self.image.isColorFilterArray
+                    // The colour-grading controls apply to any colour image — a
+                    // debayered colour-filter array or combined RGB planes — but not
+                    // a monochrome file, which has no colour to scale, so the sections
+                    // are hidden for it.
+                    if self.image.isColor
                     {
                         InspectorSectionView(
                             "Color Balance",

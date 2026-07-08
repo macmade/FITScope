@@ -73,6 +73,15 @@ enum TestFixtures
         self.url( "InvalidImage.fits" )
     }
 
+    /// A real RGB colour-planes image (`NAXIS = 3`, third axis = 3, `BITPIX = 16`)
+    /// with `CTYPE1`/`CTYPE2` and a TAN WCS: three band-sequential planes combined
+    /// into a single colour image, so it renders as colour (non-monochrome) without
+    /// being a colour-filter array.
+    static var rgbImage: URL
+    {
+        self.url( "RGBImage.fits" )
+    }
+
     /// A real one-dimensional (`NAXIS = 1`) synthetic spectrum: a `BITPIX = -32`
     /// flux array of 512 samples with a `WAVE` world-coordinate axis
     /// (`CRVAL1`/`CRPIX1`/`CDELT1`/`CUNIT1`) and a `BUNIT`, so it loads as a graph

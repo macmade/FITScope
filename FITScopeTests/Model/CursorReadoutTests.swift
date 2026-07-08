@@ -33,19 +33,19 @@ struct CursorReadoutTests
     @Test
     func formatsValueWithPercentWhenFractionPresent() throws
     {
-        let readout = CursorReadout( x: 3120, y: 2080, value: 1823, fraction: 1823.0 / 65535.0 )
+        let readout = CursorReadout( x: 3120, y: 2080, values: [ ImageProcessor.PixelValue( value: 1823, fraction: 1823.0 / 65535.0 ) ] )
 
         #expect( readout.xText == "x: 3120" )
         #expect( readout.yText == "y: 2080" )
-        #expect( readout.valueText == "Value: 1823 (2.78%)" )
+        #expect( readout.valueSegments == [ "Value: 1823 (2.78%)" ] )
     }
 
     @Test
     func formatsValueWithoutPercentWhenFractionNil() throws
     {
-        let readout = CursorReadout( x: 0, y: 0, value: 0.5, fraction: nil )
+        let readout = CursorReadout( x: 0, y: 0, values: [ ImageProcessor.PixelValue( value: 0.5, fraction: nil ) ] )
 
-        #expect( readout.valueText == "Value: 0.5" )
+        #expect( readout.valueSegments == [ "Value: 0.5" ] )
     }
 
     @Test
@@ -55,6 +55,28 @@ struct CursorReadoutTests
 
         #expect( readout.xText == "x: —" )
         #expect( readout.yText == "y: —" )
-        #expect( readout.valueText == "Value: —" )
+        #expect( readout.valueSegments == [ "Value: —" ] )
+    }
+
+    /// A three-channel read-out is shown as `R:`/`G:`/`B:` fields, each with its
+    /// own value and percentage.
+    @Test
+    func formatsThreeChannelReadoutAsRGB() throws
+    {
+        let readout = CursorReadout(
+            x:      10,
+            y:      20,
+            values:
+            [
+                ImageProcessor.PixelValue( value: 20,  fraction: 20.0  / 255.0 ),
+                ImageProcessor.PixelValue( value: 60,  fraction: 60.0  / 255.0 ),
+                ImageProcessor.PixelValue( value: 100, fraction: 100.0 / 255.0 ),
+            ]
+        )
+
+        #expect( readout.valueSegments.count == 3 )
+        #expect( readout.valueSegments[ 0 ].hasPrefix( "R: 20 (" ) )
+        #expect( readout.valueSegments[ 1 ].hasPrefix( "G: 60 (" ) )
+        #expect( readout.valueSegments[ 2 ].hasPrefix( "B: 100 (" ) )
     }
 }

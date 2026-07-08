@@ -163,7 +163,25 @@ public enum ImageProcessor
             // demosaic; its absence means a monochrome source expanded to RGB.
             let inputFormat: PixelPipeline.Config.InputFormat = pattern.map { .cfa( pattern: $0, mode: self.debayerMode ) } ?? .mono
 
-            return PixelPipeline.Config(
+            return self.config( scale: scale, offset: offset, inputFormat: inputFormat )
+        }
+
+        /// Builds the pipeline configuration for an explicit input layout, combining
+        /// these tunables with the header-derived affine scaling.
+        ///
+        /// Used by the format paths that already know their channel layout — e.g.
+        /// an RGB `NAXIS=3` image, whose interleaved planes are passed through as
+        /// ``PixelPipeline/Config/InputFormat/rgb`` regardless of the debayer
+        /// selection (which only concerns colour-filter-array sources).
+        ///
+        /// - Parameters:
+        ///   - scale:       The multiplicative scale from `BSCALE`.
+        ///   - offset:      The additive offset from `BZERO`.
+        ///   - inputFormat: The channel layout of the samples fed to the pipeline.
+        /// - Returns: The configured `PixelPipeline.Config`.
+        public func config( scale: Double, offset: Double, inputFormat: PixelPipeline.Config.InputFormat ) -> PixelPipeline.Config
+        {
+            PixelPipeline.Config(
                 scale:              ( scale, offset ),
                 inputFormat:        inputFormat,
                 normalize:          self.normalize,
@@ -191,6 +209,11 @@ public enum ImageProcessor
     /// brightness/contrast), stretches, and applies the display-referred tone,
     /// colour and geometry stages.
     ///
+    /// Supports a two-dimensional image (`NAXIS = 2`) and an RGB colour-planes cube
+    /// (`NAXIS = 3` with a third axis of 3 — see ``isRGBPlanes(properties:)``),
+    /// whose planes are combined into one colour image. Any other `NAXIS = 3`
+    /// geometry is rejected (left to a later milestone).
+    ///
     /// - Parameters:
     ///   - data:       The image HDU's raw pixel bytes.
     ///   - properties: The owning header's property snapshots.
@@ -198,9 +221,9 @@ public enum ImageProcessor
     /// - Returns: The ``RenderResult`` with the display image, its 8-bit bytes,
     ///   and the input/output pixel formats (the bytes and formats feed histogram
     ///   computation and the mono-vs-colour display choice).
-    /// - Throws: ``RuntimeError`` for a missing or unsupported `BITPIX`, a
-    ///   non-2-D image, invalid dimensions, truncated data, or an unsupported
-    ///   `BAYERPAT`.
+    /// - Throws: ``RuntimeError`` for a missing or unsupported `BITPIX`, an
+    ///   unsupported geometry (a non-2-D image that is not an RGB colour-planes
+    ///   cube), invalid dimensions, truncated data, or an unsupported `BAYERPAT`.
     public static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> RenderResult
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.integer
@@ -219,6 +242,14 @@ public enum ImageProcessor
         else
         {
             throw RuntimeError( message: "Missing NAXIS property" )
+        }
+
+        // A three-dimensional HDU whose third axis holds separate red, green and
+        // blue planes is combined into a single colour image; any other NAXIS=3
+        // shape (a multi-plane cube) is left for a later milestone.
+        if nAxis == 3, Self.isRGBPlanes( properties: properties )
+        {
+            return try Self.renderRGBPlanes( data: data, properties: properties, bitsPerPixel: bitsPerPixel, settings: settings )
         }
 
         guard nAxis == 2
@@ -291,6 +322,53 @@ public enum ImageProcessor
     {
         let pipeline = PixelPipeline( config: config )
 
+        return try Benchmark.run( label: "Rendering Image", output: Benchmarking.log )
+        {
+            let buffer = try pipeline.run( data: data, width: width, height: height, bitsPerPixel: bitsPerPixel )
+
+            return try Self.result( from: buffer, config: config )
+        }
+    }
+
+    /// Renders already-decoded channel planes through the configured pixel
+    /// pipeline — the counterpart of ``render(data:width:height:bitsPerPixel:config:)``
+    /// for formats that decode their own channels into separate planes (e.g. the
+    /// band-sequential red, green and blue planes of a `NAXIS=3` colour image).
+    /// SwiftPixel interleaves the planes internally.
+    ///
+    /// - Parameters:
+    ///   - planes:       The decoded channel planes, in channel order, all the same
+    ///                   length; the plane count must match `config.inputFormat`.
+    ///   - width:        The image width in pixels.
+    ///   - height:       The image height in pixels.
+    ///   - bitsPerPixel: The original sample format (informational).
+    ///   - config:       The configured pipeline stages.
+    /// - Returns: The ``RenderResult`` with the display image, its 8-bit bytes and
+    ///   the input/output pixel formats.
+    /// - Throws: Any error thrown by the pixel pipeline.
+    private static func render( planes: [ [ Double ] ], width: Int, height: Int, bitsPerPixel: BitsPerPixel, config: PixelPipeline.Config ) throws -> RenderResult
+    {
+        let pipeline = PixelPipeline( config: config )
+
+        return try Benchmark.run( label: "Rendering Image", output: Benchmarking.log )
+        {
+            let buffer = try pipeline.run( planes: planes, width: width, height: height, bitsPerPixel: bitsPerPixel )
+
+            return try Self.result( from: buffer, config: config )
+        }
+    }
+
+    /// Converts a processed pixel buffer into a ``RenderResult``, tagging it with
+    /// the input layout the pipeline consumed. Shared by both render cores.
+    ///
+    /// - Parameters:
+    ///   - buffer: The processed pixel buffer.
+    ///   - config: The configuration the buffer was produced with.
+    /// - Returns: The render result.
+    /// - Throws: Any error thrown while converting the buffer to 8-bit bytes or a
+    ///   `CGImage`.
+    private static func result( from buffer: PixelBuffer, config: PixelPipeline.Config ) throws -> RenderResult
+    {
         // The result's colour interpretation follows the input layout: a mono
         // source is replicated across three channels (shown as mono), while a CFA
         // or RGB source is genuine colour.
@@ -306,14 +384,198 @@ public enum ImageProcessor
             @unknown default: .rgb
         }
 
-        return try Benchmark.run( label: "Rendering Image", output: Benchmarking.log )
-        {
-            let buffer = try pipeline.run( data: data, width: width, height: height, bitsPerPixel: bitsPerPixel )
-            let bytes  = try buffer.convertTo8Bits()
-            let image  = try PixelBuffer.createCGImage( bytes: bytes, width: buffer.width, height: buffer.height, channels: buffer.channels )
+        let bytes = try buffer.convertTo8Bits()
+        let image = try PixelBuffer.createCGImage( bytes: bytes, width: buffer.width, height: buffer.height, channels: buffer.channels )
 
-            return RenderResult( image: image, bytes: bytes, inputPixelFormat: inputPixelFormat, outputPixelFormat: .rgb )
+        return RenderResult( image: image, bytes: bytes, inputPixelFormat: inputPixelFormat, outputPixelFormat: .rgb )
+    }
+
+    /// Whether the header describes a three-dimensional HDU whose third axis holds
+    /// separate red, green and blue image planes.
+    ///
+    /// The rule (per the plan): `NAXIS = 3`, the third axis `NAXIS3 = 3`, both
+    /// spatial coordinate types `CTYPE1` and `CTYPE2` present and non-empty, and no
+    /// `CTYPE3` (whose presence would mark the third axis as a genuine coordinate,
+    /// i.e. a multi-plane cube handled elsewhere).
+    ///
+    /// - Parameter properties: The image HDU's header properties.
+    /// - Returns: `true` when the header matches the RGB-planes shape.
+    public static func isRGBPlanes( properties: [ FITSPropertySnapshot ] ) -> Bool
+    {
+        guard properties.first( where: { $0.name == "NAXIS"  } )?.value.integer == 3,
+              properties.first( where: { $0.name == "NAXIS3" } )?.value.integer == 3
+        else
+        {
+            return false
         }
+
+        // A present, non-empty CTYPE3 marks the third axis as its own coordinate —
+        // that is a multi-plane cube, not colour planes.
+        guard Self.trimmedString( named: "CTYPE3", in: properties ) == nil
+        else
+        {
+            return false
+        }
+
+        return Self.trimmedString( named: "CTYPE1", in: properties ) != nil
+            && Self.trimmedString( named: "CTYPE2", in: properties ) != nil
+    }
+
+    /// Renders an RGB `NAXIS=3` image HDU: the three band-sequential colour planes
+    /// are decoded and passed through the pipeline as a genuine colour (`.rgb`)
+    /// input (SwiftPixel interleaves them), so the colour-aware stretch, curves and
+    /// histogram apply.
+    ///
+    /// - Parameters:
+    ///   - data:         The image HDU's raw pixel bytes (three stacked planes).
+    ///   - properties:   The owning header's property snapshots.
+    ///   - bitsPerPixel: The sample format of `data`.
+    ///   - settings:     The user-tunable render settings.
+    /// - Returns: The rendered colour result.
+    /// - Throws: ``RuntimeError`` for invalid dimensions or truncated data.
+    private static func renderRGBPlanes( data: Data, properties: [ FITSPropertySnapshot ], bitsPerPixel: BitsPerPixel, settings: Settings ) throws -> RenderResult
+    {
+        let planes            = try Self.rgbPlaneSamples( data: data, properties: properties, bitsPerPixel: bitsPerPixel )
+        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
+        let config            = settings.config( scale: scale, offset: offset, inputFormat: .rgb )
+
+        return try Self.render( planes: [ planes.red, planes.green, planes.blue ], width: planes.width, height: planes.height, bitsPerPixel: bitsPerPixel, config: config )
+    }
+
+    /// Decodes the three band-sequential colour planes of an RGB `NAXIS=3` image
+    /// HDU into raw (unscaled) sample arrays, one per plane.
+    ///
+    /// The `BSCALE`/`BZERO` rescaling is left to the caller (the pipeline's scale
+    /// stage for rendering, an explicit rescale for the detection luminance), so
+    /// this returns the samples at their stored values.
+    ///
+    /// - Parameters:
+    ///   - data:         The image HDU's raw pixel bytes.
+    ///   - properties:   The owning header's property snapshots.
+    ///   - bitsPerPixel: The sample format of `data`.
+    /// - Returns: The plane dimensions and the raw red, green and blue samples.
+    /// - Throws: ``RuntimeError`` for invalid dimensions or truncated data.
+    private static func rgbPlaneSamples( data: Data, properties: [ FITSPropertySnapshot ], bitsPerPixel: BitsPerPixel ) throws -> ( width: Int, height: Int, red: [ Double ], green: [ Double ], blue: [ Double ] )
+    {
+        guard let ( width, height ) = Self.imageDimensions( from: properties )
+        else
+        {
+            throw RuntimeError( message: "Invalid or missing NAXIS1 / NAXIS2 for an RGB image" )
+        }
+
+        let planeSize = bitsPerPixel.size( numberOfPixels: width * height )
+        let total     = planeSize * 3
+        let pixelData = Data( data.prefix( total ) ) // re-wrap: startIndex may be non-zero, and trim block padding
+
+        guard pixelData.count == total
+        else
+        {
+            throw RuntimeError( message: "Data too small: \( data.count ) < \( total )" )
+        }
+
+        // Each plane is a contiguous single channel; re-wrap each slice into a fresh
+        // Data (zero-based indices) so readRawPixels reads it in isolation.
+        let planes = try ( 0 ..< 3 ).map
+        {
+            plane -> [ Double ] in
+
+            let slice = Data( pixelData.dropFirst( plane * planeSize ).prefix( planeSize ) )
+
+            return try PixelUtilities.readRawPixels( data: slice, width: width, height: height, bitsPerPixel: bitsPerPixel )
+        }
+
+        return ( width: width, height: height, red: planes[ 0 ], green: planes[ 1 ], blue: planes[ 2 ] )
+    }
+
+    /// The per-channel decoded samples of an RGB `NAXIS=3` image at coordinates
+    /// `(x, y)` — one ``PixelValue`` per plane in red, green, blue order — for the
+    /// cursor read-out over a colour image.
+    ///
+    /// - Parameters:
+    ///   - data:       The image HDU's raw pixel bytes.
+    ///   - properties: The owning header's property snapshots.
+    ///   - x:          The zero-based column, left to right.
+    ///   - y:          The zero-based row, top to bottom.
+    /// - Returns: The three channel values, or `nil` for a non-RGB header,
+    ///   out-of-bounds coordinates or truncated data.
+    public static func rgbPixelValues( data: Data, properties: [ FITSPropertySnapshot ], x: Int, y: Int ) -> [ PixelValue ]?
+    {
+        guard Self.isRGBPlanes( properties: properties ),
+              let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
+              let bitsPerPixel = BitsPerPixel.from( value: bitPix ),
+              let ( width, height ) = Self.imageDimensions( from: properties ),
+              x >= 0, x < width, y >= 0, y < height
+        else
+        {
+            return nil
+        }
+
+        let bytesPerSample    = bitsPerPixel.size( numberOfPixels: 1 )
+        let planeSampleCount  = width * height
+        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
+
+        let values = ( 0 ..< 3 ).compactMap
+        {
+            plane -> PixelValue? in
+
+            let sampleIndex = plane * planeSampleCount + y * width + x
+            let byteOffset  = sampleIndex * bytesPerSample
+
+            return Self.sampleValue( data: data, byteOffset: byteOffset, bitsPerPixel: bitsPerPixel, scale: scale, offset: offset )
+        }
+
+        return values.count == 3 ? values : nil
+    }
+
+    /// The per-pixel luminance (mean of the three colour planes, with
+    /// `BSCALE`/`BZERO` applied) of an RGB `NAXIS=3` image, as a single-channel
+    /// linear image for star detection and the sky-background measurement.
+    ///
+    /// Returns `nil` for a non-RGB header or when the planes cannot be decoded, so
+    /// the caller falls back to the mono/CFA detection path (or none).
+    ///
+    /// - Parameters:
+    ///   - data:       The image HDU's raw pixel bytes.
+    ///   - properties: The owning header's property snapshots.
+    /// - Returns: The image dimensions and the scaled-linear luminance samples, or
+    ///   `nil`.
+    public static func rgbLinearLuminance( data: Data, properties: [ FITSPropertySnapshot ] ) -> ( width: Int, height: Int, samples: [ Double ] )?
+    {
+        guard Self.isRGBPlanes( properties: properties ),
+              let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
+              let bitsPerPixel = BitsPerPixel.from( value: bitPix ),
+              let planes       = try? Self.rgbPlaneSamples( data: data, properties: properties, bitsPerPixel: bitsPerPixel )
+        else
+        {
+            return nil
+        }
+
+        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
+        let samples           = ( 0 ..< planes.red.count ).map
+        {
+            index in
+
+            ( ( planes.red[ index ] + planes.green[ index ] + planes.blue[ index ] ) / 3 ) * scale + offset
+        }
+
+        return ( width: planes.width, height: planes.height, samples: samples )
+    }
+
+    /// The first non-empty, whitespace-trimmed string value for a keyword.
+    ///
+    /// - Parameters:
+    ///   - name:       The keyword name.
+    ///   - properties: The header properties to search.
+    /// - Returns: The trimmed string, or `nil` when absent, non-string or empty.
+    private static func trimmedString( named name: String, in properties: [ FITSPropertySnapshot ] ) -> String?
+    {
+        guard let text = properties.first( where: { $0.name == name } )?.value.string?.trimmingCharacters( in: .whitespaces ), text.isEmpty == false
+        else
+        {
+            return nil
+        }
+
+        return text
     }
 
     /// Maps the header's `BAYERPAT` keyword to a debayer pattern.
@@ -378,7 +640,7 @@ public enum ImageProcessor
 
     /// A decoded pixel sample: the scaled raw value and its fraction of the
     /// sample format's full scale.
-    public struct PixelValue: Equatable
+    public struct PixelValue: Equatable, Sendable
     {
         /// The decoded, scaled sample value.
         public let value: Double
@@ -413,23 +675,42 @@ public enum ImageProcessor
             return nil
         }
 
-        let bytesPerSample = bitsPerPixel.size( numberOfPixels: 1 )
-        let sampleIndex    = y * width + x
-        let byteOffset     = sampleIndex * bytesPerSample
+        let bytesPerSample    = bitsPerPixel.size( numberOfPixels: 1 )
+        let byteOffset        = ( y * width + x ) * bytesPerSample
+        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
 
-        guard byteOffset + bytesPerSample <= data.count
+        return Self.sampleValue( data: data, byteOffset: byteOffset, bitsPerPixel: bitsPerPixel, scale: scale, offset: offset )
+    }
+
+    /// Decodes a single sample at a byte offset into the HDU bytes and applies the
+    /// affine `BSCALE`/`BZERO` scaling, returning the scaled value and its fraction
+    /// of the format's full scale.
+    ///
+    /// Shared by the single-channel ``rawPixelValue(data:properties:x:y:)`` and the
+    /// per-plane ``rgbPixelValues(data:properties:x:y:)`` read-outs.
+    ///
+    /// - Parameters:
+    ///   - data:         The image HDU's raw pixel bytes.
+    ///   - byteOffset:   The sample's byte offset, relative to the data's contents.
+    ///   - bitsPerPixel: The sample format.
+    ///   - scale:        The multiplicative `BSCALE`.
+    ///   - offset:       The additive `BZERO`.
+    /// - Returns: The decoded value, or `nil` when the offset runs past the data.
+    private static func sampleValue( data: Data, byteOffset: Int, bitsPerPixel: BitsPerPixel, scale: Double, offset: Double ) -> PixelValue?
+    {
+        let bytesPerSample = bitsPerPixel.size( numberOfPixels: 1 )
+
+        guard byteOffset >= 0, byteOffset + bytesPerSample <= data.count
         else
         {
             return nil
         }
 
         // `data` may have a non-zero startIndex; index relative to it.
-        let start = data.startIndex + byteOffset
-        let raw   = Self.decodeSample( data: data, at: start, bitsPerPixel: bitsPerPixel )
-
-        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
-        let scaled            = raw * scale + offset
-        let fraction          = Self.fullScale( for: bitsPerPixel ).map { scaled / $0 }
+        let start    = data.startIndex + byteOffset
+        let raw      = Self.decodeSample( data: data, at: start, bitsPerPixel: bitsPerPixel )
+        let scaled   = raw * scale + offset
+        let fraction = Self.fullScale( for: bitsPerPixel ).map { scaled / $0 }
 
         return PixelValue( value: scaled, fraction: fraction )
     }

@@ -38,12 +38,15 @@ public extension LoadedImage
     /// exposure, coordinate, plate scale) are derived from that same metadata.
     ///
     /// - Parameters:
-    ///   - info:     The parsed FITS header info.
-    ///   - graph:    The decoded 1-D series when the file is a `NAXIS=1` graph, or
-    ///               `nil` for a normal image. When set, the summary is built for a
-    ///               one-dimensional data set.
-    ///   - renderer: The renderer for the image.
-    convenience init( info: FITSImageInfo, graph: GraphSeries? = nil, renderer: ImageRenderer )
+    ///   - info:       The parsed FITS header info.
+    ///   - graph:      The decoded 1-D series when the file is a `NAXIS=1` graph, or
+    ///                 `nil` for a normal image. When set, the summary is built for a
+    ///                 one-dimensional data set.
+    ///   - isRGBImage: Whether the image HDU is an RGB `NAXIS=3` colour-planes image,
+    ///                 which is colour without being a colour-filter array. The loader
+    ///                 supplies this from the image HDU header.
+    ///   - renderer:   The renderer for the image.
+    convenience init( info: FITSImageInfo, graph: GraphSeries? = nil, isRGBImage: Bool = false, renderer: ImageRenderer )
     {
         let metadata = info.metadata
 
@@ -62,6 +65,7 @@ public extension LoadedImage
             target:             Self.target( metadata: metadata ),
             pixelScale:         metadata.pixelScale,
             isColorFilterArray: info.isColorFilterArray,
+            isColor:            info.isColorFilterArray || isRGBImage,
             information:        information,
             graph:              graph,
             renderer:           renderer

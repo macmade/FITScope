@@ -492,8 +492,8 @@ public struct ImageCanvasView: View
             source = coordinate
         }
 
-        let pixel = renderSource.pixelValue( atX: source.x, y: source.y )
+        let values = renderSource.pixelValues( atX: source.x, y: source.y )
 
-        self.readout = CursorReadout( x: source.x, y: source.y, value: pixel?.value, fraction: pixel?.fraction )
+        self.readout = CursorReadout( x: source.x, y: source.y, values: values ?? [] )
     }
 }

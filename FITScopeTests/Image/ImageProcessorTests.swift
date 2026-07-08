@@ -120,6 +120,75 @@ struct ImageProcessorTests
         #expect( rotated.image.height == 2 )
     }
 
+    /// An RGB colour-planes image (`NAXIS=3`, third axis = 3, `CTYPE1`/`CTYPE2`
+    /// present, no `CTYPE3`) renders as a genuine colour image: the display image
+    /// keeps the plane dimensions and the render is tagged as an `.rgb` input.
+    @Test
+    func rgbColorPlanesRenderAsColor() throws
+    {
+        let ( data, properties ) = FITSTestData.rgbPlanes( width: 4, height: 3 )
+
+        let result = try ImageProcessor.render( data: data, properties: properties )
+
+        #expect( result.image.width  == 4 )
+        #expect( result.image.height == 3 )
+        #expect( result.inputPixelFormat  == .rgb, "RGB planes must render as a colour (rgb) input, not mono" )
+        #expect( result.outputPixelFormat == .rgb )
+    }
+
+    /// The RGB-planes rule accepts only `NAXIS=3` with a third axis of 3, both
+    /// spatial `CTYPE`s present and no `CTYPE3`.
+    @Test
+    func rgbPlanesDetectionRule() throws
+    {
+        func properties( naxis3: Int64, ctype1: String? = "RA---TAN", ctype2: String? = "DEC--TAN", ctype3: String? = nil ) -> [ FITSPropertySnapshot ]
+        {
+            var props: [ FITSPropertySnapshot ] =
+                [
+                    FITSPropertySnapshot( name: "NAXIS",  value: .integer( 3 ) ),
+                    FITSPropertySnapshot( name: "NAXIS3", value: .integer( naxis3 ) ),
+                ]
+
+            ctype1.map { props.append( FITSPropertySnapshot( name: "CTYPE1", value: .string( $0 ) ) ) }
+            ctype2.map { props.append( FITSPropertySnapshot( name: "CTYPE2", value: .string( $0 ) ) ) }
+            ctype3.map { props.append( FITSPropertySnapshot( name: "CTYPE3", value: .string( $0 ) ) ) }
+
+            return props
+        }
+
+        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3 ) ) )
+        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 5 ) ) == false, "the third axis must be 3" )
+        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype1: nil ) ) == false, "CTYPE1 must be present" )
+        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype2: "  " ) ) == false, "CTYPE2 must be non-empty" )
+        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype3: "WAVE" ) ) == false, "a present CTYPE3 rules out the RGB-planes case" )
+        #expect( ImageProcessor.isRGBPlanes( properties: FITSTestData.gradient().properties ) == false, "a 2-D image is not RGB planes" )
+    }
+
+    /// A `NAXIS=3` file that is *not* the RGB-planes shape (here the third axis is
+    /// not 3) is still rejected, left for the multi-image milestone rather than
+    /// mis-rendered as colour.
+    @Test
+    func nonRGBThreeDimensionalGeometryIsStillRejected() throws
+    {
+        let properties: [ FITSPropertySnapshot ] =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 3 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS3", value: .integer( 5 ) ),
+                FITSPropertySnapshot( name: "CTYPE1", value: .string( "RA---TAN" ) ),
+                FITSPropertySnapshot( name: "CTYPE2", value: .string( "DEC--TAN" ) ),
+            ]
+
+        let error = try #require( throws: ( any Error ).self )
+        {
+            _ = try ImageProcessor.render( data: Data(), properties: properties )
+        }
+
+        #expect( "\( error )".contains( "NAXIS = 3" ), "expected the unsupported-geometry error, got: \"\( error )\"" )
+    }
+
     /// A non-positive `NAXIS2` is rejected with a diagnostic that names the
     /// offending axis and value — NAXIS2, not NAXIS1.
     @Test

@@ -70,6 +70,13 @@ public class LoadedImage: ObservableObject
     /// offers the debayer controls.
     public let isColorFilterArray: Bool
 
+    /// Whether the displayed image is colour, so the inspector offers the
+    /// colour-grading controls (colour balance, hue & saturation). `true` for a
+    /// colour-filter-array image (debayered to colour) and for combined RGB planes,
+    /// `false` for a monochrome image. Distinct from ``isColorFilterArray``, which
+    /// gates only the debayer controls: RGB planes are colour but need no debayering.
+    public let isColor: Bool
+
     /// A display-ready summary of the image's key metadata, for the sidebar Image
     /// Information panel and the file row, or `nil` when it cannot be built.
     public let information: ImageInformation?
@@ -146,11 +153,12 @@ public class LoadedImage: ObservableObject
     ///   - target:             The imaged target's celestial coordinate, or `nil`.
     ///   - pixelScale:         The plate scale in arc-seconds per pixel, or `nil`.
     ///   - isColorFilterArray: Whether the image is a colour-filter-array image.
+    ///   - isColor:            Whether the displayed image is colour (CFA or RGB planes).
     ///   - information:        The display-ready metadata summary, or `nil`.
     ///   - frameTitle:         The frame's carousel label, or `nil` for an unlabelled frame.
     ///   - graph:              The decoded 1-D series for a graph file, or `nil` for an image.
     ///   - renderer:           The renderer for the image.
-    public init( url: URL, metadata: ImageMetadata, wcs: WorldCoordinateSystem?, observationDate: Date?, exposureTime: Double?, coordinate: Coordinate?, target: EquatorialCoordinate?, pixelScale: Double?, isColorFilterArray: Bool, information: ImageInformation?, frameTitle: String? = nil, graph: GraphSeries? = nil, renderer: ImageRenderer )
+    public init( url: URL, metadata: ImageMetadata, wcs: WorldCoordinateSystem?, observationDate: Date?, exposureTime: Double?, coordinate: Coordinate?, target: EquatorialCoordinate?, pixelScale: Double?, isColorFilterArray: Bool, isColor: Bool, information: ImageInformation?, frameTitle: String? = nil, graph: GraphSeries? = nil, renderer: ImageRenderer )
     {
         self.url                = url
         self.metadata           = metadata
@@ -161,6 +169,7 @@ public class LoadedImage: ObservableObject
         self.target             = target
         self.pixelScale         = pixelScale
         self.isColorFilterArray = isColorFilterArray
+        self.isColor            = isColor
         self.information        = information
         self.frameTitle         = frameTitle
         self.graph              = graph

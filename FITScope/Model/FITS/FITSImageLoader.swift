@@ -25,6 +25,7 @@
 import Combine
 import SwiftAstro
 import SwiftFITS
+import SwiftPixel
 import SwiftUI
 import SwiftUtilities
 
@@ -137,21 +138,35 @@ public class FITSImageLoader: ObservableObject, ImageLoading
                         // so the file still loads with its metadata and surfaces the
                         // error at render — matching how a malformed 2-D file degrades.
                         let graph       = Self.decodeGraph( from: file.sections )
+
+                        // The image HDU (bytes + header), selected the same way as the
+                        // renderer; `nil` when the file carries no image data section.
+                        // Whether it is an RGB colour-planes image tells the model to
+                        // offer the colour controls even though it is not a CFA image.
+                        let hdu         = try? FITSPreviewRenderer.imageHDU( from: file.sections )
+                        let isRGBImage  = hdu.map { ImageProcessor.isRGBPlanes( properties: $0.properties ) } ?? false
+
                         let renderInput = Swift.Result
                         {
                             () -> any ImageRenderSource in
+
+                            guard let hdu
+                            else
+                            {
+                                throw RuntimeError( message: "FITS file contains no image HDU" )
+                            }
 
                             // Build the detection-ready buffer here, while the
                             // non-Sendable file is still in scope; only the
                             // Sendable PixelBuffer crosses back. A decode failure
                             // must not fail the load, so detection is best-effort. A
-                            // graph is never rendered and has no 2-D detection image.
-                            let detectionImage = graph == nil ? try? FITSImageDecoder.detectionImage( from: file ) : nil
+                            // graph is never rendered and has no detection image.
+                            let detectionImage = graph == nil ? Self.detectionImage( forImageHDU: hdu, file: file ) : nil
 
-                            return try FITSRenderSource( sections: file.sections, detectionImage: detectionImage )
+                            return FITSRenderSource( data: hdu.data, properties: hdu.properties, detectionImage: detectionImage )
                         }
 
-                        continuation.resume( returning: ( info: info, renderInput: renderInput, graph: graph ) )
+                        continuation.resume( returning: ( info: info, renderInput: renderInput, graph: graph, isRGBImage: isRGBImage ) )
                     }
                     catch
                     {
@@ -163,7 +178,7 @@ public class FITSImageLoader: ObservableObject, ImageLoading
             await MainActor.run
             {
                 let renderer       = ImageRenderer( source: result.renderInput )
-                let image          = LoadedImage( info: result.info, graph: result.graph, renderer: renderer )
+                let image          = LoadedImage( info: result.info, graph: result.graph, isRGBImage: result.isRGBImage, renderer: renderer )
                 self.image         = image
                 self.error         = nil
                 self.imageObserver = image.objectWillChange.sink
@@ -209,5 +224,37 @@ public class FITSImageLoader: ObservableObject, ImageLoading
         }
 
         return try? GraphSeries( oneDimensionalHeader: header, data: sections[ dataIndex ].data )
+    }
+
+    /// Builds the detection-ready single-channel linear image for the image HDU.
+    ///
+    /// An RGB `NAXIS=3` colour image combines its three planes into a single
+    /// luminance channel (their per-pixel mean, in scaled-linear ADU) so star
+    /// detection and the sky-background measurement run on the whole colour image
+    /// rather than one plane; any other image goes through SwiftAstro's decoder
+    /// (a monochrome frame as-is, a colour-filter array demosaiced to luminance).
+    ///
+    /// The decode is best-effort: any failure returns `nil` so the load still
+    /// succeeds and detection is simply skipped.
+    ///
+    /// - Parameters:
+    ///   - hdu:  The image HDU's bytes and header properties.
+    ///   - file: The parsed FITS file, for the non-RGB decode path.
+    /// - Returns: The detection image, or `nil` when it cannot be built.
+    private nonisolated static func detectionImage( forImageHDU hdu: ( data: Data, properties: [ FITSPropertySnapshot ] ), file: FITSFile ) -> PixelBuffer?
+    {
+        // An RGB image must combine its planes into luminance; it never falls back
+        // to SwiftAstro's decoder, which would read a NAXIS=3 file as if 2-D and
+        // build the detection image from the first (red) plane alone. When the
+        // luminance decode fails (truncated/invalid data), detection is skipped.
+        if ImageProcessor.isRGBPlanes( properties: hdu.properties )
+        {
+            return ImageProcessor.rgbLinearLuminance( data: hdu.data, properties: hdu.properties ).flatMap
+            {
+                try? PixelBuffer( width: $0.width, height: $0.height, channels: 1, pixels: $0.samples, isNormalized: false )
+            }
+        }
+
+        return try? FITSImageDecoder.detectionImage( from: file )
     }
 }
