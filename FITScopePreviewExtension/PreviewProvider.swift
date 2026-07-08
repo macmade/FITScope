@@ -26,9 +26,9 @@ import Cocoa
 import Quartz
 import UniformTypeIdentifiers
 
-/// Provides Finder Quick Look previews for FITS files. It renders the file with
-/// the app's default settings (no user adjustments) via the shared
-/// ``FITSPreviewRenderer`` and returns the result as PNG data, so the spacebar
+/// Provides Finder Quick Look previews for the supported formats (FITS, XISF). It
+/// renders the file with the app's default settings (no user adjustments) via the
+/// shared ``PreviewRenderer`` and returns the result as PNG data, so the spacebar
 /// preview matches what the app shows on open.
 ///
 /// This is a data-based preview (`QLIsDataBasedPreview` in the Info.plist), so
@@ -37,7 +37,7 @@ class PreviewProvider: QLPreviewProvider, QLPreviewingController
 {
     func providePreview( for request: QLFilePreviewRequest ) async throws -> QLPreviewReply
     {
-        let image = try FITSPreviewRenderer.render( contentsOf: request.fileURL )
+        let image = try PreviewRenderer.render( contentsOf: request.fileURL )
         let size  = CGSize( width: image.width, height: image.height )
 
         return QLPreviewReply( dataOfContentType: .png, contentSize: size )

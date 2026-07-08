@@ -20,6 +20,8 @@
 		056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
 		056E5C522DDF1356003254C7 /* SwiftFITS.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
+		05F15F0000000000000000B8 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
+		05F15F0000000000000000B9 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
 		0579B6122DF220D1002FDD47 /* ImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6112DF220CD002FDD47 /* ImageRenderer.swift */; };
 		0579B6152DF23DB7002FDD47 /* LoadedImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6142DF23DB3002FDD47 /* LoadedImage.swift */; };
 		0579B61A2DF24540002FDD47 /* FITSImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */; };
@@ -61,6 +63,28 @@
 		05AA61792FFEE8A900FCF406 /* SwiftXISF.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05AA61762FFEE89D00FCF406 /* SwiftXISF.framework */; };
 		05AA617A2FFEE8C200FCF406 /* SwiftXISF.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05AA61762FFEE89D00FCF406 /* SwiftXISF.framework */; };
 		05AA617B2FFEE8CE00FCF406 /* SwiftXISF.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05AA61762FFEE89D00FCF406 /* SwiftXISF.framework */; };
+		05F15F0000000000000000A1 /* XISFImageProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F1 /* XISFImageProperties.swift */; };
+		05F15F0000000000000000A2 /* XISFRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F2 /* XISFRenderSource.swift */; };
+		05F15F0000000000000000A3 /* ImageMetadataProperty+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F3 /* ImageMetadataProperty+XISF.swift */; };
+		05F15F0000000000000000A4 /* ImageMetadataSection+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F4 /* ImageMetadataSection+XISF.swift */; };
+		05F15F0000000000000000A5 /* XISFImageInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F5 /* XISFImageInfo.swift */; };
+		05F15F0000000000000000A6 /* ImageInformation+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F6 /* ImageInformation+XISF.swift */; };
+		05F15F0000000000000000A7 /* LoadedImage+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F7 /* LoadedImage+XISF.swift */; };
+		05F15F0000000000000000A8 /* XISFImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F8 /* XISFImageLoader.swift */; };
+		05F15F0000000000000000A9 /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
+		05F15F0000000000000000AA /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
+		05F15F0000000000000000AB /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
+		05F15F0000000000000000AC /* ImageProcessor+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FB /* ImageProcessor+XISF.swift */; };
+		05F15F0000000000000000AD /* XISFImageProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F1 /* XISFImageProperties.swift */; };
+		05F15F0000000000000000AE /* XISFImageProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F1 /* XISFImageProperties.swift */; };
+		05F15F0000000000000000AF /* ImageProcessor+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FB /* ImageProcessor+XISF.swift */; };
+		05F15F0000000000000000B0 /* ImageProcessor+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FB /* ImageProcessor+XISF.swift */; };
+		05F15F0000000000000000B2 /* XISFPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FC /* XISFPreviewRenderer.swift */; };
+		05F15F0000000000000000B3 /* XISFPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FC /* XISFPreviewRenderer.swift */; };
+		05F15F0000000000000000B4 /* XISFPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FC /* XISFPreviewRenderer.swift */; };
+		05F15F0000000000000000B5 /* PreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FD /* PreviewRenderer.swift */; };
+		05F15F0000000000000000B6 /* PreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FD /* PreviewRenderer.swift */; };
+		05F15F0000000000000000B7 /* PreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FD /* PreviewRenderer.swift */; };
 		05AA617C2FFEE8E000FCF406 /* SwiftXISF.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 05AA61762FFEE89D00FCF406 /* SwiftXISF.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		05B189C82FEAE7930056553A /* QuickLookThumbnailing.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05B189C72FEAE7930056553A /* QuickLookThumbnailing.framework */; };
 		05B189CA2FEAE7930056553A /* Quartz.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05B189C92FEAE7930056553A /* Quartz.framework */; };
@@ -116,6 +140,10 @@
 		05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A0E1 /* AppModelTests.swift */; };
 		05FB1000000000000000B002 /* FITSTestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A002 /* FITSTestData.swift */; };
 		05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A003 /* ImageProcessorTests.swift */; };
+		05F15F0000000000000000E2 /* XISFTestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E1 /* XISFTestData.swift */; };
+		05F15F0000000000000000E4 /* XISFImageLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E3 /* XISFImageLoaderTests.swift */; };
+		05F15F0000000000000000E6 /* ImageProcessorXISFTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E5 /* ImageProcessorXISFTests.swift */; };
+		05F15F0000000000000000E9 /* XISFPreviewRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E8 /* XISFPreviewRendererTests.swift */; };
 		05FB1000000000000000B004 /* ImageRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A004 /* ImageRendererTests.swift */; };
 		05FB1000000000000000B005 /* ImageAdjustmentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */; };
 		05FB1000000000000000B006 /* StretchControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A006 /* StretchControlViewTests.swift */; };
@@ -430,6 +458,18 @@
 		0457D28C6A4D379B1D149226 /* SunTwilightView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SunTwilightView.swift; sourceTree = "<group>"; };
 		050F383F2DEEC2F000E84F97 /* SwiftPixel.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftPixel.xcodeproj; path = Submodules/SwiftAstro/Submodules/SwiftPixel/SwiftPixel.xcodeproj; sourceTree = "<group>"; };
 		05206B8E2DE0C41800550A87 /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000FA /* ImageProcessor+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageProcessor+FITS.swift"; sourceTree = "<group>"; };
+		05F15F0000000000000000FB /* ImageProcessor+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageProcessor+XISF.swift"; sourceTree = "<group>"; };
+		05F15F0000000000000000FC /* XISFPreviewRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFPreviewRenderer.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000FD /* PreviewRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewRenderer.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000F1 /* XISFImageProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageProperties.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000F2 /* XISFRenderSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFRenderSource.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000F3 /* ImageMetadataProperty+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataProperty+XISF.swift"; sourceTree = "<group>"; };
+		05F15F0000000000000000F4 /* ImageMetadataSection+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataSection+XISF.swift"; sourceTree = "<group>"; };
+		05F15F0000000000000000F5 /* XISFImageInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageInfo.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000F6 /* ImageInformation+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageInformation+XISF.swift"; sourceTree = "<group>"; };
+		05F15F0000000000000000F7 /* LoadedImage+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LoadedImage+XISF.swift"; sourceTree = "<group>"; };
+		05F15F0000000000000000F8 /* XISFImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageLoader.swift; sourceTree = "<group>"; };
 		0524AD7D2DF3450200180358 /* HistogramStatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramStatisticsView.swift; sourceTree = "<group>"; };
 		0524AD802DF3457C00180358 /* HistogramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramView.swift; sourceTree = "<group>"; };
 		05398CE22DEECF4F005904EC /* SwiftUtilities.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SwiftUtilities.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -568,6 +608,10 @@
 		05FB0B01000000000000FB01 /* BannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerView.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A002 /* FITSTestData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSTestData.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A003 /* ImageProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessorTests.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000E1 /* XISFTestData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFTestData.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000E3 /* XISFImageLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageLoaderTests.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000E5 /* ImageProcessorXISFTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessorXISFTests.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000E8 /* XISFPreviewRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFPreviewRendererTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A004 /* ImageRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRendererTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A005 /* ImageAdjustmentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageAdjustmentsTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A006 /* StretchControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchControlViewTests.swift; sourceTree = "<group>"; };
@@ -862,6 +906,10 @@
 			isa = PBXGroup;
 			children = (
 				05206B8E2DE0C41800550A87 /* ImageProcessor.swift */,
+				05F15F0000000000000000FA /* ImageProcessor+FITS.swift */,
+				05F15F0000000000000000FB /* ImageProcessor+XISF.swift */,
+				05F15F0000000000000000FC /* XISFPreviewRenderer.swift */,
+				05F15F0000000000000000FD /* PreviewRenderer.swift */,
 				05DD1000000000000000FA04 /* RenderResult.swift */,
 				05A1B2C30000000000000007 /* ImageExporter.swift */,
 				05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */,
@@ -1099,6 +1147,7 @@
 				05DD1000000000000000FA08 /* WorldCoordinateSystem.swift */,
 				017FF3966AE1E425A510642E /* DropAcceptance.swift */,
 				B3FD345BB5B137185B9B9D72 /* FITS */,
+				05F15F0000000000000000D1 /* XISF */,
 				05EE1000000000000000FC01 /* Metadata */,
 				05DD1000000000000000FC01 /* Loading */,
 				C312A09479352778259D365A /* Preferences */,
@@ -1315,6 +1364,8 @@
 			isa = PBXGroup;
 			children = (
 				05FB1000000000000000A003 /* ImageProcessorTests.swift */,
+				05F15F0000000000000000E5 /* ImageProcessorXISFTests.swift */,
+				05F15F0000000000000000E8 /* XISFPreviewRendererTests.swift */,
 				05A1B2C30000000000000005 /* ImageExporterTests.swift */,
 				05A1B2C30000000000000A03 /* FITSPreviewRendererTests.swift */,
 				05A1B2C300000000000000F3 /* RenderedImageShareItemTests.swift */,
@@ -1341,6 +1392,7 @@
 				20678C2224440A7F70B42B87 /* WCSProjectionTests.swift */,
 				AFBDAF375886651EAEF634B1 /* DropAcceptanceTests.swift */,
 				5DF80E657A81462F0C30D4CF /* FITS */,
+				05F15F0000000000000000E7 /* XISF */,
 				05EE1000000000000000FC02 /* Metadata */,
 				05DD1000000000000000FC02 /* Loading */,
 				90974047D195E465718B0A58 /* Preferences */,
@@ -1522,6 +1574,15 @@
 			path = FITS;
 			sourceTree = "<group>";
 		};
+		05F15F0000000000000000E7 /* XISF */ = {
+			isa = PBXGroup;
+			children = (
+				05F15F0000000000000000E3 /* XISFImageLoaderTests.swift */,
+				05F15F0000000000000000E1 /* XISFTestData.swift */,
+			);
+			path = XISF;
+			sourceTree = "<group>";
+		};
 		6317902288B95FCED889978F /* Canvas */ = {
 			isa = PBXGroup;
 			children = (
@@ -1613,6 +1674,21 @@
 				59AF90C07BCB7472F4490908 /* FITSMetadata.swift */,
 			);
 			path = FITS;
+			sourceTree = "<group>";
+		};
+		05F15F0000000000000000D1 /* XISF */ = {
+			isa = PBXGroup;
+			children = (
+				05F15F0000000000000000F8 /* XISFImageLoader.swift */,
+				05F15F0000000000000000F2 /* XISFRenderSource.swift */,
+				05F15F0000000000000000F5 /* XISFImageInfo.swift */,
+				05F15F0000000000000000F1 /* XISFImageProperties.swift */,
+				05F15F0000000000000000F7 /* LoadedImage+XISF.swift */,
+				05F15F0000000000000000F6 /* ImageInformation+XISF.swift */,
+				05F15F0000000000000000F3 /* ImageMetadataProperty+XISF.swift */,
+				05F15F0000000000000000F4 /* ImageMetadataSection+XISF.swift */,
+			);
+			path = XISF;
 			sourceTree = "<group>";
 		};
 		B7C060953231127EB7B135F0 /* Sidebar */ = {
@@ -2133,6 +2209,18 @@
 				056E5C652DDFA8EE003254C7 /* UTType.swift in Sources */,
 				05A1B2C30000000000000002 /* View.swift in Sources */,
 				05206B8F2DE0C41C00550A87 /* ImageProcessor.swift in Sources */,
+				05F15F0000000000000000A9 /* ImageProcessor+FITS.swift in Sources */,
+				05F15F0000000000000000AC /* ImageProcessor+XISF.swift in Sources */,
+				05F15F0000000000000000B2 /* XISFPreviewRenderer.swift in Sources */,
+				05F15F0000000000000000B5 /* PreviewRenderer.swift in Sources */,
+				05F15F0000000000000000A1 /* XISFImageProperties.swift in Sources */,
+				05F15F0000000000000000A2 /* XISFRenderSource.swift in Sources */,
+				05F15F0000000000000000A3 /* ImageMetadataProperty+XISF.swift in Sources */,
+				05F15F0000000000000000A4 /* ImageMetadataSection+XISF.swift in Sources */,
+				05F15F0000000000000000A5 /* XISFImageInfo.swift in Sources */,
+				05F15F0000000000000000A6 /* ImageInformation+XISF.swift in Sources */,
+				05F15F0000000000000000A7 /* LoadedImage+XISF.swift in Sources */,
+				05F15F0000000000000000A8 /* XISFImageLoader.swift in Sources */,
 				05DD1000000000000000FB04 /* RenderResult.swift in Sources */,
 				05A1B2C30000000000000008 /* ImageExporter.swift in Sources */,
 				05A1B2C30000000000000A02 /* FITSPreviewRenderer.swift in Sources */,
@@ -2290,6 +2378,10 @@
 				05C0A75A2DDE64E0005DECEF /* TestFixtures.swift in Sources */,
 				05FB1000000000000000B002 /* FITSTestData.swift in Sources */,
 				05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */,
+				05F15F0000000000000000E2 /* XISFTestData.swift in Sources */,
+				05F15F0000000000000000E4 /* XISFImageLoaderTests.swift in Sources */,
+				05F15F0000000000000000E6 /* ImageProcessorXISFTests.swift in Sources */,
+				05F15F0000000000000000E9 /* XISFPreviewRendererTests.swift in Sources */,
 				05A1B2C30000000000000006 /* ImageExporterTests.swift in Sources */,
 				05A1B2C30000000000000A04 /* FITSPreviewRendererTests.swift in Sources */,
 				05A1B2C300000000000000F4 /* RenderedImageShareItemTests.swift in Sources */,
@@ -2385,6 +2477,12 @@
 				05A1B2C30000000000000B08 /* Benchmarking.swift in Sources */,
 				05A1B2C30000000000000B01 /* FITSPreviewRenderer.swift in Sources */,
 				05A1B2C30000000000000B02 /* ImageProcessor.swift in Sources */,
+				05F15F0000000000000000AA /* ImageProcessor+FITS.swift in Sources */,
+				05F15F0000000000000000AD /* XISFImageProperties.swift in Sources */,
+				05F15F0000000000000000AF /* ImageProcessor+XISF.swift in Sources */,
+				05F15F0000000000000000B3 /* XISFPreviewRenderer.swift in Sources */,
+				05F15F0000000000000000B6 /* PreviewRenderer.swift in Sources */,
+				05F15F0000000000000000B8 /* UTType.swift in Sources */,
 				05DD1000000000000000FB05 /* RenderResult.swift in Sources */,
 				05AA5D942FF85F9E00FCF406 /* BinaryFloatingPoint.swift in Sources */,
 				05A1B2C30000000000000B03 /* FITSPropertySnapshot.swift in Sources */,
@@ -2400,6 +2498,12 @@
 				05A1B2C30000000000000B09 /* Benchmarking.swift in Sources */,
 				05A1B2C30000000000000B04 /* FITSPreviewRenderer.swift in Sources */,
 				05A1B2C30000000000000B05 /* ImageProcessor.swift in Sources */,
+				05F15F0000000000000000AB /* ImageProcessor+FITS.swift in Sources */,
+				05F15F0000000000000000AE /* XISFImageProperties.swift in Sources */,
+				05F15F0000000000000000B0 /* ImageProcessor+XISF.swift in Sources */,
+				05F15F0000000000000000B4 /* XISFPreviewRenderer.swift in Sources */,
+				05F15F0000000000000000B7 /* PreviewRenderer.swift in Sources */,
+				05F15F0000000000000000B9 /* UTType.swift in Sources */,
 				05DD1000000000000000FB06 /* RenderResult.swift in Sources */,
 				05A1B2C30000000000000B06 /* FITSPropertySnapshot.swift in Sources */,
 				05A1B2C30000000000000B07 /* ImageExporter.swift in Sources */,

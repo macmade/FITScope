@@ -25,16 +25,16 @@
 import CoreGraphics
 import QuickLookThumbnailing
 
-/// Provides Finder thumbnails for FITS files by rendering them with the app's
-/// default settings (no user adjustments) via the shared ``FITSPreviewRenderer``
-/// and drawing the result scaled to fit the requested thumbnail size.
+/// Provides Finder thumbnails for the supported formats (FITS, XISF) by rendering
+/// them with the app's default settings (no user adjustments) via the shared
+/// ``PreviewRenderer`` and drawing the result scaled to fit the requested size.
 class ThumbnailProvider: QLThumbnailProvider
 {
     override func provideThumbnail( for request: QLFileThumbnailRequest, _ handler: @escaping ( QLThumbnailReply?, Error? ) -> Void )
     {
         do
         {
-            let image = try FITSPreviewRenderer.render( contentsOf: request.fileURL )
+            let image = try PreviewRenderer.render( contentsOf: request.fileURL )
             let size  = ThumbnailLayout.fittedSize( imageWidth: image.width, imageHeight: image.height, within: request.maximumSize )
 
             handler(

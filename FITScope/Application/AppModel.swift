@@ -631,7 +631,7 @@ public final class AppModel: ObservableObject
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories    = false
         panel.canChooseFiles          = true
-        panel.allowedContentTypes     = [ .fits ]
+        panel.allowedContentTypes     = [ .fits, .xisf ]
 
         return panel.runModal() == .OK ? panel.urls : []
     }

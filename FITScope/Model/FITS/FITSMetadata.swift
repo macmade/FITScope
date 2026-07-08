@@ -230,13 +230,15 @@ public struct FITSMetadata: Sendable
         return Self.date( from: text )
     }
 
-    /// The observing site latitude (`SITELAT`), in decimal degrees, sign-aware;
-    /// accepts sexagesimal or decimal.
-    public var latitude: Double? { self.angle( "SITELAT" ) }
+    /// The observing site latitude, in decimal degrees, sign-aware; accepts
+    /// sexagesimal or decimal. Reads `SITELAT`, then the `LAT-OBS` / `OBSGEO-B`
+    /// variants some writers (e.g. PixInsight-exported files) use instead.
+    public var latitude: Double? { self.angle( "SITELAT", "LAT-OBS", "OBSGEO-B" ) }
 
-    /// The observing site longitude (`SITELONG`), in decimal degrees, sign-aware;
-    /// accepts sexagesimal or decimal.
-    public var longitude: Double? { self.angle( "SITELONG" ) }
+    /// The observing site longitude, in decimal degrees, sign-aware; accepts
+    /// sexagesimal or decimal. Reads `SITELONG`, then the `LONG-OBS` / `OBSGEO-L`
+    /// variants some writers use instead.
+    public var longitude: Double? { self.angle( "SITELONG", "LONG-OBS", "OBSGEO-L" ) }
 
     /// The observing site's geographic coordinate, present only when both the
     /// ``latitude`` (`SITELAT`) and ``longitude`` (`SITELONG`) are available — so

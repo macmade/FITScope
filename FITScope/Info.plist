@@ -48,6 +48,23 @@
 				</array>
 			</dict>
 		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.image</string>
+			</array>
+			<key>UTTypeIdentifier</key>
+			<string>com.pixinsight.xisf</string>
+			<key>UTTypeDescription</key>
+			<string>XISF Image</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>xisf</string>
+				</array>
+			</dict>
+		</dict>
 	</array>
 	<key>CFBundleDocumentTypes</key>
 	<array>
@@ -64,6 +81,22 @@
 			<array>
 				<string>fits</string>
 				<string>fit</string>
+			</array>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>XISF Image</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.pixinsight.xisf</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>xisf</string>
 			</array>
 			<key>LSHandlerRank</key>
 			<string>Default</string>

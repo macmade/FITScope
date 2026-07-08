@@ -22,46 +22,43 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import CoreGraphics
 import Foundation
+import SwiftUtilities
 import UniformTypeIdentifiers
 
-/// Selects the ``ImageLoading`` conformer that decodes a given file, so
-/// ``OpenFile`` dispatches by type rather than hard-coding one format.
+/// Renders a supported file to a display-ready `CGImage` with default settings,
+/// dispatching by format — the single entry the QuickLook thumbnail and preview
+/// extensions use so both handle every format the app declares.
 ///
-/// This is the single place a new format is wired in: as each format's loader is
-/// added, its ``UTType`` gains a case here.
-public enum ImageLoader
+/// It selects the renderer by the file's uniform type (the same basis as the app's
+/// ``ImageLoader``), so extension variants (`fits`/`fit`) resolve through type
+/// conformance rather than a hard-coded list. Each supported format is matched
+/// explicitly — XISF to ``XISFPreviewRenderer``, FITS to ``FITSPreviewRenderer`` —
+/// and an unrecognized type throws rather than being silently treated as FITS.
+/// Extension-safe (no SwiftUI/AppKit).
+public enum PreviewRenderer
 {
-    /// Returns the loader that should decode the file at the given URL, chosen by
-    /// the file's uniform type.
+    /// Reads and renders the file at the given URL with default settings.
     ///
-    /// A FITS file is routed to ``FITSImageLoader``; any other type resolves to an
-    /// ``UnsupportedImageLoader`` that fails ``ImageLoading/load()`` with a clear
-    /// error. The return is intentionally non-optional and non-throwing: the app
-    /// accepts any file and reports failures *per file* (a dropped file always
-    /// becomes an entry, then surfaces its error via ``OpenFile/warning``), so the
-    /// unsupported case is a failing loader rather than a `nil`/`throw` the
-    /// non-failable ``OpenFile``/``WindowModel`` would have to handle.
-    ///
-    /// As formats are added, each gains a case here keyed on its ``UTType``.
-    ///
-    /// - Parameter url: The file to load.
-    /// - Returns: The loader for the file's type.
-    @MainActor
-    public static func loader( for url: URL ) -> any ImageLoading
+    /// - Parameter url: The file to read and render.
+    /// - Returns: The rendered, display-ready image.
+    /// - Throws: ``RuntimeError`` when the file's type is neither FITS nor XISF, or
+    ///   any error reading, parsing, or rendering the file.
+    public static func render( contentsOf url: URL ) throws -> CGImage
     {
         let type = UTType( filenameExtension: url.pathExtension )
 
-        if type?.conforms( to: .fits ) == true
-        {
-            return FITSImageLoader( url: url )
-        }
-
         if type?.conforms( to: .xisf ) == true
         {
-            return XISFImageLoader( url: url )
+            return try XISFPreviewRenderer.render( contentsOf: url )
         }
 
-        return UnsupportedImageLoader( url: url )
+        if type?.conforms( to: .fits ) == true
+        {
+            return try FITSPreviewRenderer.render( contentsOf: url )
+        }
+
+        throw RuntimeError( message: "Unsupported file type for preview: \( url.lastPathComponent )" )
     }
 }

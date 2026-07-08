@@ -22,13 +22,16 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-import Cocoa
 import UniformTypeIdentifiers
 
-/// The FITS uniform type, used to declare which documents the app can open.
+/// The image uniform types, used to declare which documents the app can open.
 public extension UTType
 {
     /// The Flexible Image Transport System (FITS) file type, imported by its
     /// public identifier `gov.nasa.gsfc.fits`.
     static let fits = UTType( importedAs: "gov.nasa.gsfc.fits" )
+
+    /// The Extensible Image Serialization Format (XISF) file type, imported by its
+    /// identifier `com.pixinsight.xisf`.
+    static let xisf = UTType( importedAs: "com.pixinsight.xisf" )
 }

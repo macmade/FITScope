@@ -99,6 +99,23 @@ enum TestFixtures
         self.url( "MultiImage3D.fits" )
     }
 
+    /// A real RGB XISF image (`8 × 8`, three planar `UInt16` planes) carrying
+    /// embedded FITS keywords — an object name, exposure, capture date and a TAN
+    /// WCS — so it loads as a colour image whose astrometry fields come through the
+    /// shared metadata path.
+    static var xisfImage: URL
+    {
+        self.url( "RGBImage.xisf" )
+    }
+
+    /// A real multi-image XISF file: three distinct `6 × 4` grayscale `UInt16`
+    /// images in one file, each with its own `id`, `OBJECT` and `DATE-OBS`, so it
+    /// loads as three carousel frames.
+    static var xisfMultiImage: URL
+    {
+        self.url( "MultiImage.xisf" )
+    }
+
     /// A one-dimensional (`NAXIS = 1`) file with an unsupported `BITPIX = 64`: it
     /// parses (so its header metadata is available) but its samples cannot be
     /// decoded, exercising the graceful-degradation path — the file loads with its
