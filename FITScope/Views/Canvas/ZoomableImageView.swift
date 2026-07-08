@@ -107,26 +107,33 @@ public struct ZoomableImageView: NSViewRepresentable
 
     public func updateNSView( _ nsView: NSScrollView, context: Context )
     {
-        if let imageView = nsView.documentView as? HoverImageNSView
+        // Mutating the scroll view here (resize, re-fit, command) makes AppKit
+        // post its bounds / magnification notifications synchronously, so the
+        // coordinator's handlers run inside SwiftUI's update pass; the flag lets
+        // them defer their state writes while that is the case.
+        context.coordinator.applyingViewUpdate
         {
-            imageView.onHover = self.onHover
-
-            if imageView.cgImage !== self.image
+            if let imageView = nsView.documentView as? HoverImageNSView
             {
-                let sizeChanged = imageView.cgImage.width != self.image.width || imageView.cgImage.height != self.image.height
+                imageView.onHover = self.onHover
 
-                imageView.cgImage      = self.image
-                imageView.needsDisplay = true
-
-                if sizeChanged
+                if imageView.cgImage !== self.image
                 {
-                    imageView.setFrameSize( NSSize( width: self.image.width, height: self.image.height ) )
-                    context.coordinator.refit()
+                    let sizeChanged = imageView.cgImage.width != self.image.width || imageView.cgImage.height != self.image.height
+
+                    imageView.cgImage      = self.image
+                    imageView.needsDisplay = true
+
+                    if sizeChanged
+                    {
+                        imageView.setFrameSize( NSSize( width: self.image.width, height: self.image.height ) )
+                        context.coordinator.refit()
+                    }
                 }
             }
-        }
 
-        context.coordinator.apply( command: self.command )
+            context.coordinator.apply( command: self.command )
+        }
     }
 
     /// Bridges AppKit callbacks back to SwiftUI state.
@@ -152,6 +159,14 @@ public struct ZoomableImageView: NSViewRepresentable
         /// recomputed whenever the image or viewport changes.
         private var fitMagnification: CGFloat = 0
 
+        /// Whether a scroll-view mutation driven by SwiftUI's update pass
+        /// (`updateNSView`) is currently in flight. AppKit posts the bounds /
+        /// magnification notifications synchronously as the scroll view is
+        /// mutated, so ``magnificationChanged()`` runs inside the update pass and
+        /// must defer its SwiftUI state write while this is set — a synchronous
+        /// write there is reported as "Modifying state during view update".
+        private var isApplyingViewUpdate = false
+
         init( _ parent: ZoomableImageView )
         {
             self.parent = parent
@@ -160,6 +175,21 @@ public struct ZoomableImageView: NSViewRepresentable
         deinit
         {
             NotificationCenter.default.removeObserver( self )
+        }
+
+        /// Runs `body` — a programmatic scroll-view mutation performed from
+        /// within SwiftUI's update pass — with ``isApplyingViewUpdate`` set, so
+        /// the synchronous AppKit notifications it triggers defer their SwiftUI
+        /// state writes out of the update pass.
+        ///
+        /// - Parameter body: The mutation to apply.
+        func applyingViewUpdate( _ body: () -> Void )
+        {
+            self.isApplyingViewUpdate = true
+
+            defer { self.isApplyingViewUpdate = false }
+
+            body()
         }
 
         /// Subscribes to magnification changes to keep `zoom` in sync.
@@ -258,8 +288,10 @@ public struct ZoomableImageView: NSViewRepresentable
 
             // A live magnify (pinch / scroll-wheel zoom) fires outside SwiftUI's
             // update pass, so report synchronously to keep the overlays locked to
-            // the image throughout the gesture.
-            self.reportDisplayedImageRect( deferred: false )
+            // the image throughout the gesture. When this instead fires from a
+            // programmatic mutation during `updateNSView`, the write must defer to
+            // avoid "Modifying state during view update".
+            self.reportDisplayedImageRect( deferred: self.isApplyingViewUpdate )
         }
 
         /// Recomputes the fit magnification and the scroll view's minimum
@@ -381,8 +413,10 @@ public struct ZoomableImageView: NSViewRepresentable
             // A live window resize drives this through AppKit's frame-change
             // notification, outside SwiftUI's update pass, so report synchronously:
             // the overlays are re-registered in the same pass as the image and
-            // track it without the one-turn lag the deferred write introduced.
-            self.reportDisplayedImageRect( deferred: false )
+            // track it without the one-turn lag the deferred write introduced. A
+            // resize driven from within `updateNSView` defers instead, to avoid
+            // "Modifying state during view update".
+            self.reportDisplayedImageRect( deferred: self.isApplyingViewUpdate )
         }
 
         /// Forces a fresh fit, used when a genuinely new image is displayed.
