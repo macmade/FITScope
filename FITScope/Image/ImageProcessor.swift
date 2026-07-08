@@ -679,9 +679,12 @@ public enum ImageProcessor
         let ( scale, offset ) = ImageProcessor.scaling( from: properties )
         let samples           = ( 0 ..< planes.red.count ).map
         {
-            index in
+            index -> Double in
 
-            ( ( planes.red[ index ] + planes.green[ index ] + planes.blue[ index ] ) / 3 ) * scale + offset
+            let sum     = planes.red[ index ] + planes.green[ index ] + planes.blue[ index ]
+            let average = sum / 3
+
+            return average * scale + offset
         }
 
         return ( width: planes.width, height: planes.height, samples: samples )
