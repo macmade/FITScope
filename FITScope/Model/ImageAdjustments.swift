@@ -89,20 +89,48 @@ public final class ImageAdjustments: ObservableObject
     /// Identity by default, so the image opens as captured.
     @Published public var orientation: Processors.Orient.Orientation = .identity
 
-    /// Creates an adjustment set seeded with the pipeline's default values.
-    public init()
-    {}
+    /// The baseline the image opens on — its "as captured" view. ``reset()``
+    /// returns to it and ``hasAdjustments`` compares against it. Defaults to the
+    /// pipeline defaults (a linear min/max normalization), but a format whose
+    /// samples are already display-ready (e.g. a photographic image) seeds a
+    /// different baseline so the image opens as authored rather than
+    /// range-stretched.
+    public let baseline: ImageProcessor.Settings
 
-    /// Restores every adjustment to its default, rendering the file as captured.
+    /// Creates an adjustment set seeded from a baseline.
+    ///
+    /// - Parameter baseline: The settings the image opens on. Defaults to the
+    ///                       pipeline defaults, which render the file as captured.
+    public init( baseline: ImageProcessor.Settings = ImageProcessor.Settings() )
+    {
+        self.baseline         = baseline
+        self.normalize        = baseline.normalize
+        self.stretch          = baseline.stretch
+        self.whiteBalance     = baseline.whiteBalance
+        self.invert           = baseline.invert
+        self.brightness       = baseline.brightness
+        self.contrast         = baseline.contrast
+        self.levels           = baseline.levels
+        self.curves           = baseline.curves
+        self.colorBalance     = baseline.colorBalance
+        self.hue              = baseline.hue
+        self.saturation       = baseline.saturation
+        self.debayer          = baseline.debayer
+        self.debayerAlgorithm = baseline.debayerMode
+        self.orientation      = baseline.orientation
+    }
+
+    /// Restores every adjustment to the image's baseline, rendering the file as
+    /// captured.
     ///
     /// A single reset for the whole pipeline configuration, so the inspector's
     /// Reset View button and the *Image* menu share it rather than each
     /// duplicating the field-by-field copy. Values are copied from a fresh
-    /// instance, so the reset tracks the defaults automatically and can never omit
-    /// a field as it grows.
+    /// instance seeded with the same baseline, so the reset tracks the baseline
+    /// automatically and can never omit a field as it grows.
     public func reset()
     {
-        let defaults = ImageAdjustments()
+        let defaults = ImageAdjustments( baseline: self.baseline )
 
         self.normalize        = defaults.normalize
         self.stretch          = defaults.stretch
@@ -120,39 +148,39 @@ public final class ImageAdjustments: ObservableObject
         self.orientation      = defaults.orientation
     }
 
-    /// Whether the value at `keyPath` differs from its pipeline default, driving
+    /// Whether the value at `keyPath` differs from the image's baseline, driving
     /// the visibility of a single control's reset affordance.
     ///
     /// - Parameter keyPath: The adjustment field to test.
-    /// - Returns: `true` when the field has been changed from its default.
+    /// - Returns: `true` when the field has been changed from the baseline.
     public func isModified< Value: Equatable >( _ keyPath: KeyPath< ImageAdjustments, Value > ) -> Bool
     {
-        self[ keyPath: keyPath ] != ImageAdjustments()[ keyPath: keyPath ]
+        self[ keyPath: keyPath ] != ImageAdjustments( baseline: self.baseline )[ keyPath: keyPath ]
     }
 
-    /// Resets the value at `keyPath` to its pipeline default, so one control can be
+    /// Resets the value at `keyPath` to the image's baseline, so one control can be
     /// reset without resetting the whole view. The other fields are left untouched.
     ///
-    /// The default is read from a fresh instance, the same single source of truth
-    /// ``reset()`` and ``hasAdjustments`` use, so it can never drift from the
-    /// declared defaults.
+    /// The baseline value is read from a fresh instance seeded with the same
+    /// baseline, the same single source of truth ``reset()`` and
+    /// ``hasAdjustments`` use, so it can never drift from the baseline.
     ///
     /// - Parameter keyPath: The adjustment field to reset.
     public func reset< Value >( _ keyPath: ReferenceWritableKeyPath< ImageAdjustments, Value > )
     {
-        self[ keyPath: keyPath ] = ImageAdjustments()[ keyPath: keyPath ]
+        self[ keyPath: keyPath ] = ImageAdjustments( baseline: self.baseline )[ keyPath: keyPath ]
     }
 
-    /// Whether any adjustment deviates from the pipeline defaults, i.e. the image
+    /// Whether any adjustment deviates from the image's baseline, i.e. the image
     /// is no longer rendered exactly as captured.
     ///
-    /// Compares the current ``settings`` snapshot to a default one rather than
+    /// Compares the current ``settings`` snapshot to the baseline rather than
     /// tracking a separate flag, so it can never drift out of sync with the
     /// individual values and automatically covers every field the settings
     /// encode. Drives the sidebar's "edited" marker.
     public var hasAdjustments: Bool
     {
-        self.settings != ImageProcessor.Settings()
+        self.settings != self.baseline
     }
 
     /// A `Sendable` snapshot of the current adjustments, safe to hand to the

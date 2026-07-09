@@ -161,8 +161,9 @@ public class ImageRenderer: ObservableObject
     @Published public private( set ) var isRendering = false
 
     /// The user-tunable adjustments driving the render. Bind controls to these
-    /// and call ``scheduleReRender()`` to apply changes.
-    public let adjustments = ImageAdjustments()
+    /// and call ``scheduleReRender()`` to apply changes. Seeded with the render's
+    /// baseline so the image opens on its as-captured view.
+    public let adjustments: ImageAdjustments
 
     /// How long to coalesce rapid re-render requests before rendering.
     private static let reRenderDebounce = Duration.milliseconds( 150 )
@@ -183,18 +184,27 @@ public class ImageRenderer: ObservableObject
     /// Creates a renderer from a render source or the error captured while
     /// extracting it.
     ///
-    /// - Parameter source: The render source, or the extraction failure.
-    public init( source: Swift.Result< any ImageRenderSource, any Error > )
+    /// - Parameters:
+    ///   - source:   The render source, or the extraction failure.
+    ///   - defaults: The baseline the image opens on. Defaults to the pipeline
+    ///               defaults (a linear min/max normalization); a format whose
+    ///               samples are already display-ready seeds a different baseline
+    ///               so the image opens as authored.
+    public init( source: Swift.Result< any ImageRenderSource, any Error >, defaults: ImageProcessor.Settings = ImageProcessor.Settings() )
     {
-        self.source = source
+        self.source      = source
+        self.adjustments = ImageAdjustments( baseline: defaults )
     }
 
     /// Creates a renderer from an already-extracted render source.
     ///
-    /// - Parameter source: The render source.
-    public convenience init( source: any ImageRenderSource )
+    /// - Parameters:
+    ///   - source:   The render source.
+    ///   - defaults: The baseline the image opens on. Defaults to the pipeline
+    ///               defaults.
+    public convenience init( source: any ImageRenderSource, defaults: ImageProcessor.Settings = ImageProcessor.Settings() )
     {
-        self.init( source: .success( source ) )
+        self.init( source: .success( source ), defaults: defaults )
     }
 
     /// Renders the image with the current adjustments and commits the result.
@@ -210,6 +220,14 @@ public class ImageRenderer: ObservableObject
         {
             let source         = try self.source.get()
             let settings       = self.adjustments.settings
+
+            // The "as captured" baseline this image opens on: for most formats the
+            // linear min/max default, but a photographic image opens as authored, so
+            // its baseline is captured here rather than assuming the pipeline default.
+            // Captured as an immutable value; the background render applies the
+            // current orientation to a copy so the before/after image registers with
+            // the processed result.
+            let baseline = self.adjustments.baseline
 
             // The histogram's original is orientation-independent, so it is computed
             // once. The before/after image must match the *current* orientation to
@@ -228,13 +246,14 @@ public class ImageRenderer: ObservableObject
                     do
                     {
                         // The original is the file as captured: a render with the
-                        // default settings (linear normalization and debayer only),
-                        // but the current orientation, so its image registers
-                        // pixel-for-pixel with the processed result for the
-                        // before/after comparison.
-                        let originalSettings = ImageProcessor.Settings( orientation: settings.orientation )
-                        let result           = try Self.makeResult( source: source, settings: settings )
-                        let original         = needsOriginal ? try Self.makeResult( source: source, settings: originalSettings ) : nil
+                        // image's baseline settings, but the current orientation, so
+                        // its image registers pixel-for-pixel with the processed
+                        // result for the before/after comparison.
+                        var originalSettings         = baseline
+                        originalSettings.orientation = settings.orientation
+
+                        let result   = try Self.makeResult( source: source, settings: settings )
+                        let original = needsOriginal ? try Self.makeResult( source: source, settings: originalSettings ) : nil
 
                         continuation.resume( returning: ( result, original ) )
                     }

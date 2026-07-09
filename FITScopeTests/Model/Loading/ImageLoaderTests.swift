@@ -27,7 +27,8 @@ import Foundation
 import Testing
 
 /// Tests that ``ImageLoader/loader(for:)`` dispatches by the file's type: FITS to
-/// the FITS loader, everything else to a failing unsupported loader.
+/// the FITS loader, the photographic formats to the ImageIO loader, and everything
+/// else to a failing unsupported loader.
 @Suite( "ImageLoader" )
 struct ImageLoaderTests
 {
@@ -41,24 +42,24 @@ struct ImageLoaderTests
         #expect( loader is FITSImageLoader, "a FITS file must be routed to the FITS loader" )
     }
 
-    /// A non-FITS type resolves to the unsupported loader rather than being
-    /// attempted as FITS.
+    /// An unsupported type resolves to the unsupported loader rather than being
+    /// attempted as another format.
     @Test
     @MainActor
     func routesUnsupportedFileToUnsupportedLoader() throws
     {
-        let loader = ImageLoader.loader( for: URL( fileURLWithPath: "/tmp/photo.png" ) )
+        let loader = ImageLoader.loader( for: URL( fileURLWithPath: "/tmp/document.txt" ) )
 
-        #expect( loader is UnsupportedImageLoader, "a non-FITS file must be routed to the unsupported loader" )
+        #expect( loader is UnsupportedImageLoader, "an unsupported file must be routed to the unsupported loader" )
     }
 
     /// The unsupported loader produces no image and surfaces a clear error, so the
-    /// failure shows per file rather than as a misleading FITS parse error.
+    /// failure shows per file rather than as a misleading parse error.
     @Test
     @MainActor
     func unsupportedLoaderSurfacesAnErrorAndNoImage() async throws
     {
-        let loader = ImageLoader.loader( for: URL( fileURLWithPath: "/tmp/photo.png" ) )
+        let loader = ImageLoader.loader( for: URL( fileURLWithPath: "/tmp/document.txt" ) )
 
         await loader.load()
 

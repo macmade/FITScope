@@ -62,6 +62,13 @@ public enum ImageLoader
             return XISFImageLoader( url: url )
         }
 
+        // The photographic formats decode through the same ImageIO path; a later
+        // milestone adds RAW and HEIC here by extending this list.
+        if let type, [ .tiff, .png, .jpeg ].contains( where: { type.conforms( to: $0 ) } )
+        {
+            return ImageIOImageLoader( url: url )
+        }
+
         return UnsupportedImageLoader( url: url )
     }
 }

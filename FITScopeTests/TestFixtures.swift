@@ -124,4 +124,28 @@ enum TestFixtures
     {
         self.url( "InvalidSpectrum1D.fits" )
     }
+
+    /// A real 8-bit RGB PNG (`4 × 3`) with a deterministic, lossless pattern: the
+    /// top-left pixel is `(10, 20, 100)` and the values step across (red) and down
+    /// (green), so tests can assert exact decoded samples and detect a vertical flip.
+    static var photoRGB: URL
+    {
+        self.url( "PhotoRGB.png" )
+    }
+
+    /// A real 16-bit grayscale TIFF (`4 × 3`) with a deterministic, lossless
+    /// gradient, so tests can assert a 16-bit decode and the read-out fraction.
+    static var photoGray16: URL
+    {
+        self.url( "PhotoGray16.tiff" )
+    }
+
+    /// A real JPEG (`8 × 8`, RGB) carrying EXIF, TIFF and GPS metadata — a capture
+    /// date, exposure, ISO, camera model, lens and a southern/eastern-hemisphere GPS
+    /// location — so tests can assert the metadata mapping (and the GPS reference
+    /// signing) end to end.
+    static var photoExif: URL
+    {
+        self.url( "PhotoExif.jpeg" )
+    }
 }

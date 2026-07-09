@@ -242,6 +242,90 @@ struct ImageAdjustmentsTests
         #expect( adjustments.hasAdjustments )
     }
 
+    // MARK: - Per-image baseline
+
+    /// A non-default baseline seeds the initial adjustment values, so a format
+    /// whose samples are already display-ready (e.g. a photographic image) opens
+    /// as authored rather than range-stretched.
+    @Test
+    @MainActor
+    func baselineSeedsInitialValues()
+    {
+        let baseline    = ImageProcessor.Settings( normalize: .identity, invert: true )
+        let adjustments = ImageAdjustments( baseline: baseline )
+
+        #expect( adjustments.baseline == baseline )
+        #expect( adjustments.normalize == .identity )
+        #expect( adjustments.invert )
+        #expect( adjustments.settings == baseline )
+    }
+
+    /// `hasAdjustments` compares against the per-image baseline, not the pipeline
+    /// defaults, so an unmodified image with a non-default baseline is not marked
+    /// as edited.
+    @Test
+    @MainActor
+    func hasAdjustmentsComparesToBaseline()
+    {
+        let adjustments = ImageAdjustments( baseline: ImageProcessor.Settings( normalize: .identity ) )
+
+        // The image opens on its baseline, so it has no adjustments even though the
+        // baseline differs from the pipeline defaults.
+        #expect( adjustments.hasAdjustments == false )
+
+        // Moving away from the baseline counts as an adjustment.
+        adjustments.brightness = 0.3
+
+        #expect( adjustments.hasAdjustments )
+
+        // Reset returns to the baseline, clearing the flag.
+        adjustments.reset()
+
+        #expect( adjustments.hasAdjustments == false )
+        #expect( adjustments.normalize == .identity, "reset returns to the baseline, not the pipeline default" )
+    }
+
+    /// `reset()` restores every field to the per-image baseline, so a photographic
+    /// image resets to its as-authored view rather than the min/max default.
+    @Test
+    @MainActor
+    func resetRestoresToBaseline()
+    {
+        let baseline    = ImageProcessor.Settings( normalize: .identity )
+        let adjustments = ImageAdjustments( baseline: baseline )
+
+        adjustments.normalize  = .minMax
+        adjustments.brightness = 0.5
+        adjustments.stretch    = .arcsinh( 12 )
+
+        adjustments.reset()
+
+        #expect( adjustments.settings == baseline )
+    }
+
+    /// The per-field `isModified(_:)` and `reset(_:)` also compare against and
+    /// restore to the per-image baseline.
+    @Test
+    @MainActor
+    func perFieldModificationComparesToBaseline()
+    {
+        let adjustments = ImageAdjustments( baseline: ImageProcessor.Settings( invert: true ) )
+
+        // The baseline has invert on, so an unmodified image is not "modified".
+        #expect( adjustments.isModified( \.invert ) == false )
+
+        // Turning inversion off is a deviation from this image's baseline.
+        adjustments.invert = false
+
+        #expect( adjustments.isModified( \.invert ) )
+
+        // The per-field reset returns to the baseline value, not the pipeline default.
+        adjustments.reset( \.invert )
+
+        #expect( adjustments.invert )
+        #expect( adjustments.isModified( \.invert ) == false )
+    }
+
     // MARK: - Per-field reset
 
     /// `isModified(_:)` reports whether a single field differs from its default,
