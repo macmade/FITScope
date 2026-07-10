@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 @testable import FITScope
+import SwiftPixel
 import Testing
 
 /// Tests for `StretchControlView`'s pure selection-to-algorithm mapping.
@@ -35,10 +36,21 @@ struct StretchControlViewTests
     @MainActor
     func stretchControlMapsToAlgorithm() throws
     {
-        #expect( StretchControlView.algorithm( mode: .none,    logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == nil )
-        #expect( StretchControlView.algorithm( mode: .log,     logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == .log( 50 ) )
-        #expect( StretchControlView.algorithm( mode: .arcsinh, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == .arcsinh( 10 ) )
-        #expect( StretchControlView.algorithm( mode: .sigmoid, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2 ) == .sigmoid( 1, 2 ) )
+        #expect( StretchControlView.algorithm( mode: .none,    logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2, screenTransfer: .identity ) == nil )
+        #expect( StretchControlView.algorithm( mode: .log,     logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2, screenTransfer: .identity ) == .log( 50 ) )
+        #expect( StretchControlView.algorithm( mode: .arcsinh, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2, screenTransfer: .identity ) == .arcsinh( 10 ) )
+        #expect( StretchControlView.algorithm( mode: .sigmoid, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2, screenTransfer: .identity ) == .sigmoid( 1, 2 ) )
+    }
+
+    /// The screen-transfer mode maps to a `.screenTransfer` algorithm carrying the
+    /// control's current STF parameters.
+    @Test
+    @MainActor
+    func stretchControlMapsScreenTransferToAlgorithm() throws
+    {
+        let parameters = Processors.Stretch.STFParameters.uniform( .init( shadows: 0.1, midtones: 0.3, highlights: 0.95 ) )
+
+        #expect( StretchControlView.algorithm( mode: .screenTransfer, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2, screenTransfer: parameters ) == .screenTransfer( parameters ) )
     }
 
     /// The reverse mapping — an algorithm back to the control's mode — that seeds
@@ -53,6 +65,7 @@ struct StretchControlViewTests
         #expect( StretchControlView.mode( .log( 50 ) )       == .log )
         #expect( StretchControlView.mode( .arcsinh( 10 ) )   == .arcsinh )
         #expect( StretchControlView.mode( .sigmoid( 1, 2 ) ) == .sigmoid )
+        #expect( StretchControlView.mode( .screenTransfer( .identity ) ) == .screenTransfer )
     }
 
     /// The seeded stretch defaults are non-degenerate: the arcsinh factor is
@@ -81,7 +94,8 @@ struct StretchControlViewTests
                 logIntensity:    StretchControlView.defaultLogIntensity,
                 arcsinhFactor:   StretchControlView.defaultArcsinhFactor,
                 sigmoidMidpoint: StretchControlView.defaultSigmoidN1,
-                sigmoidContrast: StretchControlView.defaultSigmoidN2
+                sigmoidContrast: StretchControlView.defaultSigmoidN2,
+                screenTransfer:  .identity
             )
             let settings = ImageProcessor.Settings( stretch: algorithm )
             let bytes    = try ImageProcessor.render( data: data, properties: properties, settings: settings ).bytes

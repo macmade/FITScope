@@ -192,6 +192,10 @@
 		0AB10000000000000000FB02 /* BrightnessContrastControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000FB01 /* BrightnessContrastControlView.swift */; };
 		0AB10000000000000000FC02 /* SaturationControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000FC01 /* SaturationControlView.swift */; };
 		0AB10000000000000000FE02 /* LevelsWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000FE01 /* LevelsWindowView.swift */; };
+		0AB10000000000000000E002 /* STFActiveModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E001 /* STFActiveModelView.swift */; };
+		0AB10000000000000000E102 /* STFEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E101 /* STFEditorView.swift */; };
+		0AB10000000000000000E202 /* STFUnavailableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E201 /* STFUnavailableView.swift */; };
+		0AB10000000000000000E302 /* STFWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E301 /* STFWindowView.swift */; };
 		0AC10000000000000000F002 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */; };
 		0AC10000000000000000F003 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */; };
 		0AC10000000000000000F005 /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F004 /* UITestSupport.swift */; };
@@ -708,6 +712,10 @@
 		0AB10000000000000000FB01 /* BrightnessContrastControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrightnessContrastControlView.swift; sourceTree = "<group>"; };
 		0AB10000000000000000FC01 /* SaturationControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaturationControlView.swift; sourceTree = "<group>"; };
 		0AB10000000000000000FE01 /* LevelsWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LevelsWindowView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E001 /* STFActiveModelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFActiveModelView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E101 /* STFEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFEditorView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E201 /* STFUnavailableView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFUnavailableView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E301 /* STFWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFWindowView.swift; sourceTree = "<group>"; };
 		0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityIdentifiers.swift; sourceTree = "<group>"; };
 		0AC10000000000000000F004 /* UITestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSupport.swift; sourceTree = "<group>"; };
 		0C5D104F82BB5EF35C693E8E /* ReticleOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReticleOverlayTests.swift; sourceTree = "<group>"; };
@@ -1414,6 +1422,7 @@
 				8E1696B3AAF027B04286257D /* Information */,
 				0633E24765CD2CB4146DDA59 /* Sidebar */,
 				6BCB1DA362CF5BD76FE83F34 /* Levels */,
+				0AB10000000000000000EE00 /* ScreenTransfer */,
 				BF6149877467A66855C9E21F /* Curves */,
 				EC43BC2C164A92FCAD54743C /* Controls */,
 				D0C765447081252EE0945BD9 /* Common */,
@@ -1742,6 +1751,17 @@
 				0AB10000000000000000FE01 /* LevelsWindowView.swift */,
 			);
 			path = Levels;
+			sourceTree = "<group>";
+		};
+		0AB10000000000000000EE00 /* ScreenTransfer */ = {
+			isa = PBXGroup;
+			children = (
+				0AB10000000000000000E001 /* STFActiveModelView.swift */,
+				0AB10000000000000000E101 /* STFEditorView.swift */,
+				0AB10000000000000000E201 /* STFUnavailableView.swift */,
+				0AB10000000000000000E301 /* STFWindowView.swift */,
+			);
+			path = ScreenTransfer;
 			sourceTree = "<group>";
 		};
 		83A3FB9C9D3342458B744782 /* Overlays */ = {
@@ -2445,6 +2465,10 @@
 				0AB10000000000000000D202 /* LevelsEditorView.swift in Sources */,
 				0AB10000000000000000D102 /* LevelsUnavailableView.swift in Sources */,
 				0AB10000000000000000D002 /* LevelsActiveModelView.swift in Sources */,
+				0AB10000000000000000E002 /* STFActiveModelView.swift in Sources */,
+				0AB10000000000000000E102 /* STFEditorView.swift in Sources */,
+				0AB10000000000000000E202 /* STFUnavailableView.swift in Sources */,
+				0AB10000000000000000E302 /* STFWindowView.swift in Sources */,
 				9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */,
 				05DD1000000000000000FB09 /* Coordinate.swift in Sources */,
 				05DD1000000000000000FB30 /* CDMatrix.swift in Sources */,

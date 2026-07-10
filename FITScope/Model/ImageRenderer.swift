@@ -207,6 +207,49 @@ public class ImageRenderer: ObservableObject
         self.init( source: .success( source ), defaults: defaults )
     }
 
+    /// Whether an auto Screen Transfer Function can be derived — that is, whether
+    /// the source extracted and exposes a detection image. A cheap check the UI can
+    /// call every render to enable or disable the Auto action, without running the
+    /// derivation.
+    public var canAutoScreenTransfer: Bool
+    {
+        ( try? self.source.get() )?.detectionImage != nil
+    }
+
+    /// Derives an auto Screen Transfer Function from the source's detection image.
+    ///
+    /// Runs the SwiftPixel derivation over the source's single-channel, linear
+    /// ``ImageRenderSource/detectionImage`` — normalizing a copy if needed — so it
+    /// produces a uniform STF suitable for seeding the stretch. Returns `nil` when
+    /// the source failed to extract or exposes no detection image.
+    ///
+    /// The derivation is an `O(n log n)` pass (a normalize plus a median and a
+    /// median-absolute-deviation) over the full-resolution detection image, so it
+    /// runs on a detached task off the main actor — matching how ``render()``
+    /// offloads its pixel work — and the caller `await`s the result. Gate the UI
+    /// (e.g. a busy state) around the call, and check ``canAutoScreenTransfer``
+    /// first to avoid enabling an action that would return `nil`.
+    ///
+    /// - Parameters:
+    ///   - shadowClipFactor: How many median-absolute-deviations below the median
+    ///                       to clip the shadows. Defaults to `2.8`.
+    ///   - targetBackground: The value the median should map to. Defaults to `0.25`.
+    /// - Returns: The derived parameters, or `nil` when unavailable.
+    public func autoScreenTransfer( shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) async -> Processors.Stretch.STFParameters?
+    {
+        guard let source = try? self.source.get(), let buffer = source.detectionImage
+        else
+        {
+            return nil
+        }
+
+        return await Task.detached
+        {
+            try? Processors.Stretch.STFParameters.computed( normalizing: buffer, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+        }
+        .value
+    }
+
     /// Renders the image with the current adjustments and commits the result.
     ///
     /// The pixel work and histogram/statistics computation run on a background

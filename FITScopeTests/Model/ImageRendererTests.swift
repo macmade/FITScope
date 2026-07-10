@@ -59,6 +59,48 @@ struct ImageRendererTests
         #expect( message.contains( "no image HDU" ), "expected a typed no-image-HDU error, got: \"\( message )\"" )
     }
 
+    /// A source with a detection image can derive an auto Screen Transfer: the
+    /// derivation runs over that single-channel buffer and yields a uniform STF,
+    /// and the cheap `canAutoScreenTransfer` flag agrees.
+    @Test
+    @MainActor
+    func autoScreenTransferDerivesFromDetectionImage() async throws
+    {
+        let detection = try PixelBuffer( width: 8, height: 8, channels: 1, pixels: ( 0 ..< 64 ).map { Double( $0 ) / 64.0 }, isNormalized: true )
+        let source    = FITSRenderSource( data: Data(), properties: [], detectionImage: detection )
+        let renderer  = ImageRenderer( source: source )
+
+        #expect( renderer.canAutoScreenTransfer )
+
+        let parameters = await renderer.autoScreenTransfer()
+
+        #expect( parameters != nil )
+
+        if case .uniform = parameters
+        {
+            // A single-channel detection image derives a uniform STF, as expected.
+        }
+        else
+        {
+            Issue.record( "expected a uniform STF from a single-channel detection image, got \( String( describing: parameters ) )" )
+        }
+    }
+
+    /// Without a usable source (an extraction failure), no auto Screen Transfer can
+    /// be derived: both the cheap flag and the derivation report unavailable.
+    @Test
+    @MainActor
+    func autoScreenTransferIsUnavailableWithoutASource() async throws
+    {
+        let renderer = ImageRenderer( source: .failure( NSError( domain: "test", code: 1 ) ) )
+
+        #expect( renderer.canAutoScreenTransfer == false )
+
+        let parameters = await renderer.autoScreenTransfer()
+
+        #expect( parameters == nil )
+    }
+
     /// A valid `BITPIX = 64` image is a format the pixel pipeline does not
     /// support; it must surface a clear, typed error naming the limitation.
     @Test

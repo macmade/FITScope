@@ -260,6 +260,75 @@ public enum AccessibilityIdentifier
         public static let resetButton = "LevelsWindowView.resetButton"
     }
 
+    /// Identifiers applied by ``FITScope/STFEditorView`` (the Screen Transfer
+    /// editor window).
+    public enum ScreenTransferWindowView
+    {
+        /// The editor's root container, present when an image is being edited.
+        public static let editor = "ScreenTransferWindowView.editor"
+
+        /// The placeholder shown when no image is available to edit.
+        public static let unavailable = "ScreenTransferWindowView.unavailable"
+
+        /// The per-channel toggle (colour images only).
+        public static let perChannelToggle = "ScreenTransferWindowView.perChannelToggle"
+
+        /// The "Switch to Master" button in the confirmation shown when leaving
+        /// per-channel mode with edits.
+        public static let switchToMasterConfirm = "ScreenTransferWindowView.switchToMasterConfirm"
+
+        /// The channel picker shown while editing per channel.
+        public static let channelPicker = "ScreenTransferWindowView.channelPicker"
+
+        /// The shadows clip-point slider.
+        public static let shadowsSlider = "ScreenTransferWindowView.shadowsSlider"
+
+        /// The midtones balance slider.
+        public static let midtonesSlider = "ScreenTransferWindowView.midtonesSlider"
+
+        /// The highlights clip-point slider.
+        public static let highlightsSlider = "ScreenTransferWindowView.highlightsSlider"
+
+        /// The low range-expansion slider.
+        public static let lowSlider = "ScreenTransferWindowView.lowSlider"
+
+        /// The high range-expansion slider.
+        public static let highSlider = "ScreenTransferWindowView.highSlider"
+
+        /// The auto shadow-clip-factor slider.
+        public static let shadowClipFactorSlider = "ScreenTransferWindowView.shadowClipFactorSlider"
+
+        /// The auto target-background slider.
+        public static let targetBackgroundSlider = "ScreenTransferWindowView.targetBackgroundSlider"
+
+        /// The reset button for the shadows slider.
+        public static let shadowsReset = "ScreenTransferWindowView.shadowsReset"
+
+        /// The reset button for the midtones slider.
+        public static let midtonesReset = "ScreenTransferWindowView.midtonesReset"
+
+        /// The reset button for the highlights slider.
+        public static let highlightsReset = "ScreenTransferWindowView.highlightsReset"
+
+        /// The reset button for the low range-expansion slider.
+        public static let lowReset = "ScreenTransferWindowView.lowReset"
+
+        /// The reset button for the high range-expansion slider.
+        public static let highReset = "ScreenTransferWindowView.highReset"
+
+        /// The reset button for the auto shadow-clip-factor slider.
+        public static let shadowClipFactorReset = "ScreenTransferWindowView.shadowClipFactorReset"
+
+        /// The reset button for the auto target-background slider.
+        public static let targetBackgroundReset = "ScreenTransferWindowView.targetBackgroundReset"
+
+        /// The button that derives and applies an auto-STF from the image.
+        public static let autoButton = "ScreenTransferWindowView.autoButton"
+
+        /// The button that resets the screen transfer to the identity.
+        public static let resetButton = "ScreenTransferWindowView.resetButton"
+    }
+
     /// Identifiers applied by ``FITScope/CurvesWindowView`` and its editor.
     public enum CurvesWindowView
     {
@@ -429,6 +498,14 @@ public enum AccessibilityIdentifier
 
         /// The reset button for the sigmoid-contrast slider.
         public static let contrastReset = "StretchControlView.contrastReset"
+
+        /// The Auto button (shown only in screen-transfer mode) that derives and
+        /// applies an auto-STF from the image.
+        public static let autoButton = "StretchControlView.autoButton"
+
+        /// The Edit button (shown only in screen-transfer mode) that opens the
+        /// Screen Transfer editor window.
+        public static let editButton = "StretchControlView.editButton"
     }
 
     /// Identifiers applied by ``FITScope/WhiteBalanceControlView``.

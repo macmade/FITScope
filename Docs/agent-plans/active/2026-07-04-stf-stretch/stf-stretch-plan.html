@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STF Stretch — Implementation Plan</title>
+    <style>
+        :root {
+            --bg:         #0f1117;
+            --bg-card:    #181b24;
+            --bg-card-2:  #1d212c;
+            --border:     #2a2f3c;
+            --text:       #e6e9ef;
+            --text-dim:   #9aa3b2;
+            --accent:     #5aa9ff;
+            --accent-dim: #2d3b52;
+            --code-bg:    #12151d;
+            --green:      #3fb950;
+            --green-dim:  #16351d;
+            --amber:      #d29922;
+            --amber-dim:  #3a2f12;
+            --gray:       #6b7280;
+            --gray-dim:   #262b36;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 940px;
+            margin: 0 auto;
+            padding: 48px 24px 96px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 36px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 2.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta { color: var(--text-dim); font-size: 0.9rem; }
+        .meta code { color: var(--accent); }
+
+        h2.section {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text-dim);
+            margin: 48px 0 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        p { margin: 0 0 16px; }
+        .overview { color: var(--text); }
+
+        code {
+            font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.86em;
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 1px 5px;
+        }
+
+        .qa {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 4px 22px;
+            margin-bottom: 14px;
+        }
+        .qa .q { font-weight: 650; color: var(--text); margin: 16px 0 6px; }
+        .qa .a { color: var(--text-dim); margin: 0 0 16px; }
+        .qa .a::before { content: "→ "; color: var(--accent); }
+
+        .notes ul { margin: 0 0 16px; padding-left: 22px; }
+        .notes li { margin-bottom: 8px; color: var(--text-dim); }
+        .notes strong { color: var(--text); }
+
+        .milestone {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px 26px 8px;
+            margin-bottom: 20px;
+        }
+        .milestone-head {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 4px;
+        }
+        .milestone-head h3 { margin: 0; font-size: 1.2rem; flex: 1 1 auto; }
+
+        .mnum {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 8px;
+            flex: 0 0 auto;
+        }
+
+        .capsule {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 650;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .capsule.not-started { background: var(--gray-dim);  color: #b6bdc9; border: 1px solid #3a414f; }
+        .capsule.in-progress { background: var(--amber-dim); color: var(--amber); border: 1px solid #5a4a1e; }
+        .capsule.completed   { background: var(--green-dim); color: var(--green); border: 1px solid #1f5a2c; }
+
+        .field-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 20px 0 6px;
+            font-weight: 650;
+        }
+        .goal { color: var(--text-dim); }
+
+        .milestone ul.tasks { margin: 6px 0 4px; padding-left: 4px; list-style: none; }
+        .milestone ul.tasks li {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 7px;
+            color: var(--text-dim);
+        }
+        .milestone ul.tasks li::before {
+            content: "";
+            position: absolute;
+            left: 2px;
+            top: 6px;
+            width: 15px;
+            height: 15px;
+            border: 1.5px solid var(--accent-dim);
+            border-radius: 4px;
+            background: var(--code-bg);
+        }
+
+        .placeholder { color: #6b7280; font-style: italic; margin: 4px 0 14px; }
+        .deps { color: var(--text-dim); font-size: 0.9rem; }
+        .deps strong { color: var(--text); }
+
+        .appendix h3 { margin: 26px 0 8px; font-size: 1.05rem; }
+        .appendix pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            overflow-x: auto;
+            font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.82rem;
+            color: var(--text);
+        }
+        .appendix table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0 20px;
+            font-size: 0.9rem;
+        }
+        .appendix th, .appendix td {
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .appendix th { background: var(--bg-card-2); color: var(--text); }
+        .appendix td { color: var(--text-dim); }
+
+        footer {
+            margin-top: 56px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>STF Stretch — Implementation Plan</h1>
+            <div class="meta">
+                Generated &mdash; 2026-07-10<br>
+                Source &mdash; <code>Docs/agent-plans/active/2026-07-04-stf-stretch/stf-stretch.html</code>
+            </div>
+        </header>
+
+        <p class="overview">
+            This plan adds a PixInsight-style <strong>Screen Transfer Function (STF)</strong> auto-stretch to
+            FITScope and wires it into the places where a sensible default rendering matters most: the stretch
+            inspector, opening images, star detection, and the system QuickLook / Finder previews.
+        </p>
+        <p class="overview">
+            The stretch is a <strong>Midtones Transfer Function (MTF)</strong>, implemented in the
+            <strong>SwiftPixel</strong> submodule as a new <code>Stretch.Algorithm</code> case that carries explicit,
+            <strong>per-channel</strong> parameters (shadows / midtones / highlights, plus low/high range expansion).
+            Those parameters can be filled two ways, both converging on the same editable representation in the
+            stretch inspector:
+        </p>
+        <ul class="overview" style="color:var(--text-dim); padding-left:22px;">
+            <li><strong>Auto-STF</strong> — a derivation helper computes the parameters from the image's own
+                statistics (shadow clip = <code>median − 2.8·MAD</code>, target background = <code>0.25</code>).</li>
+            <li><strong>XISF display function</strong> — when a file carries one, its parameters are mapped straight
+                into the same MTF and applied on open (an XISF display function <em>is</em> a stored STF).</li>
+        </ul>
+        <p class="overview">
+            <strong>Priority on open (XISF):</strong> if the file carries a display function, use it; otherwise apply
+            auto-STF when the format's preference is enabled. Either way the result lands as editable, pre-filled
+            parameters in the stretch inspector — the user can then tweak them, exactly like PixInsight's STF.
+        </p>
+
+        <h2 class="section">Questions &amp; answers</h2>
+
+        <div class="qa">
+            <p class="q">Is modifying the SwiftPixel submodule acceptable for this work?</p>
+            <p class="a">Yes — implement the STF/MTF core in SwiftPixel, as the source doc directs. SwiftPixel already
+            provides <code>PixelUtilities.median</code> and <code>medianAbsoluteDeviation</code>; it is missing only
+            the MTF curve, the parameter type, and the new algorithm case.</p>
+
+            <p class="q">How should the one-click auto-STF integrate with the existing adjustment model?</p>
+            <p class="a">STF is a stretch phase, like the other stretch controls — just applied automatically based on
+            the preferences. It lives in the stretch inspector alongside log / arcsinh / sigmoid, and exposes its own
+            controls (shadows / midtones / highlights and the auto shadow-clip factor + target background).</p>
+
+            <p class="q">The QuickLook / Finder extensions are sandboxed and can't read the app's
+            <code>UserDefaults</code>. How should previews apply the default STF?</p>
+            <p class="a">Honor the per-format preference via a shared <strong>App Group</strong>: the app writes the
+            auto-stretch preference to a shared suite the extensions can read, so previews match the app's choice.</p>
+
+            <p class="q">Which formats should the per-format auto-stretch-on-open preference expose?</p>
+            <p class="a">Only the linear formats — <strong>FITS, XISF and RAW</strong>. Already-display-ready formats
+            (PNG / JPEG / TIFF / HEIC, opened via ImageIO with an "as authored" baseline) are excluded.</p>
+
+            <p class="q">When an XISF file carries a display function, what should happen?</p>
+            <p class="a">It should be <strong>used</strong> (applied on open). Auto-STF is only the fallback when no
+            display function is present and the preference is on.</p>
+
+            <p class="q">How should an applied XISF display function appear in the UI?</p>
+            <p class="a">As an <strong>editable STF in the inspector</strong>: the stretch control opens in Screen
+            Transfer mode with its sliders pre-filled from the file, and the user can adjust them.</p>
+
+            <p class="q">What fidelity should the display-function / MTF support target?</p>
+            <p class="a"><strong>Full</strong>: per-channel parameters (R/G/B/lightness) plus low/high dynamic-range
+            expansion, not just a single midtones/shadows/highlights triple.</p>
+        </div>
+
+        <h2 class="section">Notes</h2>
+        <div class="notes">
+            <ul>
+                <li><strong>One MTF, two parameter sources.</strong> The new
+                    <code>Stretch.Algorithm.screenTransfer(STFParameters)</code> applies explicit per-channel MTF
+                    parameters. Auto-STF and the XISF display function are just two ways to <em>produce</em> those
+                    parameters; both then flow through the identical apply path and the identical editable inspector
+                    control. This keeps a single source of truth for "what the STF is."</li>
+                <li><strong>Where it plugs in.</strong> The pipeline models the non-linear stretch as
+                    <code>Processors.Stretch.Algorithm?</code>, carried through <code>ImageAdjustments.stretch</code>
+                    → <code>ImageProcessor.Settings.stretch</code> → <code>PixelPipeline.Config.stretch</code>. The
+                    new case flows through all of these unchanged; no new pipeline field is required.</li>
+                <li><strong>Materializing auto-STF parameters (key implementation point).</strong> Because the
+                    parameters must be <em>editable and pre-filled</em>, auto-STF can't compute silently at render
+                    time — it must produce concrete <code>STFParameters</code> at load. SwiftPixel will expose a
+                    one-shot helper that runs the minimal normalize + statistics pass and returns the parameters, so
+                    the loaders and preview extensions can materialize them without duplicating pipeline logic.
+                    Confirm this helper's exact shape during Milestone 1.</li>
+                <li><strong>Per-image baseline.</strong> Each image opens on a <code>baseline</code>
+                    (<code>ImageProcessor.Settings</code>) passed to <code>ImageRenderer(source:defaults:)</code>.
+                    Auto-apply-on-open (or applying an XISF display function) means seeding that baseline's
+                    <code>stretch</code>, so the stretched view <em>is</em> the "as opened" state that
+                    <code>reset()</code> / <code>hasAdjustments</code> compare against. The linear-format loaders are
+                    the hook points: <code>FITSImageLoader.swift:213</code>,
+                    <code>XISFImageLoader.swift:182</code>, <code>RAWImageLoader.swift:152</code>.
+                    <code>ImageIOImageLoader</code> already seeds <code>asAuthoredDefaults</code> and is correctly
+                    excluded.</li>
+                <li><strong>XISF display function is currently parsed but dropped.</strong> SwiftXISF parses it
+                    (<code>XISFImage.displayFunction: XISFDisplayFunction?</code> — per-component midtones
+                    <code>m</code>, shadows <code>s</code>, highlights <code>h</code>, shadows/highlights expansion
+                    <code>l</code>/<code>r</code>), but the app's <code>XISFImageProperties</code> drops it and the
+                    render path never applies it. Milestone 4 surfaces it and maps it onto the MTF.</li>
+                <li><strong>Sandboxed extensions.</strong> <code>FITScopePreviewExtension</code> and
+                    <code>FITScopeThumbnailExtension</code> are separate processes rendering via
+                    <code>PreviewRenderer</code>. They read the auto-stretch preference only through a shared App
+                    Group suite (Milestone 3) and materialize auto-STF parameters via the same SwiftPixel helper.
+                    Confirm which types each extension declares support for (FITS, XISF).</li>
+                <li><strong>Reuse the per-channel UI pattern.</strong> The Levels and Curves controls
+                    (<code>Views/Levels</code>, <code>Views/Curves</code>) already offer a uniform ↔ per-channel
+                    editing pattern; the STF inspector control should follow it rather than invent a new one.</li>
+                <li><strong>Conventions (repo working agreement).</strong> Prefer <code>let</code>; no force-unwrap;
+                    no raw loops; one type per file; add SwiftUI previews for new/changed views; document public
+                    <em>and</em> private members. Build and test through <strong>xcodebuild</strong>; keep
+                    <code>FITScope.xcodeproj</code> and the SwiftPixel project in sync when files are added.
+                    Committing / pushing and submodule pointer updates are the maintainer's responsibility.</li>
+                <li><strong>Open decision surfaced for review</strong> (does not block starting): whether the
+                    auto-stretch-on-open preference defaults on or off per format — the plan proposes
+                    <em>off</em> (opt-in) and flags it in Milestone 3.</li>
+            </ul>
+        </div>
+
+        <h2 class="section">Milestones</h2>
+
+        <!-- M1 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">1</span>
+                <h3>STF / MTF core in SwiftPixel</h3>
+                <span class="capsule completed">Completed</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Add the MTF stretch and its parameter type to SwiftPixel, plus a helper that derives the
+            parameters from image statistics — the shared foundation every other milestone builds on.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Add the MTF function <code>mtf(m, x) = ((m − 1)·x) / ((2m − 1)·x − m)</code>, with the degenerate
+                    cases handled (<code>m = 0 → 1</code>, <code>m = 0.5 → x</code>, <code>m = 1 → 0</code>).</li>
+                <li>Add an <code>STFParameters</code> value type: per-channel shadows / midtones / highlights + low/high
+                    range expansion, <code>.uniform</code> or <code>.perChannel</code> (mirroring
+                    <code>Levels.Channels</code>), with an identity value and validation.</li>
+                <li>Add <code>Stretch.Algorithm.screenTransfer(STFParameters)</code>; extend
+                    <code>description</code> and keep the <code>@unknown default</code> switch sites compiling.</li>
+                <li>Implement the apply path in the <code>Stretch</code> processor: per-channel clip into
+                    [shadows, highlights], MTF with midtones, then map into the [low, high] expansion range.</li>
+                <li>Add the derivation helper <code>STFParameters.computed(from: PixelBuffer, shadowClipFactor:
+                    targetBackground:)</code> using <code>PixelUtilities.median</code> /
+                    <code>medianAbsoluteDeviation</code> (see Appendix for the formulas), computing per channel.</li>
+                <li>Expose the one-shot "decode/normalize → parameters" helper the app and extensions call to
+                    materialize auto-STF parameters without duplicating pipeline logic (shape to confirm here).</li>
+                <li>SwiftPixelTests: MTF edge cases; known median/MAD → expected parameters; identity on a flat
+                    buffer; monotonic, in-range output; background lands near <code>targetBackground</code>;
+                    round-trip of explicit parameters.</li>
+                <li>Keep <code>SwiftPixel.xcodeproj</code> in sync (new files in the framework and test targets).</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span></p>
+            <div class="field-label">Completed</div>
+            <p>2026-07-10</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Approach.</strong> TDD: tests written first and watched to fail (build errors for the
+                        missing <code>mtf</code>, <code>STFParameters</code> and <code>.screenTransfer</code>), then
+                        implemented to green. Final state: <strong>316 tests pass</strong> (24 new).</li>
+                    <li><strong>MTF.</strong> Added <code>PixelUtilities.mtf(_:_:)</code> —
+                        <code>((m−1)·x)/((2m−1)·x−m)</code> with early returns for the boundaries (<code>x≤0→0</code>,
+                        <code>x≥1→1</code>) and the degenerate midtones (<code>m≤0→1</code>, <code>m≥1→0</code>,
+                        <code>m=0.5→x</code>). For <code>m,x ∈ (0,1)</code> the denominator is provably non-zero
+                        (<code>x = m/(2m−1)</code> always lies outside <code>(0,1)</code>), so no divide guard is
+                        needed there.</li>
+                    <li><strong>STFParameters.</strong> New file
+                        <code>SwiftPixel/Processors/STFParameters.swift</code>, nested as
+                        <code>Processors.Stretch.STFParameters</code>. It is a <code>.uniform(Channel)</code> /
+                        <code>.perChannel(red:green:blue:)</code> enum mirroring <code>Levels.Channels</code>; the
+                        <code>Channel</code> struct carries <code>shadows / midtones / highlights + low / high</code>
+                        with an <code>identity</code>, <code>validate()</code> and a per-sample <code>map</code>
+                        (clip → MTF → expansion → clamp), mirroring <code>Levels.Parameters</code>.</li>
+                    <li><strong>Apply path.</strong> Added
+                        <code>Stretch.Algorithm.screenTransfer(STFParameters)</code>, its <code>description</code>, the
+                        dispatch, and <code>screenTransferStretch(...)</code> (uniform over all samples, per-channel
+                        over a 3-channel buffer). The existing <code>@unknown default</code> switch sites in the app
+                        compile unchanged.</li>
+                    <li><strong>Vectorized apply (review follow-up).</strong> Per maintainer feedback, the apply path
+                        was reworked from the scalar <code>parallelOrSerial</code> + <code>map</code> pattern to an
+                        Accelerate (<code>vDSP</code>) pipeline in <code>applyScreenTransfer(to:stride:count:channel:)</code>,
+                        matching the sibling <code>log</code>/<code>arcsinh</code>/<code>sigmoid</code> stretches. It
+                        operates on a strided view (stride 1 for mono, 3 for interleaved RGB): clip window
+                        (<code>vDSP_vsmsaD</code> + <code>vDSP_vclipD</code>), MTF
+                        (<code>vsmsaD</code> denominator into scratch → <code>vsmulD</code> numerator in place →
+                        <code>vdivD</code>), then the expansion (<code>vsmsaD</code> + <code>vclipD</code>). The MTF
+                        denominator is provably non-zero over the clipped <code>[0, 1]</code> range for
+                        <code>m ∈ (0, 1)</code>; the degenerate midtones (<code>m ≤ 0</code> / <code>m ≥ 1</code>,
+                        step-shaped limits) fall back to the scalar <code>Channel.map</code> reference. Verified the
+                        vectorized output matches the scalar reference to <code>1e-12</code> (uniform round-trip and a
+                        new per-channel test). Guarded the empty-buffer case (<code>count == 0</code>) found in
+                        self-review — it would otherwise compute a negative span in the fallback; added
+                        <code>screenTransferHandlesAnEmptyBuffer</code>. <strong>318 tests pass.</strong> The scalar
+                        <code>PixelUtilities.mtf</code> and <code>Channel.map</code> are kept as the reference used by
+                        the derivation and tests. (<code>Levels</code> and <code>Curves</code> vectorization deferred
+                        to separate follow-up commits after this milestone.)</li>
+                    <li><strong>Derivation helpers.</strong>
+                        <code>Channel.computed(median:mad:shadowClipFactor:targetBackground:)</code> plus
+                        buffer-level <code>STFParameters.computed(from:…)</code> (1- or 3-channel; per-channel
+                        deinterleave by stride) and the one-shot
+                        <code>computed(normalizing:using:…)</code> that normalizes a copy first (COW, never mutates
+                        the caller's buffer) — this is the materialization helper the loaders / extensions will call
+                        in later milestones. Its shape: static factories on
+                        <code>Processors.Stretch.STFParameters</code>, defaults <code>shadowClipFactor 2.8</code> /
+                        <code>targetBackground 0.25</code>.</li>
+                    <li><strong>Midtones-from-background correction.</strong> The plan appendix wrote
+                        <code>midtones = mtf(m0, targetBackground)</code>; the correct closed form is
+                        <code>midtones = mtf(targetBackground, m0)</code> — the MTF is an involution in its
+                        <em>balance</em> argument (<code>mtf(mtf(t, x₀), x₀) = t</code>), not by swapping the two
+                        arguments. Verified algebraically and numerically (the test-value case lands the median on
+                        exactly <code>0.25</code> vs. <code>0.0115</code> for the reversed form). The
+                        "median → targetBackground" unit tests are the guardrail and pass.</li>
+                    <li><strong>Project sync.</strong> <code>STFParameters.swift</code> added to the framework target;
+                        <code>PixelUtilities-MTF.swift</code> and <code>Processors-STFParameters.swift</code> added to
+                        the test target (matching the repo's round-number pbxproj ID convention).</li>
+                    <li><strong>Automated review loop.</strong> Two rounds: the first fresh-context reviewer was cut
+                        off by an API session limit before returning findings; a second, independent fresh-context
+                        reviewer completed a full cold read and verified the math (both algebraically and numerically),
+                        the divide-by-zero guards, the per-channel deinterleave, thread-safety and the pbxproj wiring.
+                        It reported <strong>no Critical / High / Medium findings</strong> — only two Low/Info style
+                        nits. The <code>=</code>-alignment nit (F1) was fixed; the loop converged in one effective
+                        round.</li>
+                </ul>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>F1 — Misaligned <code>=</code> in test locals</strong> · <em>Low</em> · Convention ·
+                        <code>Processors-STFParameters.swift</code>. Two test blocks did not align their <code>=</code>
+                        columns. <strong>Resolution: Fixed.</strong></li>
+                    <li><strong>F2 — Format letter <code>r</code> in <code>Channel.description</code></strong> ·
+                        <em>Info</em> · Readability · <code>STFParameters.swift</code>. The high range-expansion bound
+                        is printed as <code>r</code> beside <code>l</code> for low. <strong>Resolution: Deferred</strong>
+                        — intentional: <code>l</code>/<code>r</code> is exactly the XISF display-function nomenclature
+                        the plan uses for the low/high expansion, so it stays consistent with the Milestone 4
+                        mapping.</li>
+                    <li>The reviewer explicitly verified (not defects): the MTF involution and the
+                        <code>mtf(targetBackground, m0)</code> derivation; the MTF denominator is non-zero on the
+                        interior; all guards (<code>highlights−shadows</code>, <code>high−low</code>, <code>1−s</code>,
+                        <code>mad&gt;0</code>, <code>range&gt;0</code>); correct stride deinterleave; thread-safety
+                        matching <code>Levels</code>; no regressions (no other exhaustive
+                        <code>Stretch.Algorithm</code> switch in SwiftPixel; app sites use <code>@unknown default</code>);
+                        and correct pbxproj target membership.</li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Accelerate in the apply path.</strong> Why does the STF apply path not use Accelerate
+                        (<code>vDSP</code>), when the sibling <code>log</code> / <code>arcsinh</code> /
+                        <code>sigmoid</code> stretches do? It uses the scalar <code>parallelOrSerial</code> + per-pixel
+                        <code>map</code> pattern (mirroring <code>Levels</code>). Should the per-pixel apply be
+                        vectorized with Accelerate instead?
+                        <br><strong>Resolution:</strong> Vectorize it. The MTF vectorizes cleanly (after clamping to
+                        <code>[0, 1]</code> the closed form is exact at the boundaries, so the degenerate midtones
+                        collapse to a single per-buffer scalar check). Extended per the maintainer's direction:
+                        <code>Levels</code> and <code>Curves</code> — which share the same scalar pattern — are to be
+                        vectorized as well, but as <strong>separate follow-up commits after this milestone</strong>
+                        (each processor's rewrite reviewed on its own), so this milestone's commit stays focused on the
+                        STF core. The STF apply path is vectorized here.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- M2 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">2</span>
+                <h3>Expose STF in the stretch inspector (editable)</h3>
+                <span class="capsule completed">Completed</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Make the STF a first-class, editable mode in <code>StretchControlView</code>: pre-fillable
+            per-channel parameters plus a one-click "Auto" action that derives them from the current image.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Add <code>Mode.screenTransfer</code> ("Screen Transfer") to <code>StretchControlView</code>; wire
+                    <code>mode(_:)</code>, <code>algorithm(...)</code>, <code>stretchAlgorithm</code>, init seeding and
+                    <code>syncFromAdjustments()</code> (including the <code>@unknown default</code> cases).</li>
+                <li>Add editable controls for shadows / midtones / highlights (+ expansion), with a uniform ↔
+                    per-channel toggle following the Levels / Curves control pattern.</li>
+                <li>Add an "Auto" action that runs the SwiftPixel derivation helper on the current image and fills the
+                    controls; expose the shadow-clip factor (<code>2.8</code>) and target background
+                    (<code>0.25</code>) as the auto settings.</li>
+                <li>Add <code>AccessibilityIdentifier.StretchControlView</code> entries for the new option, sliders and
+                    Auto action; update the SwiftUI <code>#Preview</code>.</li>
+                <li>No <code>ImageAdjustments</code> / <code>Settings</code> change beyond the new case. Keep
+                    <code>FITScope.xcodeproj</code> in sync for any added files.</li>
+            </ul>
+            <div class="field-label">Dependencies</div>
+            <p class="deps"><strong>Milestone 1</strong>.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span></p>
+            <div class="field-label">Completed</div>
+            <p>2026-07-11</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Design decision (maintainer, deviates from the plan's literal tasks).</strong> Rather
+                        than putting the full STF editing UI <em>inline</em> in <code>StretchControlView</code>, the
+                        editing surface is a <strong>dedicated STF editor window</strong> (mirroring the Levels /
+                        Curves window stack): the inspector's stretch control gains a "Screen Transfer" mode that shows
+                        an <strong>Auto</strong> button and an <strong>Edit…</strong> button (opening the window); the
+                        window (<code>STFEditorView</code>) holds the per-channel toggle + channel picker, the
+                        shadows / midtones / highlights + low/high sliders, the tunable auto settings, its own Auto and
+                        a Reset. The auto settings (shadow-clip factor <code>2.8</code>, target background
+                        <code>0.25</code>) are exposed as editable sliders in the window (maintainer's choice).</li>
+                    <li><strong>Auto-derivation buffer (flagged for review).</strong> The Auto action derives from the
+                        image's normalized <code>detectionImage</code> (single-channel) via a new, testable
+                        <code>ImageRenderer.autoScreenTransfer(shadowClipFactor:targetBackground:)</code> that keeps the
+                        renderer's <code>source</code> private — so Milestone 2's Auto produces a <strong>uniform</strong>
+                        STF. Full per-channel <em>Auto</em> (from the normalized post-debayer RGB buffer) arrives with
+                        Milestone 5's loader work, which has that buffer in hand; manual per-channel editing is fully
+                        available in the window meanwhile. The inspector's Auto uses the default 2.8 / 0.25; the
+                        window's Auto uses its tunable settings.</li>
+                    <li><strong>What was built.</strong> <em>Inspector</em> (<code>StretchControlView</code>): added
+                        <code>Mode.screenTransfer</code>, the mode ↔ algorithm mapping (with a <code>screenTransfer:</code>
+                        parameter on the static <code>algorithm(...)</code>), an <code>STFParameters</code>
+                        <code>@State</code> seeded from and synced with the shared adjustments, and an Auto + Edit…
+                        button pair shown in that mode. <em>Model</em>: <code>ImageRenderer.autoScreenTransfer(...)</code>
+                        (derives from the source's <code>detectionImage</code>) and a cheap
+                        <code>canAutoScreenTransfer</code> flag. <em>Window stack</em> (new
+                        <code>FITScope/Views/ScreenTransfer/</code>): <code>STFEditorView</code> (per-channel toggle +
+                        channel picker, shadows/midtones/highlights + low/high sliders, tunable auto settings, Auto,
+                        Reset, histogram backdrop, <code>#Preview</code>), <code>STFWindowView</code>,
+                        <code>STFActiveModelView</code>, <code>STFUnavailableView</code> — mirroring the Levels stack.
+                        Registered the <code>ScreenTransferWindow</code> scene; added the
+                        <code>ScreenTransferWindowView</code> + two <code>StretchControlView</code> a11y identifiers;
+                        kept <code>FITScope.xcodeproj</code> in sync (4 new files + a group). TDD for the pure logic
+                        (mode/algorithm mapping, <code>autoScreenTransfer</code> derivation / <code>canAuto</code>).
+                        <strong>App builds; all 641 FITScopeTests pass.</strong></li>
+                    <li><strong>Verification.</strong> Build + full unit suite + the new pure-logic tests + the
+                        <code>STFEditorView</code> preview compiling. The GUI itself (opening the window, Auto/Edit) was
+                        not driven automatically — this is a native macOS app with no run-skill and no fitting headless
+                        GUI-driving path; interactive verification is left to the maintainer (or a future UITest).</li>
+                    <li><strong>Review fixes applied.</strong> Made the Auto derivation <code>async</code> / off the
+                        main actor with a busy state (Medium); reseed the editor to identity when the applied stretch
+                        is not an STF, instead of showing stale slider values (Low); and gated the inspector's Auto
+                        button with <code>canAutoScreenTransfer</code> to match the window (Low).</li>
+                </ul>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>1 — Auto derivation ran synchronously on the main actor</strong> · <em>Medium</em> ·
+                        Performance · <code>ImageRenderer.autoScreenTransfer</code>. The <code>O(n log n)</code>
+                        normalize + median/MAD pass over the full-resolution detection image ran on the
+                        <code>@MainActor</code> in a button action, risking a UI stall on large frames.
+                        <strong>Resolution: Fixed</strong> — made it <code>async</code>, computing on a detached task;
+                        callers <code>await</code> it behind a busy state that disables the Auto buttons while it runs.</li>
+                    <li><strong>2 — Editor kept stale slider values on a non-STF stretch</strong> · <em>Low</em> ·
+                        Correctness/UX · <code>STFEditorView.syncFromAdjustments</code>. On a Reset View (stretch →
+                        <code>nil</code>) or a switch to another stretch mode, the window kept showing the previous STF
+                        values. <strong>Resolution: Fixed</strong> — the <code>default</code> branch now reseeds to the
+                        identity, matching how the inspector drops to its "None" mode.</li>
+                    <li><strong>3 — Inspector Auto button never disabled (silent no-op)</strong> · <em>Low</em> ·
+                        UX consistency · <code>StretchControlView</code>. The window disabled Auto when no detection
+                        image was available, but the inspector did not. <strong>Resolution: Fixed</strong> — passed a
+                        <code>canAutoScreenTransfer</code> gate into the control and disabled its Auto button to match.</li>
+                    <li><strong>4 — Redundant (harmless) second re-render with both views open</strong> · <em>Info</em>
+                        · Efficiency. The reviewer traced the inspector/window interplay and confirmed <strong>no
+                        feedback loop</strong>; the extra <code>scheduleReRender()</code> is value-equal and coalesced.
+                        <strong>Resolution: Deferred</strong> (no action needed).</li>
+                    <li><strong>5 — No menu command to open the Screen Transfer window</strong> · <em>Info</em> ·
+                        Consistency. Levels/Curves have "Levels…"/"Curves…" menu items; STF is reachable only via the
+                        inspector's Edit… button. <strong>Resolution: Fixed</strong> (maintainer feedback) — added a
+                        "Screen Transfer…" command in <code>ImageCommands</code>, placed <strong>first</strong> in the
+                        Levels/Curves menu group (before Levels and Curves).</li>
+                    <li>The reviewer verified (not defects): validation is airtight (no slider/reset can produce
+                        processor-rejected params); seeding/sync handles every stretch case without write-echo loops;
+                        no retain cycles; the pbxproj wiring and the mirrored window stack are correct; all
+                        <code>algorithm(...)</code> call sites updated with <code>@unknown default</code> preserved; no
+                        behavior change to the log/arcsinh/sigmoid modes.</li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>"Screen transfer should be the first option in the menu."</strong> <em>(First
+                        interpreted as the Image-menu command — that was wrong.)</em> Clarified: the "menu" is the
+                        stretch <strong>mode picker</strong> in <code>StretchControlView</code>; Screen Transfer should
+                        be its first option. The mistaken Image-menu command added in <code>ImageCommands</code> was
+                        reverted.</li>
+                    <li><strong>"None should come first."</strong> In the picker, keep <code>None</code> at the very
+                        top and place Screen Transfer <strong>second</strong> — i.e. first among the actual stretch
+                        algorithms, ahead of Logarithmic / Hyperbolic / Sigmoid.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- M3 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">3</span>
+                <h3>Per-format auto-stretch preference on a shared App Group suite</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Persist a per-format (FITS / XISF / RAW) auto-stretch-on-open preference in a shared
+            container both the app and the QuickLook / thumbnail extensions can read.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Add an App Group entitlement to <code>FITScope</code>, <code>FITScopePreviewExtension</code> and
+                    <code>FITScopeThumbnailExtension</code> (entitlements files + project capabilities/signing).</li>
+                <li>Route the new preference keys through a shared <code>UserDefaults(suiteName:)</code> in
+                    <code>Preferences</code>, without disturbing the existing <code>.standard</code>-backed keys.</li>
+                <li>Add the three per-format auto-stretch booleans (default <strong>off</strong> — to flag in review),
+                    following the existing <code>@Published</code> + <code>didSet</code> + <code>Key</code>
+                    pattern.</li>
+                <li>Add a Preferences UI section (in <code>GeneralPreferencesView</code>, or a dedicated tab via
+                    <code>PreferencesTab</code> / <code>PreferencesView</code>) with the three toggles, a11y
+                    identifiers, and a note on the XISF display-function priority.</li>
+                <li>Tests over an isolated suite; update the preview; keep the project + extension targets in sync.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">—</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting human review.</p>
+        </div>
+
+        <!-- M4 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">4</span>
+                <h3>Apply the XISF display function on open</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">When an XISF file carries a display function, open the image with it applied as the
+            baseline stretch, pre-filled and editable in the inspector.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Surface the display function through <code>XISFImageProperties</code> (from
+                    <code>XISFImage.displayFunction</code>) so the loader can see it.</li>
+                <li>Map <code>XISFDisplayFunction</code> (per-component <code>m</code>/<code>s</code>/<code>h</code>
+                    and <code>l</code>/<code>r</code> expansion) to <code>STFParameters</code>, respecting its
+                    RGB/K (per-channel vs. luminance) mode.</li>
+                <li>In <code>XISFImageLoader</code>, when a display function is present, seed the
+                    <code>ImageRenderer</code> baseline with <code>stretch: .screenTransfer(params)</code> so it opens
+                    applied and editable.</li>
+                <li>Verify the baseline round-trips: <code>reset()</code>, <code>isModified(_:)</code>,
+                    <code>hasAdjustments</code> behave against the display-function view.</li>
+                <li>Tests: mapping correctness; a display-function XISF opens with the expected stretch; verify
+                    against a real file.</li>
+            </ul>
+            <div class="field-label">Dependencies</div>
+            <p class="deps"><strong>Milestones 1 &amp; 2</strong>.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">—</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting human review.</p>
+        </div>
+
+        <!-- M5 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">5</span>
+                <h3>Apply auto-STF on open (fallback)</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">When a linear format's preference is on, open the image with auto-derived STF as its
+            baseline — for XISF, only when no display function is present (Milestone 4 takes priority).</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>In <code>FITSImageLoader</code>, <code>XISFImageLoader</code> and <code>RAWImageLoader</code>,
+                    when the format's preference is on, materialize <code>STFParameters</code> via the SwiftPixel
+                    helper and seed the baseline with <code>stretch: .screenTransfer(params)</code>.</li>
+                <li>Encode the priority rule for XISF: display function (Milestone 4) wins; auto-STF applies only in
+                    its absence.</li>
+                <li>Give the loaders access to the shared <code>Preferences</code>; read the per-format flag at load
+                    time.</li>
+                <li>Confirm the derivation runs on the correct (normalized, post-debayer) data; keep it off the main
+                    thread as the loaders already do.</li>
+                <li>Tests: per-format on/off; XISF with/without display function; verify by opening a real file of each
+                    format with the preference on and off.</li>
+            </ul>
+            <div class="field-label">Dependencies</div>
+            <p class="deps"><strong>Milestones 1, 3 &amp; 4</strong>.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">—</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting human review.</p>
+        </div>
+
+        <!-- M6 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">6</span>
+                <h3>Auto-STF before star detection</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Run star detection on an STF-stretched copy of the detection buffer for more reliable
+            results, without altering the displayed image.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>At the star-detection call site, derive <code>STFParameters</code> from the detection buffer and
+                    apply <code>Processors.Stretch(algorithm: .screenTransfer(params))</code> before calling
+                    <code>StarDetection.detectStars(in:using:)</code>, operating on a copy.</li>
+                <li>Confirm the detection buffer's normalization state (the stretch requires a normalized buffer);
+                    normalize first if needed.</li>
+                <li>Keep the entry point <code>nonisolated</code> / off-main-actor friendly, as today.</li>
+                <li>Tests; verify detection on a representative frame is at least as good as before.</li>
+            </ul>
+            <div class="field-label">Dependencies</div>
+            <p class="deps"><strong>Milestone 1</strong>.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">—</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting human review.</p>
+        </div>
+
+        <!-- M7 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">7</span>
+                <h3>STF &amp; display function for QuickLook / Finder previews</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Render previews and thumbnails with the same default rendering the app uses on open:
+            an XISF display function when present, else auto-STF when the shared per-format preference is on.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>In the extensions (<code>PreviewProvider</code> / <code>ThumbnailProvider</code>) or the shared
+                    <code>PreviewRenderer</code> / <code>FITSPreviewRenderer</code> / <code>XISFPreviewRenderer</code>,
+                    apply the same priority: XISF display function first, else auto-STF (materialized via the
+                    SwiftPixel helper) when the shared preference for that format is on.</li>
+                <li>Read the per-format preference from the shared App Group suite (Milestone 3).</li>
+                <li>Confirm which types the extensions actually declare (FITS, XISF) and scope accordingly.</li>
+                <li>Verify visually: previews/thumbnails render stretched when appropriate and linear otherwise,
+                    matching the app.</li>
+            </ul>
+            <div class="field-label">Dependencies</div>
+            <p class="deps"><strong>Milestones 1, 3, 4 &amp; 5</strong>.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">—</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting human review.</p>
+        </div>
+
+        <h2 class="section">Appendix</h2>
+        <div class="appendix">
+            <h3>MTF and STF math (PixInsight-style)</h3>
+            <pre>mtf(m, x) = ((m − 1)·x) / ((2m − 1)·x − m)
+
+  where   m = midtones balance (0 &lt; m &lt; 1),  x ∈ [0, 1]
+  edges:  m = 0   → 1
+          m = 0.5 → x          (identity)
+          m = 1   → 0</pre>
+            <p>Applying an MTF stage (per channel), matching the XISF display-function model:</p>
+            <pre>// s = shadows clip, h = highlights clip, m = midtones,
+// l = low range expansion, r = high range expansion
+clipped   = clamp( (x − s) / (h − s), 0, 1 )     // guard h ≠ s
+curved    = mtf( m, clipped )
+expanded  = clamp( (curved − l) / (r − l), 0, 1 ) // guard r ≠ l</pre>
+            <p>Deriving auto-STF parameters from a channel's statistics (source doc):</p>
+            <pre>shadowClipFactor = 2.8     (default; user-tunable)
+targetBackground = 0.25    (default; user-tunable)
+
+s (shadows) = clamp( median − shadowClipFactor · MAD, 0, 1 )
+h           = 1
+l, r        = 0, 1        (no range expansion for auto-STF)
+
+// normalized median after clipping the shadows:
+m0 = (median − s) / (1 − s)          (guard 1 − s ≠ 0)
+
+// midtones solved so mtf(midtones, m0) = targetBackground:
+midtones = mtf( m0, targetBackground )   // MTF is self-inverse in the balance</pre>
+            <p><em>Validate</em> the midtones-from-background derivation against a reference implementation in
+            Milestone 1; the unit tests that assert the background lands near <code>targetBackground</code> are the
+            guardrail.</p>
+
+            <h3>Key files &amp; hook points</h3>
+            <table>
+                <tr><th>Concern</th><th>File(s)</th></tr>
+                <tr><td>MTF core, <code>STFParameters</code>, derivation helper</td>
+                    <td><code>Submodules/SwiftAstro/Submodules/SwiftPixel/SwiftPixel/Processors/Stretch.swift</code>,
+                        <code>PixelUtilities.swift</code></td></tr>
+                <tr><td>Stretch model (already carries <code>stretch</code>)</td>
+                    <td><code>FITScope/Model/ImageAdjustments.swift</code>, <code>FITScope/Image/ImageProcessor.swift</code></td></tr>
+                <tr><td>Stretch inspector control (editable STF)</td>
+                    <td><code>FITScope/Views/ImageControls/StretchControlView.swift</code>,
+                        <code>FITScope/Views/Levels</code> / <code>Views/Curves</code> (per-channel pattern),
+                        <code>FITScope/Application/AccessibilityIdentifiers.swift</code></td></tr>
+                <tr><td>Preferences + App Group</td>
+                    <td><code>FITScope/Model/Preferences/Preferences.swift</code>,
+                        <code>FITScope/Views/Preferences/GeneralPreferencesView.swift</code>,
+                        <code>FITScope/FITScope.entitlements</code>, extension entitlements</td></tr>
+                <tr><td>XISF display-function surfacing &amp; mapping</td>
+                    <td><code>FITScope/Model/XISF/XISFImageProperties.swift</code>,
+                        <code>FITScope/Model/XISF/XISFImageLoader.swift</code>
+                        (from SwiftXISF <code>XISFImage.displayFunction</code> / <code>XISFDisplayFunction</code>)</td></tr>
+                <tr><td>Apply-on-open hooks (linear loaders)</td>
+                    <td><code>FITScope/Model/FITS/FITSImageLoader.swift:213</code>,
+                        <code>FITScope/Model/XISF/XISFImageLoader.swift:182</code>,
+                        <code>FITScope/Model/RAW/RAWImageLoader.swift:152</code>,
+                        <code>FITScope/Model/ImageRenderer.swift</code></td></tr>
+                <tr><td>Star detection</td>
+                    <td><code>FITScope/Model/StarDetection.swift</code> + its call site</td></tr>
+                <tr><td>Previews / thumbnails</td>
+                    <td><code>FITScope/Image/PreviewRenderer.swift</code>,
+                        <code>FITSPreviewRenderer.swift</code>, <code>XISFPreviewRenderer.swift</code>,
+                        <code>FITScopePreviewExtension/PreviewProvider.swift</code>,
+                        <code>FITScopeThumbnailExtension/ThumbnailProvider.swift</code></td></tr>
+            </table>
+        </div>
+
+        <footer>
+            FITScope &mdash; FITS Image Viewer for macOS. &nbsp;·&nbsp; Living document: milestone Status,
+            Implementation notes, Automated review and Review comments are updated in place as work progresses.
+        </footer>
+    </div>
+</body>
+</html>

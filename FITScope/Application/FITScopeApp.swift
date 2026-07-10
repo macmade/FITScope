@@ -216,6 +216,15 @@ public struct FITScopeApp: App
         .windowResizability( .contentSize )
         .restorationBehavior( .disabled )
 
+        Window( "Screen Transfer", id: StretchControlView.screenTransferWindowID )
+        {
+            STFWindowView()
+                .environmentObject( self.appDelegate.appModel )
+        }
+        .windowStyle( .titleBar )
+        .windowResizability( .contentSize )
+        .restorationBehavior( .disabled )
+
         // The session metric-trend charts. Unlike the Levels and Curves editors,
         // the charts want room and benefit from resizing, so this window is freely
         // resizable (opening at a sensible default) rather than sized to its

@@ -150,7 +150,7 @@ public struct InspectorView: View
                         onReset:         { self.reset( \.stretch ) }
                     )
                     {
-                        StretchControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                        StretchControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender, autoScreenTransfer: { await self.image.renderer.autoScreenTransfer() }, canAutoScreenTransfer: { self.image.renderer.canAutoScreenTransfer } )
                     }
 
                     Divider()
