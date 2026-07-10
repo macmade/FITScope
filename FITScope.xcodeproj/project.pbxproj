@@ -218,6 +218,7 @@
 		21119A804F11C06003EF388B /* ScaleBarOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DC192E7780C67C2D23EFA7B /* ScaleBarOverlayTests.swift */; };
 		213415D04BB6CBDF6DA3315C /* PlanetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9B45988B10C9ED2BD630750 /* PlanetsView.swift */; };
 		21F4E40D8C3B5AB4F5B5D0E5 /* SessionMetricsUnavailableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE7E6AE4D499E0A7E298DBDD /* SessionMetricsUnavailableView.swift */; };
+		2398ECD82A783E8857A8B330 /* ImageIOHEICTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 191BD5755270142A2CBB93DD /* ImageIOHEICTests.swift */; };
 		2440026B4825D889DD9082A6 /* ExternalImageFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2331CAF57ED124E0232D7382 /* ExternalImageFile.swift */; };
 		2A97FD03D751B622DAC96291 /* ImageCanvasControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711A84E175F157D73C74F06E /* ImageCanvasControllerTests.swift */; };
 		2BE02C14A93DFE42D6FC798C /* PlateSolveToolbarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B4D5CF1AA92231B4FCA5B6 /* PlateSolveToolbarButton.swift */; };
@@ -726,6 +727,7 @@
 		175A64B30C566653D8539B40 /* FITSImageLoaderRGBTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FITSImageLoaderRGBTests.swift; sourceTree = "<group>"; };
 		175E0226186A86808584BD3B /* MoonPhaseView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseView.swift; sourceTree = "<group>"; };
 		1805AA8818E2418AA78360ED /* ViewCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewCommands.swift; sourceTree = "<group>"; };
+		191BD5755270142A2CBB93DD /* ImageIOHEICTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageIOHEICTests.swift; sourceTree = "<group>"; };
 		19A053364A23155634B61D1A /* IntegrationSummaryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IntegrationSummaryTests.swift; sourceTree = "<group>"; };
 		1BF0E28B558FF0EC25A4F530 /* EquatorialGridOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EquatorialGridOverlayTests.swift; sourceTree = "<group>"; };
 		1C38E95C136002F0B9047230 /* AstrometryResponses.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AstrometryResponses.swift; sourceTree = "<group>"; };
@@ -1883,6 +1885,7 @@
 			children = (
 				173D76779066B7B4F578E096 /* ImageIOImageInfoTests.swift */,
 				79454FCF10EA8BB78FA3B4BF /* ImageIOImageLoaderTests.swift */,
+				191BD5755270142A2CBB93DD /* ImageIOHEICTests.swift */,
 			);
 			path = ImageIO;
 			sourceTree = "<group>";
@@ -2659,6 +2662,7 @@
 				E4F9CCFD1766E44E707A38A0 /* RAWImageLoaderTests.swift in Sources */,
 				672EF7466C9E4E942EF4F03A /* ImageProcessorRAWTests.swift in Sources */,
 				F37A83F76AFA969C9F1B6B79 /* CoordinateTests.swift in Sources */,
+				2398ECD82A783E8857A8B330 /* ImageIOHEICTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

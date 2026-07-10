@@ -24,6 +24,7 @@
 
 import Combine
 import CoreGraphics
+import CoreImage
 import Foundation
 import ImageIO
 import SwiftPixel
@@ -169,7 +170,8 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
                                     throw RuntimeError( message: "The image could not be decoded." )
                                 }
 
-                                let decoded        = try Self.decode( cgImage )
+                                let orientation    = ( properties[ kCGImagePropertyOrientation as String ] as? NSNumber )?.intValue ?? 1
+                                let decoded        = try Self.decode( cgImage, orientation: orientation )
                                 let detectionImage = Self.detectionImage( bytes: decoded.bytes, properties: decoded.properties )
 
                                 return ImageIORenderSource( data: decoded.bytes, properties: decoded.properties, detectionImage: detectionImage )
@@ -232,14 +234,19 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
     /// reads. Alpha is not composited — the raw colour components are taken — so an
     /// opaque image (the common case) is reproduced exactly.
     ///
-    /// - Parameter cgImage: The decoded image.
+    /// - Parameters:
+    ///   - cgImage:     The decoded image.
+    ///   - orientation: The image's EXIF orientation (`1`...`8`); the image is rotated
+    ///                 or flipped to upright before it is drawn, so a portrait phone
+    ///                 photo displays the right way up.
     /// - Returns: The canonical layout and its bytes.
     /// - Throws: ``RuntimeError`` for invalid dimensions or a bitmap context that
     ///   cannot be created.
-    private nonisolated static func decode( _ cgImage: CGImage ) throws -> ( properties: ImageIOImageProperties, bytes: Data )
+    private nonisolated static func decode( _ cgImage: CGImage, orientation: Int = 1 ) throws -> ( properties: ImageIOImageProperties, bytes: Data )
     {
-        let width  = cgImage.width
-        let height = cgImage.height
+        let image  = Self.upright( cgImage, orientation: orientation )
+        let width  = image.width
+        let height = image.height
 
         guard width > 0, height > 0
         else
@@ -247,8 +254,8 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
             throw RuntimeError( message: "Invalid image dimensions: \( width ) × \( height )." )
         }
 
-        let isColor            = ( cgImage.colorSpace?.model ?? .rgb ) != .monochrome
-        let bytesPerComponent  = cgImage.bitsPerComponent > 8 ? 2 : 1
+        let isColor            = ( image.colorSpace?.model ?? .rgb ) != .monochrome
+        let bytesPerComponent  = image.bitsPerComponent > 8 ? 2 : 1
         let channelCount       = isColor ? 3 : 1
         let componentsPerPixel = isColor ? 4 : 1
         let bitsPerComponent   = bytesPerComponent * 8
@@ -273,7 +280,7 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
                 return false
             }
 
-            context.draw( cgImage, in: CGRect( x: 0, y: 0, width: width, height: height ) )
+            context.draw( image, in: CGRect( x: 0, y: 0, width: width, height: height ) )
 
             return true
         }
@@ -287,6 +294,41 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
         let properties = ImageIOImageProperties( width: width, height: height, channelCount: channelCount, componentsPerPixel: componentsPerPixel, bytesPerComponent: bytesPerComponent )
 
         return ( properties, Data( buffer ) )
+    }
+
+    /// Returns the image rotated/flipped to upright per its EXIF orientation, so a
+    /// portrait phone photo (a non-`1` orientation, common in HEIC and JPEG) displays
+    /// the right way up rather than sideways.
+    ///
+    /// An orientation of `1` (the default and overwhelmingly common case) is returned
+    /// unchanged, so ordinary images take the exact same path as before. Any other
+    /// orientation is applied via Core Image's canonical `oriented(forExifOrientation:)`,
+    /// preserving the source's bit depth (a deeper-than-8-bit source stays 16-bit). If
+    /// the transform cannot be rendered, the original image is returned unchanged.
+    ///
+    /// - Parameters:
+    ///   - cgImage:     The decoded image, in its stored pixel orientation.
+    ///   - orientation: The EXIF orientation (`1`...`8`).
+    /// - Returns: The uprighted image, or `cgImage` when no transform applies.
+    private nonisolated static func upright( _ cgImage: CGImage, orientation: Int ) -> CGImage
+    {
+        guard ( 2 ... 8 ).contains( orientation )
+        else
+        {
+            return cgImage
+        }
+
+        let oriented   = CIImage( cgImage: cgImage ).oriented( forExifOrientation: Int32( orientation ) )
+        let colorSpace = cgImage.colorSpace ?? ( CGColorSpace( name: CGColorSpace.sRGB ) ?? CGColorSpaceCreateDeviceRGB() )
+        let format     = cgImage.bitsPerComponent > 8 ? CIFormat.RGBA16 : CIFormat.RGBA8
+
+        guard let uprighted = CIContext().createCGImage( oriented, from: oriented.extent, format: format, colorSpace: colorSpace )
+        else
+        {
+            return cgImage
+        }
+
+        return uprighted
     }
 
     /// Builds the detection-ready single-channel linear image for a photographic

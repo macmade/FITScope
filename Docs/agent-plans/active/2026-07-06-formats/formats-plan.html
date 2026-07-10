@@ -759,7 +759,7 @@
         <div class="milestone">
             <div class="milestone-head">
                 <h4>Milestone 10 — HEIC support</h4>
-                <span class="capsule todo">Not started</span>
+                <span class="capsule done">Completed</span>
             </div>
             <p class="dep"><strong>Depends on:</strong> Milestones 3 and 8.</p>
             <p class="goal"><strong>Goal:</strong> Open HEIC files, decode them into the format-neutral image layer for display and processing where meaningful, and present their metadata (EXIF and similar) through the generalized Info window. Since HEIC files may contain multiple images, reuse the carousel from Milestone&nbsp;3.</p>
@@ -771,10 +771,37 @@
                 <li>Map HEIC EXIF/metadata into the generalized <code>ImageMetadata</code>.</li>
                 <li>Add HEIC fixtures (single- and multi-image) and tests; keep <code>FITScope.xcodeproj</code> in sync; build &amp; run tests via <code>xcodebuild</code>.</li>
             </ul>
-            <div class="field-label">Status</div><p class="goal">Not started</p>
-            <div class="field-label">Completed</div><p class="completed-date">—</p>
-            <div class="field-label">Implementation notes</div><p class="impl-notes">—</p>
-            <div class="field-label">Review comments</div><p class="review-comments">—</p>
+            <div class="field-label">Status</div><p class="goal">Completed</p>
+            <div class="field-label">Completed</div><p class="completed-date">2026-07-10</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <p><strong>Approach:</strong> TDD. HEIC decodes through the <em>same</em> ImageIO / <code>CGImageSource</code> path the photographic formats already use, and the existing <code>ImageIOImageLoader</code> is fully format-general — it already enumerates every image in the container (<code>CGImageSourceGetCount</code>) as a separate frame, draws each into the canonical bitmap, maps EXIF/GPS metadata (now through the shared <code>Coordinate.location</code> zero-GPS guard), and opens on the as-authored identity baseline. So HEIC itself needed <strong>no HEIC-specific loader code</strong> — it is a registration change plus fixtures and tests. (A follow-up review request then added EXIF-orientation handling to the <em>shared</em> decode — see Review comments — which benefits JPEG/TIFF/HEIC alike.)</p>
+                <ul>
+                    <li><strong>Registration:</strong> <code>ImageLoader.loader(for:)</code> adds <code>.heic</code> and <code>.heif</code> to the ImageIO branch (both are system <code>UTType</code>s — no <code>UTType</code> extension); <code>AppModel.runOpenPanel</code> adds them to the allowed types; <code>Info.plist</code> gains a "HEIF Image" document type listing <code>public.heic</code> + <code>public.heif</code> (Alternate, Viewer). Both UTIs are registered because <code>public.heic</code> and <code>public.heif</code> do <em>not</em> cross-conform (verified against the live UTI database), so neither alone catches both; <code>public.avif</code> conforms to neither, so AVIF is not captured. <code>DropAcceptance</code> already accepts any file. The HEIC branch sits after the FITS/XISF/RAW branches (HEIC conforms to none of them, so the RAW-before-TIFF DNG handling is untouched).</li>
+                    <li><strong>Multi-image → carousel:</strong> a HEIC container holding several images surfaces them as separate frames with no carousel changes, reusing the multi-frame producer model the multi-image FITS/XISF paths established. Auxiliary images (thumbnails, depth, gain maps) are not counted by <code>CGImageSourceGetCount</code>, so a normal single-image HEIC yields exactly one frame.</li>
+                    <li><strong>Fixtures &amp; tests (+4):</strong> ImageIO <em>can</em> write HEIC, so the fixtures were generated with CoreGraphics/<code>CGImageDestination</code>: <code>PhotoHEIC.heic</code> (single 8×8 RGB with an EXIF <code>DateTimeOriginal</code>) and <code>MultiImageHEIC.heic</code> (three distinct 6×4 images in one container). Both path-resolved (no project entry). <code>ImageIOHEICTests</code>: factory routing for a <code>.heic</code> file and a <code>.heif</code>-extension URL, single-image load (one colour frame, 8×8, EXIF date extracted), and multi-image load (three frames, each rendering to its own 6×4). HEIC is lossy, so the tests assert structure and geometry rather than exact samples (the lossless decode maths is covered by the PNG/TIFF fixtures).</li>
+                    <li><strong><code>FITScope.xcodeproj</code>:</strong> added the one test file to the <code>FITScopeTests</code> target only (ImageIO test group); the two fixtures need no project entry. <code>plutil -lint</code> passes.</li>
+                </ul>
+                <p><strong>Verification:</strong> <code>xcodebuild test -only-testing:FITScopeTests</code> → <strong>626 tests pass, 0 failures</strong> (+5, including the EXIF-orientation test added on review); full-scheme <code>xcodebuild build</code> (app + both QuickLook extensions) → <strong>BUILD SUCCEEDED</strong>, no new warnings. No submodule changes this milestone.</p>
+                <p><strong>Automated review loop:</strong> 1 round (converged — an independent fresh-context reviewer reported <em>no</em> Critical/High/Medium findings and no regressions). It empirically verified the UTI conformance (both entries required, AVIF not captured, branch ordering safe, TIFF/PNG/JPEG + RAW paths untouched), the registration consistency across the loader / open panel / Info.plist, the pbxproj target membership, and the test quality. See the Automated review section.</p>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Round 1 — no Critical/High/Medium findings, no regressions.</strong></li>
+                    <li><strong>The <code>.heif</code> extension entry was load-bearing but untested</strong> — <em>Low</em> — <strong>Fixed</strong> (added a factory-routing test over a <code>.heif</code>-extension URL; the factory keys on the extension, so no fixture is needed).</li>
+                    <li><strong>Wide-gamut / HDR HEIC is flattened to sRGB</strong> — <em>Info</em> — <strong>Deferred.</strong> The shared decode always draws into sRGB (bit depth preserved at 16-bit); Display-P3 / HLG/PQ HEICs are gamut-mapped to SDR, and an iPhone gain-map HDR HEIC shows its SDR base image. Matches how every other photographic format is handled; fine for an astronomy viewer.</li>
+                    <li><strong>EXIF orientation is not applied to the pixels</strong> — <em>Info</em> — <strong>Surfaced to the user.</strong> The shared decode does not honour <code>kCGImagePropertyOrientation</code>; this already affects JPEG but HEIC (phone photos, which commonly carry a non-1 orientation tag) makes it far more visible — a portrait iPhone HEIC would display sideways. Not a regression (the loader is unchanged); raised at the pause as a possible shared-path improvement.</li>
+                    <li><em>Info</em> — multi-image frame count is robust (auxiliary images aren't counted); the <code>observationDate</code> assertion depends on the encoder preserving the EXIF date (it does — suite is green). No action.</li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="review-comments">
+                <ul>
+                    <li><strong>Apply EXIF orientation in the shared ImageIO decode.</strong> On the automated review's Info finding (the decode ignored <code>kCGImagePropertyOrientation</code>, so a portrait phone HEIC/JPEG would display sideways), the user asked to honour it. → <strong>Done.</strong> <code>ImageIOImageLoader.decode</code> now reads the image's EXIF orientation and uprights it before drawing, via a new <code>upright(_:orientation:)</code> helper: orientation <code>1</code> (the norm — every existing fixture) returns the image unchanged so those paths and their exact-pixel tests are untouched; any other orientation is applied with Core Image's canonical <code>oriented(forExifOrientation:)</code>, preserving bit depth (a &gt;8-bit source stays 16-bit) and falling back to the original on failure. This is a shared-path improvement, so it fixes JPEG/TIFF too, not just HEIC. Test: a lossless <code>OrientedPhoto.tiff</code> (stored <code>4×2</code>, orientation 6, stored top-left pixel white) asserts the decode uprights it to <code>2×4</code> with the white pixel rotated to the top-right (so both the dimension swap and the rotation direction are checked); the <code>PhotoRGB.png</code>/<code>PhotoGray16.tiff</code> exact-pixel tests still pass unchanged.</li>
+                    <li><strong>Align the <code>=</code> signs, as always.</strong> "Pay attention to alignment of <code>=</code>, as always." → <strong>Done.</strong> Fixed the consecutive-assignment block in the new <code>upright(_:orientation:)</code> helper (the <code>oriented</code> / <code>colorSpace</code> / <code>format</code> bindings), dropping the redundant <code>: CIFormat</code> annotation so the names align cleanly; re-checked every block changed this milestone for aligned <code>=</code>.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- ============ PHASE 5 ============ -->

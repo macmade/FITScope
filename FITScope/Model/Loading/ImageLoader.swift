@@ -70,8 +70,9 @@ public enum ImageLoader
             return RAWImageLoader( url: url )
         }
 
-        // The photographic formats decode through the same ImageIO path.
-        if let type, [ .tiff, .png, .jpeg ].contains( where: { type.conforms( to: $0 ) } )
+        // The photographic formats decode through the same ImageIO path. HEIC is a
+        // container that may hold several images, which the loader surfaces as frames.
+        if let type, [ .tiff, .png, .jpeg, .heic, .heif ].contains( where: { type.conforms( to: $0 ) } )
         {
             return ImageIOImageLoader( url: url )
         }

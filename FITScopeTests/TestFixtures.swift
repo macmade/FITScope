@@ -156,4 +156,27 @@ enum TestFixtures
     {
         self.url( "0H8A2223.CR3" )
     }
+
+    /// A real single-image HEIC (`8 × 8`, RGB) carrying an EXIF capture date, so tests
+    /// can assert the HEIC load and metadata mapping through the shared ImageIO path.
+    static var photoHEIC: URL
+    {
+        self.url( "PhotoHEIC.heic" )
+    }
+
+    /// A real multi-image HEIC: three distinct `6 × 4` images in one container, so tests
+    /// can assert that the contained images surface as separate carousel frames.
+    static var multiImageHEIC: URL
+    {
+        self.url( "MultiImageHEIC.heic" )
+    }
+
+    /// A real lossless TIFF stored `4 × 2` with an EXIF orientation of `6` (rotate 90°
+    /// clockwise for display) and its stored top-left pixel white, so tests can assert
+    /// that the decode applies the orientation: it uprights to `2 × 4` with the white
+    /// pixel at the top-right.
+    static var orientedPhoto: URL
+    {
+        self.url( "OrientedPhoto.tiff" )
+    }
 }

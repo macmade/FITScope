@@ -157,4 +157,32 @@ struct ImageIOImageLoaderTests
         #expect( ImageLoader.loader( for: URL( fileURLWithPath: "/tmp/a.tiff" ) ) is ImageIOImageLoader )
         #expect( ImageLoader.loader( for: URL( fileURLWithPath: "/tmp/a.jpg" ) )  is ImageIOImageLoader )
     }
+
+    /// The decode applies the image's EXIF orientation: a `4 × 2` fixture tagged
+    /// orientation 6 (rotate 90° clockwise), with its stored top-left pixel white,
+    /// uprights to `2 × 4` with the white pixel at the top-right.
+    @Test
+    @MainActor
+    func appliesExifOrientation() async throws
+    {
+        let loader = ImageIOImageLoader( url: TestFixtures.orientedPhoto )
+
+        await loader.load()
+
+        let image  = try #require( loader.image )
+        let source = try image.renderer.renderSourceSnapshot()
+
+        // Uprighting swaps the stored 4 × 2 to a displayed 2 × 4.
+        let dimensions = try #require( source.dimensions )
+
+        #expect( dimensions.width == 2 )
+        #expect( dimensions.height == 4 )
+
+        // The stored top-left white pixel rotates to the displayed top-right.
+        let topLeft  = try #require( source.pixelValues( atX: 0, y: 0 ) )
+        let topRight = try #require( source.pixelValues( atX: 1, y: 0 ) )
+
+        #expect( topLeft[ 0 ].value < 60 )
+        #expect( topRight[ 0 ].value > 200 )
+    }
 }
