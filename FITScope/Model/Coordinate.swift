@@ -45,4 +45,28 @@ public struct Coordinate: Equatable, Sendable
         self.latitude  = latitude
         self.longitude = longitude
     }
+
+    /// Creates an observing-site coordinate, treating an all-zero pair as *no
+    /// location*.
+    ///
+    /// A latitude and longitude of exactly `0°, 0°` — "Null Island" in the Gulf of
+    /// Guinea — is the sentinel many cameras and metadata parsers emit when they
+    /// have no GPS fix, not a real observing site, so it is rejected. A site
+    /// genuinely on the equator *or* the prime meridian (only one component zero) is
+    /// kept, since exactly one zero is a legitimate position.
+    ///
+    /// - Parameters:
+    ///   - latitude:  The latitude, in decimal degrees.
+    ///   - longitude: The longitude, in decimal degrees.
+    /// - Returns: The coordinate, or `nil` when both components are zero.
+    public static func location( latitude: Double, longitude: Double ) -> Coordinate?
+    {
+        guard latitude != 0 || longitude != 0
+        else
+        {
+            return nil
+        }
+
+        return Coordinate( latitude: latitude, longitude: longitude )
+    }
 }

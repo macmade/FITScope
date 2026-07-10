@@ -170,7 +170,8 @@ public struct ImageIOImageInfo: Sendable
     /// applying the N/S and E/W reference to sign the latitude and longitude.
     ///
     /// - Parameter gps: The GPS metadata group, or `nil`.
-    /// - Returns: The signed coordinate, or `nil` when either component is absent.
+    /// - Returns: The signed coordinate, or `nil` when either component is absent or
+    ///   the pair is the all-zero "no fix" sentinel.
     private static func coordinate( from gps: [ String: Any ]? ) -> Coordinate?
     {
         guard let gps,
@@ -184,7 +185,7 @@ public struct ImageIOImageInfo: Sendable
         let latitudeRef  = gps[ kCGImagePropertyGPSLatitudeRef as String ]  as? String
         let longitudeRef = gps[ kCGImagePropertyGPSLongitudeRef as String ] as? String
 
-        return Coordinate(
+        return Coordinate.location(
             latitude:  latitudeRef  == "S" ? -latitude  : latitude,
             longitude: longitudeRef == "W" ? -longitude : longitude
         )

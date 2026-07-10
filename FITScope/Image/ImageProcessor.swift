@@ -305,6 +305,7 @@ public enum ImageProcessor
             case "RGBG": return .rgbg
             case "GRBG": return .grbg
             case "RGGB": return .rggb
+            case "GBRG": return .gbrg
             default:     throw RuntimeError( message: "Unsupported colour-filter-array pattern \( name )" )
         }
     }

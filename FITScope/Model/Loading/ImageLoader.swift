@@ -62,8 +62,15 @@ public enum ImageLoader
             return XISFImageLoader( url: url )
         }
 
-        // The photographic formats decode through the same ImageIO path; a later
-        // milestone adds RAW and HEIC here by extending this list.
+        // Camera RAW decodes through SwiftRAW (LibRAW) into a linear sensor mosaic.
+        // Checked before the photographic formats because a DNG also conforms to
+        // `public.tiff`, and it must route to the RAW loader, not the ImageIO one.
+        if type?.conforms( to: .rawImage ) == true
+        {
+            return RAWImageLoader( url: url )
+        }
+
+        // The photographic formats decode through the same ImageIO path.
         if let type, [ .tiff, .png, .jpeg ].contains( where: { type.conforms( to: $0 ) } )
         {
             return ImageIOImageLoader( url: url )

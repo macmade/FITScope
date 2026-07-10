@@ -115,6 +115,29 @@ struct ImageIOImageInfoTests
         #expect( info.summaryValues[ .focalLength ] == "135 mm" )
     }
 
+    /// An all-zero GPS pair is the "no fix" sentinel and yields no coordinate.
+    @Test
+    func zeroGPSCoordinateIsNoLocation()
+    {
+        let properties: [ String: Any ] =
+            [
+                kCGImagePropertyPixelWidth as String:  10,
+                kCGImagePropertyPixelHeight as String: 10,
+                kCGImagePropertyColorModel as String:  kCGImagePropertyColorModelRGB as String,
+                kCGImagePropertyGPSDictionary as String:
+                    [
+                        kCGImagePropertyGPSLatitude as String:     0.0,
+                        kCGImagePropertyGPSLatitudeRef as String:  "N",
+                        kCGImagePropertyGPSLongitude as String:    0.0,
+                        kCGImagePropertyGPSLongitudeRef as String: "E",
+                    ],
+            ]
+
+        let info = ImageIOImageInfo( url: self.url, properties: properties, frameTitle: nil )
+
+        #expect( info.coordinate == nil )
+    }
+
     /// A grayscale colour model reports a single channel and non-colour.
     @Test
     func mapsGrayscaleColorModel()

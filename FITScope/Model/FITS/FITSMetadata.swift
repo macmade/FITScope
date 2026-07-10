@@ -241,8 +241,9 @@ public struct FITSMetadata: Sendable
     public var longitude: Double? { self.angle( "SITELONG", "LONG-OBS", "OBSGEO-L" ) }
 
     /// The observing site's geographic coordinate, present only when both the
-    /// ``latitude`` (`SITELAT`) and ``longitude`` (`SITELONG`) are available — so
-    /// callers can show a location only for images that actually carry one.
+    /// ``latitude`` (`SITELAT`) and ``longitude`` (`SITELONG`) are available and are
+    /// not the all-zero "no fix" sentinel — so callers can show a location only for
+    /// images that actually carry one.
     public var coordinate: Coordinate?
     {
         guard let latitude = self.latitude, let longitude = self.longitude
@@ -251,7 +252,7 @@ public struct FITSMetadata: Sendable
             return nil
         }
 
-        return Coordinate( latitude: latitude, longitude: longitude )
+        return Coordinate.location( latitude: latitude, longitude: longitude )
     }
 
     /// The observing site elevation (`SITEELEV`), in metres.

@@ -139,6 +139,18 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Camera RAW Image</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.camera-raw-image</string>
+			</array>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+		</dict>
 	</array>
 </dict>
 </plist>

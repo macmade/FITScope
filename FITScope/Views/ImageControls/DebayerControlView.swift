@@ -50,6 +50,9 @@ public struct DebayerControlView: View
         /// Force the RGGB pattern.
         case rggb
 
+        /// Force the GBRG pattern.
+        case gbrg
+
         /// The picker label for the mode.
         public var description: String
         {
@@ -61,6 +64,7 @@ public struct DebayerControlView: View
                 case .rgbg: return "RGBG"
                 case .grbg: return "GRBG"
                 case .rggb: return "RGGB"
+                case .gbrg: return "GBRG"
             }
         }
     }
@@ -105,6 +109,7 @@ public struct DebayerControlView: View
             case .rgbg: return .pattern( .rgbg )
             case .grbg: return .pattern( .grbg )
             case .rggb: return .pattern( .rggb )
+            case .gbrg: return .pattern( .gbrg )
         }
     }
 
@@ -127,6 +132,7 @@ public struct DebayerControlView: View
                     case .rgbg:       return .rgbg
                     case .grbg:       return .grbg
                     case .rggb:       return .rggb
+                    case .gbrg:       return .gbrg
                     @unknown default: return .auto
                 }
         }

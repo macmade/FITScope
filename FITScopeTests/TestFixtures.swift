@@ -148,4 +148,12 @@ enum TestFixtures
     {
         self.url( "PhotoExif.jpeg" )
     }
+
+    /// A real Canon camera RAW file (`.CR3`): a linear, undemosaiced colour-filter-array
+    /// sensor mosaic decoded through SwiftRAW (LibRAW), so tests can assert the RAW load,
+    /// the debayered colour render, and the camera/exposure metadata end to end.
+    static var cameraRAW: URL
+    {
+        self.url( "0H8A2223.CR3" )
+    }
 }

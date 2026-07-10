@@ -85,6 +85,18 @@ struct FITSMetadataTests
         #expect( metadata.rightAscension == nil )
     }
 
+    /// A real observing site (`SITELAT`/`SITELONG`) resolves to a coordinate, while an
+    /// all-zero pair is the "no fix" sentinel and yields no location.
+    @Test
+    func observingSiteCoordinateRejectsZeroPair() throws
+    {
+        let site = Self.metadata( [ ( "SITELAT", .float( 45.5 ) ), ( "SITELONG", .float( -73.6 ) ) ] )
+        let zero = Self.metadata( [ ( "SITELAT", .float( 0 ) ),    ( "SITELONG", .float( 0 ) ) ] )
+
+        #expect( site.coordinate == Coordinate( latitude: 45.5, longitude: -73.6 ) )
+        #expect( zero.coordinate == nil )
+    }
+
     @Test
     func firstOccurrenceOfADuplicateKeywordWins() throws
     {
