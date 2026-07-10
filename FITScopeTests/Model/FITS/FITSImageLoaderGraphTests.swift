@@ -27,8 +27,9 @@ import Foundation
 import SwiftFITS
 import Testing
 
-/// Tests that `FITSImageLoader` routes a one-dimensional (`NAXIS=1`) file to a
-/// graph rather than an image, without regressing the raster path.
+/// Tests that `FITSImageLoader` routes graph data — a one-dimensional (`NAXIS=1`)
+/// spectrum and a two-dimensional (`NAXIS=2`) stack of spectra — to a graph rather
+/// than an image, without regressing the raster path.
 @Suite( "FITSImageLoader (graph)" )
 struct FITSImageLoaderGraphTests
 {
@@ -124,6 +125,77 @@ struct FITSImageLoaderGraphTests
         let image = try #require( loader.image, "a 2-D file must produce a raster image" )
 
         #expect( image.graph == nil, "a 2-D file must not carry a graph series" )
+    }
+
+    /// A `NAXIS=2` file with a spectral `CTYPE1` loads as a multi-line graph: each row
+    /// becomes a named line, and the file carries no rendered image.
+    @Test
+    @MainActor
+    func loadsStackedSpectraFileAsGraph() async throws
+    {
+        let data   = FITSTestData.stackedSpectra( rows: [ [ 10, 20, 30 ], [ 40, 50, 60 ], [ 1, 2, 3 ] ], extraRecords: [ "CTYPE1  = 'WAVE'", "CDELT1  = 2.0", "CRVAL1  = 400.0" ] )
+        let loader = FITSImageLoader( url: self.url, data: data )
+
+        await loader.load()
+
+        #expect( loader.error == nil )
+
+        let image = try #require( loader.image, "a stacked-spectra file still loads as a LoadedImage" )
+        let graph = try #require( image.graph, "a spectral NAXIS=2 file must carry a decoded graph series" )
+
+        #expect( graph.lines.count == 3, "one line per row" )
+        #expect( graph.isMultiLine )
+        #expect( graph.xAxisLabel == "WAVE" )
+        #expect( image.metadata.sections.isEmpty == false, "the graph must carry the parsed header metadata" )
+    }
+
+    /// The checked-in `StackedSpectra.fits` fixture — a real `BITPIX = -32`,
+    /// `NAXIS = 2` stack of three 1024-sample spectra with a `WAVE` axis — loads as a
+    /// multi-line graph with the physical wavelength axis and flux unit from its header.
+    @Test
+    @MainActor
+    func loadsBundledStackedSpectraFixtureAsGraph() async throws
+    {
+        let url    = TestFixtures.stackedSpectra
+        let loader = FITSImageLoader( url: url, data: try Data( contentsOf: url ) )
+
+        await loader.load()
+
+        #expect( loader.error == nil )
+
+        let image = try #require( loader.image, "the fixture loads as a LoadedImage" )
+        let graph = try #require( image.graph, "the fixture is a stacked spectrum, so it is a graph" )
+
+        #expect( graph.lines.count == 3, "three rows → three lines" )
+        #expect( graph.isMultiLine )
+        #expect( graph.lines.allSatisfy { $0.points.count == 1024 }, "each spectrum has 1024 samples" )
+        #expect( graph.xAxisLabel == "WAVE (Angstrom)" )
+        #expect( graph.yAxisLabel == "erg/s/cm2/A" )
+
+        // CRVAL1 = 4000, CRPIX1 = 1, CDELT1 = 2 → first two samples at 4000 and 4002.
+        #expect( graph.lines[ 0 ].points.first?.x == 4000.0 )
+        #expect( graph.lines[ 0 ].points.dropFirst().first?.x == 4002.0 )
+
+        // The sidebar summary describes the stack's shape (samples × spectra).
+        #expect( image.information?.dimensions == "1024 samples × 3 spectra" )
+        #expect( image.information?.channels   == "2 (3 spectra)" )
+    }
+
+    /// A `NAXIS=2` file with a spectral `CTYPE1` but a spatial `CTYPE2` — a long-slit
+    /// spectrogram — stays a raster image: the `CTYPE2` guard keeps a genuine 2-D
+    /// image off the graph branch.
+    @Test
+    @MainActor
+    func loadsLongSlitSpectrogramAsImage() async throws
+    {
+        let data   = FITSTestData.stackedSpectra( rows: [ [ 10, 20 ], [ 30, 40 ] ], extraRecords: [ "CTYPE1  = 'WAVE'", "CTYPE2  = 'DEC--TAN'" ] )
+        let loader = FITSImageLoader( url: self.url, data: data )
+
+        await loader.load()
+
+        let image = try #require( loader.image, "a long-slit spectrogram loads as a raster image" )
+
+        #expect( image.graph == nil, "a spatial CTYPE2 keeps a 2-D image on the raster path" )
     }
 
     /// A successful graph load is idempotent: a second `load()` keeps the same image

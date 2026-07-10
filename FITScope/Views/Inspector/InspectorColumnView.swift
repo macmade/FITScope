@@ -49,11 +49,11 @@ public struct InspectorColumnView: View
     {
         if let image = self.file.image, image.graph != nil
         {
-            // One-dimensional graph data has no pixels to adjust, so the inspector
-            // shows a clear placeholder rather than the (inapplicable) controls.
+            // Graph data has no pixels to adjust, so the inspector shows a clear
+            // placeholder rather than the (inapplicable) controls.
             ScrollView
             {
-                InspectorPlaceholderView( message: "No adjustments — this file is one-dimensional graph data." )
+                InspectorPlaceholderView( message: "No adjustments — this file is shown as a graph." )
             }
         }
         else if let image = self.file.image

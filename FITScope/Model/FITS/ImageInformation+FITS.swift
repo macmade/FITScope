@@ -115,18 +115,20 @@ public extension ImageInformation
         self.init( dimensions: dimensions, bitDepth: bitDepth, channels: channels, values: values )
     }
 
-    /// Builds the summary for a one-dimensional FITS data set (`NAXIS=1`), shown as a
-    /// graph. Returns `nil` when `BITPIX` is absent.
+    /// Builds the summary for a FITS data set shown as a graph — a one-dimensional
+    /// spectrum (`NAXIS=1`) or a two-dimensional stack of spectra (`NAXIS=2`).
+    /// Returns `nil` when `BITPIX` is absent.
     ///
-    /// A 1-D data set has no `width × height`, so its "dimensions" read as a sample
-    /// count (e.g. `"4096 samples"`) and it declares a single sample channel.
+    /// A graph has no `width × height`, so its "dimensions" read as a sample count
+    /// (e.g. `"4096 samples"`), or, for a stack, a sample count and a spectrum count
+    /// (e.g. `"2064 samples × 2 spectra"`). The channel field notes the graph shape.
     ///
     /// - Parameters:
-    ///   - oneDimensionalMetadata: The grouped FITS header metadata to summarize.
-    ///   - sampleCount:            The number of decoded samples.
-    init?( oneDimensionalMetadata: ImageMetadata, sampleCount: Int )
+    ///   - graphMetadata: The grouped FITS header metadata to summarize.
+    ///   - graph:         The decoded graph series, for its line and sample counts.
+    init?( graphMetadata: ImageMetadata, graph: GraphSeries )
     {
-        let properties = oneDimensionalMetadata.sections.flatMap { $0.properties }
+        let properties = graphMetadata.sections.flatMap { $0.properties }
 
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.trimmingCharacters( in: .whitespaces ), bitPix.isEmpty == false
         else
@@ -134,9 +136,12 @@ public extension ImageInformation
             return nil
         }
 
-        let dimensions = sampleCount == 1 ? "1 sample" : "\( sampleCount ) samples"
-        let bitDepth   = "\( bitPix.replacingOccurrences( of: "-", with: "" ) )-bit"
-        let channels   = "1 (1D)"
+        let lineCount   = graph.lines.count
+        let sampleCount = graph.lines.first?.points.count ?? 0
+        let samples     = sampleCount == 1 ? "1 sample" : "\( sampleCount ) samples"
+        let dimensions  = lineCount > 1 ? "\( samples ) × \( lineCount ) spectra" : samples
+        let bitDepth    = "\( bitPix.replacingOccurrences( of: "-", with: "" ) )-bit"
+        let channels    = lineCount > 1 ? "2 (\( lineCount ) spectra)" : "1 (1D)"
 
         self.init(
             dimensions: dimensions,

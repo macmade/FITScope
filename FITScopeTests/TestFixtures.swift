@@ -99,6 +99,15 @@ enum TestFixtures
         self.url( "MultiImage3D.fits" )
     }
 
+    /// A real two-dimensional stacked-spectra fixture (`NAXIS = 2`, `BITPIX = -32`):
+    /// three distinct 1024-sample spectra as rows, with a spectral `WAVE`
+    /// world-coordinate axis (`CRVAL1`/`CRPIX1`/`CDELT1`/`CUNIT1`) and a `BUNIT`, so
+    /// it loads as a multi-line graph rather than a raster image.
+    static var stackedSpectra: URL
+    {
+        self.url( "StackedSpectra.fits" )
+    }
+
     /// A real RGB XISF image (`8 × 8`, three planar `UInt16` planes) carrying
     /// embedded FITS keywords — an object name, exposure, capture date and a TAN
     /// WCS — so it loads as a colour image whose astrometry fields come through the

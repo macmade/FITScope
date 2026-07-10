@@ -234,18 +234,21 @@ public class FITSImageLoader: ObservableObject, ImageLoading
         }
     }
 
-    /// Decodes a `NAXIS=1` image HDU into a graph series, matching the HDU-selection
-    /// rule of ``FITSPreviewRenderer/imageHDU(from:)`` (the first data section and
-    /// its owning header). Returns `nil` when the image HDU is absent or not
-    /// one-dimensional, so the caller falls through to the raster path.
+    /// Decodes an image HDU into a graph series when it is graph data rather than a
+    /// raster image, matching the HDU-selection rule of
+    /// ``FITSPreviewRenderer/imageHDU(from:)`` (the first data section and its owning
+    /// header). A one-dimensional HDU (`NAXIS=1`) is always a graph; a two-dimensional
+    /// HDU (`NAXIS=2`) is a graph only when it is a genuine stack of spectra (see
+    /// ``GraphSeries/isSpectraStack(header:)``) — a normal 2-D image returns `nil` and
+    /// the caller falls through to the raster path.
     ///
-    /// The decode is best-effort: a genuine 1-D HDU that cannot be decoded (an
+    /// The decode is best-effort: a genuine graph HDU that cannot be decoded (an
     /// unsupported `BITPIX`, truncated data) returns `nil` rather than throwing, so
     /// the caller falls through to the raster path — the file then loads with its
     /// metadata and surfaces the error at render time, matching a malformed 2-D file.
     ///
     /// - Parameter sections: The file's sections, in file order.
-    /// - Returns: The decoded series for a decodable 1-D HDU, or `nil` otherwise.
+    /// - Returns: The decoded series for a decodable graph HDU, or `nil` otherwise.
     private nonisolated static func decodeGraph( from sections: [ FITSSection ] ) -> GraphSeries?
     {
         guard let dataIndex = sections.firstIndex( where: { $0.kind == .data } ), dataIndex > 0
@@ -255,14 +258,28 @@ public class FITSImageLoader: ObservableObject, ImageLoading
         }
 
         let header = sections[ dataIndex - 1 ]
+        let data   = sections[ dataIndex ].data
 
-        guard let nAxis = header.naxis, nAxis == 1
+        guard let nAxis = header.naxis
         else
         {
             return nil
         }
 
-        return try? GraphSeries( oneDimensionalHeader: header, data: sections[ dataIndex ].data )
+        switch nAxis
+        {
+            case 1:
+
+                return try? GraphSeries( oneDimensionalHeader: header, data: data )
+
+            case 2 where GraphSeries.isSpectraStack( header: header ):
+
+                return try? GraphSeries( stackedSpectraHeader: header, data: data )
+
+            default:
+
+                return nil
+        }
     }
 
     /// Builds the detection-ready single-channel linear image for the image HDU.

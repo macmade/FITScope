@@ -105,6 +105,62 @@ enum FITSTestData
         return data
     }
 
+    /// A minimal, valid two-dimensional (`NAXIS=2`) `BITPIX=16` FITS file holding a
+    /// stack of one-dimensional spectra — one row per spectrum, big-endian, as a
+    /// header block plus a block-padded data segment.
+    ///
+    /// The rows are stored row-major (the FITS convention: the first axis varies
+    /// fastest, so each row is contiguous). Extra header records are inserted verbatim
+    /// before `END`; the default carries a spectral `CTYPE1` so the file is detected
+    /// as a spectra stack and takes the multi-line graph branch. Every row must have
+    /// the same length.
+    ///
+    /// - Parameters:
+    ///   - rows:         The per-spectrum signed 16-bit samples, one array per row.
+    ///   - extraRecords: Additional header records to insert before `END`.
+    /// - Returns: The complete FITS file bytes.
+    static func stackedSpectra( rows: [ [ Int16 ] ], extraRecords: [ String ] = [ "CTYPE1  = 'WAVE'" ] ) -> Data
+    {
+        let width = rows.first?.count ?? 0
+
+        let records =
+            [
+                "SIMPLE  = T",
+                "BITPIX  = 16",
+                "NAXIS   = 2",
+                "NAXIS1  = \( width )",
+                "NAXIS2  = \( rows.count )",
+            ]
+            + extraRecords
+            + [ "END" ]
+
+        let header = records.map { $0.padding( toLength: 80, withPad: " ", startingAt: 0 ) }.joined()
+
+        var data = Data( header.padding( toLength: FITSFile.blockSize, withPad: " ", startingAt: 0 ).utf8 )
+
+        // Row-major big-endian 16-bit samples (each row contiguous).
+        var payload = rows.flatMap { $0 }.reduce( into: Data() )
+        {
+            payload, sample in
+
+            let bits = UInt16( bitPattern: sample )
+
+            payload.append( UInt8( bits >> 8 ) )
+            payload.append( UInt8( bits & 0xFF ) )
+        }
+
+        let remainder = payload.count % FITSFile.blockSize
+
+        if remainder != 0
+        {
+            payload.append( Data( count: FITSFile.blockSize - remainder ) )
+        }
+
+        data.append( payload )
+
+        return data
+    }
+
     /// An RGB colour-planes image (`NAXIS=3`, third axis = 3) and its header
     /// properties, ready to feed straight into `ImageProcessor.render`.
     ///

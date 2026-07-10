@@ -39,9 +39,9 @@ public extension LoadedImage
     ///
     /// - Parameters:
     ///   - info:       The parsed FITS header info.
-    ///   - graph:      The decoded 1-D series when the file is a `NAXIS=1` graph, or
-    ///                 `nil` for a normal image. When set, the summary is built for a
-    ///                 one-dimensional data set.
+    ///   - graph:      The decoded series when the file is shown as a graph — a
+    ///                 `NAXIS=1` spectrum or a `NAXIS=2` stack of spectra — or `nil`
+    ///                 for a normal image. When set, the summary is built for a graph.
     ///   - isRGBImage: Whether the image HDU is an RGB `NAXIS=3` colour-planes image,
     ///                 which is colour without being a colour-filter array. The loader
     ///                 supplies this from the image HDU header.
@@ -50,9 +50,9 @@ public extension LoadedImage
     {
         let metadata = info.metadata
 
-        // A graph summarises as a sample count (a 1-D data set has no width × height);
+        // A graph summarises as a sample count (graph data has no width × height);
         // an image uses the geometry-based summary.
-        let information = graph.map { ImageInformation( oneDimensionalMetadata: info.imageMetadata, sampleCount: $0.points.count ) }
+        let information = graph.map { ImageInformation( graphMetadata: info.imageMetadata, graph: $0 ) }
             ?? ImageInformation( fitsMetadata: info.imageMetadata )
 
         self.init(

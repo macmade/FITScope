@@ -210,15 +210,14 @@ public struct ImageInfoTabView: View
     }
 
     /// The Analysis tab's content: the star-detection and sky-background metrics for
-    /// a raster image, or a clear "not applicable" message for one-dimensional graph
-    /// data — which has no pixels to detect stars in or measure a background on, so
-    /// detection never runs and the metrics would otherwise sit forever in their
-    /// "detecting…" state.
+    /// a raster image, or a clear "not applicable" message for graph data — which has
+    /// no pixels to detect stars in or measure a background on, so detection never
+    /// runs and the metrics would otherwise sit forever in their "detecting…" state.
     @ViewBuilder     private var analysisContent: some View
     {
         if self.file.image?.graph != nil
         {
-            StatusMessageView( systemImage: "sparkles", title: "Analysis Unavailable", message: "Star detection and sky-background measurement apply to images, not one-dimensional data." )
+            StatusMessageView( systemImage: "sparkles", title: "Analysis Unavailable", message: "Star detection and sky-background measurement apply to images, not graph data." )
         }
         else
         {

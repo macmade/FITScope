@@ -24,12 +24,13 @@
 
 import Foundation
 
-/// A decoded one-dimensional data series, ready to plot as a graph.
+/// A decoded data series, ready to plot as a graph of one or more lines.
 ///
 /// A format-neutral, `Sendable` value: a decoder (see `GraphSeries+FITS.swift`)
 /// builds one off the main actor from a source file's samples, and it crosses back
-/// to drive the Swift Charts graph. Non-image data — a spectrum, a light curve —
-/// takes this graph branch rather than the raster pixel pipeline.
+/// to drive the Swift Charts graph. Non-image data — a single spectrum or light
+/// curve (one line), or a stack of spectra sharing a dispersion axis (one line per
+/// spectrum) — takes this graph branch rather than the raster pixel pipeline.
 public struct GraphSeries: Sendable, Equatable
 {
     /// A single plotted sample: its position on the horizontal axis and its value.
@@ -64,24 +65,86 @@ public struct GraphSeries: Sendable, Equatable
         }
     }
 
-    /// The plotted points, in sample order.
-    public let points: [ Point ]
+    /// One plotted line of the graph: its samples and an optional name.
+    ///
+    /// A single-spectrum graph has exactly one, unnamed line; a stacked-spectra graph
+    /// has one named line per spectrum (`"Row 1"`, `"Row 2"`, …), all sharing the
+    /// series' axes.
+    public struct Line: Sendable, Equatable, Identifiable
+    {
+        /// The zero-based line index, giving the line a stable identity for the chart.
+        public let index: Int
+
+        /// The line's name, used to colour and label it when the graph has more than
+        /// one line; `nil` for a single, unnamed line.
+        public let name: String?
+
+        /// The line's plotted points, in sample order.
+        public let points: [ Point ]
+
+        /// The stable identity, the line's index.
+        public var id: Int { self.index }
+
+        /// Creates a plotted line.
+        ///
+        /// - Parameters:
+        ///   - index:  The zero-based line index.
+        ///   - name:   The line's name, or `nil` for a single unnamed line.
+        ///   - points: The line's plotted points, in sample order.
+        public init( index: Int, name: String?, points: [ Point ] )
+        {
+            self.index  = index
+            self.name   = name
+            self.points = points
+        }
+    }
+
+    /// The plotted lines, in order. A single-spectrum graph has one line; a
+    /// stacked-spectra graph has one line per spectrum.
+    public let lines: [ Line ]
 
     /// The horizontal-axis label — a physical quantity (e.g. `"Wavelength (Angstrom)"`)
-    /// when the source describes one, otherwise `"Sample"`.
+    /// when the source describes one, otherwise `"Sample"`. Shared by every line.
     public let xAxisLabel: String
 
     /// The vertical-axis label — the sample's physical unit when the source declares
-    /// one, otherwise `"Value"`.
+    /// one, otherwise `"Value"`. Shared by every line.
     public let yAxisLabel: String
+
+    /// Every plotted point across all lines, in line then sample order — for
+    /// computing the overall axis domains that must bound all lines.
+    public var points: [ Point ]
+    {
+        self.lines.flatMap { $0.points }
+    }
+
+    /// Whether the graph has more than one line, so the view colours and legends the
+    /// lines rather than drawing a single accent-coloured line.
+    public var isMultiLine: Bool
+    {
+        self.lines.count > 1
+    }
 
     /// Whether the series has no points to plot.
     public var isEmpty: Bool
     {
-        self.points.isEmpty
+        self.lines.allSatisfy { $0.points.isEmpty }
     }
 
-    /// Creates a graph series.
+    /// Creates a graph series from its lines.
+    ///
+    /// - Parameters:
+    ///   - lines:      The plotted lines, in order.
+    ///   - xAxisLabel: The horizontal-axis label.
+    ///   - yAxisLabel: The vertical-axis label.
+    public init( lines: [ Line ], xAxisLabel: String, yAxisLabel: String )
+    {
+        self.lines      = lines
+        self.xAxisLabel = xAxisLabel
+        self.yAxisLabel = yAxisLabel
+    }
+
+    /// Creates a single-line graph series from its points.
     ///
     /// - Parameters:
     ///   - points:     The plotted points, in sample order.
@@ -89,7 +152,7 @@ public struct GraphSeries: Sendable, Equatable
     ///   - yAxisLabel: The vertical-axis label.
     public init( points: [ Point ], xAxisLabel: String, yAxisLabel: String )
     {
-        self.points     = points
+        self.lines      = [ Line( index: 0, name: nil, points: points ) ]
         self.xAxisLabel = xAxisLabel
         self.yAxisLabel = yAxisLabel
     }
