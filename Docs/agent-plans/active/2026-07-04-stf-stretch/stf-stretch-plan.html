@@ -603,7 +603,26 @@
             <div class="milestone-head">
                 <span class="mnum">3</span>
                 <h3>Per-format auto-stretch preference on a shared App Group suite</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
+            </div>
+            <div class="field-label">Design decisions (maintainer)</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Two toggles per format (6 settings), not one.</strong> Auto-stretch is togglable
+                        independently for (a) <strong>opening in the app</strong> and (b) <strong>QuickLook / Finder
+                        previews &amp; thumbnails</strong>, for each of FITS / XISF / RAW. So: three
+                        <em>auto-stretch-on-open</em> booleans and three <em>auto-stretch-previews</em> booleans.</li>
+                    <li><strong>Only the preview settings go in the shared App Group.</strong> The sandboxed
+                        QuickLook / thumbnail extensions can only read the shared suite, so the three
+                        <em>preview</em> booleans live in <code>UserDefaults(suiteName: "group.com.xs-labs.FITScope")</code>;
+                        the three <em>on-open</em> booleans (app-only) stay on <code>.standard</code>. The app's
+                        Preferences UI writes both sets; the extensions read only the shared preview set.</li>
+                    <li><strong>App Group id:</strong> <code>group.com.xs-labs.FITScope</code> (added to the app and
+                        both extensions' entitlements + signing). Local ad-hoc builds work; distribution needs the
+                        capability enabled in the Apple Developer account.</li>
+                    <li><strong>Default: On</strong> (deviates from the plan's opt-in proposal) — all six toggles
+                        default enabled, so astro images open and preview stretched out of the box.</li>
+                </ul>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">Persist a per-format (FITS / XISF / RAW) auto-stretch-on-open preference in a shared
@@ -623,13 +642,72 @@
                 <li>Tests over an isolated suite; update the preview; keep the project + extension targets in sync.</li>
             </ul>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">—</p>
+            <p>2026-07-11</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Shared constants.</strong> New dependency-free
+                        <code>AutoStretchPreference</code> (only imports Foundation): the App Group id
+                        (<code>group.com.xs-labs.FITScope</code>), a <code>Format</code> enum (fits/xisf/raw), the
+                        on-open / previews key builders, and <code>autoStretchPreviews(_:in:)</code> — the entry point
+                        the sandboxed extensions will call (Milestone 7). Added to the app target <em>and</em> the
+                        UITests target (since the shared <code>AccessibilityIdentifiers</code> now references
+                        <code>Format</code>).</li>
+                    <li><strong>Preferences.</strong> Added a second backing store <code>sharedDefaults</code> (the App
+                        Group suite, falling back to the app-only <code>defaults</code> when it can't be opened) beside
+                        the existing <code>.standard</code> store. Six <code>@Published</code> booleans following the
+                        existing <code>didSet</code>-writes-through pattern: three <em>on-open</em> (FITS/XISF/RAW →
+                        <code>defaults</code>) and three <em>previews</em> (→ <code>sharedDefaults</code>), all default
+                        <strong>on</strong> (via <code>object(forKey:) as? Bool ?? true</code>, distinguishing
+                        "never set" from a stored <code>false</code>).</li>
+                    <li><strong>UI.</strong> New <strong>Auto-Stretch</strong> preferences tab
+                        (<code>AutoStretchPreferencesView</code>, <code>PreferencesTab.autoStretch</code>, wired into
+                        <code>PreferencesView</code> after General): two sections (opening / previews) of three
+                        per-format toggles, a note on the XISF display-function priority, per-format a11y identifiers,
+                        and a <code>#Preview</code>.</li>
+                    <li><strong>Entitlements &amp; signing.</strong> Added the App Group to
+                        <code>FITScope.entitlements</code>, and created explicit entitlements files for both extensions
+                        (app-sandbox + application-groups + files.user-selected.read-only — the full set the extensions'
+                        <code>ENABLE_*</code> build settings generated, so nothing is dropped), wiring
+                        <code>CODE_SIGN_ENTITLEMENTS</code>. The app and both extensions build and sign cleanly with the
+                        existing provisioning profile (ad-hoc/local works; distribution needs the capability enabled in
+                        the Apple Developer account).</li>
+                    <li><strong>TDD / verification.</strong> Wrote the Preferences tests first (over isolated
+                        <code>.standard</code> and shared suites), watched them fail, then implemented. They assert
+                        default-on, that on-open persists only to <code>.standard</code>, that previews persist only to
+                        the shared suite (read back through the extension helper), and the helper's default.
+                        <strong>App + both extensions build; all 645 FITScopeTests pass.</strong></li>
+                    <li><strong>Review fixes.</strong> Extended the UI-test preferences isolation
+                        (<code>AppDelegate.makePreferences()</code>) to also isolate + wipe a private <em>shared</em>
+                        suite (Medium); corrected the <code>sharedDefaults</code> doc comment (Info).</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>1 — UI-test isolation didn't cover the shared store</strong> · <em>Medium</em> ·
+                        Test isolation. <code>makePreferences()</code> isolated only the app-only store, so a UI test
+                        flipping a preview toggle would have written to the <em>real</em> App Group suite.
+                        <strong>Resolution: Fixed</strong> — the isolated branch now builds and wipes a private shared
+                        suite too and passes it as <code>sharedDefaults</code>.</li>
+                    <li><strong>2 — Redundant sandbox build settings kept alongside the explicit entitlements
+                        files</strong> · <em>Low</em> · Signing fragility. The extensions keep
+                        <code>ENABLE_APP_SANDBOX</code>/<code>ENABLE_USER_SELECTED_FILES</code> while also having
+                        explicit entitlements files with the same keys — two sources of truth. The reviewer verified the
+                        values are consistent and it signs cleanly. <strong>Resolution: Deferred</strong> — kept both
+                        deliberately (robust whether Xcode merges or the file overrides); flagged for the maintainer to
+                        collapse to one source if preferred.</li>
+                    <li><strong>3 — <code>sharedDefaults</code> doc mentioned a "linear render" fallback no current
+                        caller implements</strong> · <em>Info</em> · Doc accuracy. <strong>Resolution: Fixed.</strong></li>
+                    <li>The reviewer verified (not defects): the store split is leak-free (each didSet/seed uses the
+                        right store and key); the shared helper reads what the app writes and defaults to on; the App
+                        Group id is consistent across all three entitlements files and the constant; the pbxproj IDs
+                        don't collide and the entitlements files are file-references only; all six toggle bindings and
+                        a11y ids are correctly paired; and no existing <code>Preferences()</code> call site breaks.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
             <p class="placeholder">Awaiting human review.</p>
         </div>

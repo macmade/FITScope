@@ -173,6 +173,8 @@
 		05FB1000000000000000E202 /* APIKeyStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E201 /* APIKeyStoreTests.swift */; };
 		05FB1000000000000000E302 /* APIKeyFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E301 /* APIKeyFieldView.swift */; };
 		05FB1000000000000000E402 /* GeneralPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E401 /* GeneralPreferencesView.swift */; };
+		0AB10000000000000000E402 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
+		0AB10000000000000000E502 /* AutoStretchPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E501 /* AutoStretchPreferencesView.swift */; };
 		05FB1000000000000000E502 /* APIKeysPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E501 /* APIKeysPreferencesView.swift */; };
 		05FB1000000000000000E702 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E701 /* Keychain.swift */; };
 		05FB1000000000000000F102 /* InfoField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000F101 /* InfoField.swift */; };
@@ -198,6 +200,7 @@
 		0AB10000000000000000E302 /* STFWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E301 /* STFWindowView.swift */; };
 		0AC10000000000000000F002 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */; };
 		0AC10000000000000000F003 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */; };
+		0AB10000000000000000E403 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
 		0AC10000000000000000F005 /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F004 /* UITestSupport.swift */; };
 		0B8F6AE680E1526BC19F3E4A /* StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0750384B9B00F3AF15C9AFC /* StatusBarView.swift */; };
 		0CEEF32A7D5262CA32ADE85F /* CanvasOverlayStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F02EA5AA79E7AB973E861807 /* CanvasOverlayStyleTests.swift */; };
@@ -689,6 +692,10 @@
 		05FB1000000000000000E201 /* APIKeyStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIKeyStoreTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000E301 /* APIKeyFieldView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIKeyFieldView.swift; sourceTree = "<group>"; };
 		05FB1000000000000000E401 /* GeneralPreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GeneralPreferencesView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E401 /* AutoStretchPreference.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AutoStretchPreference.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E501 /* AutoStretchPreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AutoStretchPreferencesView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E601 /* FITScopePreviewExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScopePreviewExtension.entitlements; sourceTree = "<group>"; };
+		0AB10000000000000000E701 /* FITScopeThumbnailExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScopeThumbnailExtension.entitlements; sourceTree = "<group>"; };
 		05FB1000000000000000E501 /* APIKeysPreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIKeysPreferencesView.swift; sourceTree = "<group>"; };
 		05FB1000000000000000E701 /* Keychain.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		05FB1000000000000000F101 /* InfoField.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InfoField.swift; sourceTree = "<group>"; };
@@ -1352,6 +1359,7 @@
 			children = (
 				05B189F52FEAE7BC0056553A /* Info.plist */,
 				05B189F62FEAE7BC0056553A /* ThumbnailProvider.swift */,
+				0AB10000000000000000E701 /* FITScopeThumbnailExtension.entitlements */,
 			);
 			path = FITScopeThumbnailExtension;
 			sourceTree = "<group>";
@@ -1361,6 +1369,7 @@
 			children = (
 				05B189FA2FEAE7BE0056553A /* Info.plist */,
 				05B189FB2FEAE7BE0056553A /* PreviewProvider.swift */,
+				0AB10000000000000000E601 /* FITScopePreviewExtension.entitlements */,
 			);
 			path = FITScopePreviewExtension;
 			sourceTree = "<group>";
@@ -1607,6 +1616,7 @@
 			children = (
 				05FB1000000000000000D201 /* PreferencesView.swift */,
 				05FB1000000000000000E401 /* GeneralPreferencesView.swift */,
+				0AB10000000000000000E501 /* AutoStretchPreferencesView.swift */,
 				FE01A0030000000000000001 /* WeightingPreferencesView.swift */,
 				FE01A0040000000000000001 /* FormulaEditorController.swift */,
 				FE01A0050000000000000001 /* FormulaTextView.swift */,
@@ -1882,6 +1892,7 @@
 			isa = PBXGroup;
 			children = (
 				05FB1000000000000000D101 /* Preferences.swift */,
+				0AB10000000000000000E401 /* AutoStretchPreference.swift */,
 				05FB1000000000000000F101 /* InfoField.swift */,
 				05FB1000000000000000E101 /* APIKeyStore.swift */,
 				05FB1000000000000000E701 /* Keychain.swift */,
@@ -2361,6 +2372,8 @@
 				05FB1000000000000000E702 /* Keychain.swift in Sources */,
 				05FB1000000000000000D202 /* PreferencesView.swift in Sources */,
 				05FB1000000000000000E402 /* GeneralPreferencesView.swift in Sources */,
+				0AB10000000000000000E402 /* AutoStretchPreference.swift in Sources */,
+				0AB10000000000000000E502 /* AutoStretchPreferencesView.swift in Sources */,
 				FE01A0030000000000000002 /* WeightingPreferencesView.swift in Sources */,
 				FE01A0040000000000000002 /* FormulaEditorController.swift in Sources */,
 				FE01A0050000000000000002 /* FormulaTextView.swift in Sources */,
@@ -2696,6 +2709,7 @@
 			files = (
 				0587FF172DDE64E3005DECEF /* FITScopeUITests.swift in Sources */,
 				0AC10000000000000000F003 /* AccessibilityIdentifiers.swift in Sources */,
+				0AB10000000000000000E403 /* AutoStretchPreference.swift in Sources */,
 				0AC10000000000000000F005 /* UITestSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2879,6 +2893,7 @@
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = FITScopeThumbnailExtension/FITScopeThumbnailExtension.entitlements;
 				INFOPLIST_FILE = FITScopeThumbnailExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FITScopeThumbnailExtension;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2900,6 +2915,7 @@
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = FITScopeThumbnailExtension/FITScopeThumbnailExtension.entitlements;
 				INFOPLIST_FILE = FITScopeThumbnailExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FITScopeThumbnailExtension;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2921,6 +2937,7 @@
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = FITScopePreviewExtension/FITScopePreviewExtension.entitlements;
 				INFOPLIST_FILE = FITScopePreviewExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FITScopePreviewExtension;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2942,6 +2959,7 @@
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = FITScopePreviewExtension/FITScopePreviewExtension.entitlements;
 				INFOPLIST_FILE = FITScopePreviewExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FITScopePreviewExtension;
 				LD_RUNPATH_SEARCH_PATHS = (

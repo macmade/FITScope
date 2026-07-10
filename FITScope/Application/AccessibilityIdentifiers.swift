@@ -704,6 +704,27 @@ public enum AccessibilityIdentifier
         /// The "confirm before moving files to the Trash" toggle in the General tab.
         public static let confirmMoveToTrashToggle = "PreferencesView.confirmMoveToTrashToggle"
 
+        /// The Auto-Stretch tab's content.
+        public static let autoStretchTab = "PreferencesView.autoStretchTab"
+
+        /// The "auto-stretch on open" toggle for a format, in the Auto-Stretch tab.
+        ///
+        /// - Parameter format: The image format.
+        /// - Returns: The accessibility identifier.
+        public static func autoStretchOnOpenToggle( _ format: AutoStretchPreference.Format ) -> String
+        {
+            "PreferencesView.autoStretchOnOpenToggle.\( format.rawValue )"
+        }
+
+        /// The "auto-stretch previews" toggle for a format, in the Auto-Stretch tab.
+        ///
+        /// - Parameter format: The image format.
+        /// - Returns: The accessibility identifier.
+        public static func autoStretchPreviewsToggle( _ format: AutoStretchPreference.Format ) -> String
+        {
+            "PreferencesView.autoStretchPreviewsToggle.\( format.rawValue )"
+        }
+
         /// The API Keys tab's content.
         public static let apiKeysTab = "PreferencesView.apiKeysTab"
 

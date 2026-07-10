@@ -32,6 +32,10 @@ public enum PreferencesTab: Hashable, CaseIterable
     /// The General tab.
     case general
 
+    /// The Auto-Stretch tab, for the per-format auto-stretch-on-open and preview
+    /// preferences.
+    case autoStretch
+
     /// The API Keys tab.
     case apiKeys
 

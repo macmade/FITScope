@@ -58,9 +58,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
     /// Builds the preferences store.
     ///
     /// Under ``isolatedPreferencesArgument`` (set by the UI-test launcher) the
-    /// store is backed by a private defaults suite that is wiped on launch, so a
-    /// UI test run neither reads from nor writes to the real user preferences.
-    /// Otherwise the standard user defaults are used.
+    /// store is backed by private defaults suites — both the app-only store and
+    /// the shared App Group store — that are wiped on launch, so a UI test run
+    /// neither reads from nor writes to the real user preferences (including the
+    /// shared per-format preview toggles). Otherwise the standard user defaults
+    /// and the real App Group suite are used.
     ///
     /// - Returns: The preferences store to use for this launch.
     private static func makePreferences() -> Preferences
@@ -71,12 +73,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
             return Preferences()
         }
 
-        let suiteName = "com.xs-labs.FITScope.uitests"
-        let defaults  = UserDefaults( suiteName: suiteName ) ?? .standard
+        let suiteName       = "com.xs-labs.FITScope.uitests"
+        let sharedSuiteName = "com.xs-labs.FITScope.uitests.shared"
+        let defaults        = UserDefaults( suiteName: suiteName ) ?? .standard
+        let sharedDefaults  = UserDefaults( suiteName: sharedSuiteName ) ?? defaults
 
         defaults.removePersistentDomain( forName: suiteName )
+        sharedDefaults.removePersistentDomain( forName: sharedSuiteName )
 
-        return Preferences( defaults: defaults )
+        return Preferences( defaults: defaults, sharedDefaults: sharedDefaults )
     }
 
     /// Whether the app is hosting a test bundle. When tests run, the app must

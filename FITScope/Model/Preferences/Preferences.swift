@@ -98,6 +98,13 @@ public final class Preferences: ObservableObject
     /// back through each property's `didSet`.
     private let defaults: UserDefaults
 
+    /// The shared App Group backing store for the preferences the sandboxed
+    /// QuickLook / thumbnail extensions must read — currently the per-format
+    /// "auto-stretch previews" toggles. The app writes them here; the extensions
+    /// read them via ``AutoStretchPreference/autoStretchPreviews(_:in:)``. Separate
+    /// from ``defaults`` so the app-only settings stay on `.standard`.
+    private let sharedDefaults: UserDefaults
+
     /// Whether the canvas's floating toolbar and status pill auto-hide after a
     /// short delay of cursor inactivity. On — the app's original behaviour — by
     /// default; when off, the bars stay visible.
@@ -141,6 +148,52 @@ public final class Preferences: ObservableObject
         didSet { self.defaults.set( Self.encode( self.overlayAppearances ), forKey: Key.overlayAppearances ) }
     }
 
+    /// Whether opening a FITS image in the app auto-stretches it (a Screen
+    /// Transfer), rather than showing it linear. On by default. App-only, so it is
+    /// stored on ``defaults`` (`.standard`).
+    @Published public var autoStretchOnOpenFITS: Bool
+    {
+        didSet { self.defaults.set( self.autoStretchOnOpenFITS, forKey: AutoStretchPreference.onOpenKey( .fits ) ) }
+    }
+
+    /// Whether opening an XISF image in the app auto-stretches it. On by default.
+    /// App-only (`.standard`). The XISF display function, when present, takes
+    /// priority over the auto-stretch (see Milestone 4).
+    @Published public var autoStretchOnOpenXISF: Bool
+    {
+        didSet { self.defaults.set( self.autoStretchOnOpenXISF, forKey: AutoStretchPreference.onOpenKey( .xisf ) ) }
+    }
+
+    /// Whether opening a camera RAW image in the app auto-stretches it. On by
+    /// default. App-only (`.standard`).
+    @Published public var autoStretchOnOpenRAW: Bool
+    {
+        didSet { self.defaults.set( self.autoStretchOnOpenRAW, forKey: AutoStretchPreference.onOpenKey( .raw ) ) }
+    }
+
+    /// Whether FITS QuickLook / Finder previews and thumbnails are auto-stretched.
+    /// On by default. Stored in the shared App Group suite so the sandboxed
+    /// extensions can read it.
+    @Published public var autoStretchPreviewsFITS: Bool
+    {
+        didSet { self.sharedDefaults.set( self.autoStretchPreviewsFITS, forKey: AutoStretchPreference.previewsKey( .fits ) ) }
+    }
+
+    /// Whether XISF QuickLook / Finder previews and thumbnails are auto-stretched.
+    /// On by default. Stored in the shared App Group suite. The XISF display
+    /// function, when present, takes priority (see Milestone 4).
+    @Published public var autoStretchPreviewsXISF: Bool
+    {
+        didSet { self.sharedDefaults.set( self.autoStretchPreviewsXISF, forKey: AutoStretchPreference.previewsKey( .xisf ) ) }
+    }
+
+    /// Whether camera RAW QuickLook / Finder previews and thumbnails are
+    /// auto-stretched. On by default. Stored in the shared App Group suite.
+    @Published public var autoStretchPreviewsRAW: Bool
+    {
+        didSet { self.sharedDefaults.set( self.autoStretchPreviewsRAW, forKey: AutoStretchPreference.previewsKey( .raw ) ) }
+    }
+
     /// The user's image-weight formula, as raw text (see ``WeightFormula``).
     ///
     /// Defaults to ``WeightFormula/defaultExpression``. The raw text is persisted
@@ -178,23 +231,38 @@ public final class Preferences: ObservableObject
         }
     }
 
-    /// Creates the store, seeding each setting from `defaults` or its default
-    /// value when nothing has been stored yet.
+    /// Creates the store, seeding each setting from its backing store or its
+    /// default value when nothing has been stored yet.
     ///
-    /// - Parameter defaults: The backing store. Defaults to `.standard`; tests
-    ///   inject an isolated suite.
-    public init( defaults: UserDefaults = .standard )
+    /// - Parameters:
+    ///   - defaults:       The app-only backing store. Defaults to `.standard`;
+    ///                     tests inject an isolated suite.
+    ///   - sharedDefaults: The shared App Group backing store for the extension-
+    ///                     readable preview preferences. Defaults to the App Group
+    ///                     suite (falling back to `defaults` if it cannot be opened,
+    ///                     e.g. the entitlement is missing); tests inject an
+    ///                     isolated suite.
+    public init( defaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil )
     {
-        self.defaults = defaults
+        let sharedDefaults = sharedDefaults ?? AutoStretchPreference.sharedDefaults ?? defaults
+
+        self.defaults       = defaults
+        self.sharedDefaults = sharedDefaults
 
         // `object(forKey:)` distinguishes "never set" (nil → the default) from a
         // stored `false`, which a plain `bool(forKey:)` could not.
-        self.autoHideFloatingBars = ( defaults.object( forKey: Key.autoHideFloatingBars ) as? Bool ) ?? true
-        self.confirmMoveToTrash   = ( defaults.object( forKey: Key.confirmMoveToTrash ) as? Bool ) ?? true
-        self.infoPanelFields      = Self.decodeInfoPanelFields( defaults.data( forKey: Key.infoPanelFields ) )
-        self.overlayAppearances   = Self.decodeOverlayAppearances( defaults.data( forKey: Key.overlayAppearances ) )
-        self.weightFormula        = defaults.string( forKey: Key.weightFormula ) ?? WeightFormula.defaultExpression
-        self.mainWindowSize       = Self.decodeMainWindowSize( from: defaults )
+        self.autoHideFloatingBars    = ( defaults.object( forKey: Key.autoHideFloatingBars ) as? Bool ) ?? true
+        self.confirmMoveToTrash      = ( defaults.object( forKey: Key.confirmMoveToTrash ) as? Bool ) ?? true
+        self.infoPanelFields         = Self.decodeInfoPanelFields( defaults.data( forKey: Key.infoPanelFields ) )
+        self.overlayAppearances      = Self.decodeOverlayAppearances( defaults.data( forKey: Key.overlayAppearances ) )
+        self.weightFormula           = defaults.string( forKey: Key.weightFormula ) ?? WeightFormula.defaultExpression
+        self.mainWindowSize          = Self.decodeMainWindowSize( from: defaults )
+        self.autoStretchOnOpenFITS   = ( defaults.object( forKey: AutoStretchPreference.onOpenKey( .fits ) ) as? Bool ) ?? true
+        self.autoStretchOnOpenXISF   = ( defaults.object( forKey: AutoStretchPreference.onOpenKey( .xisf ) ) as? Bool ) ?? true
+        self.autoStretchOnOpenRAW    = ( defaults.object( forKey: AutoStretchPreference.onOpenKey( .raw ) ) as? Bool ) ?? true
+        self.autoStretchPreviewsFITS = AutoStretchPreference.autoStretchPreviews( .fits, in: sharedDefaults )
+        self.autoStretchPreviewsXISF = AutoStretchPreference.autoStretchPreviews( .xisf, in: sharedDefaults )
+        self.autoStretchPreviewsRAW  = AutoStretchPreference.autoStretchPreviews( .raw, in: sharedDefaults )
     }
 
     /// Reads the persisted main-window size, if any.

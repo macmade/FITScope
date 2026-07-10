@@ -420,6 +420,100 @@ struct PreferencesTests
         #expect( reloaded.overlayAppearances.isEmpty )
     }
 
+    /// With nothing stored, every per-format auto-stretch preference — on-open and
+    /// previews alike — defaults to on, so astro images open and preview stretched
+    /// out of the box.
+    @Test
+    @MainActor
+    func autoStretchPreferencesDefaultToOn()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+        let ( shared, sharedName )  = self.makeIsolatedDefaults()
+
+        defer
+        {
+            defaults.removePersistentDomain( forName: suiteName )
+            shared.removePersistentDomain( forName: sharedName )
+        }
+
+        let preferences = Preferences( defaults: defaults, sharedDefaults: shared )
+
+        #expect( preferences.autoStretchOnOpenFITS )
+        #expect( preferences.autoStretchOnOpenXISF )
+        #expect( preferences.autoStretchOnOpenRAW )
+        #expect( preferences.autoStretchPreviewsFITS )
+        #expect( preferences.autoStretchPreviewsXISF )
+        #expect( preferences.autoStretchPreviewsRAW )
+    }
+
+    /// The on-open preferences persist through the standard store (app-only) and
+    /// are read back by a fresh instance — never touching the shared suite.
+    @Test
+    @MainActor
+    func autoStretchOnOpenPersistsInTheStandardStore()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+        let ( shared, sharedName )  = self.makeIsolatedDefaults()
+
+        defer
+        {
+            defaults.removePersistentDomain( forName: suiteName )
+            shared.removePersistentDomain( forName: sharedName )
+        }
+
+        let preferences = Preferences( defaults: defaults, sharedDefaults: shared )
+
+        preferences.autoStretchOnOpenFITS = false
+
+        let reloaded = Preferences( defaults: defaults, sharedDefaults: shared )
+
+        #expect( reloaded.autoStretchOnOpenFITS == false )
+        #expect( shared.object( forKey: AutoStretchPreference.onOpenKey( .fits ) ) == nil, "on-open must not go to the shared suite" )
+    }
+
+    /// The preview preferences persist through the shared App Group suite so the
+    /// sandboxed extensions can read them (via the shared helper), and never touch
+    /// the app-only standard store.
+    @Test
+    @MainActor
+    func autoStretchPreviewsPersistInTheSharedStore()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+        let ( shared, sharedName )  = self.makeIsolatedDefaults()
+
+        defer
+        {
+            defaults.removePersistentDomain( forName: suiteName )
+            shared.removePersistentDomain( forName: sharedName )
+        }
+
+        let preferences = Preferences( defaults: defaults, sharedDefaults: shared )
+
+        preferences.autoStretchPreviewsXISF = false
+
+        #expect( AutoStretchPreference.autoStretchPreviews( .xisf, in: shared ) == false, "the extension helper should read the shared value" )
+
+        let reloaded = Preferences( defaults: defaults, sharedDefaults: shared )
+
+        #expect( reloaded.autoStretchPreviewsXISF == false )
+        #expect( defaults.object( forKey: AutoStretchPreference.previewsKey( .xisf ) ) == nil, "previews must not go to the standard store" )
+    }
+
+    /// The shared preview helper defaults to on when nothing is stored, so a
+    /// fresh extension previews stretched until the user opts out.
+    @Test
+    @MainActor
+    func sharedPreviewHelperDefaultsToOn()
+    {
+        let ( shared, sharedName ) = self.makeIsolatedDefaults()
+
+        defer { shared.removePersistentDomain( forName: sharedName ) }
+
+        #expect( AutoStretchPreference.autoStretchPreviews( .fits, in: shared ) )
+        #expect( AutoStretchPreference.autoStretchPreviews( .xisf, in: shared ) )
+        #expect( AutoStretchPreference.autoStretchPreviews( .raw, in: shared ) )
+    }
+
     /// Writes a raw `infoPanelFields` payload — `(fieldRawValue, visible)` pairs,
     /// JSON-encoded under the persisted key — directly into the store, to seed
     /// the reconciliation tests with partial or stale configurations.

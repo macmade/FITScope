@@ -80,6 +80,12 @@ public struct PreferencesView: View
                 .tabItem { Label( "General", systemImage: "gearshape" ) }
                 .tag( PreferencesTab.general )
 
+            AutoStretchPreferencesView( preferences: self.preferences )
+                .frame( width: Self.standardWidth )
+                .fixedSize( horizontal: false, vertical: true )
+                .tabItem { Label( "Auto-Stretch", systemImage: "wand.and.stars" ) }
+                .tag( PreferencesTab.autoStretch )
+
             APIKeysPreferencesView( apiKeyStore: self.apiKeyStore )
                 .frame( width: Self.standardWidth )
                 .fixedSize( horizontal: false, vertical: true )
