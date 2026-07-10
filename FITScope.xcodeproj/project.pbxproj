@@ -22,6 +22,10 @@
 		05282AA5300113B00097206C /* License-SwiftUtilities.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05282A9E300113B00097206C /* License-SwiftUtilities.txt */; };
 		05282AA6300113B00097206C /* License-SwiftFITS.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05282A9B300113B00097206C /* License-SwiftFITS.txt */; };
 		05282AA7300113B00097206C /* License-SwiftXISF.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05282A9F300113B00097206C /* License-SwiftXISF.txt */; };
+		05282AF530014A440097206C /* SwiftRAW.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05282AEE30014A3D0097206C /* SwiftRAW.framework */; };
+		05282AF630014A4B0097206C /* SwiftRAW.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 05282AEE30014A3D0097206C /* SwiftRAW.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		05282AF730014A540097206C /* SwiftRAW.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05282AEE30014A3D0097206C /* SwiftRAW.framework */; };
+		05282AF830014A5A0097206C /* SwiftRAW.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05282AEE30014A3D0097206C /* SwiftRAW.framework */; };
 		05398CE32DEECF4F005904EC /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
 		053C2E752DF6EE3300DA637A /* Slider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 053C2E742DF6EE3200DA637A /* Slider.swift */; };
 		056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
@@ -90,7 +94,6 @@
 		05C4BD762DF2E62500326B69 /* PreviewHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C4BD752DF2E62200326B69 /* PreviewHelper.swift */; };
 		05C4BD782DF2E7D600326B69 /* InfoViewTableCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C4BD772DF2E7D000326B69 /* InfoViewTableCell.swift */; };
 		05D710C62DF2007D00CE32E3 /* FITScopeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */; };
-		C5ED175000000000000000A2 /* AppCredits.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5ED175000000000000000A1 /* AppCredits.swift */; };
 		05D710CE2DF2012500CE32E3 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710CC2DF2012500CE32E3 /* AboutView.swift */; };
 		05D710D02DF201C300CE32E3 /* NSBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710CF2DF201C100CE32E3 /* NSBundle.swift */; };
 		05DC79A12DF2F82A003E2AFA /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DC79A02DF2F827003E2AFA /* ErrorView.swift */; };
@@ -333,6 +336,7 @@
 		C13E4F74949472B2970E39C7 /* CursorReadout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6A0CA25BD529178F2F9432 /* CursorReadout.swift */; };
 		C252521B229165A437AD0AE0 /* ImageIOImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 924BC59850D445E764B72DC7 /* ImageIOImageLoader.swift */; };
 		C4DC1E9B6D524F050839E00D /* PlateSolveHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA145A75999011CAF0371633 /* PlateSolveHeaderView.swift */; };
+		C5ED175000000000000000A2 /* AppCredits.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5ED175000000000000000A1 /* AppCredits.swift */; };
 		C7C9D58AF79A7584E987A03B /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8993FF77DBD5F754CAB41153 /* InspectorView.swift */; };
 		C814CC1A2E52AE18B83B03A0 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA32D0C16D896A413618C33 /* GraphView.swift */; };
 		CA1100000000000000000011 /* ImageCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000001 /* ImageCarouselView.swift */; };
@@ -394,6 +398,13 @@
 			remoteGlobalIDString = 05C527822DD8E36300843626;
 			remoteInfo = SwiftPixel;
 		};
+		05282AED30014A3D0097206C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 05282ADA30014A3C0097206C /* SwiftRAW.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 056ACF7A2FFFE69100F40080;
+			remoteInfo = SwiftRAW;
+		};
 		053BEAB22DDDDDA900EF0C79 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 053BEA9A2DDDDDA800EF0C79 /* Project object */;
@@ -449,6 +460,7 @@
 				050F384D2DEEC2FA00E84F97 /* SwiftPixel.framework in Embed Frameworks */,
 				056E5C522DDF1356003254C7 /* SwiftFITS.framework in Embed Frameworks */,
 				05AA617C2FFEE8E000FCF406 /* SwiftXISF.framework in Embed Frameworks */,
+				05282AF630014A4B0097206C /* SwiftRAW.framework in Embed Frameworks */,
 				05C01AB52FEF2AEC00FE62EC /* SwiftAstro.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -487,6 +499,7 @@
 		05282A9D300113B00097206C /* License-SwiftRAW.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftRAW.txt"; sourceTree = "<group>"; };
 		05282A9E300113B00097206C /* License-SwiftUtilities.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftUtilities.txt"; sourceTree = "<group>"; };
 		05282A9F300113B00097206C /* License-SwiftXISF.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftXISF.txt"; sourceTree = "<group>"; };
+		05282ADA30014A3C0097206C /* SwiftRAW.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftRAW.xcodeproj; path = Submodules/SwiftAstro/Submodules/SwiftRAW/SwiftRAW.xcodeproj; sourceTree = "<group>"; };
 		05398CE22DEECF4F005904EC /* SwiftUtilities.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SwiftUtilities.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAA22DDDDDA800EF0C79 /* FITScope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FITScope.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAB12DDDDDA900EF0C79 /* FITScopeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FITScopeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -592,7 +605,6 @@
 		05C4BD772DF2E7D000326B69 /* InfoViewTableCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoViewTableCell.swift; sourceTree = "<group>"; };
 		05C9EFEE0E53D9E62C7D3A9F /* ImageToolbarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageToolbarView.swift; sourceTree = "<group>"; };
 		05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeApp.swift; sourceTree = "<group>"; };
-		C5ED175000000000000000A1 /* AppCredits.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppCredits.swift; sourceTree = "<group>"; };
 		05D710CC2DF2012500CE32E3 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		05D710CF2DF201C100CE32E3 /* NSBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSBundle.swift; sourceTree = "<group>"; };
 		05DC79A02DF2F827003E2AFA /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
@@ -814,6 +826,7 @@
 		C0FFEE000000000000000021 /* CustomControlChrome.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CustomControlChrome.swift; sourceTree = "<group>"; };
 		C3E9C27093943525176C6843 /* MoonPhaseDisc.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseDisc.swift; sourceTree = "<group>"; };
 		C5E207072CA3D851218A4EB9 /* SkyConditionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SkyConditionTests.swift; sourceTree = "<group>"; };
+		C5ED175000000000000000A1 /* AppCredits.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppCredits.swift; sourceTree = "<group>"; };
 		C7D3D9131B43725B5D03FCFA /* CanvasGeometry.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasGeometry.swift; sourceTree = "<group>"; };
 		C8E43E3296F35E241D872E3E /* OverlayAppearance.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OverlayAppearance.swift; sourceTree = "<group>"; };
 		C9BD5E1A3FC040B4E14E8824 /* HistogramViewOptions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramViewOptions.swift; sourceTree = "<group>"; };
@@ -876,6 +889,7 @@
 				050F384C2DEEC2FA00E84F97 /* SwiftPixel.framework in Frameworks */,
 				056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */,
 				05AA61792FFEE8A900FCF406 /* SwiftXISF.framework in Frameworks */,
+				05282AF530014A440097206C /* SwiftRAW.framework in Frameworks */,
 				05C01AB42FEF2AD600FE62EC /* SwiftAstro.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -902,6 +916,7 @@
 				05A1B2C30000000000000C01 /* SwiftPixel.framework in Frameworks */,
 				05A1B2C30000000000000C02 /* SwiftFITS.framework in Frameworks */,
 				05AA617A2FFEE8C200FCF406 /* SwiftXISF.framework in Frameworks */,
+				05282AF730014A540097206C /* SwiftRAW.framework in Frameworks */,
 				05B189CA2FEAE7930056553A /* Quartz.framework in Frameworks */,
 				05B189C82FEAE7930056553A /* QuickLookThumbnailing.framework in Frameworks */,
 			);
@@ -915,6 +930,7 @@
 				05A1B2C30000000000000C04 /* SwiftPixel.framework in Frameworks */,
 				05A1B2C30000000000000C05 /* SwiftFITS.framework in Frameworks */,
 				05AA617B2FFEE8CE00FCF406 /* SwiftXISF.framework in Frameworks */,
+				05282AF830014A5A0097206C /* SwiftRAW.framework in Frameworks */,
 				05B189E42FEAE7AD0056553A /* Quartz.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -976,6 +992,14 @@
 			path = Licenses;
 			sourceTree = "<group>";
 		};
+		05282ADB30014A3C0097206C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				05282AEE30014A3D0097206C /* SwiftRAW.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		053BEA992DDDDDA800EF0C79 = {
 			isa = PBXGroup;
 			children = (
@@ -986,6 +1010,7 @@
 				050F383F2DEEC2F000E84F97 /* SwiftPixel.xcodeproj */,
 				056E5C3F2DDF104D003254C7 /* SwiftFITS.xcodeproj */,
 				05AA61622FFEE89C00FCF406 /* SwiftXISF.xcodeproj */,
+				05282ADA30014A3C0097206C /* SwiftRAW.xcodeproj */,
 				05C01AA22FEF2ACE00FE62EC /* SwiftAstro.xcodeproj */,
 				056E5C3E2DDF1041003254C7 /* xcconfig */,
 				056E5C062DDF0EB5003254C7 /* .github */,
@@ -2092,6 +2117,10 @@
 					ProjectRef = 050F383F2DEEC2F000E84F97 /* SwiftPixel.xcodeproj */;
 				},
 				{
+					ProductGroup = 05282ADB30014A3C0097206C /* Products */;
+					ProjectRef = 05282ADA30014A3C0097206C /* SwiftRAW.xcodeproj */;
+				},
+				{
 					ProductGroup = 05AA61632FFEE89C00FCF406 /* Products */;
 					ProjectRef = 05AA61622FFEE89C00FCF406 /* SwiftXISF.xcodeproj */;
 				},
@@ -2113,6 +2142,13 @@
 			fileType = wrapper.framework;
 			path = SwiftPixel.framework;
 			remoteRef = 050F38482DEEC2F000E84F97 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		05282AEE30014A3D0097206C /* SwiftRAW.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = SwiftRAW.framework;
+			remoteRef = 05282AED30014A3D0097206C /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		056E5C452DDF104D003254C7 /* SwiftFITS.framework */ = {
