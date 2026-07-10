@@ -15,6 +15,13 @@
 		05206B8F2DE0C41C00550A87 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8E2DE0C41800550A87 /* ImageProcessor.swift */; };
 		0524AD7E2DF3450400180358 /* HistogramStatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0524AD7D2DF3450200180358 /* HistogramStatisticsView.swift */; };
 		0524AD812DF3457D00180358 /* HistogramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0524AD802DF3457C00180358 /* HistogramView.swift */; };
+		05282AA1300113B00097206C /* License-SwiftRAW.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05282A9D300113B00097206C /* License-SwiftRAW.txt */; };
+		05282AA2300113B00097206C /* License-SwiftPixel.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05282A9C300113B00097206C /* License-SwiftPixel.txt */; };
+		05282AA3300113B00097206C /* License-LibRAW.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05282A99300113B00097206C /* License-LibRAW.txt */; };
+		05282AA4300113B00097206C /* License-SwiftAstro.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05282A9A300113B00097206C /* License-SwiftAstro.txt */; };
+		05282AA5300113B00097206C /* License-SwiftUtilities.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05282A9E300113B00097206C /* License-SwiftUtilities.txt */; };
+		05282AA6300113B00097206C /* License-SwiftFITS.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05282A9B300113B00097206C /* License-SwiftFITS.txt */; };
+		05282AA7300113B00097206C /* License-SwiftXISF.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05282A9F300113B00097206C /* License-SwiftXISF.txt */; };
 		05398CE32DEECF4F005904EC /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
 		053C2E752DF6EE3300DA637A /* Slider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 053C2E742DF6EE3200DA637A /* Slider.swift */; };
 		056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
@@ -83,6 +90,7 @@
 		05C4BD762DF2E62500326B69 /* PreviewHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C4BD752DF2E62200326B69 /* PreviewHelper.swift */; };
 		05C4BD782DF2E7D600326B69 /* InfoViewTableCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C4BD772DF2E7D000326B69 /* InfoViewTableCell.swift */; };
 		05D710C62DF2007D00CE32E3 /* FITScopeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */; };
+		C5ED175000000000000000A2 /* AppCredits.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5ED175000000000000000A1 /* AppCredits.swift */; };
 		05D710CE2DF2012500CE32E3 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710CC2DF2012500CE32E3 /* AboutView.swift */; };
 		05D710D02DF201C300CE32E3 /* NSBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710CF2DF201C100CE32E3 /* NSBundle.swift */; };
 		05DC79A12DF2F82A003E2AFA /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DC79A02DF2F827003E2AFA /* ErrorView.swift */; };
@@ -472,6 +480,13 @@
 		05206B8E2DE0C41800550A87 /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
 		0524AD7D2DF3450200180358 /* HistogramStatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramStatisticsView.swift; sourceTree = "<group>"; };
 		0524AD802DF3457C00180358 /* HistogramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramView.swift; sourceTree = "<group>"; };
+		05282A99300113B00097206C /* License-LibRAW.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-LibRAW.txt"; sourceTree = "<group>"; };
+		05282A9A300113B00097206C /* License-SwiftAstro.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftAstro.txt"; sourceTree = "<group>"; };
+		05282A9B300113B00097206C /* License-SwiftFITS.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftFITS.txt"; sourceTree = "<group>"; };
+		05282A9C300113B00097206C /* License-SwiftPixel.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftPixel.txt"; sourceTree = "<group>"; };
+		05282A9D300113B00097206C /* License-SwiftRAW.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftRAW.txt"; sourceTree = "<group>"; };
+		05282A9E300113B00097206C /* License-SwiftUtilities.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftUtilities.txt"; sourceTree = "<group>"; };
+		05282A9F300113B00097206C /* License-SwiftXISF.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftXISF.txt"; sourceTree = "<group>"; };
 		05398CE22DEECF4F005904EC /* SwiftUtilities.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SwiftUtilities.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAA22DDDDDA800EF0C79 /* FITScope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FITScope.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAB12DDDDDA900EF0C79 /* FITScopeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FITScopeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -577,6 +592,7 @@
 		05C4BD772DF2E7D000326B69 /* InfoViewTableCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoViewTableCell.swift; sourceTree = "<group>"; };
 		05C9EFEE0E53D9E62C7D3A9F /* ImageToolbarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageToolbarView.swift; sourceTree = "<group>"; };
 		05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeApp.swift; sourceTree = "<group>"; };
+		C5ED175000000000000000A1 /* AppCredits.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppCredits.swift; sourceTree = "<group>"; };
 		05D710CC2DF2012500CE32E3 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		05D710CF2DF201C100CE32E3 /* NSBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSBundle.swift; sourceTree = "<group>"; };
 		05DC79A02DF2F827003E2AFA /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
@@ -946,6 +962,20 @@
 			path = Image;
 			sourceTree = "<group>";
 		};
+		05282AA0300113B00097206C /* Licenses */ = {
+			isa = PBXGroup;
+			children = (
+				05282A99300113B00097206C /* License-LibRAW.txt */,
+				05282A9A300113B00097206C /* License-SwiftAstro.txt */,
+				05282A9B300113B00097206C /* License-SwiftFITS.txt */,
+				05282A9C300113B00097206C /* License-SwiftPixel.txt */,
+				05282A9D300113B00097206C /* License-SwiftRAW.txt */,
+				05282A9E300113B00097206C /* License-SwiftUtilities.txt */,
+				05282A9F300113B00097206C /* License-SwiftXISF.txt */,
+			);
+			path = Licenses;
+			sourceTree = "<group>";
+		};
 		053BEA992DDDDDA800EF0C79 = {
 			isa = PBXGroup;
 			children = (
@@ -1221,6 +1251,7 @@
 				056E5C492DDF1180003254C7 /* Supporting Files */,
 				0579B6242DF2C120002FDD47 /* Preview Content */,
 				C117E0779B3B4640E1488F50 /* Network */,
+				05282AA0300113B00097206C /* Licenses */,
 			);
 			path = FITScope;
 			sourceTree = "<group>";
@@ -1306,6 +1337,7 @@
 			isa = PBXGroup;
 			children = (
 				05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */,
+				C5ED175000000000000000A1 /* AppCredits.swift */,
 				DF3765F1937F36620A92317F /* MainWindowView.swift */,
 				77051EA6E847507556D8B2B0 /* AppModel.swift */,
 				FEEDFACE0000000000000001 /* FileActions.swift */,
@@ -1740,7 +1772,6 @@
 				E43FB1F7C4C5F3EBED02E336 /* LoadedImage+ImageIO.swift */,
 				924BC59850D445E764B72DC7 /* ImageIOImageLoader.swift */,
 			);
-			name = ImageIO;
 			path = ImageIO;
 			sourceTree = "<group>";
 		};
@@ -1801,7 +1832,6 @@
 				173D76779066B7B4F578E096 /* ImageIOImageInfoTests.swift */,
 				79454FCF10EA8BB78FA3B4BF /* ImageIOImageLoaderTests.swift */,
 			);
-			name = ImageIO;
 			path = ImageIO;
 			sourceTree = "<group>";
 		};
@@ -2107,6 +2137,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				05DC79A72DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits in Resources */,
+				05282AA1300113B00097206C /* License-SwiftRAW.txt in Resources */,
+				05282AA2300113B00097206C /* License-SwiftPixel.txt in Resources */,
+				05282AA3300113B00097206C /* License-LibRAW.txt in Resources */,
+				05282AA4300113B00097206C /* License-SwiftAstro.txt in Resources */,
+				05282AA5300113B00097206C /* License-SwiftUtilities.txt in Resources */,
+				05282AA6300113B00097206C /* License-SwiftFITS.txt in Resources */,
+				05282AA7300113B00097206C /* License-SwiftXISF.txt in Resources */,
 				05DC79A92DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits in Resources */,
 				0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */,
 				0579B6252DF2C149002FDD47 /* Preview Assets.xcassets in Resources */,
@@ -2288,6 +2325,7 @@
 				05C4BD782DF2E7D600326B69 /* InfoViewTableCell.swift in Sources */,
 				057F611C2DF8B78600EE82D1 /* ImageControlContainer.swift in Sources */,
 				05D710C62DF2007D00CE32E3 /* FITScopeApp.swift in Sources */,
+				C5ED175000000000000000A2 /* AppCredits.swift in Sources */,
 				05D710CE2DF2012500CE32E3 /* AboutView.swift in Sources */,
 				BB151EF31682CFC60AB2CB64 /* OpenFile.swift in Sources */,
 				669B304AA37E4BEB8964FC03 /* WindowModel.swift in Sources */,

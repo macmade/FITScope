@@ -24,6 +24,7 @@
 
 import AppKit
 import SwiftUI
+import SwiftUtilities
 import UniformTypeIdentifiers
 
 /// The application entry point.
@@ -120,6 +121,11 @@ public struct FITScopeApp: App
                 Button( action: { openWindow( id: "AboutWindow" ) } )
                 {
                     Label( "About \( Bundle.main.title )...", systemImage: "info.circle" )
+                }
+
+                Button( action: { CreditsWindowController.show( credits: AppCredits.all ) } )
+                {
+                    Label( "Credits\u{2026}", systemImage: "heart" )
                 }
 
                 Button
