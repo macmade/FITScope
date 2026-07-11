@@ -661,9 +661,9 @@ final class FITScopeUITests: XCTestCase
     /// Switching the selected file must refresh the inspector controls to that
     /// file's own adjustments — a control's state must not leak between images.
     /// A stretch mode chosen on one file must not show on another, and the first
-    /// file's state must survive switching away and back. (The stretch picker's
-    /// per-mode slider is the reveal this asserts on, standing in for the removed
-    /// gamma toggle, since the custom sliders are not drivable.)
+    /// file's state must survive switching away and back. (The Screen Transfer
+    /// mode's Edit button is the reveal this asserts on, since it appears only when
+    /// that mode is selected.)
     @MainActor
     func testSwitchingFilesRefreshesInspectorControls() throws
     {
@@ -673,7 +673,7 @@ final class FITScopeUITests: XCTestCase
 
         let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
         let picker = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.modePicker )
-        let slider = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.intensitySlider )
+        let edit   = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.editButton )
 
         XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The first file did not render." )
 
@@ -686,38 +686,37 @@ final class FITScopeUITests: XCTestCase
             "Expected two file rows after opening two files (rows: \( rows.count ))."
         )
 
-        // Select the first file and choose the Logarithmic stretch: its intensity
-        // slider appears.
+        // Select the first file and choose the Screen Transfer stretch: its Edit
+        // button appears.
         rows.element( boundBy: 0 ).click()
         XCTAssertTrue( picker.waitForExistence( timeout: 30 ), "The stretch mode picker did not appear." )
-        XCTAssertFalse( slider.exists, "A stretch slider was visible before a stretch mode was selected." )
+        XCTAssertFalse( edit.exists, "The Screen Transfer editor was visible before a stretch mode was selected." )
 
-        UITestSupport.selectPickerOption( picker, "Logarithmic", in: app )
-        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "Selecting a stretch mode did not reveal its slider." )
+        UITestSupport.selectPickerOption( picker, "Screen Transfer", in: app )
+        XCTAssertTrue( edit.waitForExistence( timeout: 5 ), "Selecting the Screen Transfer mode did not reveal its editor." )
 
         // Switch to the second file: it has its own (default) adjustments, so the
-        // stretch reads as None and the slider must be gone — the control must
+        // stretch reads as None and the Edit button must be gone — the control must
         // follow the newly selected image, not keep the first file's state.
         rows.element( boundBy: 1 ).click()
         XCTAssertTrue(
-            slider.waitForNonExistence( timeout: 10 ),
-            "The stretch slider stayed visible after switching files — the inspector did not refresh to the new image."
+            edit.waitForNonExistence( timeout: 10 ),
+            "The Screen Transfer editor stayed visible after switching files — the inspector did not refresh to the new image."
         )
 
         // Switch back: the first file's stretch is still set (its adjustments
         // persisted), so the control must reseed from that image rather than reset.
         rows.element( boundBy: 0 ).click()
         XCTAssertTrue(
-            slider.waitForExistence( timeout: 10 ),
+            edit.waitForExistence( timeout: 10 ),
             "The first file's stretch state was lost after switching away and back."
         )
     }
 
     /// "Reset View" must reset the inspector controls' displayed state, not just
-    /// the underlying render: after selecting a stretch mode, resetting must hide
-    /// that mode's slider again, proving the control followed the reset rather
-    /// than keeping its state. (The stretch picker stands in for the removed gamma
-    /// toggle, since the custom sliders are not drivable.)
+    /// the underlying render: after selecting the Screen Transfer mode, resetting
+    /// must hide its editor again, proving the control followed the reset rather
+    /// than keeping its state.
     @MainActor
     func testResetViewResetsInspectorControls() throws
     {
@@ -727,19 +726,19 @@ final class FITScopeUITests: XCTestCase
 
         let canvas = UITestSupport.element( app, AccessibilityIdentifier.ImageCanvasView.canvas )
         let picker = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.modePicker )
-        let slider = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.intensitySlider )
+        let edit   = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.editButton )
         let reset  = UITestSupport.element( app, AccessibilityIdentifier.InspectorView.resetButton )
 
         XCTAssertTrue( canvas.waitForExistence( timeout: 30 ), "The image did not render." )
         XCTAssertTrue( picker.waitForExistence( timeout: 5 ), "The stretch mode picker did not appear." )
 
-        UITestSupport.selectPickerOption( picker, "Logarithmic", in: app )
-        XCTAssertTrue( slider.waitForExistence( timeout: 5 ), "Selecting a stretch mode did not reveal its slider." )
+        UITestSupport.selectPickerOption( picker, "Screen Transfer", in: app )
+        XCTAssertTrue( edit.waitForExistence( timeout: 5 ), "Selecting the Screen Transfer mode did not reveal its editor." )
 
         reset.click()
         XCTAssertTrue(
-            slider.waitForNonExistence( timeout: 10 ),
-            "Reset View did not reset the stretch control — its slider stayed visible."
+            edit.waitForNonExistence( timeout: 10 ),
+            "Reset View did not reset the stretch control — its editor stayed visible."
         )
     }
 
@@ -1097,33 +1096,31 @@ final class FITScopeUITests: XCTestCase
         )
     }
 
-    /// The stretch mode picker reveals exactly the sliders each algorithm needs:
-    /// none for None, the intensity slider for Logarithmic, and both sigmoid
-    /// sliders for Sigmoid.
+    /// The stretch mode picker reveals the Screen Transfer editor actions only in
+    /// Screen Transfer mode: nothing for None, the Auto and Edit buttons for
+    /// Screen Transfer.
     @MainActor
-    func testStretchModeRevealsRelevantSliders() throws
+    func testStretchModeRevealsScreenTransferEditor() throws
     {
         let app = UITestSupport.launchApp()
 
         try UITestSupport.openFixture( "MonoImage.fits", in: app )
 
-        let picker    = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.modePicker )
-        let intensity = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.intensitySlider )
-        let midpoint  = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.midpointSlider )
-        let contrast  = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.contrastSlider )
+        let picker = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.modePicker )
+        let auto   = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.autoButton )
+        let edit   = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.editButton )
 
         XCTAssertTrue( picker.waitForExistence( timeout: 30 ), "The stretch mode picker did not appear." )
 
-        // Default is None — no stretch sliders.
-        XCTAssertFalse( intensity.exists, "A stretch slider was visible in None mode." )
+        // Default is None — no Screen Transfer editor.
+        XCTAssertFalse( edit.exists, "The Screen Transfer editor was visible in None mode." )
 
-        UITestSupport.selectPickerOption( picker, "Logarithmic", in: app )
-        XCTAssertTrue( intensity.waitForExistence( timeout: 5 ), "Logarithmic mode did not reveal the Intensity slider." )
+        UITestSupport.selectPickerOption( picker, "Screen Transfer", in: app )
+        XCTAssertTrue( edit.waitForExistence( timeout: 5 ), "Screen Transfer mode did not reveal the Edit button." )
+        XCTAssertTrue( auto.exists, "Screen Transfer mode did not reveal the Auto button." )
 
-        UITestSupport.selectPickerOption( picker, "Sigmoid", in: app )
-        XCTAssertTrue( midpoint.waitForExistence( timeout: 5 ), "Sigmoid mode did not reveal the Midpoint slider." )
-        XCTAssertTrue( contrast.exists, "Sigmoid mode did not reveal the Contrast slider." )
-        XCTAssertFalse( intensity.exists, "The Intensity slider lingered after leaving Logarithmic mode." )
+        UITestSupport.selectPickerOption( picker, "None", in: app )
+        XCTAssertTrue( edit.waitForNonExistence( timeout: 5 ), "The Screen Transfer editor lingered after leaving Screen Transfer mode." )
     }
 
     /// The white-balance Manual mode reveals the per-channel red/green/blue gain

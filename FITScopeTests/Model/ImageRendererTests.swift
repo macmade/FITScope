@@ -194,7 +194,7 @@ struct ImageRendererTests
 
         let original = try #require( renderer.result?.histogram.rgb )
 
-        renderer.adjustments.stretch = .log( 10 )
+        renderer.adjustments.stretch = .uniform( .init( midtones: 0.3 ) )
         renderer.scheduleReRender()
         await renderer.pendingRender?.value
 
@@ -269,9 +269,9 @@ struct ImageRendererTests
 
         #expect( renderer.error == nil )
 
-        // An arcsinh factor of zero is a mathematically invalid parameter the
-        // pipeline rejects by throwing.
-        renderer.adjustments.stretch = .arcsinh( 0 )
+        // An empty clip window (highlights ≤ shadows) is a mathematically invalid
+        // parameter the pipeline rejects by throwing.
+        renderer.adjustments.stretch = .uniform( .init( shadows: 1, highlights: 0 ) )
 
         await renderer.render()
 
@@ -290,13 +290,13 @@ struct ImageRendererTests
         let input    = try FITSRenderSource( sections: file.sections )
         let renderer = ImageRenderer( source: input )
 
-        renderer.adjustments.stretch = .arcsinh( 0 )
+        renderer.adjustments.stretch = .uniform( .init( shadows: 1, highlights: 0 ) )
 
         await renderer.render()
 
         #expect( renderer.error != nil )
 
-        renderer.adjustments.stretch = .log( 50 )
+        renderer.adjustments.stretch = .uniform( .init( midtones: 0.3 ) )
 
         await renderer.render()
 
@@ -333,7 +333,7 @@ struct ImageRendererTests
 
         let older = try #require( renderer.result )
 
-        renderer.adjustments.stretch = .log( 10 )
+        renderer.adjustments.stretch = .uniform( .init( midtones: 0.3 ) )
 
         await renderer.render()
 
@@ -619,4 +619,5 @@ struct ImageRendererTests
     }
 
     private struct StaleError: Error {}
+
 }

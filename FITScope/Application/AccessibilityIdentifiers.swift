@@ -475,30 +475,6 @@ public enum AccessibilityIdentifier
         /// The stretch-mode picker.
         public static let modePicker = "StretchControlView.modePicker"
 
-        /// The logarithmic-intensity slider (shown only in logarithmic mode).
-        public static let intensitySlider = "StretchControlView.intensitySlider"
-
-        /// The arcsinh-factor slider (shown only in arcsinh mode).
-        public static let factorSlider = "StretchControlView.factorSlider"
-
-        /// The sigmoid-midpoint slider (shown only in sigmoid mode).
-        public static let midpointSlider = "StretchControlView.midpointSlider"
-
-        /// The sigmoid-contrast slider (shown only in sigmoid mode).
-        public static let contrastSlider = "StretchControlView.contrastSlider"
-
-        /// The reset button for the logarithmic-intensity slider.
-        public static let intensityReset = "StretchControlView.intensityReset"
-
-        /// The reset button for the arcsinh-factor slider.
-        public static let factorReset = "StretchControlView.factorReset"
-
-        /// The reset button for the sigmoid-midpoint slider.
-        public static let midpointReset = "StretchControlView.midpointReset"
-
-        /// The reset button for the sigmoid-contrast slider.
-        public static let contrastReset = "StretchControlView.contrastReset"
-
         /// The Auto button (shown only in screen-transfer mode) that derives and
         /// applies an auto-STF from the image.
         public static let autoButton = "StretchControlView.autoButton"

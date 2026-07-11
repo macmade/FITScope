@@ -34,10 +34,9 @@ import SwiftUI
 ///
 /// Mirrors the Levels editor's pattern: the slider state is cached in `@State`,
 /// seeded from the image's ``ImageAdjustments`` on creation, and every change
-/// writes the recomposed ``Processors/Stretch/STFParameters`` back (as a
-/// ``Processors/Stretch/Algorithm/screenTransfer(_:)`` stretch) and requests a
-/// debounced re-render. The editor observes the image, so its histogram updates
-/// live as the render commits.
+/// writes the recomposed ``Processors/Stretch/STFParameters`` back as the image's
+/// stretch and requests a debounced re-render. The editor observes the image, so
+/// its histogram updates live as the render commits.
 struct STFEditorView: View
 {
     /// The midtones slider bounds; the MTF balance is defined on `[0, 1]`.
@@ -170,7 +169,7 @@ struct STFEditorView: View
 
         switch image.renderer.adjustments.stretch
         {
-            case .screenTransfer( .uniform( let channel ) ):
+            case .uniform( let channel ):
 
                 self.perChannel = false
                 self.master     = STF( channel )
@@ -178,7 +177,7 @@ struct STFEditorView: View
                 self.green      = STF( channel )
                 self.blue       = STF( channel )
 
-            case .screenTransfer( .perChannel( let r, let g, let b ) ):
+            case .perChannel( let r, let g, let b ):
 
                 self.perChannel = true
                 self.master     = STF( .identity )
@@ -250,10 +249,22 @@ struct STFEditorView: View
                     .accessibilityIdentifier( AccessibilityIdentifier.ScreenTransferWindowView.shadowClipFactorSlider )
                     .help( "Shadow Clip, in Median Absolute Deviations Below the Median" )
 
-                SliderGridRowView( value: self.$targetBackground, minimumValue: Self.minimumTargetBackground, maximumValue: Self.maximumTargetBackground, label: "Auto Bkg", image: "target", defaultValue: Self.defaultTargetBackground, resetIdentifier: AccessibilityIdentifier.ScreenTransferWindowView.targetBackgroundReset )
+                SliderGridRowView( value: self.$targetBackground, minimumValue: Self.minimumTargetBackground, maximumValue: Self.maximumTargetBackground, label: "Auto Background", image: "target", defaultValue: Self.defaultTargetBackground, resetIdentifier: AccessibilityIdentifier.ScreenTransferWindowView.targetBackgroundReset )
                     .accessibilityIdentifier( AccessibilityIdentifier.ScreenTransferWindowView.targetBackgroundSlider )
                     .help( "The Background Level the Median Is Mapped To" )
             }
+
+            // The Auto Clip / Auto Background settings parametrize the Auto
+            // derivation rather than applying live, so they take effect only when
+            // the Auto button is pressed (an implicit live re-derive would silently
+            // overwrite any manual slider edits). Spell that out, since the sliders
+            // otherwise read as if they applied on change. Kept as a sibling of the
+            // grid so the surrounding VStack spacing gives it room to breathe.
+            Text( "Auto Clip and Auto Background apply when you press Auto." )
+                .font( .caption )
+                .foregroundStyle( .secondary )
+                .fixedSize( horizontal: false, vertical: true )
+                .frame( maxWidth: .infinity, alignment: .leading )
 
             HStack
             {
@@ -501,7 +512,7 @@ struct STFEditorView: View
     /// re-committing or re-rendering.
     private func syncFromAdjustments()
     {
-        guard self.adjustments.stretch != .screenTransfer( self.parameters )
+        guard self.adjustments.stretch != self.parameters
         else
         {
             return
@@ -509,7 +520,7 @@ struct STFEditorView: View
 
         switch self.adjustments.stretch
         {
-            case .screenTransfer( .uniform( let channel ) ):
+            case .uniform( let channel ):
 
                 self.perChannel = false
                 self.master     = STF( channel )
@@ -517,7 +528,7 @@ struct STFEditorView: View
                 self.green      = STF( channel )
                 self.blue       = STF( channel )
 
-            case .screenTransfer( .perChannel( let r, let g, let b ) ):
+            case .perChannel( let r, let g, let b ):
 
                 self.perChannel = true
                 self.master     = STF( .identity )
@@ -583,11 +594,11 @@ struct STFEditorView: View
     }
 
     /// Writes the current parameters into the image's adjustments (as a
-    /// ``Processors/Stretch/Algorithm/screenTransfer(_:)`` stretch) and requests a
+    /// ``Processors/Stretch/STFParameters`` stretch) and requests a
     /// debounced re-render.
     private func commit()
     {
-        self.image.renderer.adjustments.stretch = .screenTransfer( self.parameters )
+        self.image.renderer.adjustments.stretch = self.parameters
 
         self.image.renderer.scheduleReRender()
     }

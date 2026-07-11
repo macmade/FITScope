@@ -26,82 +26,47 @@
 import SwiftPixel
 import Testing
 
-/// Tests for `StretchControlView`'s pure selection-to-algorithm mapping.
+/// Tests for `StretchControlView`'s pure selection-to-stretch mapping.
 @Suite( "StretchControlView" )
 struct StretchControlViewTests
 {
-    /// The stretch control maps its selection and slider values to the matching
-    /// algorithm, including the `.sigmoid` case.
+    /// The control maps its selection to the applied stretch: None yields no
+    /// stretch, Screen Transfer yields the control's current STF parameters.
     @Test
     @MainActor
-    func stretchControlMapsToAlgorithm() throws
-    {
-        #expect( StretchControlView.algorithm( mode: .none,    logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2, screenTransfer: .identity ) == nil )
-        #expect( StretchControlView.algorithm( mode: .log,     logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2, screenTransfer: .identity ) == .log( 50 ) )
-        #expect( StretchControlView.algorithm( mode: .arcsinh, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2, screenTransfer: .identity ) == .arcsinh( 10 ) )
-        #expect( StretchControlView.algorithm( mode: .sigmoid, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2, screenTransfer: .identity ) == .sigmoid( 1, 2 ) )
-    }
-
-    /// The screen-transfer mode maps to a `.screenTransfer` algorithm carrying the
-    /// control's current STF parameters.
-    @Test
-    @MainActor
-    func stretchControlMapsScreenTransferToAlgorithm() throws
+    func stretchControlMapsToStretch() throws
     {
         let parameters = Processors.Stretch.STFParameters.uniform( .init( shadows: 0.1, midtones: 0.3, highlights: 0.95 ) )
 
-        #expect( StretchControlView.algorithm( mode: .screenTransfer, logIntensity: 50, arcsinhFactor: 10, sigmoidMidpoint: 1, sigmoidContrast: 2, screenTransfer: parameters ) == .screenTransfer( parameters ) )
+        #expect( StretchControlView.stretch( mode: .none,           screenTransfer: parameters ) == nil )
+        #expect( StretchControlView.stretch( mode: .screenTransfer, screenTransfer: parameters ) == parameters )
     }
 
-    /// The reverse mapping — an algorithm back to the control's mode — that seeds
-    /// the control and, since M27, re-syncs its displayed mode when the shared
+    /// The reverse mapping — the applied stretch back to the control's mode — that
+    /// seeds the control and re-syncs its displayed mode when the shared
     /// adjustments change from outside it (e.g. a Reset). A wrong mapping would
     /// leave the picker showing the wrong mode after an external change.
     @Test
     @MainActor
-    func stretchControlMapsAlgorithmBackToMode() throws
+    func stretchControlMapsStretchBackToMode() throws
     {
-        #expect( StretchControlView.mode( nil )              == .none )
-        #expect( StretchControlView.mode( .log( 50 ) )       == .log )
-        #expect( StretchControlView.mode( .arcsinh( 10 ) )   == .arcsinh )
-        #expect( StretchControlView.mode( .sigmoid( 1, 2 ) ) == .sigmoid )
-        #expect( StretchControlView.mode( .screenTransfer( .identity ) ) == .screenTransfer )
+        #expect( StretchControlView.mode( nil )                   == .none )
+        #expect( StretchControlView.mode( .uniform( .identity ) ) == .screenTransfer )
+        #expect( StretchControlView.mode( .perChannel( red: .identity, green: .identity, blue: .identity ) ) == .screenTransfer )
     }
 
-    /// The seeded stretch defaults are non-degenerate: the arcsinh factor is
-    /// non-zero (zero throws) and the sigmoid slope is non-zero (a zero slope
-    /// flattens the image to 50% grey).
+    /// A Screen Transfer stretch renders to a varied (non-flat, non-black) image
+    /// rather than throwing or blanking.
     @Test
     @MainActor
-    func seededDefaultsAreNonDegenerate() throws
-    {
-        #expect( StretchControlView.defaultArcsinhFactor != 0, "a zero arcsinh factor throws" )
-        #expect( StretchControlView.defaultSigmoidN1     != 0, "a zero sigmoid slope flattens the image" )
-    }
-
-    /// Every seeded stretch default renders to a varied (non-flat, non-black)
-    /// image rather than throwing or blanking.
-    @Test
-    @MainActor
-    func seededStretchDefaultsRenderNonDegenerate() throws
+    func screenTransferRendersNonDegenerate() throws
     {
         let ( data, properties ) = FITSTestData.gradient()
+        let parameters           = Processors.Stretch.STFParameters.uniform( .init( shadows: 0.1, midtones: 0.3, highlights: 0.95 ) )
+        let settings             = ImageProcessor.Settings( stretch: parameters )
+        let bytes                = try ImageProcessor.render( data: data, properties: properties, settings: settings ).bytes
 
-        for mode in [ StretchControlView.Mode.log, .arcsinh, .sigmoid ]
-        {
-            let algorithm = StretchControlView.algorithm(
-                mode:            mode,
-                logIntensity:    StretchControlView.defaultLogIntensity,
-                arcsinhFactor:   StretchControlView.defaultArcsinhFactor,
-                sigmoidMidpoint: StretchControlView.defaultSigmoidN1,
-                sigmoidContrast: StretchControlView.defaultSigmoidN2,
-                screenTransfer:  .identity
-            )
-            let settings = ImageProcessor.Settings( stretch: algorithm )
-            let bytes    = try ImageProcessor.render( data: data, properties: properties, settings: settings ).bytes
-
-            #expect( bytes.contains { $0 != 0 },          "\( mode ) should not render all black" )
-            #expect( bytes.contains { $0 != bytes[ 0 ] }, "\( mode ) should not render flat" )
-        }
+        #expect( bytes.contains { $0 != 0 },          "the Screen Transfer should not render all black" )
+        #expect( bytes.contains { $0 != bytes[ 0 ] }, "the Screen Transfer should not render flat" )
     }
 }

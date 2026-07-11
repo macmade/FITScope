@@ -25,29 +25,20 @@
 import SwiftPixel
 import SwiftUI
 
-/// The stretch section of the controls panel: a mode picker plus the sliders
-/// each stretch algorithm needs to bring out faint detail.
+/// The stretch section of the controls panel: a mode picker (None or Screen
+/// Transfer) plus the Screen Transfer editor actions. The Screen Transfer is the
+/// only tone stretch — a PixInsight-style midtones auto-stretch.
 public struct StretchControlView: View
 {
-    /// The stretch algorithms offered by the picker.
+    /// The stretch modes offered by the picker.
     public enum Mode: CaseIterable, CustomStringConvertible
     {
         /// No stretch; the image stays linear.
         case none
 
         /// Screen Transfer Function (STF): a PixInsight-style midtones auto-stretch,
-        /// edited in a dedicated window. Listed first among the stretch algorithms,
-        /// as the default go-to stretch.
+        /// edited in a dedicated window.
         case screenTransfer
-
-        /// Logarithmic stretch.
-        case log
-
-        /// Inverse hyperbolic sine (arcsinh) stretch.
-        case arcsinh
-
-        /// Sigmoid (S-curve) stretch.
-        case sigmoid
 
         /// The picker label for the mode.
         public var description: String
@@ -56,31 +47,9 @@ public struct StretchControlView: View
             {
                 case .none:           return "None"
                 case .screenTransfer: return "Screen Transfer"
-                case .log:            return "Logarithmic"
-                case .arcsinh:        return "Inverse Hyperbolic Sine"
-                case .sigmoid:        return "Sigmoid"
             }
         }
     }
-
-    /// The seed for the logarithmic intensity slider, applied the first time the
-    /// user switches to the logarithmic stretch.
-    ///
-    /// The seeds for all stretch sliders are chosen so each mode's first
-    /// interaction yields a valid, non-degenerate render: the arcsinh factor is
-    /// non-zero (zero throws), and the sigmoid constants produce a centred
-    /// S-curve on normalized data rather than a flat 50% grey.
-    static let defaultLogIntensity = 50.0
-
-    /// The seed for the arcsinh factor slider. Non-zero, since a factor of zero
-    /// makes the algorithm throw.
-    static let defaultArcsinhFactor = 50.0
-
-    /// The seed for the sigmoid midpoint slider.
-    static let defaultSigmoidN1 = 10.0
-
-    /// The seed for the sigmoid contrast slider.
-    static let defaultSigmoidN2 = 0.5
 
     /// The scene identifier of the dedicated Screen Transfer editor window.
     static let screenTransferWindowID = "ScreenTransferWindow"
@@ -113,28 +82,15 @@ public struct StretchControlView: View
     /// adjustments change from outside the control (see ``syncFromAdjustments()``).
     @State private var mode: Mode
 
-    /// The logarithmic intensity slider value.
-    @State private var logN1: Double
-
-    /// The arcsinh factor slider value.
-    @State private var arcsinhN1: Double
-
-    /// The sigmoid midpoint slider value.
-    @State private var sigmoidN1: Double
-
-    /// The sigmoid contrast slider value.
-    @State private var sigmoidN2: Double
-
     /// The current screen-transfer parameters, edited in the Screen Transfer
-    /// window and mirrored here so the mode's algorithm can be recomposed and kept
+    /// window and mirrored here so the applied stretch can be recomposed and kept
     /// in sync with the shared adjustments.
     @State private var screenTransfer: Processors.Stretch.STFParameters
 
     /// Creates the stretch control.
     ///
-    /// Each slider is seeded from the image's current algorithm when that mode is
-    /// active, and from its default otherwise — so an inactive mode still offers a
-    /// sensible starting value.
+    /// The mode and the screen-transfer parameters are seeded from the image's
+    /// current adjustments, so the control reflects the file it belongs to.
     ///
     /// - Parameters:
     ///   - adjustments:          The shared adjustment values to write to.
@@ -150,77 +106,35 @@ public struct StretchControlView: View
         self.reRender              = reRender
         self.autoScreenTransfer    = autoScreenTransfer
         self.canAutoScreenTransfer = canAutoScreenTransfer
-
-        var logN1          = Self.defaultLogIntensity
-        var arcsinhN1      = Self.defaultArcsinhFactor
-        var sigmoidN1      = Self.defaultSigmoidN1
-        var sigmoidN2      = Self.defaultSigmoidN2
-        var screenTransfer = Processors.Stretch.STFParameters.identity
-
-        if let stretch = adjustments.stretch
-        {
-            switch stretch
-            {
-                case .log( let n ):            logN1 = n
-                case .arcsinh( let n ):        arcsinhN1 = n
-                case .sigmoid( let a, let b ): sigmoidN1 = a
-                    sigmoidN2 = b
-                case .screenTransfer( let p ): screenTransfer = p
-                @unknown default:              break
-            }
-        }
-
-        self.mode           = Self.mode( adjustments.stretch )
-        self.logN1          = logN1
-        self.arcsinhN1      = arcsinhN1
-        self.sigmoidN1      = sigmoidN1
-        self.sigmoidN2      = sigmoidN2
-        self.screenTransfer = screenTransfer
+        self.mode                  = Self.mode( adjustments.stretch )
+        self.screenTransfer        = adjustments.stretch ?? .identity
     }
 
-    /// Maps a stretch algorithm back to the control's mode, used to seed the
+    /// Maps the applied stretch back to the control's mode, used to seed the
     /// control from an image's adjustments.
     ///
-    /// - Parameter algorithm: The stretch algorithm, or `nil` for a linear image.
+    /// - Parameter stretch: The applied Screen Transfer parameters, or `nil` for a
+    ///                      linear image.
     /// - Returns: The corresponding mode.
-    static func mode( _ algorithm: Processors.Stretch.Algorithm? ) -> Mode
+    static func mode( _ stretch: Processors.Stretch.STFParameters? ) -> Mode
     {
-        guard let algorithm
-        else
-        {
-            return .none
-        }
-
-        switch algorithm
-        {
-            case .log:            return .log
-            case .arcsinh:        return .arcsinh
-            case .sigmoid:        return .sigmoid
-            case .screenTransfer: return .screenTransfer
-            @unknown default:     return .none
-        }
+        stretch == nil ? .none : .screenTransfer
     }
 
-    /// Maps the control's selection and slider values to a stretch algorithm.
+    /// Maps the control's selection to the applied stretch.
     ///
     /// - Parameters:
-    ///   - mode:            The selected stretch mode.
-    ///   - logIntensity:    The logarithmic intensity value.
-    ///   - arcsinhFactor:   The arcsinh factor value.
-    ///   - sigmoidMidpoint: The sigmoid midpoint value.
-    ///   - sigmoidContrast: The sigmoid contrast value.
-    ///   - screenTransfer:  The current screen-transfer parameters, used for the
-    ///                      ``Mode/screenTransfer`` mode (edited in its window).
-    /// - Returns: The corresponding algorithm, or `nil` for `.none`.
-    static func algorithm( mode: Mode, logIntensity: Double, arcsinhFactor: Double, sigmoidMidpoint: Double, sigmoidContrast: Double, screenTransfer: Processors.Stretch.STFParameters ) -> Processors.Stretch.Algorithm?
+    ///   - mode:           The selected stretch mode.
+    ///   - screenTransfer: The current screen-transfer parameters, used for the
+    ///                     ``Mode/screenTransfer`` mode (edited in its window).
+    /// - Returns: The parameters for ``Mode/screenTransfer``, or `nil` for
+    ///            ``Mode/none``.
+    static func stretch( mode: Mode, screenTransfer: Processors.Stretch.STFParameters ) -> Processors.Stretch.STFParameters?
     {
         switch mode
         {
             case .none:           return nil
-            case .log:            return .log( logIntensity )
-            case .arcsinh:        return .arcsinh( arcsinhFactor )
-            case .sigmoid:        return .sigmoid( sigmoidMidpoint, sigmoidContrast )
-            case .screenTransfer: return .screenTransfer( screenTransfer )
+            case .screenTransfer: return screenTransfer
         }
     }
 
@@ -241,31 +155,7 @@ public struct StretchControlView: View
                 }
                 .labelsHidden()
                 .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.modePicker )
-                .help( "Choose the Tone-Stretch Algorithm" )
-            }
-
-            if self.mode == .log
-            {
-                SliderGridRowView( value: $logN1, minimumValue: 0, maximumValue: 255, label: "Intensity", image: "n.circle.fill", defaultValue: Self.defaultLogIntensity, resetIdentifier: AccessibilityIdentifier.StretchControlView.intensityReset )
-                    .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.intensitySlider )
-                    .help( "Logarithmic Intensity" )
-            }
-
-            if self.mode == .arcsinh
-            {
-                SliderGridRowView( value: $arcsinhN1, minimumValue: 0, maximumValue: 255, label: "Factor", image: "n.circle.fill", defaultValue: Self.defaultArcsinhFactor, resetIdentifier: AccessibilityIdentifier.StretchControlView.factorReset )
-                    .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.factorSlider )
-                    .help( "Arcsinh Factor" )
-            }
-
-            if self.mode == .sigmoid
-            {
-                SliderGridRowView( value: $sigmoidN1, minimumValue: 0, maximumValue: 255, label: "Midpoint", image: "n.circle.fill", defaultValue: Self.defaultSigmoidN1, resetIdentifier: AccessibilityIdentifier.StretchControlView.midpointReset )
-                    .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.midpointSlider )
-                    .help( "Sigmoid Midpoint" )
-                SliderGridRowView( value: $sigmoidN2, minimumValue: 0, maximumValue: 255, label: "Contrast", image: "n.circle.fill", defaultValue: Self.defaultSigmoidN2, resetIdentifier: AccessibilityIdentifier.StretchControlView.contrastReset )
-                    .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.contrastSlider )
-                    .help( "Sigmoid Contrast" )
+                .help( "Choose the Tone-Stretch Mode" )
             }
 
             if self.mode == .screenTransfer
@@ -309,9 +199,9 @@ public struct StretchControlView: View
         }
         // A change the control makes: push it to the shared adjustments and
         // re-render.
-        .onChange( of: self.stretchAlgorithm )
+        .onChange( of: self.stretchParameters )
         {
-            self.adjustments.stretch = self.stretchAlgorithm
+            self.adjustments.stretch = self.stretchParameters
 
             self.reRender()
         }
@@ -323,24 +213,17 @@ public struct StretchControlView: View
         }
     }
 
-    /// The stretch algorithm derived from the current mode and slider values.
-    private var stretchAlgorithm: Processors.Stretch.Algorithm?
+    /// The applied stretch derived from the current mode.
+    private var stretchParameters: Processors.Stretch.STFParameters?
     {
-        Self.algorithm(
-            mode:            self.mode,
-            logIntensity:    self.logN1,
-            arcsinhFactor:   self.arcsinhN1,
-            sigmoidMidpoint: self.sigmoidN1,
-            sigmoidContrast: self.sigmoidN2,
-            screenTransfer:  self.screenTransfer
-        )
+        Self.stretch( mode: self.mode, screenTransfer: self.screenTransfer )
     }
 
     /// Derives an auto-STF from the current image (off the main actor) and applies
     /// it as the screen transfer, switching the control into screen-transfer mode.
     /// Does nothing when no derivation is available (no image or no detection
-    /// buffer). The parameter change flows through ``stretchAlgorithm`` to the
-    /// shared adjustments and a re-render, exactly like a slider edit.
+    /// buffer). The parameter change flows through ``stretchParameters`` to the
+    /// shared adjustments and a re-render.
     @MainActor
     private func applyAutoScreenTransfer() async
     {
@@ -360,36 +243,26 @@ public struct StretchControlView: View
         self.screenTransfer = parameters
     }
 
-    /// Re-seeds the control's mode and the active algorithm's slider from the
-    /// shared adjustments when they change from outside the control — a menu Reset
-    /// View, say — so the displayed state follows. The inactive modes keep their
-    /// remembered slider values, which the shared adjustments do not hold. Skipped
-    /// when the adjustments already match what the control represents, so the
-    /// control's own writes don't echo back into a loop.
+    /// Re-seeds the control's mode and screen-transfer parameters from the shared
+    /// adjustments when they change from outside the control — a menu Reset View,
+    /// say — so the displayed state follows. Skipped when the adjustments already
+    /// match what the control represents, so the control's own writes don't echo
+    /// back into a loop.
     private func syncFromAdjustments()
     {
-        let algorithm = self.adjustments.stretch
+        let stretch = self.adjustments.stretch
 
-        guard algorithm != self.stretchAlgorithm
+        guard stretch != self.stretchParameters
         else
         {
             return
         }
 
-        self.mode = Self.mode( algorithm )
+        self.mode = Self.mode( stretch )
 
-        switch algorithm
+        if let stretch
         {
-            case .log( let n )?:     self.logN1     = n
-            case .arcsinh( let n )?: self.arcsinhN1 = n
-            case .sigmoid( let a, let b )?:
-
-                self.sigmoidN1 = a
-                self.sigmoidN2 = b
-
-            case .screenTransfer( let p )?: self.screenTransfer = p
-            case nil:                       break
-            @unknown default:               break
+            self.screenTransfer = stretch
         }
     }
 }

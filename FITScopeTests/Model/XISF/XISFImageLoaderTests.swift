@@ -312,8 +312,8 @@ struct XISFImageLoaderTests
         let adjustments = loaded.renderer.adjustments
         let expected    = Processors.Stretch.STFParameters.uniform( .init( shadows: 0.1, midtones: 0.25, highlights: 0.9, low: 0, high: 1 ) )
 
-        #expect( adjustments.stretch == .screenTransfer( expected ) )
-        #expect( adjustments.baseline.stretch == .screenTransfer( expected ) )
+        #expect( adjustments.stretch == expected )
+        #expect( adjustments.baseline.stretch == expected )
 
         // The display function is authored in the native full-scale [0,1] domain,
         // so the baseline uses identity normalization rather than min/max.
@@ -326,7 +326,7 @@ struct XISFImageLoaderTests
 
         adjustments.reset()
 
-        #expect( adjustments.stretch == .screenTransfer( expected ) )
+        #expect( adjustments.stretch == expected )
     }
 
     /// The display-function baseline renders without throwing — the `isUsable`
@@ -344,7 +344,7 @@ struct XISFImageLoaderTests
 
         let loaded = try #require( loader.image )
 
-        // Render through the actual seeded baseline (its .screenTransfer stretch),
+        // Render through the actual seeded baseline (its Screen Transfer stretch),
         // over the real decoded samples — this exercises the STF apply path.
         let result = try loaded.renderer.renderSourceSnapshot().makeResult( settings: loaded.renderer.adjustments.settings )
 
@@ -371,7 +371,7 @@ struct XISFImageLoaderTests
             blue:  .init( shadows: 0.03, midtones: 0.4, highlights: 0.9,  low: 0, high: 1 )
         )
 
-        #expect( loaded.renderer.adjustments.stretch == .screenTransfer( expected ) )
+        #expect( loaded.renderer.adjustments.stretch == expected )
     }
 
     /// An image with no display function opens linear, with no baseline stretch.

@@ -232,7 +232,7 @@ public class XISFImageLoader: ObservableObject, ImageLoading
             return ImageProcessor.Settings()
         }
 
-        return ImageProcessor.Settings( normalize: .identity, stretch: .screenTransfer( stf ) )
+        return ImageProcessor.Settings( normalize: .identity, stretch: stf )
     }
 
     /// Builds the detection-ready single-channel linear image for an XISF image,

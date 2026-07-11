@@ -520,8 +520,8 @@
                         <code>ImageRenderer.autoScreenTransfer(shadowClipFactor:targetBackground:)</code> that keeps the
                         renderer's <code>source</code> private — so Milestone 2's Auto produces a <strong>uniform</strong>
                         STF. Full per-channel <em>Auto</em> (from the normalized post-debayer RGB buffer) arrives with
-                        Milestone 5's loader work, which has that buffer in hand; manual per-channel editing is fully
-                        available in the window meanwhile. The inspector's Auto uses the default 2.8 / 0.25; the
+                        the auto-STF-on-open loader work (Milestone 6), which has that buffer in hand; manual per-channel
+                        editing is fully available in the window meanwhile. The inspector's Auto uses the default 2.8 / 0.25; the
                         window's Auto uses its tunable settings.</li>
                     <li><strong>What was built.</strong> <em>Inspector</em> (<code>StretchControlView</code>): added
                         <code>Mode.screenTransfer</code>, the mode ↔ algorithm mapping (with a <code>screenTransfer:</code>
@@ -817,11 +817,13 @@
                         CIE L*a*b*) no longer maps <code>rk</code>/<code>g</code>/<code>b</code> onto the wrong channels.
                         The initializer signature changed from <code>channelCount:</code> to <code>colorSpace:</code>.
                         Covered by a <code>nonRGBMapsToUniform</code> test.</li>
-                    <li><strong>Known follow-up for M5.</strong> The DF path now renders in the full-scale domain, while
-                        the M2/M5 <em>auto-STF</em> derivation works in the min/max domain. Clicking "Auto" on a
+                    <li><strong>Known follow-up (now M6).</strong> The DF path renders in the full-scale domain, while
+                        the M2 <em>auto-STF</em> derivation works in the min/max domain. Clicking "Auto" on a
                         DF-opened image would therefore re-derive parameters in a different domain than the identity
-                        baseline applies them — a latent inconsistency M5 (auto-STF on open) should reconcile when it
-                        decides the auto-STF domain.</li>
+                        baseline applies them — a latent inconsistency the auto-STF-on-open milestone (M6) reconciles by
+                        deriving and applying the auto-STF in the full-scale domain too. (The STF-only decision — M5 —
+                        removed the competing manual stretches, so the domain model is now just STF → full-scale, None →
+                        min/max.)</li>
                 </ul>
             </div>
             <div class="field-label">Automated review</div>
@@ -904,9 +906,12 @@
                         to <code>[0,1]</code>, satisfying every processor's <code>isNormalized</code> precondition; the
                         pipeline also auto-inserts min/max when <code>normalize</code> is <code>nil</code> but a stretch
                         is present). <strong>Resolution:</strong> M4 stays as the correct first increment (full-scale
-                        only where a DF supplies visibility); the full realization is recorded as a <strong>maintainer
-                        design directive on Milestone 5</strong> (adopt full-scale + auto-STF, retire min/max as the
-                        linear-on-open default, extend the full-scale scaling to FITS/RAW, re-tune the manual stretches).</li>
+                        only where a DF supplies visibility). The full realization was then simplified by a further
+                        maintainer decision — <strong>keep only the Screen Transfer stretch</strong> — so the plan gained
+                        <strong>Milestone 5</strong> (remove the other stretches + clean the API) and <strong>Milestone
+                        6</strong> (auto-STF on open in the full-scale domain, extend the full-scale scaling to
+                        FITS/RAW). The STF-only decision removes the manual-stretch re-tuning and the normalize/stretch
+                        coupling that "full-scale everywhere" would otherwise have needed.</li>
                     <li><strong>F-B — accepted as OK.</strong> The float-outside-<code>[0,1]</code> identity-clamp edge
                         is fine.</li>
                     <li><strong>F-C — answered (measured).</strong> Traced and probed the pipeline: the 8-bit conversion
@@ -923,36 +928,194 @@
         <div class="milestone">
             <div class="milestone-head">
                 <span class="mnum">5</span>
+                <h3>Reduce the stretch to the Screen Transfer only</h3>
+                <span class="capsule completed">Completed</span>
+            </div>
+            <div class="field-label">Design decisions (maintainer)</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>The Screen Transfer becomes the only stretch.</strong> The <code>log</code> /
+                        <code>arcsinh</code> / <code>sigmoid</code> algorithms are removed from SwiftPixel and the app.
+                        For an astrophotography <em>viewer</em> they add no capability the STF lacks — all three are
+                        per-channel curves (FITScope's <code>arcsinh</code> is per-channel, not the colour-preserving
+                        luminance-ratio variant), and the STF's midtones/clip covers the same ground while being
+                        statistically auto-derivable. Removing them also collapses the normalization model to two cases
+                        (STF → full-scale, None → min/max) and removes the coupling / re-tuning that keeping them would
+                        have required.</li>
+                    <li><strong>Clean API (no single-case enum).</strong> With the STF the only stretch,
+                        <code>Processors.Stretch.Algorithm</code> is removed entirely rather than left as a one-case
+                        enum. The stretch is carried as <code>Processors.Stretch.STFParameters?</code> directly through
+                        <code>ImageProcessor.Settings</code>, <code>ImageAdjustments</code> and
+                        <code>PixelPipeline.Config</code>; the <code>Stretch</code> processor becomes
+                        <code>Stretch(parameters:)</code>; every <code>.screenTransfer(params)</code> becomes just
+                        <code>params</code>. <code>STFParameters</code> stays nested under <code>Stretch</code>. The
+                        now-dead <code>@unknown default</code> arms for the removed enum go away (the
+                        <code>STFParameters</code> uniform/per-channel switches remain).</li>
+                </ul>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Make the Screen Transfer the single stretch algorithm: remove the logarithmic / hyperbolic /
+            sigmoid stretches from SwiftPixel and the inspector, and clean up the <code>Stretch</code> API so the stretch
+            is carried as <code>STFParameters</code> directly, with no <code>Algorithm</code> enum wrapper.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li><strong>SwiftPixel:</strong> remove the <code>log</code> / <code>arcsinh</code> / <code>sigmoid</code>
+                    cases and their <code>logStretch</code>/<code>arcsinhStretch</code>/<code>sigmoidStretch</code>
+                    implementations from <code>Processors.Stretch</code>; remove the <code>Stretch.Algorithm</code> enum
+                    entirely and make <code>Processors.Stretch(parameters: STFParameters)</code> operate on
+                    <code>STFParameters</code> directly, keeping <code>STFParameters</code> nested under
+                    <code>Stretch</code>. Update <code>SwiftPixelTests</code> (drop the removed algorithms' tests) and
+                    keep <code>SwiftPixel.xcodeproj</code> in sync.</li>
+                <li><strong>App call sites:</strong> carry the stretch as <code>Processors.Stretch.STFParameters?</code>
+                    through <code>ImageProcessor.Settings</code>, <code>ImageAdjustments</code> and
+                    <code>PixelPipeline.Config</code>; drop the <code>.screenTransfer(...)</code> wrapper everywhere
+                    (<code>ImageRenderer</code>, <code>XISFImageLoader</code> baseline, the display-function → STF
+                    mapping, and any other reference). Remove the now-dead <code>@unknown default</code> arms for the
+                    removed enum.</li>
+                <li><strong>App UI:</strong> simplify <code>StretchControlView</code> to <strong>None + Screen
+                    Transfer</strong> — remove the Logarithmic / Hyperbolic / Sigmoid modes, their sliders, default
+                    constants and accessibility identifiers, and update the <code>#Preview</code>.</li>
+                <li><strong>Verify:</strong> the app and both extensions build; all tests pass (with the removed
+                    algorithms' tests deleted).</li>
+            </ul>
+            <div class="field-label">Dependencies</div>
+            <p class="deps"><strong>Milestones 1 &amp; 2</strong>.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span></p>
+            <div class="field-label">Completed</div>
+            <p>2026-07-11</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>SwiftPixel — <code>Stretch</code> reduced to the STF.</strong> Removed the
+                        <code>Stretch.Algorithm</code> enum and the <code>logStretch</code> /
+                        <code>arcsinhStretch</code> / <code>sigmoidStretch</code> implementations. <code>Processors.Stretch</code>
+                        now holds <code>parameters: STFParameters</code> and is constructed as
+                        <code>Stretch(parameters:)</code>; <code>process(buffer:)</code> guards normalization then applies
+                        the uniform/per-channel screen transfer directly (the former <code>screenTransferStretch</code>
+                        body, inlined), with the vectorized <code>applyScreenTransfer</code> unchanged.
+                        <code>PixelPipeline.Config.stretch</code> is now <code>STFParameters?</code> and the pipeline
+                        appends <code>Stretch(parameters:)</code>. <code>STFParameters</code> stays nested under
+                        <code>Stretch</code>.</li>
+                    <li><strong>App — clean API, no wrapper.</strong> <code>ImageProcessor.Settings.stretch</code> and
+                        <code>ImageAdjustments.stretch</code> are now <code>Processors.Stretch.STFParameters?</code>; every
+                        <code>.screenTransfer(params)</code> became just <code>params</code> (the XISF display-function
+                        baseline in <code>XISFImageLoader</code>, and <code>STFEditorView</code>'s init / sync / commit,
+                        whose switches over the optional stretch use a <code>default:</code> that covers <code>nil</code>
+                        and any future case). No dead <code>@unknown default</code> arms remain for the removed enum.</li>
+                    <li><strong>App UI — two-mode control.</strong> <code>StretchControlView</code> is now
+                        <strong>None + Screen Transfer</strong>: dropped the Logarithmic / Hyperbolic / Sigmoid modes,
+                        their sliders, the default constants, and the four slider + four reset accessibility identifiers.
+                        The static helpers are now <code>mode(_ stretch:) -&gt; Mode</code> (nil → None, else Screen
+                        Transfer) and <code>stretch(mode:screenTransfer:) -&gt; STFParameters?</code>; the control seeds
+                        <code>mode</code> and <code>screenTransfer</code> from the adjustments, and Auto/Edit stay gated by
+                        <code>canAutoScreenTransfer</code>/<code>isDerivingAuto</code>. Removed the unused identifiers from
+                        <code>AccessibilityIdentifiers</code>.</li>
+                    <li><strong>Tests updated (TDD-style: tests moved to the new API first, watched to fail to build,
+                        then implemented).</strong> SwiftPixel: dropped the log/arcsinh/sigmoid and
+                        <code>Algorithm</code>-equatable/description tests, kept the STF-apply tests re-pointed to
+                        <code>Stretch(parameters:)</code>; pipeline/config tests use <code>.uniform(.init(midtones:0.3))</code>.
+                        App: <code>StretchControlViewTests</code> rewritten for the two-mode mapping and a non-degenerate
+                        STF render; the "invalid stretch" error-path tests (ImageRenderer/OpenFile) now use an empty clip
+                        window <code>.uniform(.init(shadows:1,highlights:0))</code> (rejected by <code>Channel.validate()</code>,
+                        exactly like the old <code>.arcsinh(0)</code>); XISFImageLoaderTests compare the stretch directly.
+                        The three UITests that used the removed sliders as a control-state "reveal" now use the Screen
+                        Transfer mode's Edit button.</li>
+                    <li><strong>Verification.</strong> SwiftPixel scheme builds and all its tests pass; the app and both
+                        sandboxed extensions build; <strong>all 658 FITScopeTests pass</strong>; the UITest target
+                        compiles. No <code>FITScope.xcodeproj</code> / <code>SwiftPixel.xcodeproj</code> changes were
+                        needed (no files added or removed). The GUI itself (the two-mode picker, Auto/Edit) was not driven
+                        automatically — no run-skill / headless GUI path — so interactive verification is left to the
+                        maintainer or the UITests.</li>
+                </ul>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>F1 — Stale DocC link to the removed <code>Algorithm.screenTransfer</code></strong> ·
+                        <em>Low</em> · Stale documentation · <code>STFEditorView.swift:38</code>. The type doc still linked
+                        to <code>Processors/Stretch/Algorithm/screenTransfer(_:)</code>, which no longer resolves after the
+                        enum removal (the parallel <code>commit()</code> doc had been updated but this one was missed).
+                        <strong>Resolution: Fixed</strong> — reworded to "writes the recomposed
+                        <code>STFParameters</code> back as the image's stretch".</li>
+                    <li>The reviewer verified (not defects): the removal is complete (no remaining references to
+                        <code>Algorithm</code>, the removed cases/helpers, the removed slider constants, or the removed
+                        accessibility identifiers anywhere in either repo; no orphaned imports); the <code>Stretch</code>
+                        apply is behaviourally identical to before; the app switches over the optional
+                        <code>STFParameters</code> correctly handle <code>nil</code> and future cases via
+                        <code>default:</code>; the two-mode control's mapping round-trips and its sync avoids an echo loop;
+                        the XISF baseline and <code>STFEditorView</code> callers are correct; the "invalid stretch" test
+                        substitution is genuinely rejected by <code>Channel.validate()</code>; and STF-apply test coverage
+                        is retained (only the removed algorithms' tests are gone, as expected).</li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>STF window: "auto clip" / "auto bckg" appear to do nothing (verify).</strong> In the
+                        Screen Transfer editor window, the two auto settings (shadow-clip factor and target background)
+                        don't seem to have any effect — investigate whether they are actually wired to the derivation.
+                        <em>(Relates to the STF editor window built in M2, surfaced during the M5 review.)</em>
+                        <br><strong>Verified:</strong> they <em>are</em> wired and <em>do</em> change the derivation — a
+                        probe over a ramp detection image gave midtones <code>0.749</code> at <code>(2.8, 0.25)</code> vs
+                        <code>0.498</code> at <code>(5.0, 0.50)</code>. But they are read only inside the window's
+                        <code>auto()</code>, so they take effect <strong>only when the "Auto" button is clicked</strong> —
+                        changing a slider alone doesn't re-derive, which is why they seem inert. Open UX question for the
+                        maintainer: make changing them re-derive live, or keep them as parameters for the explicit Auto
+                        action (they gate it so it can't overwrite manual slider edits without an explicit click).
+                        <br><strong>Decision (maintainer):</strong> keep the explicit-Auto model; just make the labeling
+                        clearer / add a note that these settings apply when the Auto button is pressed.
+                        <br><strong>Resolution: Fixed</strong> — added a caption in <code>STFEditorView</code>: "Auto Clip
+                        and Auto Background apply when you press Auto." Placed as a sibling of the grid (not a cramped grid
+                        cell), so the surrounding <code>VStack(spacing: 14)</code> gives it even breathing room above and
+                        below. No behaviour change.</li>
+                    <li><strong>Typo: "bckg" should be "background".</strong> The auto background label is abbreviated;
+                        spell it out. <strong>Resolution: Fixed</strong> — the label <code>"Auto Bkg"</code> is now
+                        <code>"Auto Background"</code>.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- M6 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">6</span>
                 <h3>Apply auto-STF on open (fallback)</h3>
                 <span class="capsule not-started">Not started</span>
             </div>
             <div class="field-label">Design decisions (maintainer)</div>
             <div class="notes">
                 <ul>
-                    <li><strong>Adopt the "correct" PixInsight-style domain model.</strong> Linear data should be
-                        normalized to its true physical full-scale <code>[0,1]</code> domain, and <em>visibility must
-                        come from a stretch</em> (the XISF display function when present, else the auto-STF) —
-                        <strong>not from min/max</strong>. min/max is only a visibility crutch for the un-stretched view;
-                        it is outlier-sensitive (a single hot pixel sets the ceiling) and physically meaningless. Once
-                        every linear image opens with a stretch, min/max is no longer needed as the on-open default.</li>
-                    <li><strong>Auto-STF uses the full-scale domain, matching M4's display-function path.</strong> Derive
-                        <em>and</em> apply the auto-STF in the full-scale <code>[0,1]</code> domain: seed the baseline as
-                        <code>{ normalize: .identity, stretch: .screenTransfer(auto) }</code>, exactly as the M4 DF path
-                        does. This resolves the M4 follow-up (DF was full-scale, auto-STF was min/max) by putting both
-                        STF sources in one domain. The derivation must run over the same full-scale-normalized data the
-                        stretch is applied to, so the parameters and the render agree.</li>
-                    <li><strong>Retire min/max as the linear-on-open default.</strong> With auto-STF applied on open, the
-                        linear loaders (FITS / XISF / RAW) should open in the full-scale domain; the honest
-                        near-black linear view (the F-A behaviour) then becomes the consistent "stretch off" state for
-                        <em>all</em> linear images, rather than a DF-vs-non-DF asymmetry.</li>
+                    <li><strong>STF-only (supersedes the earlier "coupling" plan).</strong> The Screen Transfer is now the
+                        <em>only</em> stretch: the <code>log</code> / <code>arcsinh</code> / <code>sigmoid</code>
+                        algorithms are removed from SwiftPixel and the app, and the <code>Stretch</code> API is cleaned up
+                        (removal handled by its own milestone, sequenced before this one). Rationale (discussed): those
+                        three are per-channel curves with no capability the STF lacks (FITScope's <code>arcsinh</code> is
+                        per-channel, not the colour-preserving luminance-ratio variant), so for an astrophotography
+                        <em>viewer</em> they are redundant. Removing them collapses the domain model and removes the need
+                        for the previously-considered "normalize follows the stretch" coupling and the manual-stretch
+                        re-tuning.</li>
+                    <li><strong>Two-case domain model.</strong> With the STF the only stretch, normalization has exactly
+                        two cases: <strong>Screen Transfer → <code>.identity</code></strong> (the native full-scale
+                        <code>[0,1]</code> domain the STF/DF is authored in), and <strong>None → <code>.minMax</code></strong>
+                        (so an un-stretched image stays visible). The post-stretch processors (gamma, Levels, Curves,
+                        colour balance, hue, saturation, invert) operate on the display-referred stretched image and are
+                        unaffected by this choice; only the pre-stretch white-balance and brightness/contrast share the
+                        stretch's input domain (a minor slider-range note, defaults are no-ops).</li>
+                    <li><strong>Auto-STF in the full-scale domain.</strong> Derive <em>and</em> apply the auto-STF in the
+                        full-scale <code>[0,1]</code> domain: seed the baseline as
+                        <code>{ normalize: .identity, stretch: &lt;STF&gt; }</code>, matching the M4 display-function path,
+                        so both STF sources share one domain. The derivation must run over the same full-scale-normalized
+                        data the stretch is applied to (the min/max-domain derivation of M2 gives a gentler, non-PixInsight
+                        result), so the parameters and the render agree.</li>
                     <li><strong>Costs to handle here (surfaced during M4).</strong> (a) FITS and RAW need the same
-                        full-scale scaling XISF now applies (XISF scales integer samples by <code>1 / fullScale</code> in
-                        <code>xisfConfig</code>; FITS decodes via <code>BZERO</code>/<code>BSCALE</code> and RAW has its
-                        own scale, so each linear loader must bring samples into the true <code>[0,1]</code> before
-                        <code>.identity</code> means "full-scale" there). (b) The manual stretches
-                        (<code>log</code>/<code>arcsinh</code>/<code>sigmoid</code>) and their default parameters are
-                        tuned for min/max-normalized input, so moving the domain likely needs re-tuning. (c) Verify star
-                        detection (separate raw detection-image path) is unaffected.</li>
+                        full-scale scaling XISF already applies (XISF scales integer samples by <code>1 / fullScale</code>
+                        in <code>xisfConfig</code>; FITS via <code>fullScale(for:)</code> against
+                        <code>BSCALE</code>/<code>BZERO</code>, RAW via <code>whiteLevel</code>), so each linear loader
+                        brings samples into the true <code>[0,1]</code> before <code>.identity</code> means "full-scale"
+                        there — transparent to any remaining <code>.minMax</code> path. (b) Verify star detection (separate
+                        raw detection-image path) is unaffected. (c) Check the pre-stretch brightness/contrast slider
+                        ranges against the full-scale domain.</li>
                 </ul>
             </div>
             <div class="field-label">Goal</div>
@@ -962,13 +1125,13 @@
             <div class="field-label">Tasks</div>
             <ul class="tasks">
                 <li>In <code>FITSImageLoader</code>, <code>XISFImageLoader</code> and <code>RAWImageLoader</code>,
-                    when the format's preference is on, materialize <code>STFParameters</code> via the SwiftPixel
-                    helper and seed the baseline with <code>{ normalize: .identity, stretch: .screenTransfer(params) }</code>
+                    when the format's preference is on, materialize the auto-STF <code>STFParameters</code> via the
+                    SwiftPixel helper and seed the baseline with <code>{ normalize: .identity, stretch: params }</code>
                     (the full-scale domain, matching M4's display-function path).</li>
                 <li>Bring FITS and RAW samples into the true full-scale <code>[0,1]</code> domain (as
                     <code>xisfConfig</code> already does for XISF via <code>1 / fullScale</code>), so
                     <code>.identity</code> normalization is physically correct for those formats too. Confirm the scaling
-                    is transparent to the existing min/max path (min/max is scale-invariant).</li>
+                    is transparent to the min/max path used when no stretch is applied (min/max is scale-invariant).</li>
                 <li>Derive the auto-STF over the same full-scale-normalized data the stretch is applied to, so the
                     parameters and the render agree (reconciling the M2/M4 domain split).</li>
                 <li>Encode the priority rule for XISF: display function (Milestone 4) wins; auto-STF applies only in
@@ -977,48 +1140,13 @@
                     time.</li>
                 <li>Confirm the derivation runs on the correct (normalized, post-debayer) data; keep it off the main
                     thread as the loaders already do.</li>
-                <li>Re-check the manual stretch (<code>log</code>/<code>arcsinh</code>/<code>sigmoid</code>) default
-                    parameters against the full-scale domain and re-tune if needed; verify star detection (separate
-                    detection-image path) is unaffected.</li>
+                <li>Verify star detection (separate detection-image path) is unaffected, and check the pre-stretch
+                    brightness/contrast slider ranges against the full-scale domain.</li>
                 <li>Tests: per-format on/off; XISF with/without display function; the full-scale scaling is transparent
                     to min/max; verify by opening a real file of each format with the preference on and off.</li>
             </ul>
             <div class="field-label">Dependencies</div>
-            <p class="deps"><strong>Milestones 1, 3 &amp; 4</strong>.</p>
-            <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
-            <div class="field-label">Completed</div>
-            <p class="placeholder">—</p>
-            <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
-            <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in from the automated review loop.</p>
-            <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting human review.</p>
-        </div>
-
-        <!-- M6 -->
-        <div class="milestone">
-            <div class="milestone-head">
-                <span class="mnum">6</span>
-                <h3>Auto-STF before star detection</h3>
-                <span class="capsule not-started">Not started</span>
-            </div>
-            <div class="field-label">Goal</div>
-            <p class="goal">Run star detection on an STF-stretched copy of the detection buffer for more reliable
-            results, without altering the displayed image.</p>
-            <div class="field-label">Tasks</div>
-            <ul class="tasks">
-                <li>At the star-detection call site, derive <code>STFParameters</code> from the detection buffer and
-                    apply <code>Processors.Stretch(algorithm: .screenTransfer(params))</code> before calling
-                    <code>StarDetection.detectStars(in:using:)</code>, operating on a copy.</li>
-                <li>Confirm the detection buffer's normalization state (the stretch requires a normalized buffer);
-                    normalize first if needed.</li>
-                <li>Keep the entry point <code>nonisolated</code> / off-main-actor friendly, as today.</li>
-                <li>Tests; verify detection on a representative frame is at least as good as before.</li>
-            </ul>
-            <div class="field-label">Dependencies</div>
-            <p class="deps"><strong>Milestone 1</strong>.</p>
+            <p class="deps"><strong>Milestones 1, 3, 4 &amp; 5</strong>.</p>
             <div class="field-label">Status</div>
             <p><span class="capsule not-started">Not started</span></p>
             <div class="field-label">Completed</div>
@@ -1035,6 +1163,40 @@
         <div class="milestone">
             <div class="milestone-head">
                 <span class="mnum">7</span>
+                <h3>Auto-STF before star detection</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Run star detection on an STF-stretched copy of the detection buffer for more reliable
+            results, without altering the displayed image.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>At the star-detection call site, derive <code>STFParameters</code> from the detection buffer and
+                    apply <code>Processors.Stretch(parameters: params)</code> before calling
+                    <code>StarDetection.detectStars(in:using:)</code>, operating on a copy.</li>
+                <li>Confirm the detection buffer's normalization state (the stretch requires a normalized buffer);
+                    normalize first if needed.</li>
+                <li>Keep the entry point <code>nonisolated</code> / off-main-actor friendly, as today.</li>
+                <li>Tests; verify detection on a representative frame is at least as good as before.</li>
+            </ul>
+            <div class="field-label">Dependencies</div>
+            <p class="deps"><strong>Milestones 1 &amp; 5</strong>.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">—</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting human review.</p>
+        </div>
+
+        <!-- M8 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">8</span>
                 <h3>STF &amp; display function for QuickLook / Finder previews</h3>
                 <span class="capsule not-started">Not started</span>
             </div>
@@ -1053,7 +1215,7 @@
                     matching the app.</li>
             </ul>
             <div class="field-label">Dependencies</div>
-            <p class="deps"><strong>Milestones 1, 3, 4 &amp; 5</strong>.</p>
+            <p class="deps"><strong>Milestones 1, 3, 4, 5 &amp; 6</strong>.</p>
             <div class="field-label">Status</div>
             <p><span class="capsule not-started">Not started</span></p>
             <div class="field-label">Completed</div>

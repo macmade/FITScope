@@ -61,8 +61,8 @@ public enum ImageProcessor
         /// How to normalize pixel values, or `nil` to skip normalization.
         public var normalize: Processors.Normalize.Mode?
 
-        /// The non-linear stretch, or `nil` for a linear image.
-        public var stretch: Processors.Stretch.Algorithm?
+        /// The Screen Transfer parameters, or `nil` for a linear image.
+        public var stretch: Processors.Stretch.STFParameters?
 
         /// How to white-balance the channels, or `nil` to leave them untouched.
         public var whiteBalance: Processors.WhiteBalance.Mode?
@@ -123,7 +123,7 @@ public enum ImageProcessor
         ///   - debayer:      How to debayer the image.
         ///   - debayerMode:  The demosaic algorithm used when debayering.
         ///   - orientation:  The net orientation applied to the rendered image.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.Algorithm? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), colorBalance: Processors.ColorBalance.Ranges = .identity, hue: Double = 0, saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.STFParameters? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), colorBalance: Processors.ColorBalance.Ranges = .identity, hue: Double = 0, saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
         {
             self.normalize    = normalize
             self.stretch      = stretch

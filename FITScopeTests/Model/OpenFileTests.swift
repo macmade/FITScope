@@ -248,7 +248,7 @@ struct OpenFileTests
         // A mathematically invalid parameter fails the re-render, but the last
         // good result is retained and still displayed — so the row, which still
         // shows a usable image, must not be flagged.
-        renderer.adjustments.stretch = .arcsinh( 0 )
+        renderer.adjustments.stretch = .uniform( .init( shadows: 1, highlights: 0 ) )
 
         await renderer.render()
 

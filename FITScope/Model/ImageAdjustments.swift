@@ -43,7 +43,7 @@ public final class ImageAdjustments: ObservableObject
 
     /// The non-linear stretch applied to bring out faint detail, or `nil` for a
     /// linear image. Off by default, so the image opens linear.
-    @Published public var stretch: Processors.Stretch.Algorithm? = nil
+    @Published public var stretch: Processors.Stretch.STFParameters? = nil
 
     /// How to white-balance the colour channels, or `nil` to leave them
     /// untouched. Off by default.

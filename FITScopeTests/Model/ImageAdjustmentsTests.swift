@@ -140,12 +140,12 @@ struct ImageAdjustmentsTests
 
         // A changed setting flows into a freshly built config, and an explicit
         // debayer pattern overrides the header.
-        adjustments.stretch = .arcsinh( 12 )
+        adjustments.stretch = .uniform( .init( midtones: 0.3 ) )
         adjustments.debayer = .pattern( .grbg )
 
         let updated = adjustments.settings.config( scale: 1, offset: 0, headerPattern: .bggr )
 
-        #expect( updated.stretch     == .arcsinh( 12 ) )
+        #expect( updated.stretch     == .uniform( .init( midtones: 0.3 ) ) )
         #expect( updated.inputFormat == .cfa( pattern: .grbg, mode: .bilinear ) )
     }
 
@@ -166,7 +166,7 @@ struct ImageAdjustmentsTests
         adjustments.saturation   = 0.5
         adjustments.hue          = 45
         adjustments.colorBalance = .init( midtones: .init( red: 0.2 ) )
-        adjustments.stretch      = .arcsinh( 12 )
+        adjustments.stretch      = .uniform( .init( midtones: 0.3 ) )
         adjustments.levels       = .uniform( .init( inputBlack: 0.1, inputWhite: 0.9, gamma: 1.5 ) )
         adjustments.curves       = .uniform( .init( points: [ .init( x: 0, y: 0 ), .init( x: 0.5, y: 0.7 ), .init( x: 1, y: 1 ) ] ) )
         adjustments.debayer      = .pattern( .grbg )
@@ -296,7 +296,7 @@ struct ImageAdjustmentsTests
 
         adjustments.normalize  = .minMax
         adjustments.brightness = 0.5
-        adjustments.stretch    = .arcsinh( 12 )
+        adjustments.stretch    = .uniform( .init( midtones: 0.3 ) )
 
         adjustments.reset()
 
@@ -370,7 +370,7 @@ struct ImageAdjustmentsTests
     {
         let adjustments = ImageAdjustments()
 
-        adjustments.stretch     = .arcsinh( 12 )
+        adjustments.stretch     = .uniform( .init( midtones: 0.3 ) )
         adjustments.orientation = .init( rotation: .clockwise90, mirroredHorizontally: false )
 
         #expect( adjustments.isModified( \.stretch ) )
