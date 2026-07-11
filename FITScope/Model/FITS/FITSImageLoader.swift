@@ -310,7 +310,12 @@ public class FITSImageLoader: ObservableObject, ImageLoading
         }
 
         let header = sections[ dataIndex - 1 ]
-        let data   = sections[ dataIndex ].data
+
+        guard let data = try? sections[ dataIndex ].data
+        else
+        {
+            return nil
+        }
 
         guard let nAxis = header.naxis
         else

@@ -56,7 +56,7 @@ public enum FITSPreviewRenderer
 
         let properties = sections[ dataIndex - 1 ].properties.map { FITSPropertySnapshot( name: $0.name, value: $0.value ) }
 
-        return ( sections[ dataIndex ].data, properties )
+        return ( try sections[ dataIndex ].data, properties )
     }
 
     /// Renders the given FITS file bytes to a `CGImage`.
