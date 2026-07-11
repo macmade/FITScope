@@ -717,7 +717,7 @@
             <div class="milestone-head">
                 <span class="mnum">4</span>
                 <h3>Apply the XISF display function on open</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">When an XISF file carries a display function, open the image with it applied as the
@@ -740,15 +740,183 @@
             <div class="field-label">Dependencies</div>
             <p class="deps"><strong>Milestones 1 &amp; 2</strong>.</p>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">—</p>
+            <p>2026-07-11</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Approach.</strong> TDD: the mapping and loader tests were written first (build errors
+                        for the missing <code>displayFunction</code> property and the
+                        <code>STFParameters(displayFunction:…)</code> initializer), then implemented to
+                        green. Final state (after the maintainer's F1/F2 changes below): <strong>all 660 FITScopeTests
+                        pass</strong> (15 new).</li>
+                    <li><strong>Surfacing (Task 1).</strong> Added
+                        <code>XISFImageProperties.displayFunction: XISFDisplayFunction?</code> (a trailing, defaulted
+                        initializer parameter so no existing caller breaks), populated from
+                        <code>XISFImage.displayFunction</code> in <code>init(image:)</code>. It rides along in the
+                        already-<code>Sendable</code> snapshot (<code>XISFDisplayFunction</code> is
+                        <code>Sendable</code>/<code>Equatable</code>).</li>
+                    <li><strong>Mapping (Task 2).</strong> New
+                        <code>FITScope/Model/XISF/STFParameters+XISFDisplayFunction.swift</code> — a failable
+                        <code>Processors.Stretch.STFParameters.init?(displayFunction:channelCount:)</code>. The XISF
+                        <code>m/s/h/l/r</code> attributes map field-for-field onto a channel's
+                        midtones/shadows/highlights/low/high (the model <code>Channel</code> was built in M1 to mirror
+                        the XISF display-function model). RGB/K mode is honoured by the channel count: a 3-channel image
+                        maps to <code>.perChannel</code> (each channel taking its own <code>rk</code>/<code>g</code>/<code>b</code>
+                        component); any other count maps to <code>.uniform</code> from the <code>rk</code> (red/gray)
+                        component. The lightness component is not represented (the STF has no separate lightness
+                        channel). The init returns <code>nil</code> for an <em>identity</em> display function (leaving
+                        the image linear rather than opening with a no-op stretch) and for any <em>unusable</em> mapping,
+                        via an app-side <code>isUsable</code> predicate that mirrors SwiftPixel's internal
+                        <code>Channel.validate()</code> exactly (<code>highlights&gt;shadows</code>,
+                        <code>high&gt;low</code>, <code>midtones ∈ [0,1]</code>) — so the render apply path, which
+                        validates and throws on bad parameters, can never throw on the seeded baseline. Required
+                        <code>@unknown default</code> on the switch over the non-frozen cross-module
+                        <code>STFParameters</code> enum.</li>
+                    <li><strong>Seeding (Task 3).</strong> <code>XISFImageLoader</code> gained a
+                        <code>baseline(for:)</code> helper: when the image carries a usable display function it seeds
+                        <code>ImageProcessor.Settings(stretch: .screenTransfer(params))</code> as the
+                        <code>ImageRenderer</code> baseline (via <code>ImageRenderer(source:defaults:)</code>), so the
+                        image opens with the STF applied and pre-filled/editable in the inspector; otherwise it opens on
+                        the default linear baseline. Applied per-frame, so each image in a multi-image file gets its own
+                        baseline.</li>
+                    <li><strong>Round-trip (Task 4).</strong> Verified by test that a DF-seeded image reports
+                        <code>hasAdjustments == false</code> and <code>isModified(\.stretch) == false</code>, and that
+                        <code>reset()</code> returns to the DF stretch — because <code>ImageAdjustments</code> seeds
+                        every field from, and compares against, the same <code>baseline</code>.</li>
+                    <li><strong>Tests (Task 5).</strong> New
+                        <code>STFDisplayFunctionMappingTests</code> (7: uniform/per-channel mapping, <code>l/r</code>→low/high,
+                        identity→nil, invalid clip window→nil, invalid expansion→nil, one-bad-channel-in-per-channel→nil)
+                        plus 5 loader-integration tests (grayscale-DF applied + baseline round-trip, RGB-DF per-channel,
+                        no-DF linear, identity-DF linear, and a render-no-throw test that renders the seeded baseline
+                        over the real decoded samples to lock the <code>isUsable</code> guarantee). Extended the
+                        <code>XISFTestData</code> helper to emit a <code>&lt;DisplayFunction&gt;</code> child.
+                        <code>XISFImageDisplayFunction</code> has no public initializer, so the mapping tests obtain a
+                        real one by parsing a synthesized file.</li>
+                    <li><strong>Project sync.</strong> Added the two new files to <code>FITScope.xcodeproj</code>
+                        (app source to the FITScope target only — not the sandboxed extensions; test to FITScopeTests),
+                        following the round-number pbxproj ID convention (build files <code>…B1</code>/<code>…BA</code>,
+                        file refs <code>…F9</code>/<code>…E0</code>).</li>
+                    <li><strong>Normalization domain — F1 resolved (maintainer chose Option B).</strong> Originally the
+                        seeded STF was applied on top of the default <code>.minMax</code> normalization (matching how the
+                        image opens and how the M2 auto-STF path works). The reviewer flagged — correctly — that a
+                        PixInsight display function is authored in the format's native full-scale <code>[0,1]</code>
+                        domain, not the min/max domain, so a linear DF frame would not render "as authored". Fixed
+                        <strong>without touching SwiftPixel</strong>: (a) <code>ImageProcessor+XISF.xisfConfig</code> now
+                        scales integer samples by <code>1 / fullScale</code> (floats keep scale <code>1</code>) — this is
+                        <em>transparent</em> to the default min/max path because min/max is scale-invariant (proven and
+                        unit-tested both directions), so no existing rendering changes; (b) the DF baseline is seeded
+                        with <code>normalize: .identity</code>, so the Screen Transfer acts on the true full-scale
+                        <code>[0,1]</code> domain the display function was authored in. Verified by a full-scale-domain
+                        render test (a mid-scale <code>UInt16</code> renders mid-grey under identity, not clamped white)
+                        and a min/max-transparency test.</li>
+                    <li><strong>F2 resolved (maintainer approved).</strong> The mapping now selects per-channel vs.
+                        uniform from the <em>colour space</em> (<code>colorSpace == .rgb → perChannel</code>, else
+                        <code>uniform</code>) instead of the raw channel count, so a 3-channel non-RGB frame (e.g.
+                        CIE L*a*b*) no longer maps <code>rk</code>/<code>g</code>/<code>b</code> onto the wrong channels.
+                        The initializer signature changed from <code>channelCount:</code> to <code>colorSpace:</code>.
+                        Covered by a <code>nonRGBMapsToUniform</code> test.</li>
+                    <li><strong>Known follow-up for M5.</strong> The DF path now renders in the full-scale domain, while
+                        the M2/M5 <em>auto-STF</em> derivation works in the min/max domain. Clicking "Auto" on a
+                        DF-opened image would therefore re-derive parameters in a different domain than the identity
+                        baseline applies them — a latent inconsistency M5 (auto-STF on open) should reconcile when it
+                        decides the auto-STF domain.</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>F1 — Display function applied on top of a min/max normalization</strong> ·
+                        <em>Medium</em> · Correctness / rendering fidelity ·
+                        <code>XISFImageLoader</code> baseline + default <code>.minMax</code>. The XISF decoder returns
+                        raw sample values (e.g. <code>UInt16</code> in <code>0…65535</code>, <code>scale 1, offset 0</code>),
+                        and the pipeline min/max-normalizes before the stretch. A PixInsight <code>&lt;DisplayFunction&gt;</code>
+                        is authored in the format-full-scale <code>[0,1]</code> domain, so applying it after a min/max
+                        pre-stretch can over-stretch/clip and the image may not open exactly "as authored".
+                        <strong>Resolution: Unresolved — escalated to the maintainer.</strong> The fix is a design
+                        decision affecting app-wide XISF normalization (several strategies: rescale the XISF render
+                        config by <code>1/fullScale</code> + <code>normalize: .identity</code>, or add a full-scale
+                        normalize mode); not auto-fixed, carried into the pause with a recommendation.</li>
+                    <li><strong>F2 — <code>channelCount == 3</code> selects per-channel regardless of colour space</strong> ·
+                        <em>Low</em> · Correctness (edge) · <code>STFParameters+XISFDisplayFunction.swift</code>. A rare
+                        3-channel non-RGB frame (e.g. <code>CIELab</code>) carrying a DF would map <code>rk</code>/<code>g</code>/<code>b</code>
+                        onto L*/a*/b*, which is semantically off (it won't throw). Matches the milestone's stated
+                        "3ch → per-channel" rule. <strong>Resolution: Deferred</strong> — flagged for the maintainer;
+                        could gate on <code>colorSpace == .rgb</code> if strictness is wanted.</li>
+                    <li><strong>F3 — Test coverage gaps</strong> · <em>Low/Info</em> · Test coverage. The reviewer noted
+                        no render-of-seeded-baseline assertion, no multi-image-DF test, no CFA-with-DF test, and no
+                        loader-level invalid-DF-opens-linear test. <strong>Resolution: Partially fixed</strong> — added
+                        the render-no-throw test (the highest-value gap, locking the <code>isUsable</code> guarantee);
+                        the remaining (multi-image / CFA / loader-level-invalid) are deferred for the maintainer to
+                        weigh.</li>
+                    <li>The reviewer verified (not defects): the field-by-field mapping and per-component selection are
+                        correct; <code>isUsable</code> mirrors <code>Channel.validate()</code> exactly and every channel
+                        is checked, so the STF stage cannot throw on the seeded baseline; identity gating is correct;
+                        per-channel never hits the "requires 3-channel buffer" throw (RGB resolves to a 3-channel
+                        buffer); the baseline round-trip logic supports the tests' claims; the pbxproj wiring is clean
+                        (unique IDs, correct single-target membership, correctly excluded from the extensions); no
+                        regression from the new defaulted <code>displayFunction</code> field; and conventions
+                        (<code>let</code>, no force-unwrap, no raw loops, <code>=</code> alignment, documented
+                        members, <code>@unknown default</code>, <code>Sendable</code>) all hold.</li>
+                    <li><strong>Second round (after the F1/F2 changes).</strong> A fresh-context reviewer cold-read the
+                        Option B mechanism (the shared <code>xisfConfig</code> scale change, the identity baseline, the
+                        colour-space gating). <strong>No Critical / High / Medium findings.</strong> It proved from the
+                        <code>Scale</code>/<code>Normalize</code> code that the <code>1 / fullScale</code> scaling is
+                        genuinely transparent to both <code>.minMax</code> and <code>.percentile</code> (scale-invariant,
+                        incl. the flat/empty/constant cases), confirmed the detection image / cursor read-out /
+                        preview renderer decode raw planes and so are untouched, and confirmed the F2 gating can never
+                        produce a per-channel STF against a non-3-channel buffer. Low/Info notes only:
+                        <ul>
+                            <li><strong>F-A — "Stretch off" on a DF image shows a full-scale (near-black) linear, not
+                                min/max</strong> · <em>Low</em> · UX consistency. Inherent to Option B and matches
+                                PixInsight (resetting the STF reveals the near-black linear). <strong>Resolution:
+                                Deferred</strong> — surfaced for the maintainer; accept as intended, or fall the
+                                "disable stretch" action back to min/max if parity is wanted.</li>
+                            <li><strong>F-B — Float DF image with samples outside <code>[0,1]</code> is clamped by
+                                identity</strong> · <em>Low/Info</em>. Non-standard (PixInsight authors float in
+                                <code>[0,1]</code>) and matches "as authored". <strong>Resolution: Deferred</strong>
+                                (documented assumption).</li>
+                            <li><strong>F-C — NaN reachable on the newly-exercised float identity path</strong> ·
+                                <em>Info</em>. Pre-existing NaN handling, newly reachable; not obviously worse.
+                                <strong>Resolution: Deferred.</strong></li>
+                            <li><strong>F-D — Minor test gaps</strong> · <em>Info</em> (float-DF clamping, the F-A
+                                behaviour, and the note that a CIELab DF never actually renders). <strong>Resolution:
+                                Deferred.</strong></li>
+                        </ul></li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting human review.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>F1 → Option B.</strong> Apply the display function in the native full-scale
+                        <code>[0,1]</code> domain (correct fidelity), not on top of the min/max normalization — the
+                        larger fix, including the SwiftPixel change it needs.</li>
+                    <li><strong>F2.</strong> Address it: gate the per-channel mapping on <code>colorSpace == .rgb</code>
+                        rather than <code>channelCount == 3</code>, so a 3-channel non-RGB frame (e.g. CIELab) does not
+                        map <code>rk</code>/<code>g</code>/<code>b</code> onto the wrong channels.</li>
+                    <li><strong>F-A — accepted, and the full-scale direction confirmed.</strong> The "stretch off →
+                        full-scale (near-black) linear" behaviour on a DF image looks correct and consistent with
+                        PixInsight; keep it. The maintainer confirmed the app should adopt the "correct" PixInsight-style
+                        model — full-scale <code>[0,1]</code> normalization for linear data everywhere, with visibility
+                        coming from a stretch (DF or auto-STF), not min/max. Confirmed that <code>.identity</code> does
+                        not break the pipeline (it is itself a normalization that marks the buffer normalized and clamps
+                        to <code>[0,1]</code>, satisfying every processor's <code>isNormalized</code> precondition; the
+                        pipeline also auto-inserts min/max when <code>normalize</code> is <code>nil</code> but a stretch
+                        is present). <strong>Resolution:</strong> M4 stays as the correct first increment (full-scale
+                        only where a DF supplies visibility); the full realization is recorded as a <strong>maintainer
+                        design directive on Milestone 5</strong> (adopt full-scale + auto-STF, retire min/max as the
+                        linear-on-open default, extend the full-scale scaling to FITS/RAW, re-tune the manual stretches).</li>
+                    <li><strong>F-B — accepted as OK.</strong> The float-outside-<code>[0,1]</code> identity-clamp edge
+                        is fine.</li>
+                    <li><strong>F-C — answered (measured).</strong> Traced and probed the pipeline: the 8-bit conversion
+                        is all vDSP (no trapping <code>UInt8(Double)</code>), so a <code>NaN</code> never crashes. Under
+                        <code>.identity</code> (the DF path) a NaN sample renders as a single black pixel and the rest
+                        render correctly; under <code>.minMax</code> (the pre-existing default) a single NaN poisons the
+                        reduction and blacks out the whole frame. So the new full-scale path is <em>more</em> robust to
+                        NaN than the default it sits beside — no regression, no action.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- M5 -->
@@ -758,22 +926,62 @@
                 <h3>Apply auto-STF on open (fallback)</h3>
                 <span class="capsule not-started">Not started</span>
             </div>
+            <div class="field-label">Design decisions (maintainer)</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Adopt the "correct" PixInsight-style domain model.</strong> Linear data should be
+                        normalized to its true physical full-scale <code>[0,1]</code> domain, and <em>visibility must
+                        come from a stretch</em> (the XISF display function when present, else the auto-STF) —
+                        <strong>not from min/max</strong>. min/max is only a visibility crutch for the un-stretched view;
+                        it is outlier-sensitive (a single hot pixel sets the ceiling) and physically meaningless. Once
+                        every linear image opens with a stretch, min/max is no longer needed as the on-open default.</li>
+                    <li><strong>Auto-STF uses the full-scale domain, matching M4's display-function path.</strong> Derive
+                        <em>and</em> apply the auto-STF in the full-scale <code>[0,1]</code> domain: seed the baseline as
+                        <code>{ normalize: .identity, stretch: .screenTransfer(auto) }</code>, exactly as the M4 DF path
+                        does. This resolves the M4 follow-up (DF was full-scale, auto-STF was min/max) by putting both
+                        STF sources in one domain. The derivation must run over the same full-scale-normalized data the
+                        stretch is applied to, so the parameters and the render agree.</li>
+                    <li><strong>Retire min/max as the linear-on-open default.</strong> With auto-STF applied on open, the
+                        linear loaders (FITS / XISF / RAW) should open in the full-scale domain; the honest
+                        near-black linear view (the F-A behaviour) then becomes the consistent "stretch off" state for
+                        <em>all</em> linear images, rather than a DF-vs-non-DF asymmetry.</li>
+                    <li><strong>Costs to handle here (surfaced during M4).</strong> (a) FITS and RAW need the same
+                        full-scale scaling XISF now applies (XISF scales integer samples by <code>1 / fullScale</code> in
+                        <code>xisfConfig</code>; FITS decodes via <code>BZERO</code>/<code>BSCALE</code> and RAW has its
+                        own scale, so each linear loader must bring samples into the true <code>[0,1]</code> before
+                        <code>.identity</code> means "full-scale" there). (b) The manual stretches
+                        (<code>log</code>/<code>arcsinh</code>/<code>sigmoid</code>) and their default parameters are
+                        tuned for min/max-normalized input, so moving the domain likely needs re-tuning. (c) Verify star
+                        detection (separate raw detection-image path) is unaffected.</li>
+                </ul>
+            </div>
             <div class="field-label">Goal</div>
             <p class="goal">When a linear format's preference is on, open the image with auto-derived STF as its
-            baseline — for XISF, only when no display function is present (Milestone 4 takes priority).</p>
+            baseline — for XISF, only when no display function is present (Milestone 4 takes priority) — applying the
+            auto-STF in the same full-scale <code>[0,1]</code> domain the display-function path uses.</p>
             <div class="field-label">Tasks</div>
             <ul class="tasks">
                 <li>In <code>FITSImageLoader</code>, <code>XISFImageLoader</code> and <code>RAWImageLoader</code>,
                     when the format's preference is on, materialize <code>STFParameters</code> via the SwiftPixel
-                    helper and seed the baseline with <code>stretch: .screenTransfer(params)</code>.</li>
+                    helper and seed the baseline with <code>{ normalize: .identity, stretch: .screenTransfer(params) }</code>
+                    (the full-scale domain, matching M4's display-function path).</li>
+                <li>Bring FITS and RAW samples into the true full-scale <code>[0,1]</code> domain (as
+                    <code>xisfConfig</code> already does for XISF via <code>1 / fullScale</code>), so
+                    <code>.identity</code> normalization is physically correct for those formats too. Confirm the scaling
+                    is transparent to the existing min/max path (min/max is scale-invariant).</li>
+                <li>Derive the auto-STF over the same full-scale-normalized data the stretch is applied to, so the
+                    parameters and the render agree (reconciling the M2/M4 domain split).</li>
                 <li>Encode the priority rule for XISF: display function (Milestone 4) wins; auto-STF applies only in
                     its absence.</li>
                 <li>Give the loaders access to the shared <code>Preferences</code>; read the per-format flag at load
                     time.</li>
                 <li>Confirm the derivation runs on the correct (normalized, post-debayer) data; keep it off the main
                     thread as the loaders already do.</li>
-                <li>Tests: per-format on/off; XISF with/without display function; verify by opening a real file of each
-                    format with the preference on and off.</li>
+                <li>Re-check the manual stretch (<code>log</code>/<code>arcsinh</code>/<code>sigmoid</code>) default
+                    parameters against the full-scale domain and re-tune if needed; verify star detection (separate
+                    detection-image path) is unaffected.</li>
+                <li>Tests: per-format on/off; XISF with/without display function; the full-scale scaling is transparent
+                    to min/max; verify by opening a real file of each format with the preference on and off.</li>
             </ul>
             <div class="field-label">Dependencies</div>
             <p class="deps"><strong>Milestones 1, 3 &amp; 4</strong>.</p>

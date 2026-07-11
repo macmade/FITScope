@@ -46,6 +46,39 @@ struct ImageProcessorXISFTests
         #expect( result.inputPixelFormat == .mono )
     }
 
+    /// With identity normalization, integer samples render in their native
+    /// full-scale `[0, 1]` domain — a mid-scale `UInt16` value renders as mid-grey,
+    /// not clamped to white. This is the domain a stored display function is
+    /// authored in, and confirms the `1 / fullScale` scaling the config applies.
+    @Test
+    func rendersIntegerSamplesInFullScaleDomainUnderIdentity() throws
+    {
+        let properties = XISFImageProperties( width: 2, height: 2, channelCount: 1, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .gray, colorFilterArrayPattern: nil )
+        let data       = Data( XISFTestData.uInt16LE( [ 0, 32768, 65535, 32768 ] ) )
+        let result     = try ImageProcessor.render( data: data, xisf: properties, settings: ImageProcessor.Settings( normalize: .identity ) )
+
+        // Under the old scale-1 behaviour, identity would clamp 32768 to 1.0 (white),
+        // leaving only 0 and 255 in the output; the full-scale scaling instead maps
+        // it to ~0.5, so a mid-grey byte is present.
+        #expect( result.bytes.contains { $0 > 0 && $0 < 200 } )
+    }
+
+    /// Min/max normalization is unaffected by the full-scale scaling (min/max is
+    /// scale-invariant): a `UInt16` ramp still spans black to white with the
+    /// interior values in between.
+    @Test
+    func minMaxRenderingIsUnchangedByFullScaleScaling() throws
+    {
+        let properties = XISFImageProperties( width: 2, height: 2, channelCount: 1, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .gray, colorFilterArrayPattern: nil )
+        let data       = Data( XISFTestData.uInt16LE( [ 10, 20, 30, 40 ] ) )
+        let result     = try ImageProcessor.render( data: data, xisf: properties )
+
+        // 10 → 0, 40 → 255, and the interior 20/30 map to (value − 10) / 30, i.e.
+        // ~85 and ~170 — the same result the raw samples produced before scaling.
+        #expect( result.bytes.contains { ( 80 ... 90 ).contains( $0 ) } )
+        #expect( result.bytes.contains { ( 165 ... 175 ).contains( $0 ) } )
+    }
+
     /// A three-channel RGB image renders as a colour result.
     @Test
     func rendersRGBAsColor() throws

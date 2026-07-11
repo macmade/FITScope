@@ -63,6 +63,11 @@ public struct XISFImageProperties: Sendable, Equatable
     /// mosaic to be debayered, or `nil` for a non-CFA image.
     public let colorFilterArrayPattern: String?
 
+    /// The image's stored display function (an STF the file was authored with), or
+    /// `nil` when the image carries none. Mapped onto ``Processors/Stretch/STFParameters``
+    /// and applied as the baseline stretch when the image opens.
+    public let displayFunction: XISFDisplayFunction?
+
     /// Creates a snapshot from its parts.
     ///
     /// - Parameters:
@@ -74,7 +79,8 @@ public struct XISFImageProperties: Sendable, Equatable
     ///   - pixelStorage:            The planar/interleaved storage model.
     ///   - colorSpace:              The colour space.
     ///   - colorFilterArrayPattern: The CFA pattern, or `nil`.
-    public init( width: Int, height: Int, channelCount: Int, sampleFormat: XISFSampleFormat, byteOrder: XISFByteOrder, pixelStorage: XISFPixelStorage, colorSpace: XISFColorSpace, colorFilterArrayPattern: String? )
+    ///   - displayFunction:         The stored display function, or `nil`.
+    public init( width: Int, height: Int, channelCount: Int, sampleFormat: XISFSampleFormat, byteOrder: XISFByteOrder, pixelStorage: XISFPixelStorage, colorSpace: XISFColorSpace, colorFilterArrayPattern: String?, displayFunction: XISFDisplayFunction? = nil )
     {
         self.width                   = width
         self.height                  = height
@@ -84,6 +90,7 @@ public struct XISFImageProperties: Sendable, Equatable
         self.pixelStorage            = pixelStorage
         self.colorSpace              = colorSpace
         self.colorFilterArrayPattern = colorFilterArrayPattern
+        self.displayFunction         = displayFunction
     }
 
     /// Snapshots a parsed ``XISFImage``'s layout, so the non-`Sendable` image need
@@ -105,7 +112,8 @@ public struct XISFImageProperties: Sendable, Equatable
             byteOrder:               image.byteOrder,
             pixelStorage:            image.pixelStorage,
             colorSpace:              image.colorSpace,
-            colorFilterArrayPattern: image.colorFilterArray?.pattern
+            colorFilterArrayPattern: image.colorFilterArray?.pattern,
+            displayFunction:         image.displayFunction
         )
     }
 }

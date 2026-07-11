@@ -179,7 +179,7 @@ public class XISFImageLoader: ObservableObject, ImageLoading
                 {
                     frame -> LoadedImage in
 
-                    let renderer = ImageRenderer( source: frame.source )
+                    let renderer = ImageRenderer( source: frame.source, defaults: Self.baseline( for: frame.info ) )
 
                     return LoadedImage( xisfInfo: frame.info, renderer: renderer )
                 }
@@ -201,6 +201,38 @@ public class XISFImageLoader: ObservableObject, ImageLoading
             self.error         = error
             self.imageObserver = nil
         }
+    }
+
+    /// The baseline settings an XISF image opens on.
+    ///
+    /// When the image carries a usable display function, that display function is
+    /// mapped onto an editable Screen Transfer stretch and seeded as the baseline,
+    /// so the image opens as authored and the stretch is pre-filled and editable in
+    /// the inspector. An image with no display function — or one whose display
+    /// function is the identity or otherwise unusable — opens on the default linear
+    /// baseline instead.
+    ///
+    /// A stored display function is authored in the format's native, full-scale
+    /// `[0, 1]` domain (a PixInsight display function's shadows / midtones /
+    /// highlights are fractions of full scale), not the data's min/max range. The
+    /// XISF render already scales integer samples by their full scale, so seeding
+    /// ``Processors/Normalize/Mode/identity`` normalization makes the Screen
+    /// Transfer act on exactly that domain, reproducing the authored rendering —
+    /// rather than the default min/max normalization, which would pre-stretch the
+    /// data and distort the display function.
+    ///
+    /// - Parameter info: The image's metadata snapshot.
+    /// - Returns: The baseline settings to open the image with.
+    private static func baseline( for info: XISFImageInfo ) -> ImageProcessor.Settings
+    {
+        guard let displayFunction = info.imageProperties.displayFunction,
+              let stf             = Processors.Stretch.STFParameters( displayFunction: displayFunction, colorSpace: info.imageProperties.colorSpace )
+        else
+        {
+            return ImageProcessor.Settings()
+        }
+
+        return ImageProcessor.Settings( normalize: .identity, stretch: .screenTransfer( stf ) )
     }
 
     /// Builds the detection-ready single-channel linear image for an XISF image,

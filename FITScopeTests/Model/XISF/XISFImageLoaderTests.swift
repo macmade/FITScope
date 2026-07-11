@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftPixel
 import Testing
 
 /// Tests that `XISFImageLoader` opens XISF files — grayscale, RGB, CFA and
@@ -291,6 +292,121 @@ struct XISFImageLoaderTests
 
         // The frames carry their own titles (from each image's `id`).
         #expect( loader.frames.compactMap { $0.frameTitle } == [ "frame_1", "frame_2", "frame_3" ] )
+    }
+
+    /// A grayscale image carrying a non-identity display function opens with that
+    /// display function applied as an editable, uniform Screen Transfer baseline —
+    /// the image opens "as authored", so it reports no adjustments over its own
+    /// baseline.
+    @Test
+    @MainActor
+    func opensWithGrayscaleDisplayFunctionApplied() async throws
+    {
+        let hex    = XISFTestData.hex( XISFTestData.uInt16LE( Array( 0 ..< 4 ).map { $0 * 10 } ) )
+        let image  = XISFTestData.Image( geometry: "2:2:1", sampleFormat: "UInt16", colorSpace: "Gray", displayFunction: ( m: "0.25:0.25:0.25:0.25", s: "0.1:0.1:0.1:0.1", h: "0.9:0.9:0.9:0.9", l: "0:0:0:0", r: "1:1:1:1" ), hexData: hex )
+        let loader = XISFImageLoader( url: self.url, data: XISFTestData.file( images: [ image ] ) )
+
+        await loader.load()
+
+        let loaded      = try #require( loader.image )
+        let adjustments = loaded.renderer.adjustments
+        let expected    = Processors.Stretch.STFParameters.uniform( .init( shadows: 0.1, midtones: 0.25, highlights: 0.9, low: 0, high: 1 ) )
+
+        #expect( adjustments.stretch == .screenTransfer( expected ) )
+        #expect( adjustments.baseline.stretch == .screenTransfer( expected ) )
+
+        // The display function is authored in the native full-scale [0,1] domain,
+        // so the baseline uses identity normalization rather than min/max.
+        #expect( adjustments.baseline.normalize == .identity )
+
+        // The display function is the image's "as opened" baseline, so nothing
+        // reads as modified and a reset returns to the same stretch.
+        #expect( adjustments.hasAdjustments == false )
+        #expect( adjustments.isModified( \.stretch ) == false )
+
+        adjustments.reset()
+
+        #expect( adjustments.stretch == .screenTransfer( expected ) )
+    }
+
+    /// The display-function baseline renders without throwing — the `isUsable`
+    /// gate exists precisely so the seeded Screen Transfer never makes the render
+    /// apply path (which validates and throws on bad parameters) fail.
+    @Test
+    @MainActor
+    func rendersDisplayFunctionBaselineWithoutThrowing() async throws
+    {
+        let hex    = XISFTestData.hex( XISFTestData.uInt16LE( Array( 0 ..< 4 ).map { $0 * 10 } ) )
+        let image  = XISFTestData.Image( geometry: "2:2:1", sampleFormat: "UInt16", colorSpace: "Gray", displayFunction: ( m: "0.25:0.25:0.25:0.25", s: "0.1:0.1:0.1:0.1", h: "0.9:0.9:0.9:0.9", l: "0:0:0:0", r: "1:1:1:1" ), hexData: hex )
+        let loader = XISFImageLoader( url: self.url, data: XISFTestData.file( images: [ image ] ) )
+
+        await loader.load()
+
+        let loaded = try #require( loader.image )
+
+        // Render through the actual seeded baseline (its .screenTransfer stretch),
+        // over the real decoded samples — this exercises the STF apply path.
+        let result = try loaded.renderer.renderSourceSnapshot().makeResult( settings: loaded.renderer.adjustments.settings )
+
+        #expect( result.image.width == 2 )
+        #expect( result.image.height == 2 )
+    }
+
+    /// A three-channel RGB image carrying a display function opens with a
+    /// per-channel Screen Transfer baseline, each channel from its own component.
+    @Test
+    @MainActor
+    func opensWithRGBDisplayFunctionAsPerChannel() async throws
+    {
+        let planes = XISFTestData.hex( XISFTestData.uInt16LE( [ 1, 2, 3, 4 ] + [ 10, 20, 30, 40 ] + [ 100, 200, 300, 400 ] ) )
+        let image  = XISFTestData.Image( geometry: "2:2:3", sampleFormat: "UInt16", colorSpace: "RGB", displayFunction: ( m: "0.2:0.3:0.4:0.5", s: "0.01:0.02:0.03:0.04", h: "0.8:0.85:0.9:0.95", l: "0:0:0:0", r: "1:1:1:1" ), hexData: planes )
+        let loader = XISFImageLoader( url: self.url, data: XISFTestData.file( images: [ image ] ) )
+
+        await loader.load()
+
+        let loaded   = try #require( loader.image )
+        let expected = Processors.Stretch.STFParameters.perChannel(
+            red:   .init( shadows: 0.01, midtones: 0.2, highlights: 0.8,  low: 0, high: 1 ),
+            green: .init( shadows: 0.02, midtones: 0.3, highlights: 0.85, low: 0, high: 1 ),
+            blue:  .init( shadows: 0.03, midtones: 0.4, highlights: 0.9,  low: 0, high: 1 )
+        )
+
+        #expect( loaded.renderer.adjustments.stretch == .screenTransfer( expected ) )
+    }
+
+    /// An image with no display function opens linear, with no baseline stretch.
+    @Test
+    @MainActor
+    func opensLinearWithoutDisplayFunction() async throws
+    {
+        let loader = XISFImageLoader( url: self.url, data: XISFTestData.file( images: [ Self.grayscale( width: 2, height: 2 ) ] ) )
+
+        await loader.load()
+
+        let loaded = try #require( loader.image )
+
+        #expect( loaded.renderer.adjustments.stretch == nil )
+        #expect( loaded.renderer.adjustments.baseline.stretch == nil )
+
+        // Without a display function the image keeps the default min/max baseline.
+        #expect( loaded.renderer.adjustments.baseline.normalize == .minMax )
+    }
+
+    /// An identity display function (the XISF default) leaves the image linear
+    /// rather than opening with a no-op stretch.
+    @Test
+    @MainActor
+    func opensLinearWithIdentityDisplayFunction() async throws
+    {
+        let hex    = XISFTestData.hex( XISFTestData.uInt16LE( Array( 0 ..< 4 ).map { $0 * 10 } ) )
+        let image  = XISFTestData.Image( geometry: "2:2:1", sampleFormat: "UInt16", colorSpace: "Gray", displayFunction: ( m: "0.5:0.5:0.5:0.5", s: "0:0:0:0", h: "1:1:1:1", l: "0:0:0:0", r: "1:1:1:1" ), hexData: hex )
+        let loader = XISFImageLoader( url: self.url, data: XISFTestData.file( images: [ image ] ) )
+
+        await loader.load()
+
+        let loaded = try #require( loader.image )
+
+        #expect( loaded.renderer.adjustments.stretch == nil )
     }
 
     /// A grayscale test image of the given size, filled with a simple ramp.

@@ -131,6 +131,7 @@
 		05F15F0000000000000000A6 /* ImageInformation+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F6 /* ImageInformation+XISF.swift */; };
 		05F15F0000000000000000A7 /* LoadedImage+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F7 /* LoadedImage+XISF.swift */; };
 		05F15F0000000000000000A8 /* XISFImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F8 /* XISFImageLoader.swift */; };
+		05F15F0000000000000000B1 /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
 		05F15F0000000000000000A9 /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
 		05F15F0000000000000000AA /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
 		05F15F0000000000000000AB /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
@@ -149,6 +150,7 @@
 		05F15F0000000000000000B9 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
 		05F15F0000000000000000E2 /* XISFTestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E1 /* XISFTestData.swift */; };
 		05F15F0000000000000000E4 /* XISFImageLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E3 /* XISFImageLoaderTests.swift */; };
+		05F15F0000000000000000BA /* STFDisplayFunctionMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E0 /* STFDisplayFunctionMappingTests.swift */; };
 		05F15F0000000000000000E6 /* ImageProcessorXISFTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E5 /* ImageProcessorXISFTests.swift */; };
 		05F15F0000000000000000E9 /* XISFPreviewRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E8 /* XISFPreviewRendererTests.swift */; };
 		05FB0B02000000000000FB02 /* BannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB0B01000000000000FB01 /* BannerView.swift */; };
@@ -656,6 +658,7 @@
 		05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataFITSTests.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000E1 /* XISFTestData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFTestData.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000E3 /* XISFImageLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageLoaderTests.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000E0 /* STFDisplayFunctionMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STFDisplayFunctionMappingTests.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000E5 /* ImageProcessorXISFTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessorXISFTests.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000E8 /* XISFPreviewRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFPreviewRendererTests.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000F1 /* XISFImageProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageProperties.swift; sourceTree = "<group>"; };
@@ -663,6 +666,7 @@
 		05F15F0000000000000000F3 /* ImageMetadataProperty+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataProperty+XISF.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F4 /* ImageMetadataSection+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataSection+XISF.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F5 /* XISFImageInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageInfo.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "STFParameters+XISFDisplayFunction.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F6 /* ImageInformation+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageInformation+XISF.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F7 /* LoadedImage+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LoadedImage+XISF.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F8 /* XISFImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageLoader.swift; sourceTree = "<group>"; };
@@ -1482,6 +1486,7 @@
 			isa = PBXGroup;
 			children = (
 				05F15F0000000000000000F8 /* XISFImageLoader.swift */,
+				05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */,
 				05F15F0000000000000000F2 /* XISFRenderSource.swift */,
 				05F15F0000000000000000F5 /* XISFImageInfo.swift */,
 				05F15F0000000000000000F1 /* XISFImageProperties.swift */,
@@ -1497,6 +1502,7 @@
 			isa = PBXGroup;
 			children = (
 				05F15F0000000000000000E3 /* XISFImageLoaderTests.swift */,
+				05F15F0000000000000000E0 /* STFDisplayFunctionMappingTests.swift */,
 				05F15F0000000000000000E1 /* XISFTestData.swift */,
 			);
 			path = XISF;
@@ -2435,6 +2441,7 @@
 				05F15F0000000000000000A6 /* ImageInformation+XISF.swift in Sources */,
 				05F15F0000000000000000A7 /* LoadedImage+XISF.swift in Sources */,
 				05F15F0000000000000000A8 /* XISFImageLoader.swift in Sources */,
+				05F15F0000000000000000B1 /* STFParameters+XISFDisplayFunction.swift in Sources */,
 				05DD1000000000000000FB04 /* RenderResult.swift in Sources */,
 				05A1B2C30000000000000008 /* ImageExporter.swift in Sources */,
 				05A1B2C30000000000000A02 /* FITSPreviewRenderer.swift in Sources */,
@@ -2615,6 +2622,7 @@
 				05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */,
 				05F15F0000000000000000E2 /* XISFTestData.swift in Sources */,
 				05F15F0000000000000000E4 /* XISFImageLoaderTests.swift in Sources */,
+				05F15F0000000000000000BA /* STFDisplayFunctionMappingTests.swift in Sources */,
 				05F15F0000000000000000E6 /* ImageProcessorXISFTests.swift in Sources */,
 				05F15F0000000000000000E9 /* XISFPreviewRendererTests.swift in Sources */,
 				05A1B2C30000000000000006 /* ImageExporterTests.swift in Sources */,

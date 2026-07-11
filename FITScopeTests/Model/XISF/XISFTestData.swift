@@ -41,22 +41,24 @@ enum XISFTestData
         var byteOrder: String
         var bounds: String?
         var cfaPattern: String?
+        var displayFunction: ( m: String, s: String, h: String, l: String, r: String )?
         var keywords: [ ( name: String, value: String, comment: String? ) ]
         var properties: [ ( id: String, type: String, value: String ) ]
         var hexData: String
 
-        init( geometry: String, sampleFormat: String, colorSpace: String, pixelStorage: String = "Planar", byteOrder: String = "little", bounds: String? = nil, cfaPattern: String? = nil, keywords: [ ( name: String, value: String, comment: String? ) ] = [], properties: [ ( id: String, type: String, value: String ) ] = [], hexData: String )
+        init( geometry: String, sampleFormat: String, colorSpace: String, pixelStorage: String = "Planar", byteOrder: String = "little", bounds: String? = nil, cfaPattern: String? = nil, displayFunction: ( m: String, s: String, h: String, l: String, r: String )? = nil, keywords: [ ( name: String, value: String, comment: String? ) ] = [], properties: [ ( id: String, type: String, value: String ) ] = [], hexData: String )
         {
-            self.geometry     = geometry
-            self.sampleFormat = sampleFormat
-            self.colorSpace   = colorSpace
-            self.pixelStorage = pixelStorage
-            self.byteOrder    = byteOrder
-            self.bounds       = bounds
-            self.cfaPattern   = cfaPattern
-            self.keywords     = keywords
-            self.properties   = properties
-            self.hexData      = hexData
+            self.geometry        = geometry
+            self.sampleFormat    = sampleFormat
+            self.colorSpace      = colorSpace
+            self.pixelStorage    = pixelStorage
+            self.byteOrder       = byteOrder
+            self.bounds          = bounds
+            self.cfaPattern      = cfaPattern
+            self.displayFunction = displayFunction
+            self.keywords        = keywords
+            self.properties      = properties
+            self.hexData         = hexData
         }
     }
 
@@ -98,6 +100,11 @@ enum XISFTestData
         if let pattern = image.cfaPattern
         {
             children += "<ColorFilterArray pattern=\"\( pattern )\" width=\"2\" height=\"2\"/>"
+        }
+
+        if let df = image.displayFunction
+        {
+            children += "<DisplayFunction m=\"\( df.m )\" s=\"\( df.s )\" h=\"\( df.h )\" l=\"\( df.l )\" r=\"\( df.r )\"/>"
         }
 
         image.keywords.forEach

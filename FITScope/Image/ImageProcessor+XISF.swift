@@ -62,8 +62,16 @@ public extension ImageProcessor
 
     /// Builds the pipeline configuration for an XISF image, selecting the input
     /// layout from its colour space (and colour-filter array, when present) and
-    /// leaving the samples at their decoded values (scale 1, offset 0 — XISF samples
-    /// are already physical).
+    /// scaling the samples into the format's native `[0, 1]` full-scale domain.
+    ///
+    /// Integer samples decode as raw counts, so they are scaled by `1 / fullScale`
+    /// (e.g. `1 / 65535` for `UInt16`) to express the XISF-normalized value the
+    /// format encodes; floating-point samples are already in `[0, 1]` and pass
+    /// through (scale `1`). This scaling is transparent to the default min/max
+    /// normalization (min/max is scale-invariant, so the displayed range is
+    /// unchanged), while letting an ``Processors/Normalize/Mode/identity`` baseline —
+    /// used when opening with a stored display function — act on the true full-scale
+    /// domain the display function was authored in.
     ///
     /// - Parameters:
     ///   - properties: The image's pixel layout.
@@ -73,6 +81,8 @@ public extension ImageProcessor
     ///   unsupported colour space, or an unsupported `BAYERPAT`-equivalent pattern.
     private static func xisfConfig( properties: XISFImageProperties, settings: Settings ) throws -> PixelPipeline.Config
     {
+        let scale = Self.xisfFullScale( properties.sampleFormat ).map { 1 / $0 } ?? 1
+
         switch properties.colorSpace
         {
             case .gray:
@@ -90,10 +100,10 @@ public extension ImageProcessor
                 {
                     let bayer = try ImageProcessor.debayerPattern( named: pattern )
 
-                    return settings.config( scale: 1, offset: 0, headerPattern: bayer )
+                    return settings.config( scale: scale, offset: 0, headerPattern: bayer )
                 }
 
-                return settings.config( scale: 1, offset: 0, inputFormat: .mono )
+                return settings.config( scale: scale, offset: 0, inputFormat: .mono )
 
             case .rgb:
 
@@ -103,7 +113,7 @@ public extension ImageProcessor
                     throw RuntimeError( message: "An RGB XISF image must have three channels, not \( properties.channelCount )." )
                 }
 
-                return settings.config( scale: 1, offset: 0, inputFormat: .rgb )
+                return settings.config( scale: scale, offset: 0, inputFormat: .rgb )
 
             case .cieLab:
 
