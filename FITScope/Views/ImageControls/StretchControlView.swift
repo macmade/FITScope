@@ -60,11 +60,14 @@ public struct StretchControlView: View
     /// Requests a debounced re-render after a change.
     private let reRender: () -> Void
 
-    /// Derives auto-STF parameters from the current image for the Auto action, or
-    /// `nil` when no derivation is possible (no image or no detection buffer). The
-    /// derivation runs off the main actor, so this is `async`. Injected so the
-    /// control stays decoupled from the image model.
-    private let autoScreenTransfer: () async -> Processors.Stretch.STFParameters?
+    /// Derives auto Screen Transfer settings — the `{ normalize, stretch }` pair —
+    /// from the current image for the Auto action, or `nil` when no derivation is
+    /// possible (no image or no detection buffer). The normalization comes back
+    /// alongside the stretch so Auto can apply the STF in the domain it was derived
+    /// in (see ``applyAutoScreenTransfer()``). The derivation runs off the main
+    /// actor, so this is `async`. Injected so the control stays decoupled from the
+    /// image model.
+    private let autoScreenTransfer: () async -> ImageProcessor.Settings?
 
     /// Whether an auto-STF can currently be derived, used to enable or disable the
     /// Auto action (matching the editor window). Cheap enough to call each render.
@@ -95,12 +98,13 @@ public struct StretchControlView: View
     /// - Parameters:
     ///   - adjustments:          The shared adjustment values to write to.
     ///   - reRender:             The closure to call after a change.
-    ///   - autoScreenTransfer:   Derives auto-STF parameters from the current image
-    ///                           (off the main actor), or `nil` when unavailable.
-    ///                           Defaults to no derivation.
+    ///   - autoScreenTransfer:   Derives auto Screen Transfer settings (normalize +
+    ///                           stretch) from the current image (off the main
+    ///                           actor), or `nil` when unavailable. Defaults to no
+    ///                           derivation.
     ///   - canAutoScreenTransfer: Whether a derivation is currently possible, used
     ///                            to enable the Auto action. Defaults to `false`.
-    public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void, autoScreenTransfer: @escaping () async -> Processors.Stretch.STFParameters? = { nil }, canAutoScreenTransfer: @escaping () -> Bool = { false } )
+    public init( adjustments: ImageAdjustments, reRender: @escaping () -> Void, autoScreenTransfer: @escaping () async -> ImageProcessor.Settings? = { nil }, canAutoScreenTransfer: @escaping () -> Bool = { false } )
     {
         self.adjustments           = adjustments
         self.reRender              = reRender
@@ -222,25 +226,32 @@ public struct StretchControlView: View
     /// Derives an auto-STF from the current image (off the main actor) and applies
     /// it as the screen transfer, switching the control into screen-transfer mode.
     /// Does nothing when no derivation is available (no image or no detection
-    /// buffer). The parameter change flows through ``stretchParameters`` to the
-    /// shared adjustments and a re-render.
+    /// buffer).
+    ///
+    /// The derived normalization is applied alongside the stretch: the auto-STF is
+    /// authored in a specific domain (full-scale for a linear format, min/max
+    /// otherwise), and it must be *applied* over the matching normalization or it
+    /// renders too bright. The stretch itself flows through ``stretchParameters``
+    /// to the shared adjustments and a re-render; the normalization is set first so
+    /// that re-render already sees it.
     @MainActor
     private func applyAutoScreenTransfer() async
     {
         self.isDerivingAuto = true
 
-        let parameters = await self.autoScreenTransfer()
+        let settings = await self.autoScreenTransfer()
 
         self.isDerivingAuto = false
 
-        guard let parameters
+        guard let settings, let stretch = settings.stretch
         else
         {
             return
         }
 
-        self.mode           = .screenTransfer
-        self.screenTransfer = parameters
+        self.adjustments.normalize = settings.normalize
+        self.mode                  = .screenTransfer
+        self.screenTransfer        = stretch
     }
 
     /// Re-seeds the control's mode and screen-transfer parameters from the shared

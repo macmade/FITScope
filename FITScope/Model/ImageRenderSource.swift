@@ -62,4 +62,14 @@ public protocol ImageRenderSource: Sendable
     /// The detection-ready single-channel linear image for star detection and the
     /// sky-background measurement, or `nil` when none is available.
     var detectionImage: PixelBuffer? { get }
+
+    /// The format's full-scale maximum — the value the render scales samples into
+    /// the native `[0, 1]` domain by — or `nil` when the format has no fixed full
+    /// scale (a photographic or floating-point source).
+    ///
+    /// It lets a live auto Screen Transfer be derived in the *same* full-scale
+    /// domain the auto-stretch-on-open path uses, so clicking "Auto" reproduces
+    /// what opening the image did, rather than deriving in the min/max domain and
+    /// producing a different (brighter) result.
+    var fullScale: Double? { get }
 }

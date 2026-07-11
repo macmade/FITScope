@@ -213,19 +213,24 @@ public enum ImageProcessor
     /// keep the derived parameters in step with how they are applied, the derivation
     /// runs over the same domain: the single-channel `detectionImage` (in
     /// scaled-linear units) is divided by `fullScale` into `[0, 1]`, clamped by
-    /// identity normalization, then reduced to a uniform STF — exactly what the
-    /// inspector's "Auto" action produces, so opening and clicking Auto agree.
+    /// identity normalization, then reduced to a uniform STF. The inspector's and
+    /// editor's "Auto" actions call through here too (via
+    /// ``ImageRenderer/autoScreenTransferSettings(shadowClipFactor:targetBackground:)``),
+    /// so opening the image and clicking Auto derive in the same domain and agree.
     /// Per-channel balancing stays available by hand in the Screen Transfer editor.
     ///
     /// - Parameters:
-    ///   - detectionImage: The image's single-channel linear detection buffer, or
-    ///                     `nil` when none could be built.
-    ///   - fullScale:      The format's full-scale maximum, used to bring the
-    ///                     detection samples into `[0, 1]`. Must be positive.
+    ///   - detectionImage:   The image's single-channel linear detection buffer, or
+    ///                       `nil` when none could be built.
+    ///   - fullScale:        The format's full-scale maximum, used to bring the
+    ///                       detection samples into `[0, 1]`. Must be positive.
+    ///   - shadowClipFactor: How many median-absolute-deviations below the median to
+    ///                       clip the shadows. Defaults to `2.8`.
+    ///   - targetBackground: The value the median should map to. Defaults to `0.25`.
     /// - Returns: The `{ normalize: .identity, stretch: <auto STF> }` opened settings,
     ///   or `nil` when no detection image is available, the full scale is not
     ///   positive, or the derivation fails.
-    static func autoStretchSettings( detectionImage: PixelBuffer?, fullScale: Double ) -> Settings?
+    static func autoStretchSettings( detectionImage: PixelBuffer?, fullScale: Double, shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) -> Settings?
     {
         guard let buffer = detectionImage, buffer.pixels.isEmpty == false, fullScale > 0
         else
@@ -236,7 +241,7 @@ public enum ImageProcessor
         let scaled = buffer.pixels.map { $0 / fullScale }
 
         guard let input   = try? PixelBuffer( width: buffer.width, height: buffer.height, channels: buffer.channels, pixels: scaled, isNormalized: false ),
-              let stretch = try? Processors.Stretch.STFParameters.computed( normalizing: input, using: .identity )
+              let stretch = try? Processors.Stretch.STFParameters.computed( normalizing: input, using: .identity, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
         else
         {
             return nil

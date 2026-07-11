@@ -221,12 +221,25 @@ public class ImageRenderer: ObservableObject
         ( try? self.source.get() )?.detectionImage != nil
     }
 
-    /// Derives an auto Screen Transfer Function from the source's detection image.
+    /// Derives auto Screen Transfer settings from the source's detection image, as
+    /// the `{ normalize, stretch }` pair to apply as a whole.
     ///
     /// Runs the SwiftPixel derivation over the source's single-channel, linear
-    /// ``ImageRenderSource/detectionImage`` — normalizing a copy if needed — so it
-    /// produces a uniform STF suitable for seeding the stretch. Returns `nil` when
-    /// the source failed to extract or exposes no detection image.
+    /// ``ImageRenderSource/detectionImage`` and returns a uniform STF together with
+    /// the normalization it must be applied over. Returns `nil` when the source
+    /// failed to extract or exposes no detection image.
+    ///
+    /// **Domain.** When the source has a known ``ImageRenderSource/fullScale`` (a
+    /// linear FITS / XISF / RAW format), the STF is derived — and returned to be
+    /// applied — in the native full-scale `[0, 1]` domain over
+    /// ``Processors/Normalize/Mode/identity``, *exactly* the auto-stretch-on-open
+    /// path (``ImageProcessor/autoStretchSettings(detectionImage:fullScale:shadowClipFactor:targetBackground:)``),
+    /// so clicking Auto reproduces how the image opened rather than deriving in the
+    /// min/max domain and coming out brighter. A source without a full scale (a
+    /// photographic or floating-point one) falls back to deriving over — and
+    /// applying — ``Processors/Normalize/Mode/minMax``. Returning the normalization
+    /// alongside the stretch is what keeps the derivation domain and the apply
+    /// domain in step; the caller applies both.
     ///
     /// The derivation is an `O(n log n)` pass (a normalize plus a median and a
     /// median-absolute-deviation) over the full-resolution detection image, so it
@@ -239,8 +252,9 @@ public class ImageRenderer: ObservableObject
     ///   - shadowClipFactor: How many median-absolute-deviations below the median
     ///                       to clip the shadows. Defaults to `2.8`.
     ///   - targetBackground: The value the median should map to. Defaults to `0.25`.
-    /// - Returns: The derived parameters, or `nil` when unavailable.
-    public func autoScreenTransfer( shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) async -> Processors.Stretch.STFParameters?
+    /// - Returns: The `{ normalize, stretch }` settings to apply, or `nil` when
+    ///   unavailable.
+    public func autoScreenTransferSettings( shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) async -> ImageProcessor.Settings?
     {
         guard let source = try? self.source.get(), let buffer = source.detectionImage
         else
@@ -248,9 +262,22 @@ public class ImageRenderer: ObservableObject
             return nil
         }
 
+        let fullScale = source.fullScale
+
         return await Task.detached
         {
-            try? Processors.Stretch.STFParameters.computed( normalizing: buffer, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+            if let fullScale
+            {
+                return ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: fullScale, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+            }
+
+            guard let stretch = try? Processors.Stretch.STFParameters.computed( normalizing: buffer, using: .minMax, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+            else
+            {
+                return nil
+            }
+
+            return ImageProcessor.Settings( normalize: .minMax, stretch: stretch )
         }
         .value
     }

@@ -59,31 +59,54 @@ struct ImageRendererTests
         #expect( message.contains( "no image HDU" ), "expected a typed no-image-HDU error, got: \"\( message )\"" )
     }
 
-    /// A source with a detection image can derive an auto Screen Transfer: the
-    /// derivation runs over that single-channel buffer and yields a uniform STF,
-    /// and the cheap `canAutoScreenTransfer` flag agrees.
+    /// A source without a known full scale (no integer `BITPIX`) derives its auto
+    /// Screen Transfer over the min/max domain: the settings carry a uniform STF and
+    /// `.minMax` normalization, and the cheap `canAutoScreenTransfer` flag agrees.
     @Test
     @MainActor
-    func autoScreenTransferDerivesFromDetectionImage() async throws
+    func autoScreenTransferDerivesOverMinMaxWithoutAFullScale() async throws
     {
         let detection = try PixelBuffer( width: 8, height: 8, channels: 1, pixels: ( 0 ..< 64 ).map { Double( $0 ) / 64.0 }, isNormalized: true )
         let source    = FITSRenderSource( data: Data(), properties: [], detectionImage: detection )
         let renderer  = ImageRenderer( source: source )
 
         #expect( renderer.canAutoScreenTransfer )
+        #expect( source.fullScale == nil )
 
-        let parameters = await renderer.autoScreenTransfer()
+        let settings = try #require( await renderer.autoScreenTransferSettings() )
 
-        #expect( parameters != nil )
+        #expect( settings.normalize == .minMax )
 
-        if case .uniform = parameters
+        if case .uniform = settings.stretch
         {
             // A single-channel detection image derives a uniform STF, as expected.
         }
         else
         {
-            Issue.record( "expected a uniform STF from a single-channel detection image, got \( String( describing: parameters ) )" )
+            Issue.record( "expected a uniform STF from a single-channel detection image, got \( String( describing: settings.stretch ) )" )
         }
+    }
+
+    /// A source *with* a known full scale (an integer `BITPIX`) derives its auto
+    /// Screen Transfer in the full-scale `[0, 1]` domain over `.identity` — the same
+    /// derivation the auto-stretch-on-open path uses — so clicking Auto reproduces
+    /// how the image opened rather than the brighter min/max-domain result.
+    @Test
+    @MainActor
+    func autoScreenTransferUsesTheFullScaleDomainWhenAvailable() async throws
+    {
+        let detection  = try PixelBuffer( width: 8, height: 8, channels: 1, pixels: ( 0 ..< 64 ).map { Double( $0 ) * 4 }, isNormalized: false )
+        let properties = [ FITSPropertySnapshot( name: "BITPIX", value: .integer( 16 ) ) ]
+        let source     = FITSRenderSource( data: Data(), properties: properties, detectionImage: detection )
+        let renderer   = ImageRenderer( source: source )
+        let fullScale  = try #require( source.fullScale )
+
+        let settings = try #require( await renderer.autoScreenTransferSettings() )
+        let onOpen   = try #require( ImageProcessor.autoStretchSettings( detectionImage: detection, fullScale: fullScale ) )
+
+        // Identical domain and parameters to the on-open path.
+        #expect( settings.normalize == .identity )
+        #expect( settings.stretch == onOpen.stretch )
     }
 
     /// Without a usable source (an extraction failure), no auto Screen Transfer can
@@ -96,9 +119,9 @@ struct ImageRendererTests
 
         #expect( renderer.canAutoScreenTransfer == false )
 
-        let parameters = await renderer.autoScreenTransfer()
+        let settings = await renderer.autoScreenTransferSettings()
 
-        #expect( parameters == nil )
+        #expect( settings == nil )
     }
 
     /// A valid `BITPIX = 64` image is a format the pixel pipeline does not
@@ -619,5 +642,4 @@ struct ImageRendererTests
     }
 
     private struct StaleError: Error {}
-
 }

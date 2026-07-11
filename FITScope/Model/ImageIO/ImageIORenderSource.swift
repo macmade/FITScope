@@ -44,6 +44,11 @@ public struct ImageIORenderSource: ImageRenderSource
     /// built once at load time. `nil` when it could not be decoded.
     public let detectionImage: PixelBuffer?
 
+    /// Always `nil`: a photographic source is already display-referred ("as
+    /// authored"), with no fixed linear full scale — so a live auto Screen Transfer
+    /// falls back to the min/max domain rather than a full-scale one.
+    public var fullScale: Double? { nil }
+
     /// Creates a render source from a decoded image's bytes and layout.
     ///
     /// - Parameters:

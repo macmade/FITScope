@@ -47,6 +47,13 @@ public struct RAWRenderSource: ImageRenderSource
     /// `nil` when it could not be built.
     public let detectionImage: PixelBuffer?
 
+    /// The sensor's saturation (white) level, the full scale the render brings the
+    /// raw samples into `[0, 1]` against — `nil` when the decoder reported none.
+    public var fullScale: Double?
+    {
+        self.properties.whiteLevel
+    }
+
     /// Creates a render source from a decoded file's cropped mosaic bytes and layout.
     ///
     /// - Parameters:

@@ -557,15 +557,20 @@ struct STFEditorView: View
     {
         self.isDeriving = true
 
-        let derived = await self.image.renderer.autoScreenTransfer( shadowClipFactor: self.shadowClipFactor, targetBackground: self.targetBackground )
+        let derived = await self.image.renderer.autoScreenTransferSettings( shadowClipFactor: self.shadowClipFactor, targetBackground: self.targetBackground )
 
         self.isDeriving = false
 
-        guard let parameters = derived
+        guard let settings = derived, let parameters = settings.stretch
         else
         {
             return
         }
+
+        // Apply the derived normalization alongside the stretch so the STF acts in
+        // the domain it was derived in (full-scale for a linear format, min/max
+        // otherwise); `commit()` writes the stretch and re-renders.
+        self.image.renderer.adjustments.normalize = settings.normalize
 
         switch parameters
         {

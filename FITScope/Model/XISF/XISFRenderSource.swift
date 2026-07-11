@@ -43,6 +43,13 @@ public struct XISFRenderSource: ImageRenderSource
     /// not be decoded.
     public let detectionImage: PixelBuffer?
 
+    /// The format's full-scale maximum, from the sample format — `nil` for a
+    /// floating-point sample format, which has no fixed full scale.
+    public var fullScale: Double?
+    {
+        ImageProcessor.xisfFullScale( self.properties.sampleFormat )
+    }
+
     /// Creates a render source from a decoded image's bytes and layout.
     ///
     /// - Parameters:

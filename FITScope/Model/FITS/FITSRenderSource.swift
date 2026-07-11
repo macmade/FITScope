@@ -45,6 +45,14 @@ public struct FITSRenderSource: ImageRenderSource
     /// the QuickLook extensions) or it could not be decoded.
     public let detectionImage: PixelBuffer?
 
+    /// The format's full-scale maximum, from the header's `BITPIX` /
+    /// `BSCALE` / `BZERO` — `nil` for a floating-point `BITPIX`, which has no fixed
+    /// full scale.
+    public var fullScale: Double?
+    {
+        ImageProcessor.fullScale( forImageHDU: self.properties )
+    }
+
     /// Creates a render source from an image HDU's bytes and header properties.
     ///
     /// - Parameters:
