@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Managed Auto-Stretch &amp; White-Balance Exclusion — Implementation Plan</title>
+    <style>
+        :root {
+            --bg:         #0f1117;
+            --bg-card:    #181b24;
+            --bg-card-2:  #1d212c;
+            --border:     #2a2f3c;
+            --text:       #e6e9ef;
+            --text-dim:   #9aa3b2;
+            --accent:     #5aa9ff;
+            --accent-dim: #2d3b52;
+            --code-bg:    #12151d;
+            --green:      #3fb950;
+            --green-dim:  #16351d;
+            --amber:      #d29922;
+            --amber-dim:  #3a2f12;
+            --gray:       #6b7280;
+            --gray-dim:   #262b36;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container { max-width: 940px; margin: 0 auto; padding: 48px 24px 96px; }
+
+        header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 36px; }
+        h1 { margin: 0 0 12px; font-size: 2.4rem; letter-spacing: -0.02em; }
+        .meta { color: var(--text-dim); font-size: 0.9rem; }
+        .meta code { color: var(--accent); }
+
+        h2.section {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text-dim);
+            margin: 48px 0 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        p { margin: 0 0 16px; }
+        .overview { color: var(--text); }
+
+        code {
+            font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.86em;
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 1px 5px;
+        }
+
+        .qa {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 4px 22px;
+            margin-bottom: 14px;
+        }
+        .qa .q { font-weight: 650; color: var(--text); margin: 16px 0 6px; }
+        .qa .a { color: var(--text-dim); margin: 0 0 16px; }
+        .qa .a::before { content: "→ "; color: var(--accent); }
+
+        .notes ul { margin: 0 0 16px; padding-left: 22px; }
+        .notes li { margin-bottom: 8px; color: var(--text-dim); }
+        .notes strong { color: var(--text); }
+
+        .milestone {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px 26px 8px;
+            margin-bottom: 20px;
+        }
+        .milestone-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+        .milestone-head h3 { margin: 0; font-size: 1.2rem; flex: 1 1 auto; }
+
+        .mnum {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 8px;
+            flex: 0 0 auto;
+        }
+
+        .capsule {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 650;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .capsule.not-started { background: var(--gray-dim);  color: #b6bdc9; border: 1px solid #3a414f; }
+        .capsule.in-progress { background: var(--amber-dim); color: var(--amber); border: 1px solid #5a4a1e; }
+        .capsule.completed   { background: var(--green-dim); color: var(--green); border: 1px solid #1f5a2c; }
+
+        .field-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 20px 0 6px;
+            font-weight: 650;
+        }
+        .goal { color: var(--text-dim); }
+
+        .milestone ul.tasks { margin: 6px 0 4px; padding-left: 4px; list-style: none; }
+        .milestone ul.tasks li { position: relative; padding-left: 28px; margin-bottom: 7px; color: var(--text-dim); }
+        .milestone ul.tasks li::before {
+            content: "";
+            position: absolute;
+            left: 2px;
+            top: 6px;
+            width: 15px;
+            height: 15px;
+            border: 1.5px solid var(--accent-dim);
+            border-radius: 4px;
+            background: var(--code-bg);
+        }
+
+        .placeholder { color: #6b7280; font-style: italic; margin: 4px 0 14px; }
+        .deps { color: var(--text-dim); font-size: 0.9rem; }
+        .deps strong { color: var(--text); }
+
+        .appendix h3 { margin: 26px 0 8px; font-size: 1.05rem; }
+        .appendix table { border-collapse: collapse; width: 100%; margin: 8px 0 20px; font-size: 0.9rem; }
+        .appendix th, .appendix td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+        .appendix th { background: var(--bg-card-2); color: var(--text); }
+        .appendix td { color: var(--text-dim); }
+        .appendix code { white-space: nowrap; }
+
+        footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Managed Auto-Stretch &amp; White-Balance Exclusion</h1>
+            <div class="meta">
+                Generated &mdash; 2026-07-12<br>
+                Source &mdash; design discussion in this session (no source document on disk)
+            </div>
+        </header>
+
+        <p class="overview">
+            Since per-channel auto-STF landed (<code>2026-07-11-per-channel-auto-stf</code>), the unlinked Screen
+            Transfer neutralizes the background colour cast on its own &mdash; it is now a <strong>second background
+            neutralizer</strong> alongside white balance. The two do not compose: white balance runs <em>before</em> the
+            stretch in the pipeline (<code>Normalize → WhiteBalance → BrightnessContrast → Stretch</code>), but the
+            per-channel STF's midtones are fit to the raw, pre-white-balance channel medians. Turning white balance on
+            shifts those medians, so the STF no longer lands each background on the target and the cast returns. Re-running
+            Auto cannot fix it: the derivation reads only the immutable source (<code>detectionImage</code> /
+            <code>autoStretchColorSource</code>), so it is invariant to white balance and yields the identical STF.
+        </p>
+        <p class="overview">
+            The chosen resolution treats <strong>per-channel STF and white balance as mutually-exclusive background
+            neutralizers</strong>. The one-shot Auto button becomes a persistent <strong>Auto (managed) toggle</strong>.
+            While managed, a <strong>uniform</strong> STF composes cleanly with white balance (a single curve applied to
+            all channels preserves whatever balance WB set, for any gains, with no re-fit needed), while a
+            <strong>per-channel</strong> STF excludes white balance. When an action would make both active at once, a
+            <strong>last-action-wins</strong> rule resolves it: the control you just touched stays, the other yields
+            &mdash; silently when nothing is lost, behind a <strong>confirmation</strong> when white balance would be
+            removed. Hand-editing the stretch drops fully to manual mode, where per-channel STF and white balance may
+            coexist freely with no forcing. This is a behaviour + UI + state change; it does <em>not</em> alter any
+            stretch or white-balance maths, and it leaves white balance in its correct linear, pre-stretch pipeline slot.
+        </p>
+
+        <h2 class="section">Questions &amp; answers</h2>
+
+        <div class="qa">
+            <p class="q">Is applying white balance before the STF correct?</p>
+            <p class="a">Yes. White balance is a linear per-channel gain (colour calibration); it is only meaningful on
+            the linear, scene-referred signal, so its pre-stretch slot is right. The fix is <em>not</em> to reorder the
+            pipeline. (Brightness/contrast being pre-stretch is a separate, parked question &mdash; out of scope here.)</p>
+
+            <p class="q">Which direction resolves the WB ↔ STF collision?</p>
+            <p class="a">Direction&nbsp;B: a uniform STF composes with white balance, a per-channel STF does not. So when
+            WB is doing the balancing the STF should be uniform; when the per-channel STF is doing the balancing, WB is
+            redundant. Treat them as mutually exclusive rather than stacking two neutralizers.</p>
+
+            <p class="q">Should the one-click Auto become a toggle?</p>
+            <p class="a">Yes. Auto becomes a persistent managed mode. While engaged the STF is app-derived and its linking
+            is governed by the mutual-exclusion rule; the moment the user hand-edits the stretch, Auto disengages.</p>
+
+            <p class="q">If I add white balance while a per-channel auto STF is on, what happens?</p>
+            <p class="a">The STF yields: it switches to uniform, <strong>silently</strong> (an auto STF is recomputable,
+            nothing is lost), and white balance stays on. The image stays balanced across the toggle.</p>
+
+            <p class="q">If I engage per-channel auto while white balance is on, should it disable WB?</p>
+            <p class="a">Yes &mdash; the symmetric dual of the rule above. Per-channel is the newer intent, so white
+            balance yields. Because removing WB reverses something the user explicitly enabled, it goes through a
+            confirmation rather than happening silently.</p>
+
+            <p class="q">Does the exclusion apply in manual mode too?</p>
+            <p class="a">No. The forcing/exclusion is a behaviour of the Auto (managed) toggle only. In manual mode a
+            hand-built per-channel STF and white balance may coexist freely, with no forcing and no confirm (at most a
+            passive hint).</p>
+
+            <p class="q">(a) Does hand-editing a per-channel STF drop fully to manual?</p>
+            <p class="a"><strong>Yes.</strong> A hand-edited stretch is manual, so it is never force-switched. This makes
+            a switch-to-uniform only ever happen to an <em>auto</em> STF (no edits to lose), so that direction is always
+            silent &mdash; the only confirmation in the whole system is white-balance removal.</p>
+
+            <p class="q">(b) Confirm on all white-balance removal, or only manual gains?</p>
+            <p class="a"><strong>All.</strong> Confirm whenever an action would remove white balance, whether it is Auto
+            (gray-world) or Manual gains &mdash; for predictability, even though auto WB carries no data to lose.</p>
+
+            <p class="q">What should the confirmation offer?</p>
+            <p class="a">Three choices: <strong>Cancel</strong> (back out entirely &mdash; per-channel not applied, WB
+            stays, nothing changes), <strong>Keep White Balance</strong> (apply per-channel <em>and</em> keep WB &mdash;
+            they coexist, dropping to manual mode), and <strong>Remove White Balance</strong> (default &mdash; apply
+            per-channel, WB off, the clean exclusive result).</p>
+
+            <p class="q">Should the app silently change a control in another section?</p>
+            <p class="a">Only when nothing is lost, and always <em>visibly</em>: when one control disables the other, show
+            an inline note (e.g. the WB section reading &ldquo;Off &mdash; per-channel stretch is handling colour
+            balance&rdquo;) so the cross-section change is explained rather than spooky.</p>
+
+            <p class="q">What does turning the Auto toggle off do?</p>
+            <p class="a">It <strong>freezes the current STF as a manual value</strong> &mdash; reversible, since
+            re-enabling Auto re-derives. It does not clear the stretch and does not touch white balance.</p>
+        </div>
+
+        <h2 class="section">Notes</h2>
+        <div class="notes">
+            <ul>
+                <li><strong>The one unifying rule.</strong> Whenever an action would make a <em>per-channel STF</em> and
+                    <em>white balance</em> both active while Auto is engaged, the control just touched stays and the other
+                    yields. STF yields → uniform (silent). WB yields → off (confirm). Everything else in this plan is a
+                    consequence of that rule plus &ldquo;hand-edit ⇒ manual&rdquo;.</li>
+                <li><strong>Derivation is invariant to adjustments.</strong> <code>ImageRenderer.autoScreenTransferSettings</code>
+                    → <code>ImageRenderSource.autoStretchSettings</code> → <code>ImageProcessor.autoStretchSettings</code>
+                    read only the immutable source (<code>detectionImage</code> / <code>autoStretchColorSource</code>),
+                    never the live pipeline. Uniform-vs-per-channel is the <em>linking</em> choice passed in; both are
+                    derived from the same raw source, so switching linking is a cheap re-derive, not a processed-buffer
+                    pass. This is why uniform + WB needs no per-tick recompute.</li>
+                <li><strong>New state, scoped to the stretch.</strong> One flag &mdash; &ldquo;Auto engaged&rdquo; &mdash;
+                    on <code>ImageAdjustments</code>, cleared on any manual stretch edit. The existing
+                    <code>baseline</code>/<code>opened</code> provenance model and <code>hasAdjustments</code> stay as they
+                    are; an image that opened auto-stretched starts with Auto <em>engaged</em> so scenario&nbsp;1 (add WB →
+                    uniform) works out of the box.</li>
+                <li><strong>Model exposes intent; the view confirms.</strong> <code>ImageAdjustments</code> is a
+                    <code>@MainActor</code> model and must not present UI. The collision resolution that needs a
+                    confirmation (WB removal) is surfaced as an explicit request the control layer presents before
+                    committing; the silent resolutions (STF → uniform) are applied directly in the model.</li>
+                <li><strong>Key files.</strong> Model: <code>FITScope/Model/ImageAdjustments.swift</code>,
+                    <code>FITScope/Model/ImageRenderer.swift</code>, <code>FITScope/Model/ImageRenderSource.swift</code>.
+                    UI: <code>FITScope/Views/ImageControls/StretchControlView.swift</code>,
+                    <code>FITScope/Views/ImageControls/WhiteBalanceControlView.swift</code>,
+                    <code>FITScope/Views/ScreenTransfer/STFEditorView.swift</code>,
+                    <code>FITScope/Views/Inspector/InspectorView.swift</code>. Loaders' <code>openedSettings(…)</code>
+                    seed the on-open engaged state.</li>
+                <li><strong>Auto toggled OFF (confirmed).</strong> Turning Auto off <em>freezes the current STF as a
+                    manual value</em> (reversible; re-enabling Auto re-derives). It does not clear the stretch or touch
+                    white balance.</li>
+                <li><strong>Out of scope.</strong> The brightness/contrast pre-stretch ordering question is parked and not
+                    addressed here. No stretch or white-balance maths changes. No SwiftPixel submodule changes are
+                    expected; the derivation already supports both linkings.</li>
+                <li><strong>Xcode + package kept in sync.</strong> New files (if any) must be added to both the
+                    <code>.xcodeproj</code> and any package manifest, and tests run through <code>xcodebuild</code>.</li>
+            </ul>
+        </div>
+
+        <h2 class="section">Milestones</h2>
+
+        <!-- Milestone 1 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">1</span>
+                <h3>Managed &ldquo;Auto engaged&rdquo; state</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Introduce the model-level notion of an app-managed stretch: a single &ldquo;Auto
+                engaged&rdquo; state on <code>ImageAdjustments</code> that is set when the stretch is auto-derived and
+                cleared the moment the user hand-edits it. This is the foundation every later milestone reads.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Add an <code>isAutoStretch</code> (Auto-engaged) property to <code>ImageAdjustments</code>, defaulted
+                    consistently with <code>baseline</code>/<code>opened</code>.</li>
+                <li>Seed it <code>true</code> when the image opens auto-stretched (an auto Screen Transfer or an XISF
+                    display function) via the loaders' <code>openedSettings(…)</code> path; <code>false</code> otherwise.</li>
+                <li>Clear it on any manual stretch edit &mdash; a direct change to <code>stretch</code> that did not come
+                    from the managed derivation (curve edit, per-channel toggle, mode change).</li>
+                <li>Ensure <code>reset()</code> / per-field reset and the <code>opened</code> comparison in
+                    <code>hasAdjustments</code> stay correct with the new state (it must not, by itself, mark the image
+                    edited).</li>
+                <li>Add unit tests for the set/clear transitions (open engaged, manual edit disengages, reset behaviour).</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">&mdash;</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting review.</p>
+        </div>
+
+        <!-- Milestone 2 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">2</span>
+                <h3>Mutual-exclusion resolution (last-action-wins)</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Encode the core rule in the model: while Auto is engaged, a per-channel STF and white balance
+                cannot both be active. Resolve collisions by last-action-wins, distinguishing the silent path (STF →
+                uniform) from the path that needs a confirmation (WB removal), which is surfaced as an explicit request
+                for the view to present.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Adding/enabling white balance while a managed per-channel STF is active re-derives the STF as
+                    <strong>uniform</strong> and applies it silently (WB stays on).</li>
+                <li>Requesting a per-channel managed STF while white balance is active does <em>not</em> commit silently;
+                    it produces a resolution request the view resolves (see Milestone&nbsp;4).</li>
+                <li>Expose the resolution outcomes the view can commit: <em>apply per-channel + remove WB</em>, <em>apply
+                    per-channel + keep WB (drop to manual)</em>, and <em>cancel</em>.</li>
+                <li>Confine the exclusion to managed mode: in manual mode no forcing occurs and both may coexist.</li>
+                <li>Guarantee no collision state is ever committed while managed (invariant), and that switching linking
+                    is a re-derive off the main actor, consistent with the existing <code>autoScreenTransferSettings</code>
+                    offload.</li>
+                <li>Unit-test each transition of the truth table (see Appendix), asserting the resulting
+                    <code>stretch</code> linking, <code>whiteBalance</code>, and <code>isAutoStretch</code>.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">&mdash;</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting review.</p>
+        </div>
+
+        <!-- Milestone 3 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">3</span>
+                <h3>Auto toggle in the inspector</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Replace the one-shot Auto button in the Stretch section with a persistent Auto (managed)
+                toggle bound to the new state, driving derivation on engage and freezing to manual on disengage.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Turn the &ldquo;Auto&rdquo; control in <code>StretchControlView</code> into a toggle reflecting
+                    <code>isAutoStretch</code>; keep the existing <code>canAutoScreenTransfer</code> gating and the
+                    deriving/busy state.</li>
+                <li>Engaging derives at the current linking and applies it through the Milestone&nbsp;2 resolution
+                    (so engaging per-channel while WB is on routes to the confirm).</li>
+                <li>Disengaging freezes the current STF as a manual value (confirmed decision) &mdash; no change to white
+                    balance, no clearing of the stretch.</li>
+                <li>Keep the Edit… button and the accessibility identifiers; update the Auto identifier/help text as
+                    needed for a toggle.</li>
+                <li>Update / add the SwiftUI preview(s) for the toggle's on/off and colour/mono states.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">&mdash;</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting review.</p>
+        </div>
+
+        <!-- Milestone 4 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">4</span>
+                <h3>White-balance removal confirmation &amp; inline notes</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Present the three-way confirmation whenever a managed action would remove white balance, and
+                make every cross-section change visible with an inline explanatory note.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Present a confirmation on any WB-removal request (auto or manual gains alike) with three actions:
+                    <strong>Cancel</strong>, <strong>Keep White Balance</strong>, <strong>Remove White Balance</strong>
+                    (default/highlighted), each wired to the Milestone&nbsp;2 outcomes.</li>
+                <li>&ldquo;Keep White Balance&rdquo; commits the coexisting state and drops to manual mode
+                    (<code>isAutoStretch = false</code>).</li>
+                <li>Add an inline note in the White Balance section when it is turned off by the stretch (&ldquo;Off &mdash;
+                    per-channel stretch is handling colour balance&rdquo;), and the symmetric note where a stretch is
+                    forced to uniform by white balance.</li>
+                <li>Ensure the confirmation is presented from the correct owning view (inspector / STF editor) for both
+                    entry points, without duplicating the logic.</li>
+                <li>Add UI-level tests or previews covering the three confirmation outcomes.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">&mdash;</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting review.</p>
+        </div>
+
+        <!-- Milestone 5 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">5</span>
+                <h3>STF editor integration</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Reconcile the Screen Transfer editor's existing per-channel toggle and Auto button with the
+                managed model: the per-channel toggle expresses the linking intent, hand-editing disengages Auto, and a
+                banner communicates managed state.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Toggling per-channel in the editor routes through the same resolution as the inspector (so per-channel
+                    while WB is on triggers the confirm; uniform composes silently).</li>
+                <li>Any curve/slider edit clears <code>isAutoStretch</code> (drop to manual), consistent with
+                    Milestone&nbsp;1.</li>
+                <li>While Auto is engaged, show a small banner (&ldquo;Managed automatically &mdash; editing turns this
+                    off&rdquo;) and reflect the managed linking; the editor's own Auto continues to honour the per-channel
+                    toggle.</li>
+                <li>Verify the editor and inspector never disagree about linking or managed state (single source of
+                    truth in <code>ImageAdjustments</code>).</li>
+                <li>Update the editor's SwiftUI preview(s) for managed vs manual.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">&mdash;</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting review.</p>
+        </div>
+
+        <!-- Milestone 6 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">6</span>
+                <h3>End-to-end verification &amp; regression pass</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Confirm the whole flow behaves as specified on real images, and that nothing in the existing
+                open / reset / before-after / provenance behaviour regressed.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Drive each row of the Appendix truth table in the running app on a colour frame and confirm the
+                    observed STF linking, white-balance state, notes, and confirmation match.</li>
+                <li>Verify a mono image is unaffected (uniform always; no exclusion).</li>
+                <li>Verify open → not-edited, reset → baseline, and the before/after slider still behave as before.</li>
+                <li>Run the full test suite through <code>xcodebuild</code> and record the result.</li>
+                <li>Keep the <code>.xcodeproj</code> and package manifest in sync for any files added.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">&mdash;</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting review.</p>
+        </div>
+
+        <h2 class="section">Appendix — resolution truth table</h2>
+        <div class="appendix">
+            <p>Behaviour of every collision-creating action while <strong>Auto is engaged</strong>. &ldquo;Silent&rdquo;
+            means the model applies it directly; &ldquo;Confirm&rdquo; means the three-way dialog is shown first. In
+            <strong>manual</strong> mode none of these force anything &mdash; per-channel STF and white balance coexist.</p>
+            <table>
+                <thead>
+                    <tr><th>Starting state</th><th>User action</th><th>Result</th><th>Prompt</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Colour opens, WB off</td><td>&mdash; (on open)</td><td>Per-channel auto STF, Auto engaged</td><td>&mdash;</td></tr>
+                    <tr><td>Per-channel auto STF, WB off</td><td>Turn WB on</td><td>STF yields → <strong>uniform</strong>; WB stays on</td><td>Silent</td></tr>
+                    <tr><td>Uniform auto STF, WB on</td><td>Engage per-channel</td><td>WB yields → <strong>off</strong>; per-channel auto STF</td><td>Confirm (default: Remove WB)</td></tr>
+                    <tr><td>Uniform auto STF, WB on</td><td>Engage per-channel → <em>Keep White Balance</em></td><td>Per-channel STF + WB coexist; drops to manual</td><td>Confirm chosen</td></tr>
+                    <tr><td>Uniform auto STF, WB on</td><td>Engage per-channel → <em>Cancel</em></td><td>No change (uniform auto STF, WB on)</td><td>Confirm cancelled</td></tr>
+                    <tr><td>Per-channel auto STF (WB off)</td><td>Hand-edit the curve</td><td>STF unchanged in value; Auto disengages → manual</td><td>&mdash;</td></tr>
+                    <tr><td>Manual per-channel STF, WB off</td><td>Turn WB on</td><td>Both coexist (manual freedom)</td><td>&mdash; (passive hint)</td></tr>
+                    <tr><td>Uniform auto STF, WB on</td><td>Turn WB off manually</td><td>WB off; STF still uniform auto</td><td>&mdash;</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            Living document &mdash; the implement command updates each milestone's Status, Completed, Implementation
+            notes, Automated review, and Review comments in place as work progresses.
+        </footer>
+    </div>
+</body>
+</html>
