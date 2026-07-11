@@ -25,10 +25,12 @@
 import CoreGraphics
 import Foundation
 import SwiftFITS
+import SwiftPixel
 import SwiftUtilities
 
-/// Renders a FITS file to a display-ready `CGImage` with the default processing
-/// settings and no user adjustments.
+/// Renders a FITS file to a display-ready `CGImage`, mirroring the app's on-open
+/// rendering: an auto Screen Transfer when the shared per-format previews preference
+/// is on (FITS carries no display function), else a linear (min/max) render.
 ///
 /// This is the one place the "open a FITS file and show its default render"
 /// logic lives, shared by the app's first render and the QuickLook extensions,
@@ -57,26 +59,80 @@ public enum FITSPreviewRenderer
         return ( sections[ dataIndex ].data, properties )
     }
 
-    /// Renders the given FITS file bytes to a `CGImage` with default settings.
+    /// Renders the given FITS file bytes to a `CGImage`.
     ///
-    /// - Parameter data: The raw FITS file bytes.
+    /// - Parameters:
+    ///   - data:             The raw FITS file bytes.
+    ///   - previewsDefaults: The shared App Group store the previews preference is
+    ///                       read from; defaults to ``AutoStretchPreference/sharedDefaults``.
+    ///                       `nil` (an unopenable suite) renders linear.
     /// - Returns: The rendered, display-ready image.
     /// - Throws: Any error parsing the file or rendering the image.
-    public static func render( data: Data ) throws -> CGImage
+    public static func render( data: Data, previewsDefaults: UserDefaults? = AutoStretchPreference.sharedDefaults ) throws -> CGImage
     {
-        let file = try FITSFile( data: data, options: .lenient )
-        let hdu  = try self.imageHDU( from: file.sections )
+        let file     = try FITSFile( data: data, options: .lenient )
+        let hdu      = try self.imageHDU( from: file.sections )
+        let settings = Self.previewSettings( hdu: hdu, previewsDefaults: previewsDefaults )
 
-        return try ImageProcessor.render( data: hdu.data, properties: hdu.properties ).image
+        return try ImageProcessor.render( data: hdu.data, properties: hdu.properties, settings: settings ).image
     }
 
-    /// Reads and renders the FITS file at the given URL with default settings.
+    /// Reads and renders the FITS file at the given URL.
     ///
-    /// - Parameter url: The FITS file to read and render.
+    /// - Parameters:
+    ///   - url:              The FITS file to read and render.
+    ///   - previewsDefaults: The shared App Group store the previews preference is
+    ///                       read from; defaults to ``AutoStretchPreference/sharedDefaults``.
     /// - Returns: The rendered, display-ready image.
     /// - Throws: Any error reading, parsing, or rendering the file.
-    public static func render( contentsOf url: URL ) throws -> CGImage
+    public static func render( contentsOf url: URL, previewsDefaults: UserDefaults? = AutoStretchPreference.sharedDefaults ) throws -> CGImage
     {
-        try self.render( data: try Data( contentsOf: url ) )
+        try self.render( data: try Data( contentsOf: url ), previewsDefaults: previewsDefaults )
+    }
+
+    /// The settings a FITS preview renders with: an auto Screen Transfer when the
+    /// shared previews preference for FITS is on and the format has a known integer
+    /// full scale (a floating-point frame has none), else a linear (min/max) render.
+    /// FITS carries no display function, so there is no display-function branch.
+    ///
+    /// Exposed (not private) so the priority logic can be unit-tested against an
+    /// isolated preferences store.
+    ///
+    /// - Parameters:
+    ///   - hdu:              The image HDU's bytes and header property snapshots.
+    ///   - previewsDefaults: The store the previews preference is read from, or `nil`.
+    /// - Returns: The render settings.
+    static func previewSettings( hdu: ( data: Data, properties: [ FITSPropertySnapshot ] ), previewsDefaults: UserDefaults? ) -> ImageProcessor.Settings
+    {
+        guard let defaults = previewsDefaults,
+              AutoStretchPreference.autoStretchPreviews( .fits, in: defaults ),
+              let fullScale = ImageProcessor.fullScale( forImageHDU: hdu.properties ),
+              let luminance = Self.previewLuminance( hdu: hdu ),
+              let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false ),
+              let settings  = ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: fullScale )
+        else
+        {
+            return ImageProcessor.Settings()
+        }
+
+        return settings
+    }
+
+    /// The single-channel scaled-linear luminance the auto-stretch derivation reads:
+    /// an RGB colour cube combines its three planes, any other image uses its
+    /// scaled-linear samples (a 2-D mono frame, or a colour-filter-array mosaic used
+    /// as-is — its median/MAD statistics are enough to derive the preview stretch).
+    ///
+    /// - Parameter hdu: The image HDU's bytes and header property snapshots.
+    /// - Returns: The luminance dimensions and samples, or `nil` when they cannot be
+    ///   decoded (the caller then renders linear).
+    private static func previewLuminance( hdu: ( data: Data, properties: [ FITSPropertySnapshot ] ) ) -> ( width: Int, height: Int, samples: [ Double ] )?
+    {
+        if ImageProcessor.isRGBPlanes( properties: hdu.properties )
+        {
+            return ImageProcessor.rgbLinearLuminance( data: hdu.data, properties: hdu.properties )
+        }
+
+        return ImageProcessor.linearImage( data: hdu.data, properties: hdu.properties )
     }
 }

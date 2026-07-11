@@ -187,13 +187,6 @@ public final class Preferences: ObservableObject
         didSet { self.sharedDefaults.set( self.autoStretchPreviewsXISF, forKey: AutoStretchPreference.previewsKey( .xisf ) ) }
     }
 
-    /// Whether camera RAW QuickLook / Finder previews and thumbnails are
-    /// auto-stretched. On by default. Stored in the shared App Group suite.
-    @Published public var autoStretchPreviewsRAW: Bool
-    {
-        didSet { self.sharedDefaults.set( self.autoStretchPreviewsRAW, forKey: AutoStretchPreference.previewsKey( .raw ) ) }
-    }
-
     /// The user's image-weight formula, as raw text (see ``WeightFormula``).
     ///
     /// Defaults to ``WeightFormula/defaultExpression``. The raw text is persisted
@@ -262,7 +255,6 @@ public final class Preferences: ObservableObject
         self.autoStretchOnOpenRAW    = AutoStretchPreference.autoStretchOnOpen( .raw, in: defaults )
         self.autoStretchPreviewsFITS = AutoStretchPreference.autoStretchPreviews( .fits, in: sharedDefaults )
         self.autoStretchPreviewsXISF = AutoStretchPreference.autoStretchPreviews( .xisf, in: sharedDefaults )
-        self.autoStretchPreviewsRAW  = AutoStretchPreference.autoStretchPreviews( .raw, in: sharedDefaults )
     }
 
     /// Reads the persisted main-window size, if any.

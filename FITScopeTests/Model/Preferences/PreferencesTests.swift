@@ -443,7 +443,6 @@ struct PreferencesTests
         #expect( preferences.autoStretchOnOpenRAW )
         #expect( preferences.autoStretchPreviewsFITS )
         #expect( preferences.autoStretchPreviewsXISF )
-        #expect( preferences.autoStretchPreviewsRAW )
     }
 
     /// The on-open preferences persist through the standard store (app-only) and
@@ -512,7 +511,6 @@ struct PreferencesTests
 
         #expect( AutoStretchPreference.autoStretchPreviews( .fits, in: shared ) )
         #expect( AutoStretchPreference.autoStretchPreviews( .xisf, in: shared ) )
-        #expect( AutoStretchPreference.autoStretchPreviews( .raw, in: shared ) )
     }
 
     /// The on-open helper defaults to on when nothing is stored, so a fresh install

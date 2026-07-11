@@ -132,6 +132,8 @@
 		05F15F0000000000000000A7 /* LoadedImage+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F7 /* LoadedImage+XISF.swift */; };
 		05F15F0000000000000000A8 /* XISFImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F8 /* XISFImageLoader.swift */; };
 		05F15F0000000000000000B1 /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
+		05F15F0000000000000000BC /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
+		05F15F0000000000000000BD /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
 		05F15F0000000000000000A9 /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
 		05F15F0000000000000000AA /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
 		05F15F0000000000000000AB /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
@@ -176,6 +178,8 @@
 		05FB1000000000000000E302 /* APIKeyFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E301 /* APIKeyFieldView.swift */; };
 		05FB1000000000000000E402 /* GeneralPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E401 /* GeneralPreferencesView.swift */; };
 		0AB10000000000000000E402 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
+		0AB10000000000000000E404 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
+		0AB10000000000000000E405 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
 		0AB10000000000000000E502 /* AutoStretchPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E501 /* AutoStretchPreferencesView.swift */; };
 		05FB1000000000000000E502 /* APIKeysPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E501 /* APIKeysPreferencesView.swift */; };
 		05FB1000000000000000E702 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E701 /* Keychain.swift */; };
@@ -2733,6 +2737,8 @@
 				05F15F0000000000000000AD /* XISFImageProperties.swift in Sources */,
 				05F15F0000000000000000AF /* ImageProcessor+XISF.swift in Sources */,
 				05F15F0000000000000000B3 /* XISFPreviewRenderer.swift in Sources */,
+				05F15F0000000000000000BC /* STFParameters+XISFDisplayFunction.swift in Sources */,
+				0AB10000000000000000E404 /* AutoStretchPreference.swift in Sources */,
 				05F15F0000000000000000B6 /* PreviewRenderer.swift in Sources */,
 				05F15F0000000000000000B8 /* UTType.swift in Sources */,
 				05DD1000000000000000FB05 /* RenderResult.swift in Sources */,
@@ -2754,6 +2760,8 @@
 				05F15F0000000000000000AE /* XISFImageProperties.swift in Sources */,
 				05F15F0000000000000000B0 /* ImageProcessor+XISF.swift in Sources */,
 				05F15F0000000000000000B4 /* XISFPreviewRenderer.swift in Sources */,
+				05F15F0000000000000000BD /* STFParameters+XISFDisplayFunction.swift in Sources */,
+				0AB10000000000000000E405 /* AutoStretchPreference.swift in Sources */,
 				05F15F0000000000000000B7 /* PreviewRenderer.swift in Sources */,
 				05F15F0000000000000000B9 /* UTType.swift in Sources */,
 				05DD1000000000000000FB06 /* RenderResult.swift in Sources */,

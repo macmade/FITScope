@@ -1322,46 +1322,20 @@
             </div>
         </div>
 
-        <!-- M7 -->
+        <!-- Reorganization note -->
+        <p class="overview" style="color:var(--text-dim); border-left:3px solid var(--accent-dim); padding-left:14px;">
+            <strong>Plan reorganized (2026-07-11).</strong> The previews milestone is now done next (Milestone 7); the former
+            "Auto-STF before star detection" (Milestone 7) was investigated, dropped, and <strong>re-scoped to a general
+            "Improve star detection" milestone (Milestone 8)</strong>, to be tackled after previews. See Milestone 8's design
+            decisions for the rationale.
+        </p>
+
+        <!-- M7 (was M8: previews) -->
         <div class="milestone">
             <div class="milestone-head">
                 <span class="mnum">7</span>
-                <h3>Auto-STF before star detection</h3>
-                <span class="capsule not-started">Not started</span>
-            </div>
-            <div class="field-label">Goal</div>
-            <p class="goal">Run star detection on an STF-stretched copy of the detection buffer for more reliable
-            results, without altering the displayed image.</p>
-            <div class="field-label">Tasks</div>
-            <ul class="tasks">
-                <li>At the star-detection call site, derive <code>STFParameters</code> from the detection buffer and
-                    apply <code>Processors.Stretch(parameters: params)</code> before calling
-                    <code>StarDetection.detectStars(in:using:)</code>, operating on a copy.</li>
-                <li>Confirm the detection buffer's normalization state (the stretch requires a normalized buffer);
-                    normalize first if needed.</li>
-                <li>Keep the entry point <code>nonisolated</code> / off-main-actor friendly, as today.</li>
-                <li>Tests; verify detection on a representative frame is at least as good as before.</li>
-            </ul>
-            <div class="field-label">Dependencies</div>
-            <p class="deps"><strong>Milestones 1 &amp; 5</strong>.</p>
-            <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
-            <div class="field-label">Completed</div>
-            <p class="placeholder">—</p>
-            <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
-            <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in from the automated review loop.</p>
-            <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting human review.</p>
-        </div>
-
-        <!-- M8 -->
-        <div class="milestone">
-            <div class="milestone-head">
-                <span class="mnum">8</span>
                 <h3>STF &amp; display function for QuickLook / Finder previews</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">Render previews and thumbnails with the same default rendering the app uses on open:
@@ -1379,6 +1353,146 @@
             </ul>
             <div class="field-label">Dependencies</div>
             <p class="deps"><strong>Milestones 1, 3, 4, 5 &amp; 6</strong>.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span></p>
+            <div class="field-label">Completed</div>
+            <p>2026-07-11</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Approach.</strong> TDD. <strong>All 683 FITScopeTests pass</strong> (7 new); the app and both
+                        sandboxed extensions build; the UITest target compiles.</li>
+                    <li><strong>Scoped to the declared types + removed the RAW previews preference (maintainer, mid-milestone).</strong>
+                        The preview / thumbnail extensions declare <code>QLSupportedContentTypes</code> = FITS + XISF only, so a
+                        camera-RAW <em>previews</em> toggle could never reach an extension (RAW previews are handled by the
+                        system). Removed <code>Preferences.autoStretchPreviewsRAW</code> (property + <code>didSet</code> +
+                        seeding) and the "Camera RAW" toggle from the previews section of <code>AutoStretchPreferencesView</code>.
+                        Camera RAW keeps its <em>on-open</em> toggle (the app's RAW loader uses it), and
+                        <code>AutoStretchPreference.Format.raw</code> stays (on-open uses it).</li>
+                    <li><strong>Preview stretch logic in the shared renderers.</strong> <code>FITSPreviewRenderer</code> /
+                        <code>XISFPreviewRenderer</code> are compiled into both extensions <em>and</em> the app, but their
+                        <code>render</code> methods are used only by the extensions (the app calls only
+                        <code>FITSPreviewRenderer.imageHDU</code>). They now compute settings via a testable
+                        <code>previewSettings(…)</code> with the same priority as the app on open — <em>XISF:</em> a stored
+                        display function first (always applied, "as authored", even when the previews preference is off), else
+                        an auto Screen Transfer when the shared XISF previews preference is on and the format has a known integer
+                        full scale, else linear; <em>FITS:</em> an auto Screen Transfer when the FITS previews preference is on
+                        (FITS carries no display function), else linear. The auto-STF reuses
+                        <code>ImageProcessor.autoStretchSettings</code> (uniform STF over <code>.identity</code> in the
+                        full-scale domain — the same helper the app loaders use), derived from a single-channel luminance
+                        (XISF: <code>xisfLinearLuminance</code>; FITS: <code>rgbLinearLuminance</code> for RGB planes, else
+                        <code>linearImage</code>). <code>previewSettings</code> reads the preference from an injectable
+                        <code>previewsDefaults: UserDefaults?</code> (defaulting to
+                        <code>AutoStretchPreference.sharedDefaults</code>), so the sandboxed extensions read the shared App Group
+                        suite while tests inject an isolated suite; a <code>nil</code> / unopenable suite renders linear.</li>
+                    <li><strong>Project sync.</strong> Added <code>AutoStretchPreference.swift</code> and
+                        <code>STFParameters+XISFDisplayFunction.swift</code> to <em>both</em> extension targets' Sources phases
+                        (previously app-only), since the shared renderers now reference them. Round-number pbxproj build-file
+                        IDs (<code>…E404</code>/<code>…E405</code>, <code>…BC</code>/<code>…BD</code>); nothing else in the
+                        pbxproj changed.</li>
+                    <li><strong>Verification.</strong> Automated tests cover the settings decision logic (display-function-wins,
+                        preference-on auto-STF over identity, preference-off linear, no-suite linear, and the FITS RGB-planes
+                        luminance branch) against isolated App Group suites, plus the existing render tests. The actual Finder
+                        QuickLook / thumbnail <em>visual</em> (spacebar preview, Finder icons) needs the app installed and the
+                        extension registered, so interactive visual verification is left to the maintainer.</li>
+                    <li><strong>Review fixes.</strong> Added the XISF parity doc note (CFA mosaic-derived STF, F1) and a FITS
+                        RGB-planes preview test (F3).</li>
+                </ul>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>F1 — CFA/OSC preview STF derived from the raw Bayer mosaic, not demosaiced luminance</strong> ·
+                        <em>Low</em> · Correctness / consistency · <code>XISFPreviewRenderer</code> /
+                        <code>FITSPreviewRenderer</code>. The app on open demosaics a colour-filter-array frame to grayscale
+                        (<code>BayerGrayscaleConverter</code> / <code>FITSImageDecoder.detectionImage</code>) before deriving the
+                        STF; the extensions derive from the raw mosaic luminance instead, to avoid the demosaic dependency. For an
+                        OSC frame the mosaic's median/MAD can differ from the demosaiced luminance, so the preview stretch can
+                        differ slightly from the app's — a bounded visual divergence against the "preview matches the app" goal.
+                        <strong>Resolution: Documented</strong> (added the parity note to XISF, matching the existing FITS note);
+                        exact parity (demosaic in the extension, linking SwiftAstro) is surfaced for the maintainer to weigh.</li>
+                    <li><strong>F2 — <code>previewsKey(.raw)</code> / <code>autoStretchPreviews(.raw, in:)</code> now unused for
+                        previews</strong> · <em>Info</em> · Dead-code / API surface. They are generic over
+                        <code>AutoStretchPreference.Format</code> and <code>Format.raw</code> is still used by the on-open path, so
+                        leaving them is cleaner than special-casing. <strong>Resolution: Deferred</strong> (no action).</li>
+                    <li><strong>F3 — FITS RGB-planes luminance branch untested; no end-to-end render-differs assertion</strong> ·
+                        <em>Low</em> · Tests. <strong>Resolution: Partially fixed</strong> — added the RGB-planes preview test
+                        (covering the <code>rgbLinearLuminance</code> branch); the render-differs assertion is left as an optional
+                        future guard.</li>
+                    <li>The reviewer verified (not defects): the <code>previewSettings</code> priority mirrors the app loaders'
+                        <code>openedSettings</code> (display-function-wins-unconditionally is intended and consistent); the
+                        float / <code>nil</code>-suite fallbacks degrade to linear; the pbxproj wiring is clean (four unique
+                        build-file IDs, both files added to both extension Sources phases, referencing the correct fileRefs,
+                        nothing else disturbed); the RAW-previews removal is complete and safe (no dangling references,
+                        <code>Format.raw</code> and the on-open path untouched, per-property seeding); the renderers stay free of
+                        SwiftUI/AppKit and the <code>sharedDefaults</code> default argument is sound (<code>nil ⇒ linear</code>);
+                        no app-path regression (the <code>render</code> methods are extension-only; XISF <code>image.data</code>
+                        is decoded once); and the tests are isolated and deterministic.</li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Approved.</strong> The maintainer reviewed the work ("Looks good"). <strong>F1 accepted as-is</strong>
+                        — the mosaic-derived preview stretch for OSC/CFA frames stays (documented); exact parity via
+                        demosaic-in-the-extension was not pursued. F2 (Info) and F3 (partially fixed) left as recorded.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- M8 (re-scoped from M7: improve star detection) -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">8</span>
+                <h3>Improve star detection</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Design decisions (maintainer)</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Re-scoped from "Auto-STF before star detection."</strong> The original milestone proposed running
+                        detection on an STF-stretched copy of the detection buffer. That premise was investigated and dropped:
+                        FITScope's <code>MatchedFilterStarDetector</code> is a linear detector with an <em>adaptive</em> robust
+                        threshold (background + N·MAD), so a monotonic nonlinear stretch adds no detection information and, by
+                        distorting each star's profile, would corrupt the geometric metrics (<code>medianFWHM</code> /
+                        <code>medianHFR</code> / <code>medianEccentricity</code>) that feed image weighting and the session graphs —
+                        which is exactly why <code>StarDetecting</code> documents that its input must be <em>linear</em>. NINA (the
+                        reference) confirms it: its built-in detector does <em>not</em> nonlinearly stretch before detection and
+                        measures HFR on the original linear array (it finds candidates on a resized, linearly bit-reduced bitmap
+                        via an adaptive edge/threshold, then measures metrics on the linear data). So this milestone becomes "make
+                        star detection actually work," driven by concrete failing frames rather than by a stretch.</li>
+                    <li><strong>Driven by real failing frames.</strong> Detection currently finds <em>zero</em> stars on some
+                        real-world subs — e.g. a ZWO Seestar S30 10&nbsp;s M42 light-pollution sub (16-bit,
+                        <code>BAYERPAT = GRBG</code>, 1080×1920). <strong>The maintainer will provide the failing test frame(s)</strong>
+                        to diagnose against and turn into repeatable fixtures.</li>
+                </ul>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Make star detection reliable on real-world frames where it currently finds no stars (e.g. Seestar OSC
+            subs) — diagnose the root cause and fix it — while keeping the FWHM / HFR / eccentricity metrics physically
+            meaningful (measured on linear data).</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li><strong>Diagnose first.</strong> With a maintainer-provided failing frame, run detection end-to-end and
+                    instrument the pipeline: confirm the detection image (the demosaiced luminance built by
+                    <code>FITSImageDecoder.detectionImage</code>) is sane, and inspect the detector's internal background / noise /
+                    threshold and its FWHM bootstrap, to find why zero stars are found. Candidate causes: the bright M42 nebula
+                    core inflating the single global robust-noise estimate (pushing the 5σ threshold above the stars); a short-sub
+                    low-SNR frame; or a degenerate detection buffer. Capture the frame(s) as test fixtures.</li>
+                <li><strong>Fix the root cause</strong> (chosen from the diagnosis) — e.g. a local / tiled background &amp; noise
+                    estimate instead of one global robust background, threshold / FWHM-bootstrap tuning, or a detection-image
+                    improvement. This likely touches the <code>SwiftAstro</code> detector; keep its public API and the
+                    linear-data contract.</li>
+                <li><strong>Preserve the metrics.</strong> Do not measure FWHM / HFR / eccentricity on a nonlinearly-stretched
+                    buffer. If a two-stage approach is used (detect positions on a processed image, measure on the linear buffer,
+                    as NINA does), keep all measurements on linear data.</li>
+                <li>Keep the entry point <code>nonisolated</code> / off-main-actor friendly, as today.</li>
+                <li>Tests: the previously-failing frame(s) now detect a sensible star field; existing frames stay at least as good;
+                    the geometric metrics remain physically meaningful.</li>
+            </ul>
+            <div class="field-label">Dependencies</div>
+            <p class="deps">None — independent of the Screen Transfer work (may reuse SwiftPixel's median / MAD helpers). The
+            maintainer provides the failing test frame(s).</p>
             <div class="field-label">Status</div>
             <p><span class="capsule not-started">Not started</span></p>
             <div class="field-label">Completed</div>

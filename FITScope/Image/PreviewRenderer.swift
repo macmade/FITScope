@@ -39,24 +39,29 @@ import UniformTypeIdentifiers
 /// Extension-safe (no SwiftUI/AppKit).
 public enum PreviewRenderer
 {
-    /// Reads and renders the file at the given URL with default settings.
+    /// Reads and renders the file at the given URL, applying the app's on-open
+    /// rendering (a display function or an auto Screen Transfer when enabled).
     ///
-    /// - Parameter url: The file to read and render.
+    /// - Parameters:
+    ///   - url:              The file to read and render.
+    ///   - previewsDefaults: The shared App Group store the per-format previews
+    ///                       preference is read from; defaults to
+    ///                       ``AutoStretchPreference/sharedDefaults``.
     /// - Returns: The rendered, display-ready image.
     /// - Throws: ``RuntimeError`` when the file's type is neither FITS nor XISF, or
     ///   any error reading, parsing, or rendering the file.
-    public static func render( contentsOf url: URL ) throws -> CGImage
+    public static func render( contentsOf url: URL, previewsDefaults: UserDefaults? = AutoStretchPreference.sharedDefaults ) throws -> CGImage
     {
         let type = UTType( filenameExtension: url.pathExtension )
 
         if type?.conforms( to: .xisf ) == true
         {
-            return try XISFPreviewRenderer.render( contentsOf: url )
+            return try XISFPreviewRenderer.render( contentsOf: url, previewsDefaults: previewsDefaults )
         }
 
         if type?.conforms( to: .fits ) == true
         {
-            return try FITSPreviewRenderer.render( contentsOf: url )
+            return try FITSPreviewRenderer.render( contentsOf: url, previewsDefaults: previewsDefaults )
         }
 
         throw RuntimeError( message: "Unsupported file type for preview: \( url.lastPathComponent )" )

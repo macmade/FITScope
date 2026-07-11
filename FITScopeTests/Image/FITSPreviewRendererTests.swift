@@ -25,6 +25,8 @@
 import CoreGraphics
 @testable import FITScope
 import Foundation
+import SwiftFITS
+import SwiftPixel
 import Testing
 
 /// Tests for `FITSPreviewRenderer`: the shared default-settings renderer used by
@@ -58,5 +60,92 @@ struct FITSPreviewRendererTests
         {
             try FITSPreviewRenderer.render( contentsOf: TestFixtures.invalidImage )
         }
+    }
+
+    /// An isolated shared-suite store with the FITS previews preference set to the
+    /// given value, plus its name for teardown.
+    private static func isolatedSuite( fitsPreviews: Bool ) -> ( defaults: UserDefaults, name: String )
+    {
+        let name     = "FITScopeTests.FITSPreview.\( UUID().uuidString )"
+        let defaults = UserDefaults( suiteName: name ) ?? .standard
+
+        defaults.set( fitsPreviews, forKey: AutoStretchPreference.previewsKey( .fits ) )
+
+        return ( defaults, name )
+    }
+
+    /// A small integer (`BITPIX = 8`) image HDU with a simple ramp.
+    private static func rampHDU() -> ( data: Data, properties: [ FITSPropertySnapshot ] )
+    {
+        let properties =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 4 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 4 ) ),
+            ]
+
+        return ( Data( ( 0 ..< 16 ).map { UInt8( $0 * 10 ) } ), properties )
+    }
+
+    /// With the FITS previews preference on, an integer-format image previews with an
+    /// auto Screen Transfer over identity normalization.
+    @Test
+    func autoStretchesWhenPreviewsPreferenceOn() throws
+    {
+        let ( defaults, name ) = Self.isolatedSuite( fitsPreviews: true )
+
+        defer { defaults.removePersistentDomain( forName: name ) }
+
+        let settings = FITSPreviewRenderer.previewSettings( hdu: Self.rampHDU(), previewsDefaults: defaults )
+
+        #expect( settings.stretch   != nil )
+        #expect( settings.normalize == .identity )
+    }
+
+    /// With the FITS previews preference off, the image previews linear (min/max).
+    @Test
+    func rendersLinearWhenPreviewsPreferenceOff() throws
+    {
+        let ( defaults, name ) = Self.isolatedSuite( fitsPreviews: false )
+
+        defer { defaults.removePersistentDomain( forName: name ) }
+
+        let settings = FITSPreviewRenderer.previewSettings( hdu: Self.rampHDU(), previewsDefaults: defaults )
+
+        #expect( settings.stretch   == nil )
+        #expect( settings.normalize == .minMax )
+    }
+
+    /// When the shared suite cannot be opened (`nil`), the sandboxed extension has no
+    /// preference to read and previews linear.
+    @Test
+    func rendersLinearWhenNoSharedSuite()
+    {
+        let settings = FITSPreviewRenderer.previewSettings( hdu: Self.rampHDU(), previewsDefaults: nil )
+
+        #expect( settings.stretch   == nil )
+        #expect( settings.normalize == .minMax )
+    }
+
+    /// An RGB colour-planes image also auto-stretches when the preference is on,
+    /// exercising the RGB luminance branch (the planes are combined into luminance
+    /// before the derivation).
+    @Test
+    func autoStretchesRGBPlanesWhenPreviewsPreferenceOn() throws
+    {
+        let ( defaults, name ) = Self.isolatedSuite( fitsPreviews: true )
+
+        defer { defaults.removePersistentDomain( forName: name ) }
+
+        let file = try FITSFile( data: try Data( contentsOf: TestFixtures.rgbImage ), options: .lenient )
+        let hdu  = try FITSPreviewRenderer.imageHDU( from: file.sections )
+
+        #expect( ImageProcessor.isRGBPlanes( properties: hdu.properties ), "the RGB fixture must take the RGB-planes luminance branch" )
+
+        let settings = FITSPreviewRenderer.previewSettings( hdu: hdu, previewsDefaults: defaults )
+
+        #expect( settings.stretch   != nil )
+        #expect( settings.normalize == .identity )
     }
 }

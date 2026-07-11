@@ -64,6 +64,10 @@ public struct AutoStretchPreferencesView: View
                     .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.autoStretchOnOpenToggle( .raw ) )
             }
 
+            // Only FITS and XISF are listed here: the QuickLook / Finder preview and
+            // thumbnail extensions declare support for those two types only, so a
+            // camera-RAW previews toggle would never reach an extension (RAW previews
+            // are handled by the system). Camera RAW keeps its "on open" toggle above.
             Section( "In Finder previews and thumbnails" )
             {
                 Toggle( "FITS", isOn: self.$preferences.autoStretchPreviewsFITS )
@@ -71,9 +75,6 @@ public struct AutoStretchPreferencesView: View
 
                 Toggle( "XISF", isOn: self.$preferences.autoStretchPreviewsXISF )
                     .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.autoStretchPreviewsToggle( .xisf ) )
-
-                Toggle( "Camera RAW", isOn: self.$preferences.autoStretchPreviewsRAW )
-                    .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.autoStretchPreviewsToggle( .raw ) )
             }
 
             Section
