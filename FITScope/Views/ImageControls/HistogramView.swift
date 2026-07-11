@@ -76,7 +76,7 @@ public struct HistogramView: View
             geometry in
 
             let data     = self.data
-            let maxCount = max( 1, data.flatMap { $0 }.max() ?? 1 )
+            let maxCount = Self.interiorMax( data )
 
             ZStack
             {
@@ -265,6 +265,23 @@ public struct HistogramView: View
         height - Self.barFraction( count: count, maxCount: maxCount, logScale: logScale ) * height
     }
 
+    /// The vertical scale for the curves: the tallest *interior* bin count across
+    /// all channels, excluding the two end bins (0 and 255).
+    ///
+    /// Clipped shadows and highlights pile into those end bins — a Screen Transfer
+    /// clips the background to black, so bin 0 spikes — and if that spike set the
+    /// scale it would crush the entire real distribution into an invisible sliver.
+    /// The end bars are instead capped at the top by ``barFraction(count:maxCount:logScale:)``,
+    /// so clipping still reads without flattening everything else. Floored at `1`
+    /// so an all-zero (or one-bin-per-channel) histogram yields a finite scale.
+    ///
+    /// - Parameter data: The per-channel bin counts.
+    /// - Returns: The largest interior bin count, at least `1`.
+    static func interiorMax( _ data: [ [ Int ] ] ) -> Int
+    {
+        max( 1, data.flatMap { $0.dropFirst().dropLast() }.max() ?? 1 )
+    }
+
     /// The bar height as a fraction (`0…1`) of the drawing height, for a bin
     /// count normalized against the largest bin.
     ///
@@ -274,21 +291,23 @@ public struct HistogramView: View
     /// tallest bin to `1`. The maximum is floored at `1` so an all-zero histogram
     /// yields a finite `0` rather than dividing by zero.
     ///
+    /// The result is clamped to `1`: because `maxCount` excludes the clipped end
+    /// bins, an end bin's count can exceed it, and the bar is capped at the top
+    /// rather than shooting off-screen.
+    ///
     /// - Parameters:
     ///   - count:    The bin's count.
-    ///   - maxCount: The largest bin count across all channels.
+    ///   - maxCount: The largest interior bin count across all channels.
     ///   - logScale: Whether to scale logarithmically.
     /// - Returns: The normalized bar height in `0…1`.
     static func barFraction( count: Int, maxCount: Int, logScale: Bool ) -> CGFloat
     {
         let maxCount = max( 1, maxCount )
+        let fraction = logScale
+            ? log( 1.0 + Double( count ) ) / log( 1.0 + Double( maxCount ) )
+            : Double( count ) / Double( maxCount )
 
-        if logScale
-        {
-            return CGFloat( log( 1.0 + Double( count ) ) / log( 1.0 + Double( maxCount ) ) )
-        }
-
-        return CGFloat( count ) / CGFloat( maxCount )
+        return CGFloat( Swift.min( 1.0, fraction ) )
     }
 }
 

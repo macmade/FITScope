@@ -89,6 +89,48 @@ struct HistogramViewTests
         #expect( HistogramView.barFraction( count: 0, maxCount: 0, logScale: true ).isFinite )
     }
 
+    /// The vertical scale ignores the clipped end bins (0 and 255): a Screen
+    /// Transfer clips the background into bin 0, and that spike must not set the
+    /// scale — otherwise the real distribution collapses into an invisible sliver.
+    @Test
+    @MainActor
+    func interiorMaxIgnoresClippedEndBins() throws
+    {
+        // Big clip spikes at both ends, a modest real distribution in between.
+        var channel = [ Int ]( repeating: 0, count: 256 )
+        channel[ 0 ]   = 100_000
+        channel[ 255 ] = 50_000
+        channel[ 40 ]  = 200
+        channel[ 41 ]  = 300
+        channel[ 42 ]  = 250
+
+        // The scale is the interior peak (300), not the 100k bin-0 clip spike.
+        #expect( HistogramView.interiorMax( [ channel ] ) == 300 )
+        #expect( HistogramView.interiorMax( [ channel, channel, channel ] ) == 300 )
+    }
+
+    /// A clipped end bin whose count exceeds the interior scale is capped at the
+    /// top (fraction 1) rather than producing an off-screen bar.
+    @Test
+    @MainActor
+    func barFractionCapsAnOverscaleBin() throws
+    {
+        #expect( HistogramView.barFraction( count: 100_000, maxCount: 300, logScale: false ) == 1 )
+        #expect( HistogramView.barFraction( count: 100_000, maxCount: 300, logScale: true )  == 1 )
+    }
+
+    /// An empty or single-bin channel yields a finite scale of at least `1`, so a
+    /// degenerate histogram never divides by zero.
+    @Test
+    @MainActor
+    func interiorMaxFloorsAtOne() throws
+    {
+        #expect( HistogramView.interiorMax( [] ) == 1 )
+        #expect( HistogramView.interiorMax( [ [] ] ) == 1 )
+        #expect( HistogramView.interiorMax( [ [ 5 ] ] ) == 1 )
+        #expect( HistogramView.interiorMax( [ [ 0, 0, 0 ] ] ) == 1 )
+    }
+
     /// A monochrome image offers only the single "Mono" mode, so the picker shows
     /// one segment rather than the RGB-only RGB/Luminance choice.
     @Test
