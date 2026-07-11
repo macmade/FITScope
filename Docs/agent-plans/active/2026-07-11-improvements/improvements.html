@@ -217,6 +217,24 @@
                 inspect individual pixels at high zoom levels.
             </p>
         </div>
+
+        <div class="item">
+            <div class="item-header">
+                <span class="item-number">7</span>
+                <h3>Silence the CFPrefs app-group warning at startup</h3>
+            </div>
+            <p>
+                A warning is logged to the console when the app starts:
+                <code>Couldn't read values in CFPrefsPlistSource&lt;0x…&gt;
+                (Domain: group.com.xs-labs.FITScope, User: kCFPreferencesAnyUser,
+                ByHost: Yes, Container: (null), Contents Need Refresh: Yes):
+                Using kCFPreferencesAnyUser with a container is only allowed for
+                System Containers, detaching from cfprefsd</code>. It stems from
+                accessing the <code>group.com.xs-labs.FITScope</code> app group
+                shared with the Preview and Thumbnail extensions. Investigate the
+                cause and eliminate the warning.
+            </p>
+        </div>
     </div>
 </body>
 </html>
