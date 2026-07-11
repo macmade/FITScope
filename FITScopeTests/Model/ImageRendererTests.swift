@@ -163,6 +163,92 @@ struct ImageRendererTests
         #expect( source.autoStretchSettings() == nil )
     }
 
+    /// The inspector's Auto (the default `.automatic` linking) derives a per-channel
+    /// STF for a colour source, reproducing exactly what opening the image did — so
+    /// open and click-Auto agree.
+    @Test
+    @MainActor
+    func autoScreenTransferIsPerChannelForAColourSourceMatchingOnOpen() async throws
+    {
+        let ( data, properties ) = FITSTestData.rgbPlanes( width: 4, height: 3 )
+        let detection            = try PixelBuffer( width: 4, height: 3, channels: 1, pixels: ( 0 ..< 12 ).map { Double( $0 ) * 10 }, isNormalized: false )
+        let source               = FITSRenderSource( data: data, properties: properties, detectionImage: detection )
+        let renderer             = ImageRenderer( source: source )
+
+        let settings = try #require( await renderer.autoScreenTransferSettings() )
+
+        guard case .perChannel = try #require( settings.stretch )
+        else
+        {
+            Issue.record( "a colour source's Auto must derive a per-channel Screen Transfer" )
+
+            return
+        }
+
+        let onOpen = try #require( source.autoStretchSettings() )
+
+        #expect( settings.stretch   == onOpen.stretch )
+        #expect( settings.normalize == onOpen.normalize )
+    }
+
+    /// The editor's uniform mode (`.uniform` linking) derives a single uniform STF
+    /// even for a colour source — the colour-preserving "uniform Auto" a power user
+    /// can ask for.
+    @Test
+    @MainActor
+    func autoScreenTransferUniformLinkingIsUniformEvenForAColourSource() async throws
+    {
+        let ( data, properties ) = FITSTestData.rgbPlanes( width: 4, height: 3 )
+        let detection            = try PixelBuffer( width: 4, height: 3, channels: 1, pixels: ( 0 ..< 12 ).map { Double( $0 ) * 10 }, isNormalized: false )
+        let source               = FITSRenderSource( data: data, properties: properties, detectionImage: detection )
+        let renderer             = ImageRenderer( source: source )
+
+        let settings = try #require( await renderer.autoScreenTransferSettings( linking: .uniform ) )
+
+        // Derived in the full-scale [0, 1] domain (over identity), like the on-open
+        // and inspector paths — not the brighter min/max domain.
+        #expect( settings.normalize == .identity )
+
+        guard case .uniform = try #require( settings.stretch )
+        else
+        {
+            Issue.record( "uniform linking must derive a uniform Screen Transfer even for a colour source" )
+
+            return
+        }
+
+        // And it genuinely differs from the per-channel (automatic) derivation of the
+        // same colour source.
+        let automatic = try #require( await renderer.autoScreenTransferSettings( linking: .automatic ) )
+
+        #expect( settings.stretch != automatic.stretch )
+    }
+
+    /// A mono source stays uniform in both linking modes — there is no per-channel
+    /// result to produce, and the two modes agree.
+    @Test
+    @MainActor
+    func autoScreenTransferIsUniformForAMonoSourceInBothModes() async throws
+    {
+        let detection  = try PixelBuffer( width: 8, height: 8, channels: 1, pixels: ( 0 ..< 64 ).map { Double( $0 ) * 4 }, isNormalized: false )
+        let properties = [ FITSPropertySnapshot( name: "BITPIX", value: .integer( 16 ) ) ]
+        let source     = FITSRenderSource( data: Data(), properties: properties, detectionImage: detection )
+        let renderer   = ImageRenderer( source: source )
+
+        let automatic = try #require( await renderer.autoScreenTransferSettings( linking: .automatic ) )
+        let uniform   = try #require( await renderer.autoScreenTransferSettings( linking: .uniform ) )
+
+        guard case .uniform = try #require( automatic.stretch ), case .uniform = try #require( uniform.stretch )
+        else
+        {
+            Issue.record( "a mono source must derive a uniform Screen Transfer in both modes" )
+
+            return
+        }
+
+        #expect( automatic.stretch == uniform.stretch )
+    }
+
     /// A valid `BITPIX = 64` image is a format the pixel pipeline does not
     /// support; it must surface a clear, typed error naming the limitation.
     @Test

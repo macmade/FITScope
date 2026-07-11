@@ -221,40 +221,62 @@ public class ImageRenderer: ObservableObject
         ( try? self.source.get() )?.detectionImage != nil
     }
 
-    /// Derives auto Screen Transfer settings from the source's detection image, as
-    /// the `{ normalize, stretch }` pair to apply as a whole.
+    /// How an auto Screen Transfer chooses between a linked (uniform) and an unlinked
+    /// (per-channel) result.
+    public enum ScreenTransferLinking: Sendable
+    {
+        /// Per-channel (unlinked) for a colour source and uniform for a mono one —
+        /// reproducing exactly how the image opened. The inspector's one-click Auto
+        /// uses this so opening and clicking Auto agree.
+        case automatic
+
+        /// A single uniform (linked) mapping applied to every channel, derived from
+        /// the luminance regardless of whether the source is colour — the
+        /// colour-preserving "uniform Auto" the Screen Transfer editor offers when its
+        /// per-channel toggle is off.
+        case uniform
+    }
+
+    /// Derives auto Screen Transfer settings from the source, as the `{ normalize,
+    /// stretch }` pair to apply as a whole.
     ///
-    /// Runs the SwiftPixel derivation over the source's single-channel, linear
-    /// ``ImageRenderSource/detectionImage`` and returns a uniform STF together with
-    /// the normalization it must be applied over. Returns `nil` when the source
+    /// The `linking` mode chooses the shape of the result. ``ScreenTransferLinking/automatic``
+    /// routes through the source's per-channel capability
+    /// (``ImageRenderSource/autoStretchSettings(shadowClipFactor:targetBackground:)``):
+    /// a colour source yields a per-channel (unlinked) STF and a mono source a uniform
+    /// one, *exactly* the auto-stretch-on-open result, so clicking Auto reproduces how
+    /// the image opened. ``ScreenTransferLinking/uniform`` instead derives a single
+    /// uniform mapping from the ``ImageRenderSource/detectionImage`` luminance even for
+    /// a colour source, preserving the colour ratios. Returns `nil` when the source
     /// failed to extract or exposes no detection image.
     ///
     /// **Domain.** When the source has a known ``ImageRenderSource/fullScale`` (a
     /// linear FITS / XISF / RAW format), the STF is derived — and returned to be
     /// applied — in the native full-scale `[0, 1]` domain over
-    /// ``Processors/Normalize/Mode/identity``, *exactly* the auto-stretch-on-open
-    /// path (``ImageProcessor/autoStretchSettings(detectionImage:fullScale:shadowClipFactor:targetBackground:)``),
-    /// so clicking Auto reproduces how the image opened rather than deriving in the
-    /// min/max domain and coming out brighter. A source without a full scale (a
-    /// photographic or floating-point one) falls back to deriving over — and
-    /// applying — ``Processors/Normalize/Mode/minMax``. Returning the normalization
-    /// alongside the stretch is what keeps the derivation domain and the apply
+    /// ``Processors/Normalize/Mode/identity``, matching the on-open path, so it is not
+    /// brighter than opening the image. A source without a full scale (a photographic
+    /// or floating-point one) has no per-channel linear domain, so *both* modes fall
+    /// back to a uniform STF over ``Processors/Normalize/Mode/minMax``. Returning the
+    /// normalization alongside the stretch keeps the derivation domain and the apply
     /// domain in step; the caller applies both.
     ///
     /// The derivation is an `O(n log n)` pass (a normalize plus a median and a
-    /// median-absolute-deviation) over the full-resolution detection image, so it
-    /// runs on a detached task off the main actor — matching how ``render()``
-    /// offloads its pixel work — and the caller `await`s the result. Gate the UI
-    /// (e.g. a busy state) around the call, and check ``canAutoScreenTransfer``
-    /// first to avoid enabling an action that would return `nil`.
+    /// median-absolute-deviation) over the full-resolution source data, so it runs on a
+    /// detached task off the main actor — matching how ``render()`` offloads its pixel
+    /// work — and the caller `await`s the result. Gate the UI (e.g. a busy state)
+    /// around the call, and check ``canAutoScreenTransfer`` first to avoid enabling an
+    /// action that would return `nil`.
     ///
     /// - Parameters:
+    ///   - linking:          Whether to derive an ``ScreenTransferLinking/automatic``
+    ///                       (per-channel for colour) or a ``ScreenTransferLinking/uniform``
+    ///                       result. Defaults to ``ScreenTransferLinking/automatic``.
     ///   - shadowClipFactor: How many median-absolute-deviations below the median
     ///                       to clip the shadows. Defaults to `2.8`.
     ///   - targetBackground: The value the median should map to. Defaults to `0.25`.
     /// - Returns: The `{ normalize, stretch }` settings to apply, or `nil` when
     ///   unavailable.
-    public func autoScreenTransferSettings( shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) async -> ImageProcessor.Settings?
+    public func autoScreenTransferSettings( linking: ScreenTransferLinking = .automatic, shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) async -> ImageProcessor.Settings?
     {
         guard let source = try? self.source.get(), let buffer = source.detectionImage
         else
@@ -268,7 +290,20 @@ public class ImageRenderer: ObservableObject
         {
             if let fullScale
             {
-                return ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: fullScale, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+                switch linking
+                {
+                    case .automatic:
+
+                        // Per-channel for colour, uniform for mono — exactly the
+                        // auto-stretch-on-open derivation, so open == click-Auto.
+                        return source.autoStretchSettings( shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+
+                    case .uniform:
+
+                        // A single luminance-derived uniform mapping, preserving the
+                        // colour ratios even for a colour source.
+                        return ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: fullScale, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+                }
             }
 
             guard let stretch = try? Processors.Stretch.STFParameters.computed( normalizing: buffer, using: .minMax, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )

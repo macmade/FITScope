@@ -541,7 +541,7 @@
             <div class="milestone-head">
                 <span class="mnum">3</span>
                 <h3>Per-channel Auto in the inspector &amp; the STF editor window</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">The inspector's one-click Auto and the STF editor window's Auto produce per-channel for
@@ -566,13 +566,80 @@
             <div class="field-label">Dependencies</div>
             <p class="deps"><strong>Milestones 1 &amp; 2</strong>.</p>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">&mdash;</p>
+            <p>2026-07-11</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>A linking mode on the renderer.</strong> <code>ImageRenderer.autoScreenTransferSettings</code>
+                        gains a <code>linking: ScreenTransferLinking</code> parameter (a new nested enum,
+                        <code>.automatic</code> / <code>.uniform</code>, defaulting to <code>.automatic</code>).
+                        <code>.automatic</code> routes through the source's per-channel capability
+                        (<code>source.autoStretchSettings(…)</code>) — per-channel for colour, uniform for mono —
+                        <em>exactly</em> the on-open derivation; <code>.uniform</code> derives a single luminance-based
+                        uniform STF (the previous behaviour) even for a colour source. Both fall back to a min/max uniform
+                        STF when the source has no fixed full scale (photographic / floating-point).</li>
+                    <li><strong>Inspector Auto = on-open.</strong> The inspector's one-click Auto calls the no-argument
+                        <code>autoScreenTransferSettings()</code> (default <code>.automatic</code>), so it now reproduces
+                        what opening a colour image did (per-channel) and stays uniform for mono — the
+                        open&nbsp;==&nbsp;click-Auto guarantee. The call site is unchanged.</li>
+                    <li><strong>Editor Auto respects the toggle.</strong> <code>STFEditorView.auto()</code> passes
+                        <code>linking: self.perChannel ? .automatic : .uniform</code>: in per-channel mode it derives and
+                        fills the three channels, in uniform mode it derives a colour-preserving uniform set. The existing
+                        <code>switch</code> that fills the sliders is unchanged, and because the requested linking matches
+                        the toggle the derived kind no longer fights the user's choice.</li>
+                    <li><strong>Uniform stays available; no new controls.</strong> The manual uniform&nbsp;↔&nbsp;per-channel
+                        toggle, the channel picker, the per-channel fields and the tunable shadow-clip / target-background
+                        sliders are untouched, so no accessibility identifiers or <code>#Preview</code>s needed changing.
+                        The seeding / sync and the echo guard (<code>syncFromAdjustments</code> equality) are unaffected —
+                        Auto still sets <code>@State</code> then commits the recomposed parameters, so the round-trip
+                        early-returns as before.</li>
+                    <li><strong>Verification.</strong> The whole <code>FITScopeTests</code> suite passes under
+                        <code>xcodebuild</code> (UI tests skipped at the maintainer's request). New tests: a colour source's
+                        <code>.automatic</code> Auto is <code>.perChannel</code> and equals the on-open settings; its
+                        <code>.uniform</code> Auto is uniform, in the <code>.identity</code> full-scale domain, and differs
+                        from the per-channel one; a mono source stays uniform in both modes. The two pre-existing
+                        min/max-fallback and full-scale-mono tests stay green.</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Round 1 — converged (no Critical/High/Medium).</strong> A fresh-context reviewer verified
+                        that <code>.automatic</code> is byte-for-byte the on-open path, <code>.uniform</code> forces a
+                        linked result in the correct full-scale domain, the min/max fallback is preserved for both modes,
+                        the echo/re-seed guard is untouched, and the <code>Task.detached</code> capture is Sendable-safe.
+                        No correctness defects in scope.</li>
+                    <li><strong>[Low] The uniform-linking test didn't assert the full-scale domain.</strong> <em>Fixed</em>
+                        — added <code>normalize == .identity</code> and an assertion that the uniform result differs from
+                        the per-channel one.</li>
+                    <li><strong>[Info] The per-channel toggle flips off when per-channel is requested but impossible</strong>
+                        (a mono source, or a colour source with no fixed full scale). <em>Accepted</em> — there is no
+                        per-channel linear domain for those, so uniform is the only derivable result and it matches how
+                        they open; the toggle row is hidden for mono anyway.</li>
+                    <li><strong>[Info] No view-level test of <code>auto()</code>'s toggle wiring</strong> and the "matches
+                        on-open" test is routing-by-construction. <em>Accepted</em> — the testable seam (the renderer's
+                        <code>linking</code> mechanism) is covered; driving the SwiftUI view needs UI tests, which are out
+                        of scope. A doc-comment "an automatic" nit was <em>declined</em> (correct English).</li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Opening a mono FITS image — the auto STF does not apply. Why?</strong> (Question — no
+                        code changed.) Answered: almost certainly because the image is a <em>floating-point</em> FITS
+                        (<code>BITPIX</code> &minus;32 / &minus;64), like the bundled <code>MonoImage.fits</code>
+                        (<code>BITPIX = -32</code>). A float format has no fixed full scale
+                        (<code>fullScale(forImageHDU:)</code> returns <code>nil</code> for it), and auto-stretch-on-open is
+                        derived in the full-scale <code>[0,&nbsp;1]</code> domain, so it is skipped and the image opens on
+                        the unstretched (min/max) baseline. This is pre-existing, by-design behaviour (test
+                        <code>floatingPointImageOpensLinearEvenWithAutoStretch</code>), unchanged by the per-channel work —
+                        an <em>integer</em> mono FITS still auto-stretches (uniform) on open. Clicking <em>Auto</em> in the
+                        inspector still stretches a float image (via the min/max fallback). Not a regression; making float
+                        images auto-stretch on open would be a separate design decision, out of this initiative's scope.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
             <p class="placeholder">Awaiting human review.</p>
         </div>

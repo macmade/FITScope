@@ -557,7 +557,12 @@ struct STFEditorView: View
     {
         self.isDeriving = true
 
-        let derived = await self.image.renderer.autoScreenTransferSettings( shadowClipFactor: self.shadowClipFactor, targetBackground: self.targetBackground )
+        // The editor's Auto respects the per-channel toggle: an unlinked derivation
+        // (per-channel for a colour image) when the toggle is on, and a
+        // colour-preserving uniform one when it is off — rather than letting the
+        // derived kind flip the toggle.
+        let linking = self.perChannel ? ImageRenderer.ScreenTransferLinking.automatic : .uniform
+        let derived = await self.image.renderer.autoScreenTransferSettings( linking: linking, shadowClipFactor: self.shadowClipFactor, targetBackground: self.targetBackground )
 
         self.isDeriving = false
 
