@@ -25,6 +25,7 @@
 @testable import FITScope
 import Foundation
 import SwiftFITS
+import SwiftPixel
 import Testing
 
 /// Tests for `ImageProcessor`'s header interpretation, in particular the linear
@@ -47,6 +48,89 @@ struct ImageProcessorTests
 
         #expect( scaling.scale == 1.5 )
         #expect( scaling.scale != 1, "a float BSCALE must not fall back to the default scale" )
+    }
+
+    /// With identity normalization, integer samples render in their native
+    /// full-scale `[0, 1]` domain — a mid-scale `BITPIX = 8` value renders as
+    /// mid-grey, not clamped to white. This confirms the `1 / fullScale` scaling
+    /// the config folds in, matching the domain a Screen Transfer is authored in.
+    @Test
+    func rendersIntegerSamplesInFullScaleDomainUnderIdentity() throws
+    {
+        let properties =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 2 ) ),
+            ]
+
+        let data   = Data( [ 0, 128, 255, 128 ] )
+        let result = try ImageProcessor.render( data: data, properties: properties, settings: ImageProcessor.Settings( normalize: .identity ) )
+
+        // Under the old scale-1 behaviour, identity would clamp 128 to 1.0 (white);
+        // the full-scale scaling instead maps it to ~0.5, so a mid-grey byte appears.
+        #expect( result.bytes.contains { $0 > 0 && $0 < 200 } )
+    }
+
+    /// Min/max normalization is unaffected by the full-scale scaling (min/max is
+    /// scale-invariant): a `BITPIX = 8` ramp still spans black to white with the
+    /// interior values in between, exactly as before the scaling was folded in.
+    @Test
+    func minMaxRenderingIsUnchangedByFullScaleScaling() throws
+    {
+        let properties =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 2 ) ),
+            ]
+
+        let data   = Data( [ 10, 20, 30, 40 ] )
+        let result = try ImageProcessor.render( data: data, properties: properties )
+
+        // 10 → 0, 40 → 255, and the interior 20/30 map to (value − 10) / 30, i.e.
+        // ~85 and ~170 — the same result the raw samples produced before scaling.
+        #expect( result.bytes.contains { ( 80 ... 90 ).contains( $0 ) } )
+        #expect( result.bytes.contains { ( 165 ... 175 ).contains( $0 ) } )
+    }
+
+    /// The auto-stretch baseline derives a *uniform* Screen Transfer seeded over
+    /// identity normalization — matching the inspector's "Auto" action, so opening
+    /// and clicking Auto agree; per-channel balancing stays a manual choice.
+    @Test
+    func autoStretchBaselineDerivesUniformStretchOverIdentity() throws
+    {
+        let buffer   = try PixelBuffer( width: 4, height: 4, channels: 1, pixels: ( 0 ..< 16 ).map { Double( $0 ) * 100 }, isNormalized: false )
+        let baseline = try #require( ImageProcessor.autoStretchBaseline( detectionImage: buffer, fullScale: 1600 ) )
+
+        #expect( baseline.normalize == .identity )
+
+        guard case .uniform = try #require( baseline.stretch )
+        else
+        {
+            Issue.record( "the auto-stretch baseline must be a uniform Screen Transfer, not per-channel" )
+
+            return
+        }
+    }
+
+    /// No detection image means no auto-stretch baseline to seed.
+    @Test
+    func autoStretchBaselineIsNilWithoutADetectionImage()
+    {
+        #expect( ImageProcessor.autoStretchBaseline( detectionImage: nil, fullScale: 65535 ) == nil )
+    }
+
+    /// A non-positive full scale cannot bring samples into `[0, 1]`, so no baseline
+    /// is derived (the caller opens the image linear instead).
+    @Test
+    func autoStretchBaselineIsNilForANonPositiveFullScale() throws
+    {
+        let buffer = try PixelBuffer( width: 2, height: 2, channels: 1, pixels: [ 0, 100, 200, 300 ], isNormalized: false )
+
+        #expect( ImageProcessor.autoStretchBaseline( detectionImage: buffer, fullScale: 0 ) == nil )
     }
 
     /// Integer-formatted scaling keywords keep working: a `BZERO` of the

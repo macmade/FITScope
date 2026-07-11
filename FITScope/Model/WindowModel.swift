@@ -48,6 +48,12 @@ public final class WindowModel: ObservableObject
     /// never triggers a view update.
     public var onFileClosed: ( ( OpenFile.ID ) -> Void )?
 
+    /// The shared preferences, read for the per-format auto-stretch-on-open setting
+    /// applied to each opened file. Set by the hosting view (the preferences live in
+    /// SwiftUI's environment). `nil` until set, in which case files open linear. Not
+    /// observed, so setting it never triggers a view update.
+    public var preferences: Preferences?
+
     /// Whether the sort is ascending (smallest / A-first) or descending.
     @Published public var sortAscending = true
 
@@ -144,7 +150,7 @@ public final class WindowModel: ObservableObject
     /// - Parameter urls: The file URLs to open.
     public func open( urls: [ URL ] )
     {
-        let newFiles = urls.map { OpenFile( url: $0 ) }
+        let newFiles = urls.map { OpenFile( url: $0, preferences: self.preferences ) }
 
         guard newFiles.isEmpty == false
         else

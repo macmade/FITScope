@@ -200,6 +200,48 @@ public enum ImageProcessor
         }
     }
 
+    /// Derives the baseline an image opens on when auto-stretch-on-open is enabled:
+    /// a uniform auto Screen Transfer seeded over identity normalization, or `nil`
+    /// when it cannot be derived.
+    ///
+    /// The Screen Transfer is authored in — and applied in — the native full-scale
+    /// `[0, 1]` domain (the loaders scale their samples by `1 / fullScale`, so an
+    /// ``Processors/Normalize/Mode/identity`` baseline acts on that domain). To keep
+    /// the derived parameters in step with how they are applied, the derivation runs
+    /// over the same domain: the single-channel `detectionImage` (in scaled-linear
+    /// units) is divided by `fullScale` into `[0, 1]`, clamped by identity
+    /// normalization, then reduced to a uniform STF — exactly what the inspector's
+    /// "Auto" action produces, so opening and clicking Auto agree. Per-channel
+    /// balancing stays available by hand in the Screen Transfer editor.
+    ///
+    /// - Parameters:
+    ///   - detectionImage: The image's single-channel linear detection buffer, or
+    ///                     `nil` when none could be built.
+    ///   - fullScale:      The format's full-scale maximum, used to bring the
+    ///                     detection samples into `[0, 1]`. Must be positive.
+    /// - Returns: The `{ normalize: .identity, stretch: <auto STF> }` baseline, or
+    ///   `nil` when no detection image is available, the full scale is not positive,
+    ///   or the derivation fails.
+    static func autoStretchBaseline( detectionImage: PixelBuffer?, fullScale: Double ) -> Settings?
+    {
+        guard let buffer = detectionImage, buffer.pixels.isEmpty == false, fullScale > 0
+        else
+        {
+            return nil
+        }
+
+        let scaled = buffer.pixels.map { $0 / fullScale }
+
+        guard let input   = try? PixelBuffer( width: buffer.width, height: buffer.height, channels: buffer.channels, pixels: scaled, isNormalized: false ),
+              let stretch = try? Processors.Stretch.STFParameters.computed( normalizing: input, using: .identity )
+        else
+        {
+            return nil
+        }
+
+        return Settings( normalize: .identity, stretch: stretch )
+    }
+
     /// Renders decoded samples through the configured pixel pipeline, independent
     /// of any source file format.
     ///

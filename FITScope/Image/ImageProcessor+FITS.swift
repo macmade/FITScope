@@ -137,8 +137,9 @@ public extension ImageProcessor
         let bayerPattern = try Self.bayerPattern( from: properties )
 
         let ( scale, offset ) = ImageProcessor.scaling( from: properties )
+        let fullScale         = Self.fullScaleScaling( scale: scale, offset: offset, bitsPerPixel: bitsPerPixel )
 
-        let config = settings.config( scale: scale, offset: offset, headerPattern: bayerPattern )
+        let config = settings.config( scale: fullScale.scale, offset: fullScale.offset, headerPattern: bayerPattern )
 
         return try Self.render( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel, config: config )
     }
@@ -305,7 +306,8 @@ public extension ImageProcessor
     {
         let planes            = try Self.rgbPlaneSamples( data: data, properties: properties, bitsPerPixel: bitsPerPixel )
         let ( scale, offset ) = ImageProcessor.scaling( from: properties )
-        let config            = settings.config( scale: scale, offset: offset, inputFormat: .rgb )
+        let fullScale         = Self.fullScaleScaling( scale: scale, offset: offset, bitsPerPixel: bitsPerPixel )
+        let config            = settings.config( scale: fullScale.scale, offset: fullScale.offset, inputFormat: .rgb )
 
         return try Self.render( planes: [ planes.red, planes.green, planes.blue ], width: planes.width, height: planes.height, bitsPerPixel: bitsPerPixel, config: config )
     }
@@ -634,5 +636,53 @@ public extension ImageProcessor
                  .float64: return nil
             @unknown default:        return nil
         }
+    }
+
+    /// The full-scale maximum of an image HDU, derived from its `BITPIX`, or `nil`
+    /// for a floating-point format or a missing / unsupported `BITPIX`.
+    ///
+    /// The auto-stretch-on-open path uses this to bring the scaled-linear detection
+    /// samples into the native full-scale `[0, 1]` domain the Screen Transfer is
+    /// applied in, matching the render configuration.
+    ///
+    /// - Parameter properties: The image HDU's header properties.
+    /// - Returns: The full-scale maximum, or `nil`.
+    static func fullScale( forImageHDU properties: [ FITSPropertySnapshot ] ) -> Double?
+    {
+        guard let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
+              let bitsPerPixel = BitsPerPixel.from( value: bitPix )
+        else
+        {
+            return nil
+        }
+
+        return Self.fullScale( for: bitsPerPixel )
+    }
+
+    /// Folds the format's full scale into the affine `BSCALE`/`BZERO` scaling, so
+    /// integer samples render in their native full-scale `[0, 1]` domain — the same
+    /// `1 / fullScale` scaling the XISF path applies.
+    ///
+    /// A value `raw` renders as `(raw · scale + offset) / fullScale`, i.e.
+    /// `raw · (scale / fullScale) + (offset / fullScale)`. This is transparent to the
+    /// default min/max normalization (min/max is invariant under a positive affine
+    /// transform), while letting an ``Processors/Normalize/Mode/identity`` baseline —
+    /// used when opening with a Screen Transfer — act on the true full-scale domain.
+    /// Floating-point formats have no fixed full scale and pass through unchanged.
+    ///
+    /// - Parameters:
+    ///   - scale:        The multiplicative scale from `BSCALE`.
+    ///   - offset:       The additive offset from `BZERO`.
+    ///   - bitsPerPixel: The sample format.
+    /// - Returns: The full-scale-folded scale and offset.
+    private static func fullScaleScaling( scale: Double, offset: Double, bitsPerPixel: BitsPerPixel ) -> ( scale: Double, offset: Double )
+    {
+        guard let fullScale = Self.fullScale( for: bitsPerPixel ), fullScale > 0
+        else
+        {
+            return ( scale: scale, offset: offset )
+        }
+
+        return ( scale: scale / fullScale, offset: offset / fullScale )
     }
 }

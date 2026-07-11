@@ -143,10 +143,13 @@ public final class OpenFile: ObservableObject, Identifiable
 
     /// Creates an open file for the given URL, selecting the loader for its type.
     ///
-    /// - Parameter url: The source URL of the file.
-    public convenience init( url: URL )
+    /// - Parameters:
+    ///   - url:         The source URL of the file.
+    ///   - preferences: The shared preferences, read for the per-format auto-stretch
+    ///                  setting the loader applies; `nil` (the default) opens linear.
+    public convenience init( url: URL, preferences: Preferences? = nil )
     {
-        self.init( url: url, loader: ImageLoader.loader( for: url ) )
+        self.init( url: url, loader: ImageLoader.loader( for: url, preferences: preferences ) )
     }
 
     /// Creates an open file backed by a specific loader.

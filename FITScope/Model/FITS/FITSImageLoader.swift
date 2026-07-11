@@ -72,16 +72,23 @@ public class FITSImageLoader: ObservableObject, ImageLoading
     /// observers.
     private var imageObserver: AnyCancellable?
 
+    /// Whether each image frame opens with an auto Screen Transfer applied as its
+    /// baseline (the per-format "auto-stretch on open" preference for FITS).
+    private let autoStretch: Bool
+
     /// Creates a loader for the file at the given URL.
     ///
     /// - Parameters:
-    ///   - url:  The URL the file is (or will be) read from.
-    ///   - data: The file's raw bytes when already in memory; when `nil` (the
-    ///          default) the loader reads them from `url` on load.
-    public init( url: URL, data: Data? = nil )
+    ///   - url:         The URL the file is (or will be) read from.
+    ///   - data:        The file's raw bytes when already in memory; when `nil` (the
+    ///                 default) the loader reads them from `url` on load.
+    ///   - autoStretch: Whether to open each image frame with an auto Screen Transfer
+    ///                 as its baseline. Defaults to `false`.
+    public init( url: URL, data: Data? = nil, autoStretch: Bool = false )
     {
         self.url          = url
         self.providedData = data
+        self.autoStretch  = autoStretch
         self.image        = nil
     }
 
@@ -154,44 +161,55 @@ public class FITSImageLoader: ObservableObject, ImageLoading
                         let hdu         = try? FITSPreviewRenderer.imageHDU( from: file.sections )
                         let isRGBImage  = hdu.map { ImageProcessor.isRGBPlanes( properties: $0.properties ) } ?? false
 
-                        // One render source per frame. A multi-image NAXIS=3 cube
-                        // decodes into one 2-D source per plane (each becoming a
-                        // carousel frame); everything else — a 2-D image, an RGB cube,
-                        // a graph, or an unsupported geometry — is a single source.
-                        let frameSources: [ Swift.Result< any ImageRenderSource, any Swift.Error > ]
+                        // One render source per frame, each paired with the baseline it
+                        // opens on (an auto Screen Transfer when the preference is on,
+                        // else linear). A multi-image NAXIS=3 cube decodes into one 2-D
+                        // source per plane (each becoming a carousel frame); everything
+                        // else — a 2-D image, an RGB cube, a graph, or an unsupported
+                        // geometry — is a single source.
+                        let frames: [ ( source: Swift.Result< any ImageRenderSource, any Swift.Error >, baseline: ImageProcessor.Settings ) ]
 
                         if graph == nil, let hdu, let planeSources = Self.multiImageFrameSources( forImageHDU: hdu )
                         {
-                            frameSources = planeSources.map { .success( $0 ) }
+                            let fullScale = ImageProcessor.fullScale( forImageHDU: hdu.properties )
+
+                            frames = planeSources.map
+                            {
+                                source in ( source: .success( source ), baseline: Self.baseline( detectionImage: source.detectionImage, fullScale: fullScale, autoStretch: self.autoStretch ) )
+                            }
                         }
                         else
                         {
-                            frameSources =
-                                [
-                                    Swift.Result
-                                    {
-                                        () -> any ImageRenderSource in
+                            let source = Swift.Result
+                            {
+                                () -> any ImageRenderSource in
 
-                                        guard let hdu
-                                        else
-                                        {
-                                            throw RuntimeError( message: "FITS file contains no image HDU" )
-                                        }
+                                guard let hdu
+                                else
+                                {
+                                    throw RuntimeError( message: "FITS file contains no image HDU" )
+                                }
 
-                                        // Build the detection-ready buffer here, while
-                                        // the non-Sendable file is still in scope; only
-                                        // the Sendable PixelBuffer crosses back. A decode
-                                        // failure must not fail the load, so detection is
-                                        // best-effort. A graph is never rendered and has
-                                        // no detection image.
-                                        let detectionImage = graph == nil ? Self.detectionImage( forImageHDU: hdu, file: file ) : nil
+                                // Build the detection-ready buffer here, while
+                                // the non-Sendable file is still in scope; only
+                                // the Sendable PixelBuffer crosses back. A decode
+                                // failure must not fail the load, so detection is
+                                // best-effort. A graph is never rendered and has
+                                // no detection image.
+                                let detectionImage = graph == nil ? Self.detectionImage( forImageHDU: hdu, file: file ) : nil
 
-                                        return FITSRenderSource( data: hdu.data, properties: hdu.properties, detectionImage: detectionImage )
-                                    },
-                                ]
+                                return FITSRenderSource( data: hdu.data, properties: hdu.properties, detectionImage: detectionImage )
+                            }
+
+                            // A graph is never rendered, so it keeps the default linear
+                            // baseline; an image derives its auto Screen Transfer from the
+                            // detection image, off the main actor, when enabled.
+                            let baseline = graph == nil ? Self.baseline( detectionImage: ( try? source.get() )?.detectionImage, fullScale: hdu.flatMap { ImageProcessor.fullScale( forImageHDU: $0.properties ) }, autoStretch: self.autoStretch ) : ImageProcessor.Settings()
+
+                            frames = [ ( source: source, baseline: baseline ) ]
                         }
 
-                        continuation.resume( returning: ( info: info, frameSources: frameSources, graph: graph, isRGBImage: isRGBImage ) )
+                        continuation.resume( returning: ( info: info, frames: frames, graph: graph, isRGBImage: isRGBImage ) )
                     }
                     catch
                     {
@@ -206,11 +224,11 @@ public class FITSImageLoader: ObservableObject, ImageLoading
                 // they share the file's metadata (a cube has one header). The primary
                 // frame is the first, and the loader forwards only its changes — the
                 // owning OpenFile observes the selected frame separately.
-                let frames = result.frameSources.map
+                let frames = result.frames.map
                 {
-                    sourceResult -> LoadedImage in
+                    frame -> LoadedImage in
 
-                    let renderer = ImageRenderer( source: sourceResult )
+                    let renderer = ImageRenderer( source: frame.source, defaults: frame.baseline )
 
                     return LoadedImage( info: result.info, graph: result.graph, isRGBImage: result.isRGBImage, renderer: renderer )
                 }
@@ -232,6 +250,35 @@ public class FITSImageLoader: ObservableObject, ImageLoading
             self.error         = error
             self.imageObserver = nil
         }
+    }
+
+    /// The baseline an image frame opens on.
+    ///
+    /// When the auto-stretch-on-open preference is on and the format has a known full
+    /// scale (an integer `BITPIX`), an auto Screen Transfer is derived from the
+    /// detection image — in the native full-scale `[0, 1]` domain the render scales
+    /// the samples into — and seeded as the baseline, so the frame opens stretched
+    /// with the parameters pre-filled and editable in the inspector. Otherwise the
+    /// frame opens on the default linear (min/max) baseline; a floating-point frame,
+    /// which has no fixed full scale, always opens linear.
+    ///
+    /// - Parameters:
+    ///   - detectionImage: The frame's single-channel linear detection buffer.
+    ///   - fullScale:      The format's full-scale maximum, or `nil` for a
+    ///                     floating-point / unknown format.
+    ///   - autoStretch:    Whether auto-stretch on open is enabled.
+    /// - Returns: The baseline settings to open the frame with.
+    private nonisolated static func baseline( detectionImage: PixelBuffer?, fullScale: Double?, autoStretch: Bool ) -> ImageProcessor.Settings
+    {
+        guard autoStretch,
+              let fullScale,
+              let baseline = ImageProcessor.autoStretchBaseline( detectionImage: detectionImage, fullScale: fullScale )
+        else
+        {
+            return ImageProcessor.Settings()
+        }
+
+        return baseline
     }
 
     /// Decodes an image HDU into a graph series when it is graph data rather than a

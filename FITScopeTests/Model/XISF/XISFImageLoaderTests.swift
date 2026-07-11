@@ -409,6 +409,63 @@ struct XISFImageLoaderTests
         #expect( loaded.renderer.adjustments.stretch == nil )
     }
 
+    /// With auto-stretch on and no display function, the image opens with an auto
+    /// Screen Transfer seeded over identity normalization — the full-scale domain —
+    /// and reports no adjustments over its own baseline.
+    @Test
+    @MainActor
+    func opensWithAutoStretchWhenEnabledAndNoDisplayFunction() async throws
+    {
+        let image  = Self.grayscale( width: 4, height: 4 )
+        let loader = XISFImageLoader( url: self.url, data: XISFTestData.file( images: [ image ] ), autoStretch: true )
+
+        await loader.load()
+
+        let loaded      = try #require( loader.image )
+        let adjustments = loaded.renderer.adjustments
+
+        #expect( adjustments.baseline.stretch   != nil )
+        #expect( adjustments.baseline.normalize == .identity )
+        #expect( adjustments.hasAdjustments == false )
+        #expect( adjustments.isModified( \.stretch ) == false )
+    }
+
+    /// A stored display function takes priority over auto-stretch: with both a
+    /// display function present and auto-stretch on, the image opens with the display
+    /// function's stretch, not an auto-derived one.
+    @Test
+    @MainActor
+    func displayFunctionWinsOverAutoStretch() async throws
+    {
+        let hex    = XISFTestData.hex( XISFTestData.uInt16LE( Array( 0 ..< 16 ).map { $0 * 10 } ) )
+        let image  = XISFTestData.Image( geometry: "4:4:1", sampleFormat: "UInt16", colorSpace: "Gray", displayFunction: ( m: "0.25:0.25:0.25:0.25", s: "0.1:0.1:0.1:0.1", h: "0.9:0.9:0.9:0.9", l: "0:0:0:0", r: "1:1:1:1" ), hexData: hex )
+        let loader = XISFImageLoader( url: self.url, data: XISFTestData.file( images: [ image ] ), autoStretch: true )
+
+        await loader.load()
+
+        let loaded   = try #require( loader.image )
+        let expected = Processors.Stretch.STFParameters.uniform( .init( shadows: 0.1, midtones: 0.25, highlights: 0.9, low: 0, high: 1 ) )
+
+        #expect( loaded.renderer.adjustments.baseline.stretch == expected )
+    }
+
+    /// With auto-stretch off and no display function, the image opens linear on the
+    /// default min/max baseline, with no stretch.
+    @Test
+    @MainActor
+    func opensLinearWhenAutoStretchDisabledAndNoDisplayFunction() async throws
+    {
+        let image  = Self.grayscale( width: 4, height: 4 )
+        let loader = XISFImageLoader( url: self.url, data: XISFTestData.file( images: [ image ] ) )
+
+        await loader.load()
+
+        let loaded = try #require( loader.image )
+
+        #expect( loaded.renderer.adjustments.baseline.stretch   == nil )
+        #expect( loaded.renderer.adjustments.baseline.normalize == .minMax )
+    }
+
     /// A grayscale test image of the given size, filled with a simple ramp.
     private static func grayscale( width: Int, height: Int ) -> XISFTestData.Image
     {

@@ -137,6 +137,38 @@ struct ImageProcessorRAWTests
         }
     }
 
+    /// With identity normalization, sensor counts render in their native full-scale
+    /// `[0, 1]` domain — a mid-scale value renders as mid-grey, not clamped to white.
+    /// This confirms the `1 / whiteLevel` scaling the config applies, matching the
+    /// domain an auto Screen Transfer is authored in.
+    @Test
+    func rendersSamplesInFullScaleDomainUnderIdentity() throws
+    {
+        let samples    = [ UInt16 ]( [ 0, 32768, 65535, 32768 ] )
+        let properties = RAWImageProperties( width: 2, height: 2, colorFilterArrayPattern: nil, whiteLevel: 65535 )
+        let result     = try ImageProcessor.render( data: Self.data( samples ), raw: properties, settings: ImageProcessor.Settings( normalize: .identity ) )
+
+        // Under the old scale-1 behaviour, identity would clamp 32768 to 1.0 (white);
+        // the full-scale scaling instead maps it to ~0.5, so a mid-grey byte appears.
+        #expect( result.bytes.contains { $0 > 0 && $0 < 200 } )
+    }
+
+    /// Min/max normalization is unaffected by the full-scale scaling (min/max is
+    /// scale-invariant): a sensor-count ramp still spans black to white with the
+    /// interior values in between, exactly as before the scaling was applied.
+    @Test
+    func minMaxRenderingIsUnchangedByFullScaleScaling() throws
+    {
+        let samples    = [ UInt16 ]( [ 10, 20, 30, 40 ] )
+        let properties = RAWImageProperties( width: 2, height: 2, colorFilterArrayPattern: nil, whiteLevel: 65535 )
+        let result     = try ImageProcessor.render( data: Self.data( samples ), raw: properties )
+
+        // 10 → 0, 40 → 255, and the interior 20/30 map to (value − 10) / 30, i.e.
+        // ~85 and ~170 — the same result the raw samples produced before scaling.
+        #expect( result.bytes.contains { ( 80 ... 90 ).contains( $0 ) } )
+        #expect( result.bytes.contains { ( 165 ... 175 ).contains( $0 ) } )
+    }
+
     /// An unrecognized colour-filter-array pattern is rejected at render.
     @Test
     func rejectsUnsupportedPattern() throws

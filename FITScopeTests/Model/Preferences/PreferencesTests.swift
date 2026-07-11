@@ -468,6 +468,7 @@ struct PreferencesTests
         let reloaded = Preferences( defaults: defaults, sharedDefaults: shared )
 
         #expect( reloaded.autoStretchOnOpenFITS == false )
+        #expect( AutoStretchPreference.autoStretchOnOpen( .fits, in: defaults ) == false, "the loader helper should read the app-only value" )
         #expect( shared.object( forKey: AutoStretchPreference.onOpenKey( .fits ) ) == nil, "on-open must not go to the shared suite" )
     }
 
@@ -512,6 +513,21 @@ struct PreferencesTests
         #expect( AutoStretchPreference.autoStretchPreviews( .fits, in: shared ) )
         #expect( AutoStretchPreference.autoStretchPreviews( .xisf, in: shared ) )
         #expect( AutoStretchPreference.autoStretchPreviews( .raw, in: shared ) )
+    }
+
+    /// The on-open helper defaults to on when nothing is stored, so a fresh install
+    /// opens astro images stretched until the user opts out.
+    @Test
+    @MainActor
+    func onOpenHelperDefaultsToOn()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        #expect( AutoStretchPreference.autoStretchOnOpen( .fits, in: defaults ) )
+        #expect( AutoStretchPreference.autoStretchOnOpen( .xisf, in: defaults ) )
+        #expect( AutoStretchPreference.autoStretchOnOpen( .raw, in: defaults ) )
     }
 
     /// Writes a raw `infoPanelFields` payload — `(fieldRawValue, visible)` pairs,

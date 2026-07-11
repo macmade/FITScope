@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftPixel
 import Testing
 
 /// Tests that ``RAWImageLoader`` opens a camera RAW file into the format-neutral
@@ -41,6 +42,42 @@ struct RAWImageLoaderTests
         let loader = ImageLoader.loader( for: TestFixtures.cameraRAW )
 
         #expect( loader is RAWImageLoader )
+    }
+
+    /// With auto-stretch on, the RAW image opens with an auto Screen Transfer seeded
+    /// over identity normalization — the full-scale domain the sensor counts are
+    /// scaled into — and reports no adjustments over its own baseline.
+    @Test
+    @MainActor
+    func opensWithAutoStretchWhenEnabled() async throws
+    {
+        let loader = RAWImageLoader( url: TestFixtures.cameraRAW, autoStretch: true )
+
+        await loader.load()
+
+        let image       = try #require( loader.image )
+        let adjustments = image.renderer.adjustments
+
+        #expect( adjustments.baseline.stretch   != nil )
+        #expect( adjustments.baseline.normalize == .identity )
+        #expect( adjustments.hasAdjustments == false )
+        #expect( adjustments.isModified( \.stretch ) == false )
+    }
+
+    /// With auto-stretch off, the RAW image opens linear on the default min/max
+    /// baseline, with no stretch.
+    @Test
+    @MainActor
+    func opensLinearWhenAutoStretchDisabled() async throws
+    {
+        let loader = RAWImageLoader( url: TestFixtures.cameraRAW )
+
+        await loader.load()
+
+        let image = try #require( loader.image )
+
+        #expect( image.renderer.adjustments.baseline.stretch   == nil )
+        #expect( image.renderer.adjustments.baseline.normalize == .minMax )
     }
 
     /// The bundled Canon CR3 loads as a single colour-filter-array frame, debayers to

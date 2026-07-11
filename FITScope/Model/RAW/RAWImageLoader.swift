@@ -68,16 +68,23 @@ public class RAWImageLoader: ObservableObject, ImageLoading
     /// Forwards the loaded image's change notifications to this object's observers.
     private var imageObserver: AnyCancellable?
 
+    /// Whether the image opens with an auto Screen Transfer applied as its baseline
+    /// (the per-format "auto-stretch on open" preference for RAW).
+    private let autoStretch: Bool
+
     /// Creates a loader for the file at the given URL.
     ///
     /// - Parameters:
-    ///   - url:  The URL the file is (or will be) read from.
-    ///   - data: The file's raw bytes when already in memory; when `nil` (the
-    ///          default) the loader reads them from `url` on load.
-    public init( url: URL, data: Data? = nil )
+    ///   - url:         The URL the file is (or will be) read from.
+    ///   - data:        The file's raw bytes when already in memory; when `nil` (the
+    ///                 default) the loader reads them from `url` on load.
+    ///   - autoStretch: Whether to open the image with an auto Screen Transfer as its
+    ///                 baseline. Defaults to `false`.
+    public init( url: URL, data: Data? = nil, autoStretch: Bool = false )
     {
         self.url          = url
         self.providedData = data
+        self.autoStretch  = autoStretch
         self.image        = nil
     }
 
@@ -97,7 +104,7 @@ public class RAWImageLoader: ObservableObject, ImageLoading
         {
             let frame = try await withCheckedThrowingContinuation
             {
-                ( continuation: CheckedContinuation< ( info: RAWImageInfo, source: Swift.Result< any ImageRenderSource, any Swift.Error > ), any Swift.Error > ) in DispatchQueue.global( qos: .userInitiated ).async
+                ( continuation: CheckedContinuation< ( info: RAWImageInfo, source: Swift.Result< any ImageRenderSource, any Swift.Error >, baseline: ImageProcessor.Settings ), any Swift.Error > ) in DispatchQueue.global( qos: .userInitiated ).async
                 {
                     do
                     {
@@ -138,7 +145,12 @@ public class RAWImageLoader: ObservableObject, ImageLoading
                             try Self.renderSource( file: file, info: info )
                         }
 
-                        continuation.resume( returning: ( info: info, source: source ) )
+                        // The baseline the image opens on: an auto Screen Transfer when
+                        // the preference is on, else the default linear baseline. Derived
+                        // here, off the main actor, from the source's detection image.
+                        let baseline = Self.baseline( for: info, detectionImage: ( try? source.get() )?.detectionImage, autoStretch: self.autoStretch )
+
+                        continuation.resume( returning: ( info: info, source: source, baseline: baseline ) )
                     }
                     catch
                     {
@@ -149,7 +161,7 @@ public class RAWImageLoader: ObservableObject, ImageLoading
 
             await MainActor.run
             {
-                let renderer = ImageRenderer( source: frame.source )
+                let renderer = ImageRenderer( source: frame.source, defaults: frame.baseline )
                 let loaded   = LoadedImage( rawInfo: frame.info, renderer: renderer )
 
                 self.image         = loaded
@@ -166,6 +178,33 @@ public class RAWImageLoader: ObservableObject, ImageLoading
             self.error         = error
             self.imageObserver = nil
         }
+    }
+
+    /// The baseline settings a RAW image opens on.
+    ///
+    /// When the auto-stretch-on-open preference is on and the sensor reports a white
+    /// level, an auto Screen Transfer is derived from the detection image — in the
+    /// native full-scale `[0, 1]` domain the render scales the sensor counts into —
+    /// and seeded as the baseline, so the image opens stretched and the parameters
+    /// are pre-filled and editable in the inspector. Otherwise the image opens on the
+    /// default linear (min/max) baseline.
+    ///
+    /// - Parameters:
+    ///   - info:           The image's metadata snapshot.
+    ///   - detectionImage: The image's single-channel linear detection buffer.
+    ///   - autoStretch:    Whether auto-stretch on open is enabled.
+    /// - Returns: The baseline settings to open the image with.
+    private nonisolated static func baseline( for info: RAWImageInfo, detectionImage: PixelBuffer?, autoStretch: Bool ) -> ImageProcessor.Settings
+    {
+        guard autoStretch,
+              let whiteLevel = info.imageProperties.whiteLevel,
+              let baseline   = ImageProcessor.autoStretchBaseline( detectionImage: detectionImage, fullScale: whiteLevel )
+        else
+        {
+            return ImageProcessor.Settings()
+        }
+
+        return baseline
     }
 
     /// Builds the render source for an unpacked RAW file: crops the sensor's 16-bit

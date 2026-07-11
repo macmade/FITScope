@@ -1081,7 +1081,7 @@
             <div class="milestone-head">
                 <span class="mnum">6</span>
                 <h3>Apply auto-STF on open (fallback)</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Design decisions (maintainer)</div>
             <div class="notes">
@@ -1148,15 +1148,110 @@
             <div class="field-label">Dependencies</div>
             <p class="deps"><strong>Milestones 1, 3, 4 &amp; 5</strong>.</p>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">—</p>
+            <p>2026-07-11</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Approach.</strong> TDD: the render-config and loader tests were written first and
+                        watched to fail, then implemented to green. Final state: <strong>all 675 FITScopeTests pass</strong>
+                        (17 new); the app and both sandboxed extensions build; no <code>FITScope.xcodeproj</code> /
+                        <code>SwiftPixel.xcodeproj</code> changes were needed (no files added or removed).</li>
+                    <li><strong>Uniform auto-STF (maintainer decision — deviates from the plan's per-channel intent).</strong>
+                        The plan's M2 note assumed M6 "has that [post-debayer RGB] buffer in hand"; reading the code, it does
+                        not — each loader retains a <em>single-channel luminance</em> <code>detectionImage</code> (a CFA frame
+                        is demosaiced <em>to grayscale</em>) plus the raw planes/mosaic, while the post-debayer RGB buffer
+                        exists only transiently inside the pipeline at render time. A faithful per-channel Auto would need a
+                        new SwiftPixel pass to expose that buffer. The maintainer chose to derive the <strong>uniform</strong>
+                        STF instead — exactly what the inspector's existing "Auto" button produces — so opening and clicking
+                        Auto agree; per-channel balancing stays a manual choice in the Screen Transfer editor. Implemented as
+                        a new <code>ImageProcessor.autoStretchBaseline(detectionImage:fullScale:)</code>: it scales the
+                        detection buffer by <code>1 / fullScale</code> into the full-scale <code>[0, 1]</code> domain,
+                        derives via <code>STFParameters.computed(normalizing:using:.identity)</code> (1-channel → uniform),
+                        and returns <code>{ normalize: .identity, stretch: &lt;uniform STF&gt; }</code>.</li>
+                    <li><strong>Full-scale scaling for FITS &amp; RAW (mirrors M4's XISF change).</strong> The FITS render
+                        config now folds <code>1 / fullScale</code> into the <code>BSCALE</code>/<code>BZERO</code> affine
+                        (<code>scale / fullScale</code>, <code>offset / fullScale</code>) at both config sites — the 2-D image
+                        path (also used by each cube plane) and the RGB-planes path; a floating-point <code>BITPIX</code>
+                        (no fixed full scale) passes through unchanged. RAW uses <code>1 / whiteLevel</code> (a sensor with no
+                        white level passes through). This is <strong>transparent to the default min/max path</strong> (min/max
+                        is invariant under a positive affine transform) — proven by inspection and locked by new
+                        transparency tests for both formats. Added <code>ImageProcessor.fullScale(forImageHDU:)</code> (FITS)
+                        and made <code>xisfFullScale</code> internal so the loaders can bring the detection samples into the
+                        same domain the render applies the STF in.</li>
+                    <li><strong>Priority &amp; scoping.</strong> XISF keeps the M4 rule: a usable display function wins; the
+                        auto-STF is only the fallback. Auto-STF applies <strong>only for a known integer full scale</strong> —
+                        a floating-point FITS/XISF or a RAW with no white level opens on the default linear (min/max) baseline
+                        (still visible), a deliberate choice that sidesteps the float-<code>[0, 1]</code>-clamp ambiguity.</li>
+                    <li><strong>Off the main actor.</strong> The <code>O(n log n)</code> derivation runs inside each loader's
+                        existing background <code>DispatchQueue.global</code> work (the <code>baseline(…)</code> helpers are
+                        <code>nonisolated</code>); only the resolved <code>Bool</code> crosses in (<code>self.autoStretch</code>,
+                        an immutable <code>Sendable</code> <code>let</code>, exactly like the pre-existing <code>self.url</code>).
+                        The detection image is read from the eagerly-built render source, never decoded twice.</li>
+                    <li><strong>Preference plumbing.</strong> The per-format on-open <code>Bool</code> is resolved in
+                        <code>ImageLoader.loader(for:preferences:)</code> from the injected <code>Preferences</code> and handed
+                        to each loader's new <code>autoStretch</code> init parameter (default <code>false</code>, so existing
+                        direct constructions and test/preview paths are unchanged). <code>WindowModel</code> gained a
+                        <code>preferences</code> reference, set by <code>MainWindowView</code> in <code>.onAppear</code> before
+                        any file opens; a <code>nil</code> preferences opens every format linear.</li>
+                    <li><strong>Verification of the two "check" tasks.</strong> <em>Star detection</em> is unaffected: it runs
+                        over the independently-built <code>detectionImage</code> (raw luminance, min/max-normalized internally),
+                        not the render config. <em>Brightness/contrast</em> need no slider-range change: the pipeline runs them
+                        <em>after</em> normalize, on the already-normalized <code>[0, 1]</code> buffer (the pre-stretch group),
+                        so their input domain is <code>[0, 1]</code> regardless of the scale change (the change is observable
+                        only under <code>.identity</code>, where min/max is not recomputed).</li>
+                    <li><strong>Tests.</strong> FITS &amp; RAW full-scale-under-identity and min/max transparency; per-format
+                        on/off loader baselines (FITS/XISF/RAW); XISF display-function-wins-over-auto-STF; float-FITS-opens-linear;
+                        <code>autoStretchBaseline</code> uniform-over-identity and the nil guards (no detection image /
+                        non-positive full scale); the <code>autoStretchOnOpen</code> preference helper default + read; and an
+                        end-to-end factory preference-resolution test.</li>
+                    <li><strong>Review fix (F1, Low).</strong> Routed <code>Preferences.init</code>'s on-open seeding through
+                        the new <code>AutoStretchPreference.autoStretchOnOpen(_:in:)</code> helper (a single source of truth for
+                        the default, matching how the previews flags already read theirs) and corrected the helper's doc.</li>
+                    <li><strong>Automated review loop.</strong> One round: a fresh-context reviewer cold-read the full diff and
+                        reported <strong>no Critical / High / Medium findings</strong> — the loop converged in one round. One
+                        Low finding fixed, two Info deferred (below).</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>F1 — Misleading doc + duplicated on-open default</strong> · <em>Low</em> · Documentation /
+                        maintainability · <code>AutoStretchPreference.autoStretchOnOpen(_:in:)</code>. The helper's doc called
+                        it "the entry point the image loaders use," but the loaders resolve the setting via
+                        <code>Preferences</code>' published flags, and <code>Preferences.init</code> seeded those with a
+                        <em>duplicated</em> <code>?? true</code> default (while the previews flags already route through their
+                        helper). <strong>Resolution: Fixed</strong> — <code>Preferences.init</code> now seeds the on-open flags
+                        through the helper (single source of truth) and the doc was corrected.</li>
+                    <li><strong>F2 — <code>MainWindowView</code> sets <code>model.preferences</code> in
+                        <code>.onAppear</code></strong> · <em>Info</em> · Robustness. All open paths funnel through
+                        <code>WindowModel.open</code>, which reads the reference set on appear; the initial-URL open is deferred
+                        a run-loop turn, and later opens happen after appearance. The only theoretical gap (an open before
+                        <code>onAppear</code>) falls back to <code>nil ⇒ auto-off</code> (opens linear, no crash), and it mirrors
+                        the existing <code>onFileClosed</code> setup. <strong>Resolution: Deferred</strong> (no action needed).</li>
+                    <li><strong>F3 — "Uniform STF" relies on single-channel detection images</strong> · <em>Info</em> · Design
+                        invariant · <code>ImageProcessor.autoStretchBaseline</code>. It builds its buffer with
+                        <code>channels: buffer.channels</code>, so a 3-channel detection image would silently produce a
+                        per-channel STF. Every detection image is single-channel luminance by construction, so this holds today.
+                        <strong>Resolution: Deferred</strong> — could be pinned with an explicit single-channel assertion if
+                        wanted.</li>
+                    <li>The reviewer also verified (not defects): the full-scale folding is consistent across every render path
+                        and its matching detection image (FITS 2-D/RGB/cube, RAW, XISF); min/max rendering is genuinely unchanged
+                        (order-preserving affine); the cursor read-outs are untouched (they use the un-folded scaling); the seeded
+                        STF can never throw at apply (it satisfies <code>Channel.validate()</code>); the M4 display function still
+                        wins over auto-stretch; concurrency is safe (derivation off-main, only the <code>Bool</code> crosses, no
+                        double decode); graph FITS stays linear; all open paths flow through the preferences plumbing; and the
+                        preview/thumbnail extensions still render min/max (unchanged by the folding).</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting human review.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Approved.</strong> The maintainer reviewed the work ("Looks good") with no change requests; the
+                        two Info findings (F2, F3) were left as deferred.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- M7 -->

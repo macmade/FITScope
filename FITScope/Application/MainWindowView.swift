@@ -246,6 +246,13 @@ public struct MainWindowView: View
         }
         .onAppear
         {
+            // Hand the window model the shared preferences before any file opens, so
+            // each opened file reads the current per-format auto-stretch-on-open
+            // setting. The reference is stable, so setting it once suffices; the
+            // stored `preferences` is read (not observed), so this has no view-update
+            // side effect.
+            self.model.preferences = self.preferences
+
             // When a file is closed, end every frame's solve and dismiss each frame's
             // results window, so none is left behind referencing a no-longer-open
             // file. `endPlateSolve` returns the ended frames' targets to dismiss.

@@ -70,15 +70,23 @@ public extension ImageProcessor
     /// - Throws: ``RuntimeError`` for an unsupported colour-filter-array pattern.
     private static func rawImageConfig( properties: RAWImageProperties, settings: Settings ) throws -> PixelPipeline.Config
     {
+        // Scale the raw sensor counts into the native full-scale [0, 1] domain by
+        // their white level (e.g. 1 / 16383 for a 14-bit sensor), mirroring the XISF
+        // 1 / fullScale scaling. This is transparent to the default min/max path
+        // (min/max is scale-invariant), while letting an identity baseline — used
+        // when opening with an auto Screen Transfer — act on that full-scale domain.
+        // A sensor with no reported white level passes through unscaled.
+        let scale = properties.whiteLevel.map { $0 > 0 ? 1 / $0 : 1 } ?? 1
+
         guard let cfaPattern = properties.colorFilterArrayPattern
         else
         {
-            return settings.config( scale: 1, offset: 0, inputFormat: .mono )
+            return settings.config( scale: scale, offset: 0, inputFormat: .mono )
         }
 
         let bayer = try ImageProcessor.debayerPattern( named: cfaPattern )
 
-        return settings.config( scale: 1, offset: 0, headerPattern: bayer )
+        return settings.config( scale: scale, offset: 0, headerPattern: bayer )
     }
 
     /// Decodes a RAW image's cropped mosaic into a single plane of raw sample values.

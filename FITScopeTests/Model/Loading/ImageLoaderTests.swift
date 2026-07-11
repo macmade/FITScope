@@ -66,4 +66,41 @@ struct ImageLoaderTests
         #expect( loader.image == nil, "an unsupported file must not produce an image" )
         #expect( loader.error != nil, "an unsupported file must surface an error" )
     }
+
+    /// The factory resolves the per-format auto-stretch-on-open preference and hands
+    /// it to the loader: with the FITS preference on, the file opens with an auto
+    /// Screen Transfer baseline; with it off, it opens linear.
+    @Test
+    @MainActor
+    func factoryResolvesAutoStretchPreference() async throws
+    {
+        let suiteName    = "FITScopeTests.ImageLoader.\( UUID().uuidString )"
+        let defaults     = try #require( UserDefaults( suiteName: suiteName ) )
+        let sharedName   = "FITScopeTests.ImageLoader.\( UUID().uuidString )"
+        let shared       = try #require( UserDefaults( suiteName: sharedName ) )
+
+        defer
+        {
+            defaults.removePersistentDomain( forName: suiteName )
+            shared.removePersistentDomain( forName: sharedName )
+        }
+
+        let preferences = Preferences( defaults: defaults, sharedDefaults: shared )
+
+        preferences.autoStretchOnOpenFITS = true
+
+        let onLoader = ImageLoader.loader( for: TestFixtures.colorImage, preferences: preferences )
+
+        await onLoader.load()
+
+        #expect( try #require( onLoader.image ).renderer.adjustments.baseline.stretch != nil, "with the preference on, the file must open with an auto Screen Transfer" )
+
+        preferences.autoStretchOnOpenFITS = false
+
+        let offLoader = ImageLoader.loader( for: TestFixtures.colorImage, preferences: preferences )
+
+        await offLoader.load()
+
+        #expect( try #require( offLoader.image ).renderer.adjustments.baseline.stretch == nil, "with the preference off, the file must open linear" )
+    }
 }

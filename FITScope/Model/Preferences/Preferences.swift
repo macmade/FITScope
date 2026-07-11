@@ -257,9 +257,9 @@ public final class Preferences: ObservableObject
         self.overlayAppearances      = Self.decodeOverlayAppearances( defaults.data( forKey: Key.overlayAppearances ) )
         self.weightFormula           = defaults.string( forKey: Key.weightFormula ) ?? WeightFormula.defaultExpression
         self.mainWindowSize          = Self.decodeMainWindowSize( from: defaults )
-        self.autoStretchOnOpenFITS   = ( defaults.object( forKey: AutoStretchPreference.onOpenKey( .fits ) ) as? Bool ) ?? true
-        self.autoStretchOnOpenXISF   = ( defaults.object( forKey: AutoStretchPreference.onOpenKey( .xisf ) ) as? Bool ) ?? true
-        self.autoStretchOnOpenRAW    = ( defaults.object( forKey: AutoStretchPreference.onOpenKey( .raw ) ) as? Bool ) ?? true
+        self.autoStretchOnOpenFITS   = AutoStretchPreference.autoStretchOnOpen( .fits, in: defaults )
+        self.autoStretchOnOpenXISF   = AutoStretchPreference.autoStretchOnOpen( .xisf, in: defaults )
+        self.autoStretchOnOpenRAW    = AutoStretchPreference.autoStretchOnOpen( .raw, in: defaults )
         self.autoStretchPreviewsFITS = AutoStretchPreference.autoStretchPreviews( .fits, in: sharedDefaults )
         self.autoStretchPreviewsXISF = AutoStretchPreference.autoStretchPreviews( .xisf, in: sharedDefaults )
         self.autoStretchPreviewsRAW  = AutoStretchPreference.autoStretchPreviews( .raw, in: sharedDefaults )

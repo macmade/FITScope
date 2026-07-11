@@ -45,21 +45,29 @@ public enum ImageLoader
     ///
     /// As formats are added, each gains a case here keyed on its ``UTType``.
     ///
-    /// - Parameter url: The file to load.
+    /// The per-format auto-stretch-on-open preference is resolved here and handed to
+    /// the linear-format loaders (FITS / XISF / RAW), so an image opens with an auto
+    /// Screen Transfer when its preference is on. When no preferences are supplied
+    /// (e.g. a preview or a test), auto-stretch is off.
+    ///
+    /// - Parameters:
+    ///   - url:         The file to load.
+    ///   - preferences: The shared preferences, read for the per-format auto-stretch
+    ///                  setting; `nil` opens every format linear.
     /// - Returns: The loader for the file's type.
     @MainActor
-    public static func loader( for url: URL ) -> any ImageLoading
+    public static func loader( for url: URL, preferences: Preferences? = nil ) -> any ImageLoading
     {
         let type = UTType( filenameExtension: url.pathExtension )
 
         if type?.conforms( to: .fits ) == true
         {
-            return FITSImageLoader( url: url )
+            return FITSImageLoader( url: url, autoStretch: preferences?.autoStretchOnOpenFITS ?? false )
         }
 
         if type?.conforms( to: .xisf ) == true
         {
-            return XISFImageLoader( url: url )
+            return XISFImageLoader( url: url, autoStretch: preferences?.autoStretchOnOpenXISF ?? false )
         }
 
         // Camera RAW decodes through SwiftRAW (LibRAW) into a linear sensor mosaic.
@@ -67,7 +75,7 @@ public enum ImageLoader
         // `public.tiff`, and it must route to the RAW loader, not the ImageIO one.
         if type?.conforms( to: .rawImage ) == true
         {
-            return RAWImageLoader( url: url )
+            return RAWImageLoader( url: url, autoStretch: preferences?.autoStretchOnOpenRAW ?? false )
         }
 
         // The photographic formats decode through the same ImageIO path. HEIC is a

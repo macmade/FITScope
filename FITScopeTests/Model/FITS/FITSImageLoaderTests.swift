@@ -25,6 +25,7 @@
 @testable import FITScope
 import Foundation
 import SwiftFITS
+import SwiftPixel
 import Testing
 
 /// Tests for `FITSImageLoader`'s load lifecycle: a successful load is not
@@ -90,6 +91,58 @@ struct FITSImageLoaderTests
         let image = try #require( loader.image )
 
         #expect( image.metadata.sections.isEmpty == false, "the loaded image must carry parsed header info" )
+    }
+
+    /// With auto-stretch on, an integer-format image opens with an auto Screen
+    /// Transfer seeded over identity normalization — the full-scale domain — and
+    /// reports no adjustments over its own baseline.
+    @Test
+    @MainActor
+    func opensWithAutoStretchWhenEnabled() async throws
+    {
+        let loader = FITSImageLoader( url: TestFixtures.colorImage, autoStretch: true )
+
+        await loader.load()
+
+        let image       = try #require( loader.image )
+        let adjustments = image.renderer.adjustments
+
+        #expect( adjustments.baseline.stretch   != nil )
+        #expect( adjustments.baseline.normalize == .identity )
+        #expect( adjustments.hasAdjustments == false )
+        #expect( adjustments.isModified( \.stretch ) == false )
+    }
+
+    /// With auto-stretch off, the image opens linear on the default min/max
+    /// baseline, with no stretch.
+    @Test
+    @MainActor
+    func opensLinearWhenAutoStretchDisabled() async throws
+    {
+        let loader = FITSImageLoader( url: TestFixtures.colorImage )
+
+        await loader.load()
+
+        let image = try #require( loader.image )
+
+        #expect( image.renderer.adjustments.baseline.stretch   == nil )
+        #expect( image.renderer.adjustments.baseline.normalize == .minMax )
+    }
+
+    /// A floating-point image has no fixed full scale, so auto-stretch is skipped
+    /// even when enabled: the image opens linear on the min/max baseline.
+    @Test
+    @MainActor
+    func floatingPointImageOpensLinearEvenWithAutoStretch() async throws
+    {
+        let loader = FITSImageLoader( url: TestFixtures.monoImage, autoStretch: true )
+
+        await loader.load()
+
+        let image = try #require( loader.image )
+
+        #expect( image.renderer.adjustments.baseline.stretch   == nil )
+        #expect( image.renderer.adjustments.baseline.normalize == .minMax )
     }
 
     /// A failed load leaves no image, so the idempotency guard never

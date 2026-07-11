@@ -364,7 +364,7 @@ public extension ImageProcessor
     ///
     /// - Parameter sampleFormat: The sample format.
     /// - Returns: The maximum representable value, or `nil`.
-    private static func xisfFullScale( _ sampleFormat: XISFSampleFormat ) -> Double?
+    static func xisfFullScale( _ sampleFormat: XISFSampleFormat ) -> Double?
     {
         switch sampleFormat
         {

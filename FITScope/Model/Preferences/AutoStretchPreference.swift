@@ -73,6 +73,22 @@ public enum AutoStretchPreference
         "autoStretchPreviews.\( format.rawValue )"
     }
 
+    /// Whether a format's images should be auto-stretched on open, read from the
+    /// app-only store — the single source of truth for the on-open default, used to
+    /// seed ``Preferences`` (whose published flag the image loaders then read).
+    ///
+    /// Defaults to `true` when nothing has been stored, matching the app's default.
+    /// `object(forKey:)` distinguishes "never set" from a stored `false`.
+    ///
+    /// - Parameters:
+    ///   - format:   The format.
+    ///   - defaults: The app-only store to read from.
+    /// - Returns: Whether images of that format should be auto-stretched on open.
+    public static func autoStretchOnOpen( _ format: Format, in defaults: UserDefaults ) -> Bool
+    {
+        ( defaults.object( forKey: self.onOpenKey( format ) ) as? Bool ) ?? true
+    }
+
     /// Whether a format's previews should be auto-stretched, read from a shared
     /// suite — the entry point the sandboxed extensions use.
     ///
