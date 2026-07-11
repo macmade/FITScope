@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FITS Writing</title>
+    <title>Improvements</title>
     <style>
         :root {
             --bg:        #0f1117;
@@ -125,17 +125,12 @@
 <body>
     <div class="container">
         <header>
-            <h1>FITS Writing</h1>
+            <h1>Improvements</h1>
             <div class="meta">Generated 2026-07-11</div>
         </header>
 
         <p class="overview">
-            Items gathered around the upcoming FITS write capability in the
-            <code>SwiftFITS</code> submodule. Once FITScope can produce FITS
-            files rather than only read them, several parts of the app can be
-            improved — from a proper FITS export option, to smarter
-            plate-solving uploads, to simplifying the current XISF keyword
-            handling.
+            A collection of improvements for FITScope, gathered as they come up.
         </p>
 
         <h2>Backlog</h2>
@@ -180,6 +175,19 @@
                 particularly around padding. With the new <code>SwiftFITS</code>
                 write capabilities, this handling could be simplified and made
                 more robust.
+            </p>
+        </div>
+
+        <div class="item">
+            <div class="item-header">
+                <span class="item-number">4</span>
+                <h3>Show star measurement labels in the stars overlay</h3>
+            </div>
+            <p>
+                Display a measurement label next to each detected star in the
+                stars overlay. The metric should be selectable from the Overlay
+                preferences — <code>None</code>, <code>HFR</code>, or
+                <code>FWHM</code> — defaulting to <code>HFR</code>.
             </p>
         </div>
     </div>
