@@ -117,6 +117,28 @@ struct FITSImageLoaderTests
         #expect( adjustments.isModified( \.stretch ) )
     }
 
+    /// A colour (colour-filter-array) image opens with an unlinked, per-channel auto
+    /// Screen Transfer — each channel clipping only its own tail — rather than the
+    /// single linked stretch derived from luminance.
+    @Test
+    @MainActor
+    func opensColorImageWithPerChannelStretch() async throws
+    {
+        let loader = FITSImageLoader( url: TestFixtures.colorImage, autoStretch: true )
+
+        await loader.load()
+
+        let image = try #require( loader.image )
+
+        guard case .perChannel = try #require( image.renderer.adjustments.opened.stretch )
+        else
+        {
+            Issue.record( "a colour image must open with a per-channel Screen Transfer" )
+
+            return
+        }
+    }
+
     /// With auto-stretch off, the image opens linear on the unstretched min/max
     /// baseline, with no stretch.
     @Test

@@ -128,11 +128,11 @@ struct FITSPreviewRendererTests
         #expect( settings.normalize == .minMax )
     }
 
-    /// An RGB colour-planes image also auto-stretches when the preference is on,
-    /// exercising the RGB luminance branch (the planes are combined into luminance
-    /// before the derivation).
+    /// An RGB colour-planes image previews with a per-channel (unlinked) auto Screen
+    /// Transfer when the preference is on, and — crucially — the preview matches the
+    /// app: it derives from the same colour source over the same full-scale domain.
     @Test
-    func autoStretchesRGBPlanesWhenPreviewsPreferenceOn() throws
+    func autoStretchesRGBPlanesAsPerChannelMatchingTheApp() throws
     {
         let ( defaults, name ) = Self.isolatedSuite( fitsPreviews: true )
 
@@ -141,11 +141,25 @@ struct FITSPreviewRendererTests
         let file = try FITSFile( data: try Data( contentsOf: TestFixtures.rgbImage ), options: .lenient )
         let hdu  = try FITSPreviewRenderer.imageHDU( from: file.sections )
 
-        #expect( ImageProcessor.isRGBPlanes( properties: hdu.properties ), "the RGB fixture must take the RGB-planes luminance branch" )
+        #expect( ImageProcessor.isRGBPlanes( properties: hdu.properties ), "the RGB fixture must take the RGB-planes colour branch" )
 
         let settings = FITSPreviewRenderer.previewSettings( hdu: hdu, previewsDefaults: defaults )
 
-        #expect( settings.stretch   != nil )
         #expect( settings.normalize == .identity )
+
+        guard case .perChannel = try #require( settings.stretch )
+        else
+        {
+            Issue.record( "an RGB colour image must preview with a per-channel Screen Transfer" )
+
+            return
+        }
+
+        // Same colour source + same full-scale derivation the app opens with.
+        let fullScale   = try #require( ImageProcessor.fullScale( forImageHDU: hdu.properties ) )
+        let colorSource = try #require( ImageProcessor.autoStretchColorSource( forImageHDU: hdu.data, properties: hdu.properties ) )
+        let app         = try #require( ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale ) )
+
+        #expect( settings.stretch == app.stretch )
     }
 }

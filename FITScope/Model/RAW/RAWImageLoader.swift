@@ -150,8 +150,8 @@ public class RAWImageLoader: ObservableObject, ImageLoading
                         // The state the image opens in: an auto Screen Transfer when the
                         // preference is on, else `nil` (opens on the unstretched linear
                         // baseline). Derived here, off the main actor, from the source's
-                        // detection image.
-                        let opened = Self.openedSettings( for: info, detectionImage: ( try? source.get() )?.detectionImage, autoStretch: self.autoStretch )
+                        // per-channel colour input.
+                        let opened = Self.openedSettings( for: info, colorSource: ( try? source.get() )?.autoStretchColorSource, autoStretch: self.autoStretch )
 
                         continuation.resume( returning: ( info: info, source: source, opened: opened ) )
                     }
@@ -195,11 +195,13 @@ public class RAWImageLoader: ObservableObject, ImageLoading
     /// or the derivation fails.
     ///
     /// - Parameters:
-    ///   - info:           The image's metadata snapshot.
-    ///   - detectionImage: The image's single-channel linear detection buffer.
-    ///   - autoStretch:    Whether auto-stretch on open is enabled.
+    ///   - info:        The image's metadata snapshot.
+    ///   - colorSource: The image's per-channel colour input (a colour-filter-array
+    ///                  sensor derives a per-channel STF, a monochrome sensor a
+    ///                  uniform one).
+    ///   - autoStretch: Whether auto-stretch on open is enabled.
     /// - Returns: The opened settings, or `nil` to open on the unstretched baseline.
-    private nonisolated static func openedSettings( for info: RAWImageInfo, detectionImage: PixelBuffer?, autoStretch: Bool ) -> ImageProcessor.Settings?
+    private nonisolated static func openedSettings( for info: RAWImageInfo, colorSource: ImageProcessor.AutoStretchColorSource?, autoStretch: Bool ) -> ImageProcessor.Settings?
     {
         guard autoStretch, let whiteLevel = info.imageProperties.whiteLevel
         else
@@ -207,7 +209,7 @@ public class RAWImageLoader: ObservableObject, ImageLoading
             return nil
         }
 
-        return ImageProcessor.autoStretchSettings( detectionImage: detectionImage, fullScale: whiteLevel )
+        return ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: whiteLevel )
     }
 
     /// Builds the render source for an unpacked RAW file: crops the sensor's 16-bit

@@ -422,7 +422,7 @@
             <div class="milestone-head">
                 <span class="mnum">2</span>
                 <h3>Per-channel auto-STF on open &amp; in previews</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">Opening a colour image applies a per-channel auto-STF (each channel's own shadow clip); a mono
@@ -447,15 +447,93 @@
             <div class="field-label">Dependencies</div>
             <p class="deps"><strong>Milestone 1</strong>.</p>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">&mdash;</p>
+            <p>2026-07-11</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>One colour-input builder per format, reached through the source.</strong> Added
+                        <code>ImageProcessor.autoStretchColorSource(forImageHDU:properties:)</code> (FITS: RGB
+                        <code>NAXIS=3</code> → <code>.channels</code> from the three scaled-linear planes interleaved;
+                        <code>BAYERPAT</code> → <code>.mosaic</code>; else <code>nil</code>),
+                        <code>xisfAutoStretchColorSource(data:properties:)</code> (CFA → <code>.mosaic</code>,
+                        <code>colorSpace == .rgb</code> → <code>.channels</code>, else <code>nil</code>) and
+                        <code>rawAutoStretchColorSource(data:properties:)</code> (CFA sensor → <code>.mosaic</code>, else
+                        <code>nil</code>). Each returns <code>nil</code> for a mono / non-colour frame. The builders live in
+                        the format extensions so they reach the <code>private</code> plane readers.</li>
+                    <li><strong>Sources override the M1 hook.</strong> <code>FITSRenderSource</code> /
+                        <code>XISFRenderSource</code> / <code>RAWRenderSource</code> override
+                        <code>autoStretchColorSource</code> to call their builder, falling back to
+                        <code>.mono(detectionImage)</code>. Each loader's <code>openedSettings</code> swaps its
+                        <code>detectionImage:</code> argument for <code>colorSource: source.autoStretchColorSource</code>,
+                        leaving the <code>fullScale</code> plumbing untouched; the XISF stored-display-function branch is
+                        unchanged and still wins.</li>
+                    <li><strong>Previews match the app.</strong> The FITS and XISF preview renderers build the same colour
+                        source (falling back to <code>.mono</code> of their existing luminance), so a colour preview derives
+                        the same per-channel STF the app opens with — the XISF mosaic path uses the SwiftPixel deinterleave,
+                        so the QuickLook extension stays free of the demosaic dependency.</li>
+                    <li><strong>Behaviour preserved for mono.</strong> A colour source returns <code>nil</code> → the source
+                        falls back to <code>.mono(detectionImage)</code> → the shared derivation's <code>.mono</code> case
+                        delegates to the pre-existing <code>autoStretchSettings(detectionImage:)</code>, so mono open /
+                        preview is byte-identical; only colour frames change.</li>
+                    <li><strong>Supporting fix.</strong> <code>ImageProcessor.linearImage(data:properties:)</code> now trims
+                        FITS block padding (<code>data.prefix(size)</code>) before <code>readRawPixels</code> (which requires
+                        an exact byte count), matching <code>render</code> / <code>rgbPlaneSamples</code>. Without it a real
+                        (padded) CFA/mono HDU decoded to <code>nil</code> and fell back to mono — the cause of the one test
+                        failure caught during implementation, now fixed at the root.</li>
+                    <li><strong>Verification.</strong> The whole <code>FITScopeTests</code> suite passes under
+                        <code>xcodebuild</code> (UI tests skipped at the maintainer's request). New tests cover the three
+                        builders, the per-channel open for each format (FITS CFA + RGB, RAW, XISF CFA), the preview ==
+                        app match (FITS RGB, XISF CFA), and the flagship: on a colour-imbalanced frame the per-channel
+                        derivation clips the dim channel by &lt; 10% where the uniform (luminance) shadow crushes &gt; 90%.</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Round 1 — converged (no Critical/High/Medium).</strong> A fresh-context reviewer verified
+                        the domain consistency of all three builders against the render scaling, the mono-unchanged and
+                        display-function-wins invariants, the CIELab-not-RGB guard, safe fall-through on unsupported /
+                        absent patterns, and the <code>linearImage</code> padding trim (no-op for exact data, correct size,
+                        cube-plane callers unaffected). No correctness defects in scope.</li>
+                    <li><strong>[Low] A stacked one-shot-colour cube plane carrying <code>BAYERPAT</code> now opens
+                        per-channel</strong> rather than uniform. <em>Accepted</em> — each such plane also <em>renders</em>
+                        as CFA (the render reads the same <code>BAYERPAT</code>), so per-channel is consistent with the
+                        render where the old uniform was not; the common cube (no <code>BAYERPAT</code>) stays mono.</li>
+                    <li><strong>[Info] A colour FITS decodes its planes twice on open</strong> (once for the star-detection
+                        luminance, once for the colour source). <em>Accepted</em> — a one-time, off-main-actor cost; the
+                        colour source is deliberately recomputed on demand so on-open and click-Auto stay in agreement.</li>
+                    <li><strong>[Info] No explicit CIELab test.</strong> <em>Fixed</em> — added
+                        <code>colorSourceIsNilForCIELab</code>.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting human review.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Q — explain the Low and the Info findings.</strong> (Question, not a change request — no
+                        code changed.) Answered: the Low is that splitting a <em>multi-image</em> FITS cube keeps every
+                        header keyword, so a stacked one-shot-colour (CFA) cube's planes still carry <code>BAYERPAT</code>
+                        and now open per-channel instead of uniform — accepted because those planes also render as
+                        debayered CFA, so per-channel matches the render (a plain cube with no <code>BAYERPAT</code> stays
+                        mono). Info 1: a colour FITS runs <code>rgbPlaneSamples</code> twice on open (once for the
+                        star-detection luminance, once for the colour source) — a one-time off-main-actor cost, not cached
+                        on purpose so on-open and click-Auto share one code path and cannot diverge. Info 2: the
+                        CIELab guard (<code>colorSpace == .rgb</code> only) was already correct; a test was added to lock
+                        it in.</li>
+                    <li><strong>Q — can we do better on the Info items?</strong> (Question, not yet a change request.)
+                        Answered: Info 2 (CIELab) is already fully addressed. Info 1 (a colour FITS decoding its planes
+                        twice on open) could be eliminated by decoding once and reusing, but that means either storing the
+                        colour source on the render source — which retains a large extra buffer (1× for a mosaic, 3× for
+                        channels, as <code>Double</code>s) for the source's lifetime — or coupling the detection-luminance
+                        and colour-source builds in each loader. The current on-demand design trades one cheap,
+                        off-main-actor decode at open (and per Auto click) for lower memory and a guaranteed single code
+                        path. Recommendation: leave it as-is; offered to optimize if the maintainer wants it.</li>
+                    <li><strong>One commit.</strong> Fold the plan-progress update into the milestone's feature commit
+                        rather than a separate <code>chore:</code> commit — one commit per repo, including the plan doc.
+                        Applies to future milestones too.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- M3 -->

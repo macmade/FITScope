@@ -183,4 +183,35 @@ public extension ImageProcessor
 
         return ( width: properties.width, height: properties.height, samples: samples )
     }
+
+    /// Builds the colour input an auto Screen Transfer derives a *per-channel*
+    /// (unlinked) STF from, for a camera-RAW image — or `nil` for a monochrome
+    /// sensor, which the caller resolves to its own mono luminance.
+    ///
+    /// A camera-RAW frame is always a single-sensor mosaic: a colour-filter-array
+    /// sensor yields ``AutoStretchColorSource/mosaic(_:pattern:)`` from its raw mosaic
+    /// and CFA pattern (split per channel by the derivation, no demosaic), while a
+    /// monochrome sensor (no CFA pattern) returns `nil` so the caller falls back to the
+    /// mono luminance and a uniform STF. The samples are the raw sensor counts, the
+    /// same domain ``rawImageLinearLuminance(data:properties:)`` produces, so the shared
+    /// derivation's `1 / fullScale` scaling (against the sensor's white level) lands
+    /// them in `[0, 1]`.
+    ///
+    /// - Parameters:
+    ///   - data:       The cropped mosaic's raw bytes.
+    ///   - properties: The image's pixel layout.
+    /// - Returns: The per-channel colour input, or `nil` for a monochrome sensor.
+    static func rawAutoStretchColorSource( data: Data, properties: RAWImageProperties ) -> AutoStretchColorSource?
+    {
+        guard let cfaPattern = properties.colorFilterArrayPattern,
+              let pattern     = try? ImageProcessor.debayerPattern( named: cfaPattern ),
+              let mosaic      = Self.rawImageLinearLuminance( data: data, properties: properties ),
+              let buffer      = try? PixelBuffer( width: mosaic.width, height: mosaic.height, channels: 1, pixels: mosaic.samples, isNormalized: false )
+        else
+        {
+            return nil
+        }
+
+        return .mosaic( buffer, pattern: pattern )
+    }
 }

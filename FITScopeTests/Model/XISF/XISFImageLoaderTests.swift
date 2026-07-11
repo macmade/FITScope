@@ -442,6 +442,30 @@ struct XISFImageLoaderTests
         #expect( adjustments.isModified( \.stretch ) )
     }
 
+    /// A colour-filter-array XISF frame with auto-stretch on and no display function
+    /// opens with an unlinked, per-channel auto Screen Transfer, each channel clipping
+    /// only its own tail.
+    @Test
+    @MainActor
+    func opensColorFilterArrayWithPerChannelStretch() async throws
+    {
+        let hex    = XISFTestData.hex( XISFTestData.uInt16LE( Array( 0 ..< 16 ).map { $0 * 100 } ) )
+        let image  = XISFTestData.Image( geometry: "4:4:1", sampleFormat: "UInt16", colorSpace: "Gray", cfaPattern: "RGGB", hexData: hex )
+        let loader = XISFImageLoader( url: self.url, data: XISFTestData.file( images: [ image ] ), autoStretch: true )
+
+        await loader.load()
+
+        let loaded = try #require( loader.image )
+
+        guard case .perChannel = try #require( loaded.renderer.adjustments.opened.stretch )
+        else
+        {
+            Issue.record( "a CFA XISF frame must open with a per-channel Screen Transfer" )
+
+            return
+        }
+    }
+
     /// A stored display function takes priority over auto-stretch: with both a
     /// display function present and auto-stretch on, the image opens with the display
     /// function's stretch, not an auto-derived one.

@@ -105,23 +105,49 @@ public enum XISFPreviewRenderer
 
         // Otherwise auto-stretch only when the shared previews preference is on and a
         // full scale is known (integer formats); a float format, or an unopenable
-        // suite, falls back to a linear render. The derivation uses the plain channel
-        // luminance — a colour-filter-array frame's raw mosaic is used as-is (its
-        // median/MAD are enough to pick a preview stretch), rather than demosaicing to
-        // grayscale as the app does on open, so the extension stays free of the
-        // demosaic dependency; the resulting preview stretch can differ slightly from
-        // the app's for an OSC frame.
+        // suite, falls back to a linear render. A colour frame derives a per-channel
+        // (unlinked) STF — a colour-filter-array frame's mosaic is split per channel by
+        // deinterleaving (no demosaic dependency), an RGB frame by its planes — so the
+        // preview matches the app on open; any other frame uses its plain channel
+        // luminance for a uniform stretch.
         guard let defaults = previewsDefaults,
               AutoStretchPreference.autoStretchPreviews( .xisf, in: defaults ),
-              let fullScale = ImageProcessor.xisfFullScale( properties.sampleFormat ),
-              let luminance = ImageProcessor.xisfLinearLuminance( data: data, properties: properties ),
-              let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false ),
-              let settings  = ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: fullScale )
+              let fullScale   = ImageProcessor.xisfFullScale( properties.sampleFormat ),
+              let colorSource = Self.previewColorSource( data: data, properties: properties ),
+              let settings    = ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale )
         else
         {
             return ImageProcessor.Settings()
         }
 
         return settings
+    }
+
+    /// The colour input the preview's auto Screen Transfer derives from, so the
+    /// preview matches the app on open: a colour-filter-array or RGB frame yields a
+    /// per-channel input (via ``ImageProcessor/xisfAutoStretchColorSource(data:properties:)``),
+    /// and any other frame falls back to its single-channel luminance for a uniform
+    /// stretch.
+    ///
+    /// - Parameters:
+    ///   - data:       The image's decoded pixel bytes.
+    ///   - properties: The image's pixel layout.
+    /// - Returns: The colour input, or `nil` when it cannot be built (the caller then
+    ///   renders linear).
+    private static func previewColorSource( data: Data, properties: XISFImageProperties ) -> ImageProcessor.AutoStretchColorSource?
+    {
+        if let colour = ImageProcessor.xisfAutoStretchColorSource( data: data, properties: properties )
+        {
+            return colour
+        }
+
+        guard let luminance = ImageProcessor.xisfLinearLuminance( data: data, properties: properties ),
+              let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false )
+        else
+        {
+            return nil
+        }
+
+        return .mono( buffer )
     }
 }

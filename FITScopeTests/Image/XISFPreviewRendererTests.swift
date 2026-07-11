@@ -117,6 +117,37 @@ struct XISFPreviewRendererTests
         #expect( settings.normalize == .identity )
     }
 
+    /// A colour-filter-array XISF frame previews with a per-channel (unlinked) auto
+    /// Screen Transfer — split by deinterleaving, no demosaic dependency — and matches
+    /// the app: the same colour source over the same full-scale domain.
+    @Test
+    func autoStretchesColorFilterArrayAsPerChannelMatchingTheApp() throws
+    {
+        let ( defaults, name ) = Self.isolatedSuite( xisfPreviews: true )
+
+        defer { defaults.removePersistentDomain( forName: name ) }
+
+        let properties = XISFImageProperties( width: 4, height: 4, channelCount: 1, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .gray, colorFilterArrayPattern: "RGGB" )
+        let data       = Data( XISFTestData.uInt16LE( ( 0 ..< 16 ).map { $0 * 100 } ) )
+        let settings   = XISFPreviewRenderer.previewSettings( data: data, properties: properties, previewsDefaults: defaults )
+
+        #expect( settings.normalize == .identity )
+
+        guard case .perChannel = try #require( settings.stretch )
+        else
+        {
+            Issue.record( "a CFA XISF frame must preview with a per-channel Screen Transfer" )
+
+            return
+        }
+
+        let fullScale   = try #require( ImageProcessor.xisfFullScale( properties.sampleFormat ) )
+        let colorSource = try #require( ImageProcessor.xisfAutoStretchColorSource( data: data, properties: properties ) )
+        let app         = try #require( ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale ) )
+
+        #expect( settings.stretch == app.stretch )
+    }
+
     /// With the XISF previews preference off, an image with no display function
     /// previews linear (min/max), with no stretch.
     @Test

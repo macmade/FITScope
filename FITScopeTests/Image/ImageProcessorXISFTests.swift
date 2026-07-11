@@ -104,6 +104,68 @@ struct ImageProcessorXISFTests
         #expect( result.inputPixelFormat == .cfa )
     }
 
+    /// A colour-filter-array XISF frame exposes its raw mosaic and pattern for a
+    /// per-channel auto Screen Transfer.
+    @Test
+    func colorSourceIsMosaicForCFA() throws
+    {
+        let properties = XISFImageProperties( width: 4, height: 4, channelCount: 1, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .gray, colorFilterArrayPattern: "RGGB" )
+        let data       = Data( XISFTestData.uInt16LE( Array( 0 ..< 16 ).map { $0 * 100 } ) )
+        let source     = try #require( ImageProcessor.xisfAutoStretchColorSource( data: data, properties: properties ) )
+
+        guard case .mosaic( _, let pattern ) = source
+        else
+        {
+            Issue.record( "a CFA XISF frame must expose a mosaic colour input" )
+
+            return
+        }
+
+        #expect( pattern == .rggb )
+    }
+
+    /// An RGB XISF frame exposes its three interleaved planes for a per-channel auto
+    /// Screen Transfer.
+    @Test
+    func colorSourceIsChannelsForRGB() throws
+    {
+        let properties = XISFImageProperties( width: 2, height: 2, channelCount: 3, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .rgb, colorFilterArrayPattern: nil )
+        let planes     = XISFTestData.uInt16LE( [ 1, 2, 3, 4 ] + [ 10, 20, 30, 40 ] + [ 100, 200, 300, 400 ] )
+        let source     = try #require( ImageProcessor.xisfAutoStretchColorSource( data: Data( planes ), properties: properties ) )
+
+        guard case .channels( let buffer ) = source
+        else
+        {
+            Issue.record( "an RGB XISF frame must expose a channels colour input" )
+
+            return
+        }
+
+        #expect( buffer.channels == 3 )
+    }
+
+    /// A grayscale XISF frame has no colour input, so the caller falls back to its
+    /// single-channel luminance and a uniform STF.
+    @Test
+    func colorSourceIsNilForGrayscale() throws
+    {
+        let properties = XISFImageProperties( width: 2, height: 2, channelCount: 1, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .gray, colorFilterArrayPattern: nil )
+        let data       = Data( XISFTestData.uInt16LE( [ 10, 20, 30, 40 ] ) )
+
+        #expect( ImageProcessor.xisfAutoStretchColorSource( data: data, properties: properties ) == nil )
+    }
+
+    /// A CIELab XISF frame is multi-channel but not RGB, so it must not be treated as
+    /// per-channel colour: the caller falls back to its luminance and a uniform STF.
+    @Test
+    func colorSourceIsNilForCIELab() throws
+    {
+        let properties = XISFImageProperties( width: 2, height: 2, channelCount: 3, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .cieLab, colorFilterArrayPattern: nil )
+        let planes     = XISFTestData.uInt16LE( [ 1, 2, 3, 4 ] + [ 10, 20, 30, 40 ] + [ 100, 200, 300, 400 ] )
+
+        #expect( ImageProcessor.xisfAutoStretchColorSource( data: Data( planes ), properties: properties ) == nil )
+    }
+
     /// The little-endian `UInt16` samples decode to the exact stored values, in
     /// row-major order (x fastest), for the cursor read-out.
     @Test

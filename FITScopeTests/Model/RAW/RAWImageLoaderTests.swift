@@ -68,6 +68,28 @@ struct RAWImageLoaderTests
         #expect( adjustments.isModified( \.stretch ) )
     }
 
+    /// A colour (colour-filter-array) RAW opens with an unlinked, per-channel auto
+    /// Screen Transfer — each channel clipping only its own tail — rather than the
+    /// single linked stretch derived from luminance.
+    @Test
+    @MainActor
+    func opensColorRAWWithPerChannelStretch() async throws
+    {
+        let loader = RAWImageLoader( url: TestFixtures.cameraRAW, autoStretch: true )
+
+        await loader.load()
+
+        let image = try #require( loader.image )
+
+        guard case .perChannel = try #require( image.renderer.adjustments.opened.stretch )
+        else
+        {
+            Issue.record( "a colour RAW must open with a per-channel Screen Transfer" )
+
+            return
+        }
+    }
+
     /// With auto-stretch off, the RAW image opens linear on the unstretched min/max
     /// baseline, with no stretch.
     @Test

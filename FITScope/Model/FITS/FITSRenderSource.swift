@@ -53,6 +53,16 @@ public struct FITSRenderSource: ImageRenderSource
         ImageProcessor.fullScale( forImageHDU: self.properties )
     }
 
+    /// The per-channel colour input for the auto Screen Transfer: an RGB
+    /// `NAXIS=3` frame's interleaved planes or a colour-filter-array frame's raw
+    /// mosaic, so a colour image derives an unlinked per-channel STF. A monochrome
+    /// frame falls back to the single-channel ``detectionImage``, which derives a
+    /// uniform STF exactly as before.
+    public var autoStretchColorSource: ImageProcessor.AutoStretchColorSource?
+    {
+        ImageProcessor.autoStretchColorSource( forImageHDU: self.data, properties: self.properties ) ?? self.detectionImage.map { .mono( $0 ) }
+    }
+
     /// Creates a render source from an image HDU's bytes and header properties.
     ///
     /// - Parameters:

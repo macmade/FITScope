@@ -172,7 +172,7 @@ public class XISFImageLoader: ObservableObject, ImageLoading
                             // present, else an auto Screen Transfer when the preference is
                             // on, else `nil` (opens unstretched). Derived here, off the
                             // main actor.
-                            let opened = Self.openedSettings( for: info, detectionImage: ( try? source.get() )?.detectionImage, autoStretch: self.autoStretch )
+                            let opened = Self.openedSettings( for: info, colorSource: ( try? source.get() )?.autoStretchColorSource, autoStretch: self.autoStretch )
 
                             return ( info: info, source: source, opened: opened )
                         }
@@ -240,12 +240,13 @@ public class XISFImageLoader: ObservableObject, ImageLoading
     /// distort the stretch.
     ///
     /// - Parameters:
-    ///   - info:           The image's metadata snapshot.
-    ///   - detectionImage: The image's single-channel linear detection buffer, for
-    ///                     the auto-stretch fallback.
-    ///   - autoStretch:    Whether auto-stretch on open is enabled.
+    ///   - info:        The image's metadata snapshot.
+    ///   - colorSource: The image's per-channel colour input, for the auto-stretch
+    ///                  fallback (a colour frame derives a per-channel STF, a mono
+    ///                  frame a uniform one).
+    ///   - autoStretch: Whether auto-stretch on open is enabled.
     /// - Returns: The opened settings, or `nil` to open on the unstretched baseline.
-    private nonisolated static func openedSettings( for info: XISFImageInfo, detectionImage: PixelBuffer?, autoStretch: Bool ) -> ImageProcessor.Settings?
+    private nonisolated static func openedSettings( for info: XISFImageInfo, colorSource: ImageProcessor.AutoStretchColorSource?, autoStretch: Bool ) -> ImageProcessor.Settings?
     {
         // A stored display function always wins over auto-stretch (Milestone 4).
         if let displayFunction = info.imageProperties.displayFunction,
@@ -263,7 +264,7 @@ public class XISFImageLoader: ObservableObject, ImageLoading
             return nil
         }
 
-        return ImageProcessor.autoStretchSettings( detectionImage: detectionImage, fullScale: fullScale )
+        return ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale )
     }
 
     /// Builds the detection-ready single-channel linear image for an XISF image,

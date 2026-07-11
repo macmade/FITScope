@@ -213,6 +213,110 @@ struct ImageProcessorTests
         #expect( ImageProcessor.autoStretchSettings( colorSource: .mosaic( buffer, pattern: .rggb ), fullScale: 0 ) == nil )
     }
 
+    /// A FITS RGB `NAXIS=3` frame exposes a co-located 3-channel colour input, so it
+    /// derives a per-channel STF.
+    @Test
+    func fitsColorSourceIsChannelsForRGBPlanes() throws
+    {
+        let ( data, properties ) = FITSTestData.rgbPlanes( width: 4, height: 3 )
+        let source               = try #require( ImageProcessor.autoStretchColorSource( forImageHDU: data, properties: properties ) )
+
+        guard case .channels( let buffer ) = source
+        else
+        {
+            Issue.record( "an RGB NAXIS=3 frame must expose a channels colour input" )
+
+            return
+        }
+
+        #expect( buffer.channels == 3 )
+    }
+
+    /// A FITS frame carrying `BAYERPAT` exposes its raw mosaic and pattern, so it
+    /// derives a per-channel STF by deinterleaving.
+    @Test
+    func fitsColorSourceIsMosaicForACFAFrame() throws
+    {
+        let ( data, base ) = FITSTestData.gradient( width: 4, height: 4 )
+        let properties     = base + [ FITSPropertySnapshot( name: "BAYERPAT", value: .string( "RGGB" ) ) ]
+        let source         = try #require( ImageProcessor.autoStretchColorSource( forImageHDU: data, properties: properties ) )
+
+        guard case .mosaic( _, let pattern ) = source
+        else
+        {
+            Issue.record( "a BAYERPAT frame must expose a mosaic colour input" )
+
+            return
+        }
+
+        #expect( pattern == .rggb )
+    }
+
+    /// A mono FITS frame has no colour input, so the caller falls back to its
+    /// single-channel luminance and a uniform STF.
+    @Test
+    func fitsColorSourceIsNilForAMonoFrame()
+    {
+        let ( data, properties ) = FITSTestData.gradient( width: 4, height: 4 )
+
+        #expect( ImageProcessor.autoStretchColorSource( forImageHDU: data, properties: properties ) == nil )
+    }
+
+    /// The core of the initiative: on a colour-imbalanced frame (a dim channel), the
+    /// per-channel derivation clips that channel by only its own tail, where the old
+    /// uniform (luminance-derived) shadow crushes most of it to black.
+    @Test
+    func perChannelClipsAnImbalancedChannelFarLessThanUniform() throws
+    {
+        let fullScale = 1000.0
+        let count     = 64
+        let red       = ( 0 ..< count ).map { Double( 25  + $0 % 10 ) } // dim: ~0.025–0.034 of full scale
+        let green     = ( 0 ..< count ).map { Double( 295 + $0 % 10 ) } // bright: ~0.30
+        let blue      = ( 0 ..< count ).map { Double( 295 + $0 % 10 ) }
+
+        // The colour input (raw domain, as the loaders build it) and the mean
+        // luminance the old uniform path derived a single shadow from.
+        let interleavedRaw = try PixelUtilities.interleave( planes: [ red, green, blue ] )
+        let colorBuffer    = try PixelBuffer( width: count, height: 1, channels: 3, pixels: interleavedRaw, isNormalized: false )
+        let luminanceRaw   = ( 0 ..< count ).map { ( red[ $0 ] + green[ $0 ] + blue[ $0 ] ) / 3 }
+        let luminance      = try PixelBuffer( width: count, height: 1, channels: 1, pixels: luminanceRaw, isNormalized: false )
+
+        let perChannel = try #require( ImageProcessor.autoStretchSettings( colorSource: .channels( colorBuffer ), fullScale: fullScale ) )
+        let uniform    = try #require( ImageProcessor.autoStretchSettings( colorSource: .mono( luminance ),       fullScale: fullScale ) )
+
+        // The display buffer the render stretches: the raw samples scaled into [0, 1].
+        let displayPixels = interleavedRaw.map { $0 / fullScale }
+        let perChannelSTF = try #require( perChannel.stretch )
+        let uniformSTF    = try #require( uniform.stretch )
+
+        let uniformClipped    = try Self.redClippedFraction( applying: uniformSTF,    to: displayPixels, count: count )
+        let perChannelClipped = try Self.redClippedFraction( applying: perChannelSTF, to: displayPixels, count: count )
+
+        #expect( uniformClipped    > 0.9 ) // the linked shadow crushes the dim red channel
+        #expect( perChannelClipped < 0.1 ) // each channel clips only its own darkest tail
+    }
+
+    /// Applies an STF to an interleaved 3-channel display buffer and returns the
+    /// fraction of the red channel clipped to black.
+    ///
+    /// - Parameters:
+    ///   - stretch: The STF to apply.
+    ///   - pixels:  The interleaved, normalized `[0, 1]` samples.
+    ///   - count:   The pixel count (red samples stride the buffer by three).
+    /// - Returns: The fraction of red samples mapped to `0`.
+    /// - Throws: Any error thrown building or processing the buffer.
+    private static func redClippedFraction( applying stretch: Processors.Stretch.STFParameters, to pixels: [ Double ], count: Int ) throws -> Double
+    {
+        var buffer = try PixelBuffer( width: count, height: 1, channels: 3, pixels: pixels, isNormalized: true )
+
+        try Processors.Stretch( parameters: stretch ).process( buffer: &buffer )
+
+        let red     = stride( from: 0, to: buffer.pixels.count, by: 3 ).map { buffer.pixels[ $0 ] }
+        let clipped = red.filter { $0 <= 0.0 }.count
+
+        return Double( clipped ) / Double( red.count )
+    }
+
     /// Integer-formatted scaling keywords keep working: a `BZERO` of the
     /// integer `32768` (the usual unsigned-16-bit offset) is read as `32768`.
     @Test

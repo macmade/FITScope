@@ -177,7 +177,7 @@ public class FITSImageLoader: ObservableObject, ImageLoading
 
                             frames = planeSources.map
                             {
-                                source in ( source: .success( source ), opened: Self.openedSettings( detectionImage: source.detectionImage, fullScale: fullScale, autoStretch: self.autoStretch ) )
+                                source in ( source: .success( source ), opened: Self.openedSettings( colorSource: source.autoStretchColorSource, fullScale: fullScale, autoStretch: self.autoStretch ) )
                             }
                         }
                         else
@@ -206,7 +206,7 @@ public class FITSImageLoader: ObservableObject, ImageLoading
                             // A graph is never rendered, so it opens unstretched (`nil`);
                             // an image derives its auto Screen Transfer from the detection
                             // image, off the main actor, when enabled.
-                            let opened = graph == nil ? Self.openedSettings( detectionImage: ( try? source.get() )?.detectionImage, fullScale: hdu.flatMap { ImageProcessor.fullScale( forImageHDU: $0.properties ) }, autoStretch: self.autoStretch ) : nil
+                            let opened = graph == nil ? Self.openedSettings( colorSource: ( try? source.get() )?.autoStretchColorSource, fullScale: hdu.flatMap { ImageProcessor.fullScale( forImageHDU: $0.properties ) }, autoStretch: self.autoStretch ) : nil
 
                             frames = [ ( source: source, opened: opened ) ]
                         }
@@ -266,12 +266,13 @@ public class FITSImageLoader: ObservableObject, ImageLoading
     /// floating-point (no fixed full scale), or the derivation fails.
     ///
     /// - Parameters:
-    ///   - detectionImage: The frame's single-channel linear detection buffer.
-    ///   - fullScale:      The format's full-scale maximum, or `nil` for a
-    ///                     floating-point / unknown format.
-    ///   - autoStretch:    Whether auto-stretch on open is enabled.
+    ///   - colorSource: The frame's per-channel colour input (a colour frame derives
+    ///                  a per-channel STF, a mono frame a uniform one).
+    ///   - fullScale:   The format's full-scale maximum, or `nil` for a
+    ///                  floating-point / unknown format.
+    ///   - autoStretch: Whether auto-stretch on open is enabled.
     /// - Returns: The opened settings, or `nil` to open on the unstretched baseline.
-    private nonisolated static func openedSettings( detectionImage: PixelBuffer?, fullScale: Double?, autoStretch: Bool ) -> ImageProcessor.Settings?
+    private nonisolated static func openedSettings( colorSource: ImageProcessor.AutoStretchColorSource?, fullScale: Double?, autoStretch: Bool ) -> ImageProcessor.Settings?
     {
         guard autoStretch, let fullScale
         else
@@ -279,7 +280,7 @@ public class FITSImageLoader: ObservableObject, ImageLoading
             return nil
         }
 
-        return ImageProcessor.autoStretchSettings( detectionImage: detectionImage, fullScale: fullScale )
+        return ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale )
     }
 
     /// Decodes an image HDU into a graph series when it is graph data rather than a

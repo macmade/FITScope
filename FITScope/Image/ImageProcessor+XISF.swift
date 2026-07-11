@@ -358,6 +358,45 @@ public extension ImageProcessor
         return ( width: properties.width, height: properties.height, samples: samples )
     }
 
+    /// Builds the colour input an auto Screen Transfer derives a *per-channel*
+    /// (unlinked) STF from, for an XISF image — or `nil` for a monochrome frame,
+    /// which the caller resolves to its own mono luminance.
+    ///
+    /// A colour-filter-array frame yields ``AutoStretchColorSource/mosaic(_:pattern:)``
+    /// from its raw single-channel mosaic and CFA pattern (split per channel by the
+    /// derivation, no demosaic); an RGB frame yields ``AutoStretchColorSource/channels(_:)``
+    /// from its three interleaved planes. A grayscale frame — or a `CIELab` one, whose
+    /// channels are not RGB — returns `nil`, so a caller falls back to the mono
+    /// luminance and a uniform STF. The samples are the raw stored values, the same
+    /// domain ``xisfLinearLuminance(data:properties:)`` produces, so the shared
+    /// derivation's `1 / fullScale` scaling lands them in `[0, 1]`.
+    ///
+    /// - Parameters:
+    ///   - data:       The image's raw pixel bytes.
+    ///   - properties: The image's pixel layout.
+    /// - Returns: The per-channel colour input, or `nil` for a mono / non-RGB frame.
+    static func xisfAutoStretchColorSource( data: Data, properties: XISFImageProperties ) -> AutoStretchColorSource?
+    {
+        if let cfaPattern = properties.colorFilterArrayPattern,
+           let pattern    = try? ImageProcessor.debayerPattern( named: cfaPattern ),
+           let planes     = try? Self.xisfPlaneSamples( data: data, properties: properties ),
+           let mosaic     = planes.first,
+           let buffer     = try? PixelBuffer( width: properties.width, height: properties.height, channels: 1, pixels: mosaic, isNormalized: false )
+        {
+            return .mosaic( buffer, pattern: pattern )
+        }
+
+        if properties.colorSpace == .rgb, properties.channelCount == 3,
+           let planes      = try? Self.xisfPlaneSamples( data: data, properties: properties ), planes.count == 3,
+           let interleaved = try? PixelUtilities.interleave( planes: planes ),
+           let buffer      = try? PixelBuffer( width: properties.width, height: properties.height, channels: 3, pixels: interleaved, isNormalized: false )
+        {
+            return .channels( buffer )
+        }
+
+        return nil
+    }
+
     /// The full-scale value of an integer XISF sample format, used to express a
     /// read-out value as a `0...1` fraction; `nil` for floating-point formats,
     /// which have no fixed full scale.

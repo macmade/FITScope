@@ -52,6 +52,37 @@ struct ImageProcessorRAWTests
         #expect( result.image.height == 4 )
     }
 
+    /// A colour-filter-array sensor exposes its raw mosaic and pattern for a
+    /// per-channel auto Screen Transfer.
+    @Test
+    func colorSourceIsMosaicForACFASensor() throws
+    {
+        let samples    = ( 0 ..< 16 ).map { UInt16( $0 * 1000 ) }
+        let properties = RAWImageProperties( width: 4, height: 4, colorFilterArrayPattern: "RGGB", whiteLevel: 65535 )
+        let source     = try #require( ImageProcessor.rawAutoStretchColorSource( data: Self.data( samples ), properties: properties ) )
+
+        guard case .mosaic( _, let pattern ) = source
+        else
+        {
+            Issue.record( "a CFA RAW sensor must expose a mosaic colour input" )
+
+            return
+        }
+
+        #expect( pattern == .rggb )
+    }
+
+    /// A monochrome sensor has no colour input, so the caller falls back to its
+    /// single-channel luminance and a uniform STF.
+    @Test
+    func colorSourceIsNilForAMonoSensor() throws
+    {
+        let samples    = ( 0 ..< 16 ).map { UInt16( $0 * 1000 ) }
+        let properties = RAWImageProperties( width: 4, height: 4, colorFilterArrayPattern: nil, whiteLevel: 65535 )
+
+        #expect( ImageProcessor.rawAutoStretchColorSource( data: Self.data( samples ), properties: properties ) == nil )
+    }
+
     /// A monochrome mosaic (no CFA pattern) renders as a mono image.
     @Test
     func rendersMonochromeAsMono() throws

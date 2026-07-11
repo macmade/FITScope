@@ -277,8 +277,21 @@ public extension ImageProcessor
     {
         guard let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
               let bitsPerPixel = BitsPerPixel.from( value: bitPix ),
-              let ( width, height ) = Self.imageDimensions( from: properties ),
-              let raw          = try? PixelUtilities.readRawPixels( data: data, width: width, height: height, bitsPerPixel: bitsPerPixel )
+              let ( width, height ) = Self.imageDimensions( from: properties )
+        else
+        {
+            return nil
+        }
+
+        // Trim any FITS block padding to the exact sample-data size (and re-wrap so a
+        // non-zero start index reads from zero), as `render` and `rgbPlaneSamples` do —
+        // `readRawPixels` requires an exact byte count, so the padded section data must
+        // not be passed through whole.
+        let size      = bitsPerPixel.size( numberOfPixels: width * height )
+        let pixelData = Data( data.prefix( size ) )
+
+        guard pixelData.count == size,
+              let raw = try? PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel )
         else
         {
             return nil
@@ -432,6 +445,54 @@ public extension ImageProcessor
         }
 
         return ( width: planes.width, height: planes.height, samples: samples )
+    }
+
+    /// Builds the colour input an auto Screen Transfer derives a *per-channel*
+    /// (unlinked) STF from, for a FITS image HDU — or `nil` for a monochrome frame,
+    /// which the caller resolves to its own mono luminance.
+    ///
+    /// An RGB `NAXIS=3` image yields ``AutoStretchColorSource/channels(_:)`` from its
+    /// three scaled-linear planes (interleaved); a colour-filter-array frame yields
+    /// ``AutoStretchColorSource/mosaic(_:pattern:)`` from its raw scaled-linear mosaic
+    /// and `BAYERPAT` pattern (split per channel by the derivation, no demosaic). A
+    /// mono frame — or one whose colour data cannot be decoded — returns `nil`, so a
+    /// caller can fall back to the single-channel luminance and derive a uniform STF.
+    /// The samples are in the same scaled-linear domain as ``linearImage(data:properties:)``
+    /// and ``rgbLinearLuminance(data:properties:)``, so the shared derivation's
+    /// `1 / fullScale` scaling lands them in the same `[0, 1]` domain the render applies
+    /// the STF over.
+    ///
+    /// - Parameters:
+    ///   - data:       The image HDU's raw pixel bytes.
+    ///   - properties: The owning header's property snapshots.
+    /// - Returns: The per-channel colour input, or `nil` for a mono / undecodable frame.
+    static func autoStretchColorSource( forImageHDU data: Data, properties: [ FITSPropertySnapshot ] ) -> AutoStretchColorSource?
+    {
+        guard let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
+              let bitsPerPixel = BitsPerPixel.from( value: bitPix )
+        else
+        {
+            return nil
+        }
+
+        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
+
+        if Self.isRGBPlanes( properties: properties ),
+           let planes      = try? Self.rgbPlaneSamples( data: data, properties: properties, bitsPerPixel: bitsPerPixel ),
+           let interleaved = try? PixelUtilities.interleave( planes: [ planes.red, planes.green, planes.blue ].map { $0.map { $0 * scale + offset } } ),
+           let buffer      = try? PixelBuffer( width: planes.width, height: planes.height, channels: 3, pixels: interleaved, isNormalized: false )
+        {
+            return .channels( buffer )
+        }
+
+        if let pattern = ( try? Self.bayerPattern( from: properties ) ) ?? nil,
+           let mosaic  = Self.linearImage( data: data, properties: properties ),
+           let buffer  = try? PixelBuffer( width: mosaic.width, height: mosaic.height, channels: 1, pixels: mosaic.samples, isNormalized: false )
+        {
+            return .mosaic( buffer, pattern: pattern )
+        }
+
+        return nil
     }
 
     /// The first non-empty, whitespace-trimmed string value for a keyword.

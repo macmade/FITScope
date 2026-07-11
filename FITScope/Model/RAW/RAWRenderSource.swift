@@ -54,6 +54,15 @@ public struct RAWRenderSource: ImageRenderSource
         self.properties.whiteLevel
     }
 
+    /// The per-channel colour input for the auto Screen Transfer: a colour-filter-array
+    /// sensor's raw mosaic, so a one-shot-colour RAW derives an unlinked per-channel
+    /// STF. A monochrome sensor falls back to the single-channel ``detectionImage``,
+    /// which derives a uniform STF exactly as before.
+    public var autoStretchColorSource: ImageProcessor.AutoStretchColorSource?
+    {
+        ImageProcessor.rawAutoStretchColorSource( data: self.data, properties: self.properties ) ?? self.detectionImage.map { .mono( $0 ) }
+    }
+
     /// Creates a render source from a decoded file's cropped mosaic bytes and layout.
     ///
     /// - Parameters:

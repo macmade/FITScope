@@ -106,16 +106,41 @@ public enum FITSPreviewRenderer
     {
         guard let defaults = previewsDefaults,
               AutoStretchPreference.autoStretchPreviews( .fits, in: defaults ),
-              let fullScale = ImageProcessor.fullScale( forImageHDU: hdu.properties ),
-              let luminance = Self.previewLuminance( hdu: hdu ),
-              let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false ),
-              let settings  = ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: fullScale )
+              let fullScale   = ImageProcessor.fullScale( forImageHDU: hdu.properties ),
+              let colorSource = Self.previewColorSource( hdu: hdu ),
+              let settings    = ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale )
         else
         {
             return ImageProcessor.Settings()
         }
 
         return settings
+    }
+
+    /// The colour input the preview's auto Screen Transfer derives from, so the
+    /// preview matches the app on open: an RGB or colour-filter-array frame yields a
+    /// per-channel input (via ``ImageProcessor/autoStretchColorSource(forImageHDU:properties:)``),
+    /// and any other frame falls back to its single-channel luminance for a uniform
+    /// stretch.
+    ///
+    /// - Parameter hdu: The image HDU's bytes and header property snapshots.
+    /// - Returns: The colour input, or `nil` when it cannot be built (the caller then
+    ///   renders linear).
+    private static func previewColorSource( hdu: ( data: Data, properties: [ FITSPropertySnapshot ] ) ) -> ImageProcessor.AutoStretchColorSource?
+    {
+        if let colour = ImageProcessor.autoStretchColorSource( forImageHDU: hdu.data, properties: hdu.properties )
+        {
+            return colour
+        }
+
+        guard let luminance = Self.previewLuminance( hdu: hdu ),
+              let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false )
+        else
+        {
+            return nil
+        }
+
+        return .mono( buffer )
     }
 
     /// The single-channel scaled-linear luminance the auto-stretch derivation reads:

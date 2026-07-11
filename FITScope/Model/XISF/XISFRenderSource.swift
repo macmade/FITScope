@@ -50,6 +50,16 @@ public struct XISFRenderSource: ImageRenderSource
         ImageProcessor.xisfFullScale( self.properties.sampleFormat )
     }
 
+    /// The per-channel colour input for the auto Screen Transfer: a colour-filter-array
+    /// frame's raw mosaic or an RGB frame's interleaved planes, so a colour image
+    /// derives an unlinked per-channel STF. A grayscale (or non-RGB) frame falls back
+    /// to the single-channel ``detectionImage``, which derives a uniform STF exactly as
+    /// before.
+    public var autoStretchColorSource: ImageProcessor.AutoStretchColorSource?
+    {
+        ImageProcessor.xisfAutoStretchColorSource( data: self.data, properties: self.properties ) ?? self.detectionImage.map { .mono( $0 ) }
+    }
+
     /// Creates a render source from a decoded image's bytes and layout.
     ///
     /// - Parameters:
