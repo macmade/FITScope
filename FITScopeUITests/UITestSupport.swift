@@ -84,6 +84,114 @@ enum UITestSupport
         return app
     }
 
+    /// The bundle identifier of the app under test. Used to *attach* to an instance
+    /// launched out-of-band (through LaunchServices) rather than launching it with
+    /// `XCUIApplication`.
+    static let appBundleID = "com.xs-labs.FITScope"
+
+    /// The freshly-built app under test.
+    ///
+    /// It is resolved from the test bundle's own location in the build products
+    /// directory — `…/Products/<config>/<Runner>.app/Contents/PlugIns/<tests>.xctest`
+    /// — so the *just-built* binary is launched, not some other copy LaunchServices
+    /// might have registered elsewhere.
+    static var appURL: URL
+    {
+        Bundle( for: BundleToken.self ).bundleURL
+            .deletingLastPathComponent() // …/Contents/PlugIns
+            .deletingLastPathComponent() // …/Contents
+            .deletingLastPathComponent() // <Runner>.app
+            .deletingLastPathComponent() // Products/<config>
+            .appendingPathComponent( "FITScope.app" )
+    }
+
+    /// Launches the app already opening the named fixture, then attaches to it.
+    ///
+    /// Instead of driving the system Open panel, the fixture is opened *with* the
+    /// app through LaunchServices — exactly as a Finder double-click would. That
+    /// grants the sandbox extension for the file and routes it through the app's
+    /// `application(_:open:)`, so no powerbox is involved and the whole launch-panel
+    /// dance disappears. Because the app is launched out-of-band, the test *attaches*
+    /// to it by bundle identifier rather than launching it through `XCUIApplication`.
+    ///
+    /// The launch Open panel the app would otherwise present is suppressed for free:
+    /// the document-open path sets the app's `didOpenFilesAtLaunch` flag, so the
+    /// panel is never shown.
+    ///
+    /// - Parameters:
+    ///   - name:    Fixture file name within the `Fixtures` directory.
+    ///   - timeout: How long to wait for the launch and for the app to come forward.
+    /// - Returns: The attached application proxy.
+    @MainActor
+    static func launchAppOpening( _ name: String, timeout: TimeInterval = 30 ) throws -> XCUIApplication
+    {
+        // Clear any instance a previous test may have leaked, so the bundle-id
+        // attach below binds to the instance this call launches.
+        self.terminateRunningInstances()
+
+        try self.launch( opening: [ self.fixtureURL( name ) ], timeout: timeout )
+
+        let app = XCUIApplication( bundleIdentifier: self.appBundleID )
+
+        XCTAssertTrue( app.wait( for: .runningForeground, timeout: timeout ), "The app did not come to the foreground after launch." )
+
+        return app
+    }
+
+    /// Launches a fresh instance of the app under test through LaunchServices,
+    /// opening the given URLs, and blocks until the launch has been delivered.
+    ///
+    /// - Parameters:
+    ///   - urls:    The file URLs to open at launch.
+    ///   - timeout: How long to wait for LaunchServices to finish.
+    @MainActor
+    private static func launch( opening urls: [ URL ], timeout: TimeInterval ) throws
+    {
+        let configuration = NSWorkspace.OpenConfiguration()
+
+        configuration.arguments                     = [ "-uiTestingIsolatedDefaults" ]
+        configuration.activates                     = true
+        configuration.addsToRecentItems             = false
+        configuration.createsNewApplicationInstance = true
+
+        let semaphore = DispatchSemaphore( value: 0 )
+
+        // Written on the completion's background queue and read here only after the
+        // semaphore is signalled, so the wait provides the necessary barrier; the
+        // compiler cannot see that, hence `nonisolated(unsafe)`.
+        nonisolated( unsafe ) var openError: Error?
+
+        // The completion handler is delivered on a background queue, so blocking the
+        // calling thread on the semaphore here cannot deadlock the open.
+        NSWorkspace.shared.open( urls, withApplicationAt: self.appURL, configuration: configuration )
+        {
+            _, error in
+
+            openError = error
+
+            semaphore.signal()
+        }
+
+        let waited = semaphore.wait( timeout: .now() + timeout )
+
+        XCTAssertEqual( waited, .success, "LaunchServices did not finish opening within \( timeout )s." )
+
+        if let openError
+        {
+            throw openError
+        }
+    }
+
+    /// Force-terminates any running instance of the app under test, so an instance
+    /// a test launched (or leaked) never lingers into the next one.
+    static func terminateRunningInstances()
+    {
+        NSRunningApplication.runningApplications( withBundleIdentifier: self.appBundleID ).forEach
+        {
+            $0.forceTerminate()
+        }
+    }
+
     /// Returns a descendant of `app` with the given accessibility identifier,
     /// regardless of its element type.
     ///
@@ -229,31 +337,11 @@ enum UITestSupport
         XCTAssertTrue( dialog.waitForNonExistence( timeout: timeout ), "The Open panel did not dismiss." )
     }
 
-    /// Opens a fixture through the app's Open panel, granting the sandbox access
-    /// the same way a user's selection would.
-    ///
-    /// The Open panel the app presents at launch appears as a dialog within the
-    /// app's own accessibility tree. Rather than type blindly (which races a
-    /// freshly-presented panel), this opens *Go to Folder* (`⌘⇧G`), **waits for
-    /// its path field** (`PathTextField`), types the absolute path into that
-    /// field, and only then confirms — so the keystrokes can never be sent before
-    /// the field is ready. The open is confirmed by waiting for the sheet to
-    /// dismiss before the final Return.
-    ///
-    /// - Parameters:
-    ///   - name:    Fixture file name within the `Fixtures` directory.
-    ///   - app:     The launched application proxy.
-    ///   - timeout: How long to wait for the panel and its field to appear.
-    @MainActor
-    static func openFixture( _ name: String, in app: XCUIApplication, timeout: TimeInterval = 15 ) throws
-    {
-        try self.drivePanel( name, in: app, timeout: timeout )
-    }
-
-    /// Opens an *additional* fixture once the app already has a window. Unlike the
-    /// launch panel that ``openFixture(_:in:timeout:)`` drives, no panel is showing
-    /// at this point, so it is requested first with the Open command (`⌘O`) and
-    /// then driven the same way.
+    /// Opens an *additional* fixture, through the real Open panel, once the app
+    /// already has a window. Most opens now take the faster LaunchServices path
+    /// (see ``launchAppOpening(_:timeout:)``); this deliberately drives the system
+    /// panel so the powerbox flow itself stays covered. No panel is showing at this
+    /// point, so it is requested first with the Open command (`⌘O`) and then driven.
     ///
     /// - Parameters:
     ///   - name:    Fixture file name within the `Fixtures` directory.
@@ -311,4 +399,9 @@ enum UITestSupport
         XCTAssertTrue( field.waitForNonExistence( timeout: timeout ), "The Go-to-Folder sheet did not dismiss." )
         app.typeKey( .return, modifierFlags: [] )
     }
+
+    /// A token whose bundle is the UI-test bundle, used by ``appURL`` to locate the
+    /// built app relative to the test bundle on disk. (`Bundle(for:)` needs a class,
+    /// which an `enum` cannot provide for itself.)
+    private final class BundleToken {}
 }
