@@ -189,6 +189,12 @@ enum UITestSupport
     /// identifier), so it is matched by its displayed text — the value being
     /// chosen, not a structural identifier.
     ///
+    /// A picker option title can collide with a menu-bar command's title (e.g. the
+    /// "Screen Transfer" stretch option and the "Screen Transfer" editor-window
+    /// command), so more than one menu item can carry the same title. Only the
+    /// presented option is hittable, so ``clickMenuItem(in:where:timeout:)`` selects
+    /// the hittable match rather than assuming the title is unique.
+    ///
     /// - Parameters:
     ///   - picker:  The picker element (located by its accessibility identifier).
     ///   - title:   The visible title of the option to choose.
@@ -201,11 +207,7 @@ enum UITestSupport
 
         picker.click()
 
-        let item = app.menuItems[ title ]
-
-        XCTAssertTrue( item.waitForExistence( timeout: timeout ), "The picker option '\( title )' did not appear." )
-
-        item.click()
+        self.clickMenuItem( title, in: app, timeout: timeout )
     }
 
     /// Cancels the Open panel the app presents at launch, leaving the app running
