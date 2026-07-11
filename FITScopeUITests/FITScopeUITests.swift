@@ -660,10 +660,18 @@ final class FITScopeUITests: XCTestCase
 
     /// Switching the selected file must refresh the inspector controls to that
     /// file's own adjustments — a control's state must not leak between images.
-    /// A stretch mode chosen on one file must not show on another, and the first
-    /// file's state must survive switching away and back. (The Screen Transfer
+    /// A stretch mode chosen on one file must not show on another, and a file's
+    /// own state must survive switching away and back. (The Screen Transfer
     /// mode's Edit button is the reveal this asserts on, since it appears only when
     /// that mode is selected.)
+    ///
+    /// The two files' stretch modes are driven explicitly rather than assumed: a
+    /// linear file can open with an auto Screen Transfer already applied (the
+    /// per-format auto-stretch-on-open preference defaults to on), so the test sets
+    /// each file to a known mode — the second to None, the first to Screen Transfer
+    /// — before asserting how switching between them behaves. This keeps the test
+    /// about the inspector following the selection, independent of what a freshly
+    /// opened file's auto stretch happens to be.
     @MainActor
     func testSwitchingFilesRefreshesInspectorControls() throws
     {
@@ -686,18 +694,27 @@ final class FITScopeUITests: XCTestCase
             "Expected two file rows after opening two files (rows: \( rows.count ))."
         )
 
-        // Select the first file and choose the Screen Transfer stretch: its Edit
-        // button appears.
+        // Drive the second file to a known None stretch: a linear file can open
+        // with an auto Screen Transfer already applied, so the mode is set
+        // explicitly rather than assumed. Its Edit button must then be gone.
+        rows.element( boundBy: 1 ).click()
+        XCTAssertTrue( picker.waitForExistence( timeout: 30 ), "The stretch mode picker did not appear." )
+        UITestSupport.selectPickerOption( picker, "None", in: app )
+        XCTAssertTrue(
+            edit.waitForNonExistence( timeout: 10 ),
+            "Setting the second file to None did not hide the Screen Transfer editor."
+        )
+
+        // Drive the first file to the Screen Transfer stretch: its Edit button
+        // appears.
         rows.element( boundBy: 0 ).click()
         XCTAssertTrue( picker.waitForExistence( timeout: 30 ), "The stretch mode picker did not appear." )
-        XCTAssertFalse( edit.exists, "The Screen Transfer editor was visible before a stretch mode was selected." )
-
         UITestSupport.selectPickerOption( picker, "Screen Transfer", in: app )
         XCTAssertTrue( edit.waitForExistence( timeout: 5 ), "Selecting the Screen Transfer mode did not reveal its editor." )
 
-        // Switch to the second file: it has its own (default) adjustments, so the
-        // stretch reads as None and the Edit button must be gone — the control must
-        // follow the newly selected image, not keep the first file's state.
+        // Switch to the second file: it is set to None, so its Edit button must be
+        // gone — the control must follow the newly selected image, not keep the
+        // first file's Screen Transfer state.
         rows.element( boundBy: 1 ).click()
         XCTAssertTrue(
             edit.waitForNonExistence( timeout: 10 ),
