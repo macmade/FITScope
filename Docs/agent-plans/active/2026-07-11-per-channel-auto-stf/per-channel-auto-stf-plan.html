@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Per-Channel Auto-STF — Implementation Plan</title>
+    <style>
+        :root {
+            --bg:         #0f1117;
+            --bg-card:    #181b24;
+            --bg-card-2:  #1d212c;
+            --border:     #2a2f3c;
+            --text:       #e6e9ef;
+            --text-dim:   #9aa3b2;
+            --accent:     #5aa9ff;
+            --accent-dim: #2d3b52;
+            --code-bg:    #12151d;
+            --green:      #3fb950;
+            --green-dim:  #16351d;
+            --amber:      #d29922;
+            --amber-dim:  #3a2f12;
+            --gray:       #6b7280;
+            --gray-dim:   #262b36;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 940px;
+            margin: 0 auto;
+            padding: 48px 24px 96px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 36px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 2.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta { color: var(--text-dim); font-size: 0.9rem; }
+        .meta code { color: var(--accent); }
+
+        h2.section {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text-dim);
+            margin: 48px 0 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        p { margin: 0 0 16px; }
+        .overview { color: var(--text); }
+
+        code {
+            font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.86em;
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 1px 5px;
+        }
+
+        .qa {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 4px 22px;
+            margin-bottom: 14px;
+        }
+        .qa .q { font-weight: 650; color: var(--text); margin: 16px 0 6px; }
+        .qa .a { color: var(--text-dim); margin: 0 0 16px; }
+        .qa .a::before { content: "→ "; color: var(--accent); }
+
+        .notes ul { margin: 0 0 16px; padding-left: 22px; }
+        .notes li { margin-bottom: 8px; color: var(--text-dim); }
+        .notes strong { color: var(--text); }
+
+        .milestone {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px 26px 8px;
+            margin-bottom: 20px;
+        }
+        .milestone-head {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 4px;
+        }
+        .milestone-head h3 { margin: 0; font-size: 1.2rem; flex: 1 1 auto; }
+
+        .mnum {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 8px;
+            flex: 0 0 auto;
+        }
+
+        .capsule {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 650;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .capsule.not-started { background: var(--gray-dim);  color: #b6bdc9; border: 1px solid #3a414f; }
+        .capsule.in-progress { background: var(--amber-dim); color: var(--amber); border: 1px solid #5a4a1e; }
+        .capsule.completed   { background: var(--green-dim); color: var(--green); border: 1px solid #1f5a2c; }
+
+        .field-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 20px 0 6px;
+            font-weight: 650;
+        }
+        .goal { color: var(--text-dim); }
+
+        .milestone ul.tasks { margin: 6px 0 4px; padding-left: 4px; list-style: none; }
+        .milestone ul.tasks li {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 7px;
+            color: var(--text-dim);
+        }
+        .milestone ul.tasks li::before {
+            content: "";
+            position: absolute;
+            left: 2px;
+            top: 6px;
+            width: 15px;
+            height: 15px;
+            border: 1.5px solid var(--accent-dim);
+            border-radius: 4px;
+            background: var(--code-bg);
+        }
+
+        .placeholder { color: #6b7280; font-style: italic; margin: 4px 0 14px; }
+        .deps { color: var(--text-dim); font-size: 0.9rem; }
+        .deps strong { color: var(--text); }
+
+        .appendix h3 { margin: 26px 0 8px; font-size: 1.05rem; }
+        .appendix pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            overflow-x: auto;
+            font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.82rem;
+            color: var(--text);
+        }
+        .appendix table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0 20px;
+            font-size: 0.9rem;
+        }
+        .appendix th, .appendix td {
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .appendix th { background: var(--bg-card-2); color: var(--text); }
+        .appendix td { color: var(--text-dim); }
+
+        footer {
+            margin-top: 56px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Per-Channel Auto-STF — Implementation Plan</h1>
+            <div class="meta">
+                Generated &mdash; 2026-07-11<br>
+                Source &mdash; <code>Docs/agent-plans/active/2026-07-11-per-channel-auto-stf/per-channel-auto-stf.html</code>
+            </div>
+        </header>
+
+        <p class="overview">
+            The auto Screen Transfer is currently <strong>uniform (linked)</strong>: it derives one shadows / midtones
+            pair from the single-channel luminance <code>detectionImage</code> and applies it to every colour channel.
+            On a colour-imbalanced frame the single shadow clip crushes the dimmest channel &mdash; measured at
+            <strong>41% of red clipped to pure black</strong> on a real Seestar S30 M42 light-pollution sub (6% green,
+            4% blue; unstretched min/max clips ~0%).
+        </p>
+        <p class="overview">
+            This plan makes the auto-STF <strong>per-channel (unlinked)</strong> for colour images &mdash; each channel
+            derives and applies its own shadows / midtones, so each clips only its own darkest few percent &mdash; while
+            keeping <strong>uniform (linked)</strong> as the default for mono and as a manual option. The per-channel
+            derivation is produced once from the raw colour data the loaders already retain (the CFA mosaic deinterleaved
+            by <code>BAYERPAT</code>, or the RGB planes) and is applied <strong>consistently</strong> on open, in the
+            inspector's Auto, in the STF editor window's Auto, and in the QuickLook / Finder previews.
+        </p>
+        <p class="overview">
+            The apply path and parameter type already support per-channel &mdash;
+            <code>Processors.Stretch.STFParameters.perChannel</code>, <code>Channel.computed(median:mad:…)</code> and the
+            3-channel <code>computed(from:)</code> were all built in the completed
+            <code>2026-07-04-stf-stretch</code> initiative &mdash; so this is a <strong>derivation-input and plumbing</strong>
+            change, not new stretch maths.
+        </p>
+
+        <h2 class="section">Questions &amp; answers</h2>
+
+        <div class="qa">
+            <p class="q">Didn't the STF plan already decide against per-channel Auto?</p>
+            <p class="a">Only pragmatically. Milestone&nbsp;6 shipped the uniform luminance derivation because the
+            post-debayer RGB buffer exists only transiently at render time and per-channel Auto seemed to need a new
+            SwiftPixel pass to expose it. That is avoidable: per-channel statistics can come from the raw mosaic (which
+            the loaders retain) deinterleaved by CFA position, or from the RGB planes &mdash; no render-time buffer
+            required. The plan's original intent was per-channel; the concrete 41% clipping now justifies finishing it.</p>
+
+            <p class="q">Should per-channel be the default?</p>
+            <p class="a">Yes for <strong>colour</strong> images; <strong>mono</strong> keeps uniform (it has a single
+            channel). Uniform also stays available as a manual option.</p>
+
+            <p class="q">Does the inspector's one-click Auto have to change too?</p>
+            <p class="a">Yes &mdash; required, not optional. The whole point of the on-open / click-Auto reconciliation is
+            that they agree, so if opening applies a per-channel STF the inspector Auto must produce the same.</p>
+
+            <p class="q">What about the Auto button in the STF editor window?</p>
+            <p class="a">It <strong>respects the window's per-channel toggle</strong>: in per-channel mode it derives and
+            fills the three channels; in uniform mode it derives and fills a single set. "Auto fills whatever I'm
+            currently editing" &mdash; and it gives a power user a colour-preserving uniform Auto on demand.</p>
+
+            <p class="q">Do we keep uniform (linked) at all?</p>
+            <p class="a">Yes. Mono has no other choice; linked STF preserves the true colour ratios (PixInsight ships
+            both linked and unlinked); and it already exists as the manual uniform ↔ per-channel toggle in the editor.</p>
+
+            <p class="q">Any behavioural consequence to accept?</p>
+            <p class="a">Per-channel independently lifts each channel's background to the target, which
+            <strong>neutralizes background colour casts</strong> on open &mdash; an automatic background colour balance.
+            This is desirable and matches PixInsight's unlinked default, but it is a real appearance change from today's
+            uniform default. <strong>Accepted.</strong></p>
+        </div>
+
+        <h2 class="section">Notes</h2>
+        <div class="notes">
+            <ul>
+                <li><strong>One shared derivation, four consumers.</strong> On-open (linear loaders), the inspector Auto
+                    (<code>ImageRenderer.autoScreenTransferSettings</code>), the STF window Auto
+                    (<code>STFEditorView</code>), and the QuickLook / Finder previews must all produce the same result
+                    for a given image, so the per-channel derivation lives in one place and is reached through the
+                    <code>ImageRenderSource</code> abstraction. This preserves the "open&nbsp;==&nbsp;click&nbsp;Auto"
+                    guarantee the earlier work established.</li>
+                <li><strong>Colour vs. mono is the switch.</strong> A colour source (CFA mosaic, RGB planes, or a colour
+                    photo) derives <code>.perChannel(red:green:blue:)</code>; a single-channel source derives
+                    <code>.uniform</code> exactly as today. The decision is per-source, resolved once at derivation.</li>
+                <li><strong>Derivation input (key implementation point).</strong> The per-channel statistics come from
+                    the colour data the loaders already hold, <em>not</em> from a render-time buffer. The recommended
+                    route is deinterleaving the CFA mosaic by <code>BAYERPAT</code> into R/G/B sample sets (unequal
+                    counts are fine &mdash; only per-channel median / MAD are needed) and calling
+                    <code>Channel.computed(median:mad:…)</code> per channel; RGB-plane and photographic sources use their
+                    channels directly (or the existing 3-channel <code>computed(from:)</code>). The alternative &mdash;
+                    building a 3-channel debayered detection buffer at load and reusing <code>computed(from:)</code>
+                    wholesale &mdash; is the fallback. Confirm the exact shape in Milestone&nbsp;1.</li>
+                <li><strong>Full-scale domain is unchanged.</strong> The STF still applies over
+                    <code>Processors.Normalize.Mode.identity</code> in the native full-scale <code>[0, 1]</code> domain;
+                    only the parameters become per-channel. The per-channel derivation runs over the same
+                    <code>1&nbsp;/&nbsp;fullScale</code>-scaled data the render applies the STF to, so parameters and
+                    render agree (as the uniform path already does).</li>
+                <li><strong>Independent of the histogram fix.</strong> A separate change makes the histogram scale to its
+                    interior bins so clipping no longer flattens the plot; that correctly <em>displays</em> clipping. This
+                    plan <em>reduces</em> the clipping itself, and does not depend on it.</li>
+                <li><strong>Conventions (repo working agreement).</strong> Prefer <code>let</code>; no force-unwrap; no
+                    raw loops; one type per file; add SwiftUI previews for new/changed views; document public
+                    <em>and</em> private members. Build and test through <strong>xcodebuild</strong>; keep
+                    <code>FITScope.xcodeproj</code> and the <code>SwiftPixel</code> / <code>SwiftAstro</code> projects in
+                    sync when files are added. The derivation entry points stay <code>nonisolated</code> / off-main-actor
+                    friendly, as today. Committing / pushing and submodule pointer updates are the maintainer's
+                    responsibility.</li>
+            </ul>
+        </div>
+
+        <h2 class="section">Milestones</h2>
+
+        <!-- M1 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">1</span>
+                <h3>Per-channel STF derivation from a source's colour data</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Derive a per-channel (colour) or uniform (mono) STF from the linear colour data a render
+            source already retains, in the full-scale <code>[0, 1]</code> domain &mdash; the single shared foundation the
+            other milestones consume.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Decide and implement the derivation input (see Notes): recommended is deinterleaving the CFA mosaic by
+                    <code>BAYERPAT</code> into R/G/B sample sets and computing per-channel median / MAD; RGB-plane and
+                    photographic sources use their channels directly. Confirm vs. the 3-channel-buffer fallback here.</li>
+                <li>Assemble the result: colour → <code>STFParameters.perChannel(red:green:blue:)</code> via
+                    <code>Channel.computed(median:mad:shadowClipFactor:targetBackground:)</code> per channel; mono →
+                    <code>.uniform</code> (unchanged). Reuse the existing 3-channel <code>computed(from:)</code> where a
+                    co-located 3-channel buffer is the chosen input.</li>
+                <li>Add any needed SwiftPixel / SwiftAstro helper (e.g. a mosaic-deinterleave-by-pattern → per-channel
+                    statistics utility), documented and unit-tested; keep the corresponding <code>.xcodeproj</code> and
+                    package targets in sync.</li>
+                <li>Expose the derivation on <code>ImageRenderSource</code> (a per-channel-aware entry that yields the
+                    settings for given shadow-clip / target-background factors), so all consumers reach one
+                    implementation. Keep it <code>nonisolated</code> and <code>Sendable</code>-safe.</li>
+                <li>Tests: per-channel derivation reproduces known per-channel median / MAD → expected parameters; a mono
+                    source yields <code>.uniform</code>; CFA deinterleave picks the correct positions for each supported
+                    <code>BAYERPAT</code>; identity / degenerate inputs are handled.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">&mdash;</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting human review.</p>
+        </div>
+
+        <!-- M2 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">2</span>
+                <h3>Per-channel auto-STF on open &amp; in previews</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Opening a colour image applies a per-channel auto-STF (each channel's own shadow clip); a mono
+            image keeps the uniform STF; the QuickLook / Finder previews match &mdash; resolving the over-clipping.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Route <code>ImageProcessor.autoStretchSettings</code> and the per-format loaders
+                    (<code>FITSImageLoader</code> / <code>XISFImageLoader</code> / <code>RAWImageLoader</code>) through the
+                    Milestone&nbsp;1 derivation: colour → per-channel, mono → uniform, over
+                    <code>{ normalize: .identity, stretch: … }</code> in the full-scale domain.</li>
+                <li>Apply the same in the shared preview renderers
+                    (<code>FITSPreviewRenderer</code> / <code>XISFPreviewRenderer</code>), so QuickLook / Finder previews
+                    match the app on open.</li>
+                <li>Verify the fix on the real Seestar M42 sub: per-channel opens clip only a few percent per channel
+                    (no 41% red spike), with physically-sensible per-channel shadows.</li>
+                <li>Confirm the display-function (XISF) priority is unaffected (a stored display function still wins over
+                    auto-STF), and that mono / floating-point / no-full-scale paths are unchanged.</li>
+                <li>Tests: a colour frame opens with a <code>.perChannel</code> stretch and a mono frame with
+                    <code>.uniform</code>; the real-frame per-channel clip fractions are bounded well below the uniform
+                    result; a preview renders the same settings as the app; the display-function-wins rule holds.</li>
+            </ul>
+            <div class="field-label">Dependencies</div>
+            <p class="deps"><strong>Milestone 1</strong>.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">&mdash;</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting human review.</p>
+        </div>
+
+        <!-- M3 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">3</span>
+                <h3>Per-channel Auto in the inspector &amp; the STF editor window</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">The inspector's one-click Auto and the STF editor window's Auto produce per-channel for
+            colour &mdash; the inspector matching exactly what opening does, the window honouring its own per-channel
+            toggle &mdash; with uniform kept as an explicit option.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Have <code>ImageRenderer.autoScreenTransferSettings</code> derive per-channel (colour) / uniform
+                    (mono) via the Milestone&nbsp;1 source capability, so the inspector's Auto <strong>reproduces the
+                    on-open result</strong> (open&nbsp;==&nbsp;click-Auto) rather than the single-channel luminance
+                    derivation it uses today.</li>
+                <li>Make the STF editor window's Auto <strong>respect the window's per-channel toggle</strong>: in
+                    per-channel mode derive and fill the three channels; in uniform mode derive and fill a single set.
+                    Keep the tunable shadow-clip / target-background settings applying to whichever mode is active.</li>
+                <li>Keep uniform fully available (the manual uniform ↔ per-channel toggle, and the mono case); update any
+                    accessibility identifiers and the <code>#Preview</code>s for the changed controls.</li>
+                <li>Confirm the seeding / sync paths (opening in per-channel mode from a per-channel-opened image, Reset,
+                    switching modes) round-trip without an echo loop, matching the existing control behaviour.</li>
+                <li>Tests: the inspector Auto equals the on-open settings for a colour source; the window Auto fills
+                    per-channel or uniform per the current toggle; a mono source stays uniform in both.</li>
+            </ul>
+            <div class="field-label">Dependencies</div>
+            <p class="deps"><strong>Milestones 1 &amp; 2</strong>.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule not-started">Not started</span></p>
+            <div class="field-label">Completed</div>
+            <p class="placeholder">&mdash;</p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting human review.</p>
+        </div>
+
+        <h2 class="section">Appendix</h2>
+        <div class="appendix">
+            <h3>Per-channel derivation (same maths, per channel)</h3>
+            <pre>For each channel c (from its own linear samples, in the full-scale [0, 1] domain):
+
+  shadowClipFactor = 2.8     (default; user-tunable)
+  targetBackground = 0.25    (default; user-tunable)
+
+  s_c (shadows)  = clamp( median_c − shadowClipFactor · MAD_c, 0, 1 )
+  h_c            = 1
+  l_c, r_c       = 0, 1
+  m0_c           = (median_c − s_c) / (1 − s_c)          (guard 1 − s_c ≠ 0)
+  midtones_c     = mtf( m0_c, targetBackground )         (as in the STF core)
+
+Colour → STFParameters.perChannel(red: c_R, green: c_G, blue: c_B)
+Mono   → STFParameters.uniform(c)                        (unchanged)</pre>
+            <p>Each channel clips only <em>its own</em> darkest tail, so an imbalanced channel is no longer crushed by a
+            level derived from the (brighter) luminance.</p>
+
+            <h3>CFA deinterleave by pattern</h3>
+            <p>For a 2×2 <code>BAYERPAT</code> tile (e.g. <code>GRBG</code>), collect each channel's pixels by their tile
+            position across the mosaic, then take each set's median / MAD. Green has two positions per tile; red and blue
+            one each. Only per-channel statistics are needed, so the unequal sample counts are irrelevant &mdash; no
+            demosaic and no co-location required.</p>
+
+            <h3>Key files &amp; hook points</h3>
+            <table>
+                <tr><th>Concern</th><th>File(s)</th></tr>
+                <tr><td>STF params &amp; per-channel derivation primitives (already present)</td>
+                    <td><code>Submodules/SwiftAstro/Submodules/SwiftPixel/SwiftPixel/Processors/STFParameters.swift</code></td></tr>
+                <tr><td>CFA mosaic deinterleave / pattern</td>
+                    <td><code>SwiftPixel</code> debayer utilities, <code>SwiftAstro</code> <code>FITSImageDecoder</code> /
+                        <code>BayerGrayscaleConverter</code>, the app's <code>Processors.Debayer.Pattern</code></td></tr>
+                <tr><td>Per-channel derivation entry &amp; source capability</td>
+                    <td><code>FITScope/Image/ImageProcessor.swift</code> (<code>autoStretchSettings</code>),
+                        <code>FITScope/Model/ImageRenderSource.swift</code> + the FITS / XISF / RAW / ImageIO sources</td></tr>
+                <tr><td>Auto-STF on open (linear loaders)</td>
+                    <td><code>FITScope/Model/FITS/FITSImageLoader.swift</code>,
+                        <code>FITScope/Model/XISF/XISFImageLoader.swift</code>,
+                        <code>FITScope/Model/RAW/RAWImageLoader.swift</code></td></tr>
+                <tr><td>Inspector &amp; window Auto</td>
+                    <td><code>FITScope/Model/ImageRenderer.swift</code> (<code>autoScreenTransferSettings</code>),
+                        <code>FITScope/Views/ImageControls/StretchControlView.swift</code>,
+                        <code>FITScope/Views/ScreenTransfer/STFEditorView.swift</code></td></tr>
+                <tr><td>Previews / thumbnails</td>
+                    <td><code>FITScope/Image/FITSPreviewRenderer.swift</code>,
+                        <code>FITScope/Image/XISFPreviewRenderer.swift</code></td></tr>
+            </table>
+        </div>
+
+        <footer>
+            FITScope &mdash; FITS Image Viewer for macOS. &nbsp;·&nbsp; Living document: milestone Status,
+            Implementation notes, Automated review and Review comments are updated in place as work progresses.
+        </footer>
+    </div>
+</body>
+</html>

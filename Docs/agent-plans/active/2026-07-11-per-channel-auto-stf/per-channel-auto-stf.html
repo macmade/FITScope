@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Per-Channel Auto-STF — Source Brief</title>
+    <style>
+        :root {
+            --bg:         #0f1117;
+            --bg-card:    #181b24;
+            --border:     #2a2f3c;
+            --text:       #e6e9ef;
+            --text-dim:   #9aa3b2;
+            --accent:     #5aa9ff;
+            --code-bg:    #12151d;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+        .container { max-width: 860px; margin: 0 auto; padding: 48px 24px 96px; }
+        h1 { font-size: 2rem; letter-spacing: -0.02em; margin: 0 0 8px; }
+        .meta { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 32px; }
+        h2 {
+            font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.09em;
+            color: var(--text-dim); margin: 40px 0 16px; padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        p { margin: 0 0 16px; }
+        ul { padding-left: 22px; }
+        li { margin-bottom: 8px; color: var(--text-dim); }
+        strong { color: var(--text); }
+        code {
+            font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.86em; background: var(--code-bg); border: 1px solid var(--border);
+            border-radius: 5px; padding: 1px 5px;
+        }
+        table { border-collapse: collapse; width: auto; margin: 8px 0 20px; font-size: 0.9rem; }
+        th, td { border: 1px solid var(--border); padding: 6px 14px; text-align: left; }
+        th { background: #1d212c; }
+        td { color: var(--text-dim); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Per-Channel Auto-STF — Source Brief</h1>
+        <div class="meta">2026-07-11 &nbsp;·&nbsp; Follows the completed <code>2026-07-04-stf-stretch</code> initiative.</div>
+
+        <h2>Problem</h2>
+        <p>
+            The auto Screen Transfer is <strong>uniform (linked)</strong>: it derives one shadows / midtones pair
+            from the single-channel luminance <code>detectionImage</code> and applies it to every colour channel. On a
+            colour-imbalanced frame the single shadow clip — appropriate for luminance — lands above the dimmest
+            channel's background and crushes it to black.
+        </p>
+        <p>
+            Measured on the real Seestar S30 M42 light-pollution sub (rendered through the app's pipeline), the auto-STF
+            clips to pure black:
+        </p>
+        <table>
+            <tr><th>Channel</th><th>Clipped to black (bin&nbsp;0)</th></tr>
+            <tr><td>Red</td><td>41%</td></tr>
+            <tr><td>Green</td><td>6%</td></tr>
+            <tr><td>Blue</td><td>4%</td></tr>
+        </table>
+        <p>
+            (Unstretched min/max clips ~0%.) A good stretch should clip only the darkest ~1&ndash;3% of <em>each</em>
+            channel. The fix is an <strong>unlinked (per-channel)</strong> auto-STF, where each channel derives and
+            applies its own shadows / midtones — the standard PixInsight behaviour for colour.
+        </p>
+
+        <h2>Why it was uniform (and why that no longer blocks us)</h2>
+        <p>
+            The completed STF plan deferred per-channel Auto for a pragmatic reason (Milestone&nbsp;6): the
+            post-debayer RGB buffer exists only transiently at render time, and per-channel Auto seemed to need a new
+            SwiftPixel pass to expose it, so the uniform luminance derivation shipped instead.
+        </p>
+        <p>
+            That obstacle is avoidable: the loaders <strong>already retain the raw mosaic / planes</strong>. Per-channel
+            statistics can come from <strong>deinterleaving the CFA mosaic by <code>BAYERPAT</code></strong> (or from the
+            RGB planes directly) — no render-time buffer required. And the per-channel apply path and parameter type
+            (<code>STFParameters.perChannel</code>, <code>Channel.computed(median:mad:…)</code>,
+            <code>computed(from:)</code> for a 3-channel buffer) were all built in Milestone&nbsp;1, so this is a
+            <em>derivation-input</em> and plumbing change, not new stretch maths.
+        </p>
+
+        <h2>Agreed design</h2>
+        <ul>
+            <li><strong>Per-channel is the default for colour; uniform stays the default for mono</strong> and remains a
+                manual option (the STF editor's uniform ↔ per-channel toggle).</li>
+            <li><strong>One shared derivation, applied everywhere.</strong> Opening a file, the inspector's one-click
+                Auto, the STF editor window's Auto, and the QuickLook / Finder previews all route through the same
+                derivation, so open&nbsp;==&nbsp;click-Auto stays true.</li>
+            <li><strong>The inspector Auto produces per-channel</strong> for colour — required, not optional, to keep
+                open and Auto in agreement.</li>
+            <li><strong>The STF window's Auto respects the window's per-channel toggle</strong>: it fills whatever mode
+                is active (per-channel mode → three channels; uniform mode → one). This gives a power user a
+                colour-preserving uniform Auto on demand.</li>
+            <li><strong>Keep uniform (linked) as an option.</strong> Mono has no other choice, linked STF preserves the
+                true colour ratios (PixInsight ships both), and it already exists as the manual toggle.</li>
+            <li><strong>Accepted consequence:</strong> a per-channel default <em>neutralizes background colour casts</em>
+                on open (each channel's background independently lifted to the target) — effectively an automatic
+                background colour balance. This is desirable and matches PixInsight's unlinked default, but is a real
+                appearance change from today's uniform default.</li>
+        </ul>
+    </div>
+</body>
+</html>
