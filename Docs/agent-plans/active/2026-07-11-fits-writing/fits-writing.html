@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FITS Writing</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --bg-card:   #181b24;
+            --bg-card-2: #1d212c;
+            --border:    #2a2f3c;
+            --text:      #e6e9ef;
+            --text-dim:  #9aa3b2;
+            --accent:    #5aa9ff;
+            --accent-dim:#2d3b52;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 36px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 2.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .overview {
+            color: var(--text-dim);
+            margin: 24px 0 40px;
+            font-size: 1.02rem;
+        }
+
+        h2 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 40px 0 20px;
+            font-weight: 600;
+        }
+
+        .item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 18px;
+        }
+
+        .item-header {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .item-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 26px;
+            height: 26px;
+            padding: 0 8px;
+            border-radius: 6px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-size: 0.85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .item h3 {
+            margin: 0;
+            font-size: 1.15rem;
+            letter-spacing: -0.01em;
+        }
+
+        .item p {
+            margin: 0;
+            color: var(--text-dim);
+        }
+
+        .item p + p {
+            margin-top: 12px;
+        }
+
+        code {
+            background: var(--bg-card-2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.88em;
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FITS Writing</h1>
+            <div class="meta">Generated 2026-07-11</div>
+        </header>
+
+        <p class="overview">
+            Items gathered around the upcoming FITS write capability in the
+            <code>SwiftFITS</code> submodule. Once FITScope can produce FITS
+            files rather than only read them, several parts of the app can be
+            improved — from a proper FITS export option, to smarter
+            plate-solving uploads, to simplifying the current XISF keyword
+            handling.
+        </p>
+
+        <h2>Backlog</h2>
+
+        <div class="item">
+            <div class="item-header">
+                <span class="item-number">1</span>
+                <h3>Offer FITS as an export format</h3>
+            </div>
+            <p>
+                <code>SwiftFITS</code> will gain the ability to write FITS
+                files. Once it does, expose a FITS option when exporting an
+                image, so users can save to FITS as well. The option should be
+                offered for every source except files that are already FITS,
+                where re-exporting to the same format adds nothing.
+            </p>
+        </div>
+
+        <div class="item">
+            <div class="item-header">
+                <span class="item-number">2</span>
+                <h3>Upload a FITS file for plate-solving XISF images</h3>
+            </div>
+            <p>
+                When submitting a file for plate-solving, non-FITS sources are
+                currently uploaded as a PNG. For XISF images we could instead
+                generate a FITS file carrying the correct metadata. Providing
+                that metadata to nova.astrometry.net would most likely speed up
+                the solve, since it would no longer be a blind solve when the
+                relevant information is available.
+            </p>
+        </div>
+
+        <div class="item">
+            <div class="item-header">
+                <span class="item-number">3</span>
+                <h3>Simplify XISF embedded FITS keyword handling</h3>
+            </div>
+            <p>
+                To parse the FITS keywords embedded in XISF files, we currently
+                build FITS cards by hand. This approach is imperfect —
+                particularly around padding. With the new <code>SwiftFITS</code>
+                write capabilities, this handling could be simplified and made
+                more robust.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
