@@ -190,6 +190,33 @@
                 <code>FWHM</code> — defaulting to <code>HFR</code>.
             </p>
         </div>
+
+        <div class="item">
+            <div class="item-header">
+                <span class="item-number">5</span>
+                <h3>Fix the brightness and contrast adjustments</h3>
+            </div>
+            <p>
+                The brightness and contrast adjustments currently behave
+                incorrectly — the result looks off, and the controls may be far
+                too sensitive. In their present state they are not usable.
+                Investigate the cause and rework them so they respond in a
+                controlled, predictable way.
+            </p>
+        </div>
+
+        <div class="item">
+            <div class="item-header">
+                <span class="item-number">6</span>
+                <h3>Show real pixels when zoomed in</h3>
+            </div>
+            <p>
+                Investigate rendering the actual pixels (crisp, nearest-neighbor
+                magnification) when zooming into the image, instead of the
+                current smooth, interpolated rendering. This would let users
+                inspect individual pixels at high zoom levels.
+            </p>
+        </div>
     </div>
 </body>
 </html>
