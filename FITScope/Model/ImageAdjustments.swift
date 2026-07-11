@@ -89,35 +89,62 @@ public final class ImageAdjustments: ObservableObject
     /// Identity by default, so the image opens as captured.
     @Published public var orientation: Processors.Orient.Orientation = .identity
 
-    /// The baseline the image opens on — its "as captured" view. ``reset()``
-    /// returns to it and ``hasAdjustments`` compares against it. Defaults to the
-    /// pipeline defaults (a linear min/max normalization), but a format whose
-    /// samples are already display-ready (e.g. a photographic image) seeds a
-    /// different baseline so the image opens as authored rather than
-    /// range-stretched.
+    /// The unstretched "as captured" view the image resets to. ``reset()`` and the
+    /// per-control resets return to it, and the before/after slider renders it as
+    /// the "original". Defaults to the pipeline defaults (a linear min/max
+    /// normalization), but a format whose samples are already display-ready (e.g. a
+    /// photographic image) seeds a different baseline so the image opens as authored
+    /// rather than range-stretched.
+    ///
+    /// This is deliberately *unstretched*: an auto-applied stretch on open (an auto
+    /// Screen Transfer, or an XISF display function) is carried by ``opened``, not
+    /// here, so it counts as an adjustment the user can reset away and compare
+    /// against.
     public let baseline: ImageProcessor.Settings
 
-    /// Creates an adjustment set seeded from a baseline.
+    /// The state the image actually opened in — the ``baseline`` plus any stretch
+    /// applied automatically on open (an auto Screen Transfer, or an XISF display
+    /// function). Equal to ``baseline`` when the image opened unstretched.
     ///
-    /// - Parameter baseline: The settings the image opens on. Defaults to the
-    ///                       pipeline defaults, which render the file as captured.
-    public init( baseline: ImageProcessor.Settings = ImageProcessor.Settings() )
+    /// ``hasAdjustments`` compares against this rather than ``baseline``, so an image
+    /// that merely opened auto-stretched is not reported as edited (no sidebar marker,
+    /// no close-confirmation alert) until the user changes something — while
+    /// ``reset()`` still returns to the unstretched ``baseline``.
+    public let opened: ImageProcessor.Settings
+
+    /// Creates an adjustment set seeded from a baseline and, optionally, a distinct
+    /// opened state.
+    ///
+    /// The current values start at `opened` (the "as opened" view), while `baseline`
+    /// is retained as the unstretched reset target. When `opened` is `nil`, the image
+    /// opened exactly on its baseline (no auto-applied stretch), so the two coincide.
+    ///
+    /// - Parameters:
+    ///   - baseline: The unstretched settings the image resets to. Defaults to the
+    ///               pipeline defaults, which render the file as captured.
+    ///   - opened:   The settings the image opened with, when it differs from the
+    ///               baseline (an auto-applied stretch). Defaults to `nil` (opens on
+    ///               the baseline).
+    public init( baseline: ImageProcessor.Settings = ImageProcessor.Settings(), opened: ImageProcessor.Settings? = nil )
     {
+        let opened = opened ?? baseline
+
         self.baseline         = baseline
-        self.normalize        = baseline.normalize
-        self.stretch          = baseline.stretch
-        self.whiteBalance     = baseline.whiteBalance
-        self.invert           = baseline.invert
-        self.brightness       = baseline.brightness
-        self.contrast         = baseline.contrast
-        self.levels           = baseline.levels
-        self.curves           = baseline.curves
-        self.colorBalance     = baseline.colorBalance
-        self.hue              = baseline.hue
-        self.saturation       = baseline.saturation
-        self.debayer          = baseline.debayer
-        self.debayerAlgorithm = baseline.debayerMode
-        self.orientation      = baseline.orientation
+        self.opened           = opened
+        self.normalize        = opened.normalize
+        self.stretch          = opened.stretch
+        self.whiteBalance     = opened.whiteBalance
+        self.invert           = opened.invert
+        self.brightness       = opened.brightness
+        self.contrast         = opened.contrast
+        self.levels           = opened.levels
+        self.curves           = opened.curves
+        self.colorBalance     = opened.colorBalance
+        self.hue              = opened.hue
+        self.saturation       = opened.saturation
+        self.debayer          = opened.debayer
+        self.debayerAlgorithm = opened.debayerMode
+        self.orientation      = opened.orientation
     }
 
     /// Restores every adjustment to the image's baseline, rendering the file as
@@ -171,16 +198,19 @@ public final class ImageAdjustments: ObservableObject
         self[ keyPath: keyPath ] = ImageAdjustments( baseline: self.baseline )[ keyPath: keyPath ]
     }
 
-    /// Whether any adjustment deviates from the image's baseline, i.e. the image
-    /// is no longer rendered exactly as captured.
+    /// Whether the user has changed any adjustment from the state the image opened
+    /// in, i.e. the image is no longer rendered exactly as it opened.
     ///
-    /// Compares the current ``settings`` snapshot to the baseline rather than
-    /// tracking a separate flag, so it can never drift out of sync with the
-    /// individual values and automatically covers every field the settings
-    /// encode. Drives the sidebar's "edited" marker.
+    /// Compares the current ``settings`` snapshot to ``opened`` rather than
+    /// ``baseline``, so an image that opened auto-stretched (an auto Screen Transfer,
+    /// or an XISF display function) is *not* flagged as edited on open — only a
+    /// genuine user change makes it dirty. Compares the whole snapshot rather than
+    /// tracking a separate flag, so it can never drift out of sync with the individual
+    /// values and automatically covers every field the settings encode. Drives the
+    /// sidebar's "edited" marker and the close/trash confirmation.
     public var hasAdjustments: Bool
     {
-        self.settings != self.baseline
+        self.settings != self.opened
     }
 
     /// A `Sendable` snapshot of the current adjustments, safe to hand to the

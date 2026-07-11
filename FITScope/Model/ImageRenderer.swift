@@ -186,25 +186,30 @@ public class ImageRenderer: ObservableObject
     ///
     /// - Parameters:
     ///   - source:   The render source, or the extraction failure.
-    ///   - defaults: The baseline the image opens on. Defaults to the pipeline
-    ///               defaults (a linear min/max normalization); a format whose
-    ///               samples are already display-ready seeds a different baseline
-    ///               so the image opens as authored.
-    public init( source: Swift.Result< any ImageRenderSource, any Error >, defaults: ImageProcessor.Settings = ImageProcessor.Settings() )
+    ///   - defaults: The unstretched baseline the image resets to. Defaults to the
+    ///               pipeline defaults (a linear min/max normalization); a format
+    ///               whose samples are already display-ready seeds a different
+    ///               baseline so the image resets to its authored view.
+    ///   - opened:   The state the image opens in, when it differs from the baseline
+    ///               (a stretch applied automatically on open). Defaults to `nil`, so
+    ///               the image opens on its baseline.
+    public init( source: Swift.Result< any ImageRenderSource, any Error >, defaults: ImageProcessor.Settings = ImageProcessor.Settings(), opened: ImageProcessor.Settings? = nil )
     {
         self.source      = source
-        self.adjustments = ImageAdjustments( baseline: defaults )
+        self.adjustments = ImageAdjustments( baseline: defaults, opened: opened )
     }
 
     /// Creates a renderer from an already-extracted render source.
     ///
     /// - Parameters:
     ///   - source:   The render source.
-    ///   - defaults: The baseline the image opens on. Defaults to the pipeline
-    ///               defaults.
-    public convenience init( source: any ImageRenderSource, defaults: ImageProcessor.Settings = ImageProcessor.Settings() )
+    ///   - defaults: The unstretched baseline the image resets to. Defaults to the
+    ///               pipeline defaults.
+    ///   - opened:   The state the image opens in, when it differs from the baseline.
+    ///               Defaults to `nil`.
+    public convenience init( source: any ImageRenderSource, defaults: ImageProcessor.Settings = ImageProcessor.Settings(), opened: ImageProcessor.Settings? = nil )
     {
-        self.init( source: .success( source ), defaults: defaults )
+        self.init( source: .success( source ), defaults: defaults, opened: opened )
     }
 
     /// Whether an auto Screen Transfer Function can be derived — that is, whether
@@ -264,12 +269,14 @@ public class ImageRenderer: ObservableObject
             let source         = try self.source.get()
             let settings       = self.adjustments.settings
 
-            // The "as captured" baseline this image opens on: for most formats the
-            // linear min/max default, but a photographic image opens as authored, so
-            // its baseline is captured here rather than assuming the pipeline default.
-            // Captured as an immutable value; the background render applies the
-            // current orientation to a copy so the before/after image registers with
-            // the processed result.
+            // The unstretched "as captured" baseline the image resets to and the
+            // before/after slider shows as the "original": for most formats the linear
+            // min/max default, but a photographic image resets to its authored view, so
+            // the baseline is captured here rather than assuming the pipeline default.
+            // (An auto-applied stretch on open lives in the current settings, not here.)
+            // Captured as an immutable value; the background render applies the current
+            // orientation to a copy so the before/after image registers with the
+            // processed result.
             let baseline = self.adjustments.baseline
 
             // The histogram's original is orientation-independent, so it is computed

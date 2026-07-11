@@ -72,8 +72,9 @@ public class XISFImageLoader: ObservableObject, ImageLoading
     private var imageObserver: AnyCancellable?
 
     /// Whether an image with no display function opens with an auto Screen Transfer
-    /// applied as its baseline (the per-format "auto-stretch on open" preference for
-    /// XISF). A stored display function always takes priority over auto-stretch.
+    /// applied on open — as an editable adjustment over the unstretched baseline (the
+    /// per-format "auto-stretch on open" preference for XISF). A stored display
+    /// function always takes priority over auto-stretch.
     private let autoStretch: Bool
 
     /// Creates a loader for the file at the given URL.
@@ -83,7 +84,8 @@ public class XISFImageLoader: ObservableObject, ImageLoading
     ///   - data:        The file's raw bytes when already in memory; when `nil` (the
     ///                 default) the loader reads them from `url` on load.
     ///   - autoStretch: Whether to open an image with no display function with an auto
-    ///                 Screen Transfer as its baseline. Defaults to `false`.
+    ///                 Screen Transfer applied as an editable adjustment over the
+    ///                 unstretched baseline. Defaults to `false`.
     public init( url: URL, data: Data? = nil, autoStretch: Bool = false )
     {
         self.url          = url
@@ -108,7 +110,7 @@ public class XISFImageLoader: ObservableObject, ImageLoading
         {
             let frames = try await withCheckedThrowingContinuation
             {
-                ( continuation: CheckedContinuation< [ ( info: XISFImageInfo, source: Swift.Result< any ImageRenderSource, any Swift.Error >, baseline: ImageProcessor.Settings ) ], any Swift.Error > ) in DispatchQueue.global( qos: .userInitiated ).async
+                ( continuation: CheckedContinuation< [ ( info: XISFImageInfo, source: Swift.Result< any ImageRenderSource, any Swift.Error >, opened: ImageProcessor.Settings? ) ], any Swift.Error > ) in DispatchQueue.global( qos: .userInitiated ).async
                 {
                     do
                     {
@@ -147,7 +149,7 @@ public class XISFImageLoader: ObservableObject, ImageLoading
 
                         let frames = file.images.map
                         {
-                            image -> ( info: XISFImageInfo, source: Swift.Result< any ImageRenderSource, any Swift.Error >, baseline: ImageProcessor.Settings ) in
+                            image -> ( info: XISFImageInfo, source: Swift.Result< any ImageRenderSource, any Swift.Error >, opened: ImageProcessor.Settings? ) in
 
                             let info = XISFImageInfo( url: self.url, file: file, image: image )
 
@@ -166,12 +168,13 @@ public class XISFImageLoader: ObservableObject, ImageLoading
                                 return XISFRenderSource( data: bytes, properties: properties, detectionImage: detectionImage )
                             }
 
-                            // The baseline the image opens on: the display function when
+                            // The state the image opens in: the display function when
                             // present, else an auto Screen Transfer when the preference is
-                            // on, else linear. Derived here, off the main actor.
-                            let baseline = Self.baseline( for: info, detectionImage: ( try? source.get() )?.detectionImage, autoStretch: self.autoStretch )
+                            // on, else `nil` (opens unstretched). Derived here, off the
+                            // main actor.
+                            let opened = Self.openedSettings( for: info, detectionImage: ( try? source.get() )?.detectionImage, autoStretch: self.autoStretch )
 
-                            return ( info: info, source: source, baseline: baseline )
+                            return ( info: info, source: source, opened: opened )
                         }
 
                         continuation.resume( returning: frames )
@@ -192,7 +195,7 @@ public class XISFImageLoader: ObservableObject, ImageLoading
                 {
                     frame -> LoadedImage in
 
-                    let renderer = ImageRenderer( source: frame.source, defaults: frame.baseline )
+                    let renderer = ImageRenderer( source: frame.source, opened: frame.opened )
 
                     return LoadedImage( xisfInfo: frame.info, renderer: renderer )
                 }
@@ -216,32 +219,33 @@ public class XISFImageLoader: ObservableObject, ImageLoading
         }
     }
 
-    /// The baseline settings an XISF image opens on.
+    /// The state an XISF image opens in, layered over its unstretched baseline, or
+    /// `nil` when it opens unstretched.
     ///
     /// The display function takes priority: when the image carries a usable one, it
-    /// is mapped onto an editable Screen Transfer stretch and seeded as the baseline,
-    /// so the image opens as authored. Otherwise, when the auto-stretch-on-open
-    /// preference is on, an auto Screen Transfer is derived from the detection image
-    /// and seeded instead. An image with neither — no display function (or an
-    /// identity / unusable one) and auto-stretch off — opens on the default linear
-    /// baseline.
+    /// is mapped onto an editable Screen Transfer stretch, so the image opens as
+    /// authored. Otherwise, when the auto-stretch-on-open preference is on, an auto
+    /// Screen Transfer is derived from the detection image instead. Returns `nil`
+    /// (opens on the unstretched linear baseline) when there is neither — no display
+    /// function (or an identity / unusable one) and auto-stretch off — or when the
+    /// derivation fails. Either way the image still resets to the unstretched view.
     ///
     /// Both Screen Transfer sources are authored in — and applied in — the format's
     /// native, full-scale `[0, 1]` domain (a PixInsight display function's
     /// shadows / midtones / highlights are fractions of full scale, and the auto-STF
     /// derivation runs over the same full-scale-normalized data). The XISF render
-    /// already scales integer samples by their full scale, so seeding
-    /// ``Processors/Normalize/Mode/identity`` normalization makes the Screen Transfer
-    /// act on exactly that domain — rather than the default min/max normalization,
-    /// which would pre-stretch the data and distort the stretch.
+    /// already scales integer samples by their full scale, so ``Processors/Normalize/Mode/identity``
+    /// normalization makes the Screen Transfer act on exactly that domain — rather
+    /// than the default min/max normalization, which would pre-stretch the data and
+    /// distort the stretch.
     ///
     /// - Parameters:
     ///   - info:           The image's metadata snapshot.
     ///   - detectionImage: The image's single-channel linear detection buffer, for
     ///                     the auto-stretch fallback.
     ///   - autoStretch:    Whether auto-stretch on open is enabled.
-    /// - Returns: The baseline settings to open the image with.
-    private nonisolated static func baseline( for info: XISFImageInfo, detectionImage: PixelBuffer?, autoStretch: Bool ) -> ImageProcessor.Settings
+    /// - Returns: The opened settings, or `nil` to open on the unstretched baseline.
+    private nonisolated static func openedSettings( for info: XISFImageInfo, detectionImage: PixelBuffer?, autoStretch: Bool ) -> ImageProcessor.Settings?
     {
         // A stored display function always wins over auto-stretch (Milestone 4).
         if let displayFunction = info.imageProperties.displayFunction,
@@ -252,16 +256,14 @@ public class XISFImageLoader: ObservableObject, ImageLoading
 
         // Otherwise fall back to an auto Screen Transfer when enabled and a full scale
         // is known (integer formats); floating-point images have no fixed full scale
-        // and open on the default linear baseline.
-        guard autoStretch,
-              let fullScale = ImageProcessor.xisfFullScale( info.imageProperties.sampleFormat ),
-              let baseline  = ImageProcessor.autoStretchBaseline( detectionImage: detectionImage, fullScale: fullScale )
+        // and open on the unstretched linear baseline.
+        guard autoStretch, let fullScale = ImageProcessor.xisfFullScale( info.imageProperties.sampleFormat )
         else
         {
-            return ImageProcessor.Settings()
+            return nil
         }
 
-        return baseline
+        return ImageProcessor.autoStretchSettings( detectionImage: detectionImage, fullScale: fullScale )
     }
 
     /// Builds the detection-ready single-channel linear image for an XISF image,

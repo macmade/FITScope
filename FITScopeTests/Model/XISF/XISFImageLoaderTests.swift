@@ -295,9 +295,10 @@ struct XISFImageLoaderTests
     }
 
     /// A grayscale image carrying a non-identity display function opens with that
-    /// display function applied as an editable, uniform Screen Transfer baseline —
-    /// the image opens "as authored", so it reports no adjustments over its own
-    /// baseline.
+    /// display function applied as an editable, uniform Screen Transfer — as an
+    /// *adjustment* over the unstretched baseline. Opening auto-applies it, so it is
+    /// not flagged as edited; but it is a resettable adjustment, and a reset returns
+    /// to the unstretched image.
     @Test
     @MainActor
     func opensWithGrayscaleDisplayFunctionApplied() async throws
@@ -312,24 +313,31 @@ struct XISFImageLoaderTests
         let adjustments = loaded.renderer.adjustments
         let expected    = Processors.Stretch.STFParameters.uniform( .init( shadows: 0.1, midtones: 0.25, highlights: 0.9, low: 0, high: 1 ) )
 
+        // The image opens with the display function applied — the "opened" state,
+        // authored in the native full-scale [0,1] domain (identity normalization).
         #expect( adjustments.stretch == expected )
-        #expect( adjustments.baseline.stretch == expected )
+        #expect( adjustments.opened.stretch == expected )
+        #expect( adjustments.opened.normalize == .identity )
 
-        // The display function is authored in the native full-scale [0,1] domain,
-        // so the baseline uses identity normalization rather than min/max.
-        #expect( adjustments.baseline.normalize == .identity )
+        // The baseline it resets to is the unstretched, min/max linear view.
+        #expect( adjustments.baseline.stretch == nil )
+        #expect( adjustments.baseline.normalize == .minMax )
 
-        // The display function is the image's "as opened" baseline, so nothing
-        // reads as modified and a reset returns to the same stretch.
+        // Opening auto-applied the display function, so it is not reported as a user
+        // edit — but it IS a resettable adjustment over the unstretched baseline.
         #expect( adjustments.hasAdjustments == false )
-        #expect( adjustments.isModified( \.stretch ) == false )
+        #expect( adjustments.isModified( \.stretch ) )
 
         adjustments.reset()
 
-        #expect( adjustments.stretch == expected )
+        // Reset returns to the unstretched image, which now differs from the opened
+        // state, so the image reads as adjusted.
+        #expect( adjustments.stretch == nil )
+        #expect( adjustments.normalize == .minMax )
+        #expect( adjustments.hasAdjustments )
     }
 
-    /// The display-function baseline renders without throwing — the `isUsable`
+    /// The display-function opened state renders without throwing — the `isUsable`
     /// gate exists precisely so the seeded Screen Transfer never makes the render
     /// apply path (which validates and throws on bad parameters) fail.
     @Test
@@ -344,8 +352,8 @@ struct XISFImageLoaderTests
 
         let loaded = try #require( loader.image )
 
-        // Render through the actual seeded baseline (its Screen Transfer stretch),
-        // over the real decoded samples — this exercises the STF apply path.
+        // Render through the actual opened state (its Screen Transfer stretch), over
+        // the real decoded samples — this exercises the STF apply path.
         let result = try loaded.renderer.renderSourceSnapshot().makeResult( settings: loaded.renderer.adjustments.settings )
 
         #expect( result.image.width == 2 )
@@ -410,8 +418,9 @@ struct XISFImageLoaderTests
     }
 
     /// With auto-stretch on and no display function, the image opens with an auto
-    /// Screen Transfer seeded over identity normalization — the full-scale domain —
-    /// and reports no adjustments over its own baseline.
+    /// Screen Transfer applied as an adjustment (the "opened" state, over identity
+    /// normalization) — not flagged as edited on open, but resettable to the
+    /// unstretched baseline.
     @Test
     @MainActor
     func opensWithAutoStretchWhenEnabledAndNoDisplayFunction() async throws
@@ -424,10 +433,13 @@ struct XISFImageLoaderTests
         let loaded      = try #require( loader.image )
         let adjustments = loaded.renderer.adjustments
 
-        #expect( adjustments.baseline.stretch   != nil )
-        #expect( adjustments.baseline.normalize == .identity )
+        #expect( adjustments.stretch          != nil )
+        #expect( adjustments.opened.stretch   != nil )
+        #expect( adjustments.opened.normalize == .identity )
+        #expect( adjustments.baseline.stretch   == nil )
+        #expect( adjustments.baseline.normalize == .minMax )
         #expect( adjustments.hasAdjustments == false )
-        #expect( adjustments.isModified( \.stretch ) == false )
+        #expect( adjustments.isModified( \.stretch ) )
     }
 
     /// A stored display function takes priority over auto-stretch: with both a
@@ -446,11 +458,11 @@ struct XISFImageLoaderTests
         let loaded   = try #require( loader.image )
         let expected = Processors.Stretch.STFParameters.uniform( .init( shadows: 0.1, midtones: 0.25, highlights: 0.9, low: 0, high: 1 ) )
 
-        #expect( loaded.renderer.adjustments.baseline.stretch == expected )
+        #expect( loaded.renderer.adjustments.opened.stretch == expected )
     }
 
     /// With auto-stretch off and no display function, the image opens linear on the
-    /// default min/max baseline, with no stretch.
+    /// unstretched min/max baseline, with no stretch.
     @Test
     @MainActor
     func opensLinearWhenAutoStretchDisabledAndNoDisplayFunction() async throws
@@ -462,6 +474,7 @@ struct XISFImageLoaderTests
 
         let loaded = try #require( loader.image )
 
+        #expect( loaded.renderer.adjustments.stretch            == nil )
         #expect( loaded.renderer.adjustments.baseline.stretch   == nil )
         #expect( loaded.renderer.adjustments.baseline.normalize == .minMax )
     }

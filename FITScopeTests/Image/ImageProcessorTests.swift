@@ -96,41 +96,41 @@ struct ImageProcessorTests
         #expect( result.bytes.contains { ( 165 ... 175 ).contains( $0 ) } )
     }
 
-    /// The auto-stretch baseline derives a *uniform* Screen Transfer seeded over
+    /// The auto-stretch settings derive a *uniform* Screen Transfer seeded over
     /// identity normalization — matching the inspector's "Auto" action, so opening
     /// and clicking Auto agree; per-channel balancing stays a manual choice.
     @Test
-    func autoStretchBaselineDerivesUniformStretchOverIdentity() throws
+    func autoStretchSettingsDeriveUniformStretchOverIdentity() throws
     {
         let buffer   = try PixelBuffer( width: 4, height: 4, channels: 1, pixels: ( 0 ..< 16 ).map { Double( $0 ) * 100 }, isNormalized: false )
-        let baseline = try #require( ImageProcessor.autoStretchBaseline( detectionImage: buffer, fullScale: 1600 ) )
+        let settings = try #require( ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: 1600 ) )
 
-        #expect( baseline.normalize == .identity )
+        #expect( settings.normalize == .identity )
 
-        guard case .uniform = try #require( baseline.stretch )
+        guard case .uniform = try #require( settings.stretch )
         else
         {
-            Issue.record( "the auto-stretch baseline must be a uniform Screen Transfer, not per-channel" )
+            Issue.record( "the auto-stretch settings must be a uniform Screen Transfer, not per-channel" )
 
             return
         }
     }
 
-    /// No detection image means no auto-stretch baseline to seed.
+    /// No detection image means no auto-stretch settings to open with.
     @Test
-    func autoStretchBaselineIsNilWithoutADetectionImage()
+    func autoStretchSettingsAreNilWithoutADetectionImage()
     {
-        #expect( ImageProcessor.autoStretchBaseline( detectionImage: nil, fullScale: 65535 ) == nil )
+        #expect( ImageProcessor.autoStretchSettings( detectionImage: nil, fullScale: 65535 ) == nil )
     }
 
-    /// A non-positive full scale cannot bring samples into `[0, 1]`, so no baseline
-    /// is derived (the caller opens the image linear instead).
+    /// A non-positive full scale cannot bring samples into `[0, 1]`, so no settings
+    /// are derived (the caller opens the image linear instead).
     @Test
-    func autoStretchBaselineIsNilForANonPositiveFullScale() throws
+    func autoStretchSettingsAreNilForANonPositiveFullScale() throws
     {
         let buffer = try PixelBuffer( width: 2, height: 2, channels: 1, pixels: [ 0, 100, 200, 300 ], isNormalized: false )
 
-        #expect( ImageProcessor.autoStretchBaseline( detectionImage: buffer, fullScale: 0 ) == nil )
+        #expect( ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: 0 ) == nil )
     }
 
     /// Integer-formatted scaling keywords keep working: a `BZERO` of the

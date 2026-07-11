@@ -44,9 +44,10 @@ struct RAWImageLoaderTests
         #expect( loader is RAWImageLoader )
     }
 
-    /// With auto-stretch on, the RAW image opens with an auto Screen Transfer seeded
-    /// over identity normalization — the full-scale domain the sensor counts are
-    /// scaled into — and reports no adjustments over its own baseline.
+    /// With auto-stretch on, the RAW image opens with an auto Screen Transfer applied
+    /// as an adjustment (the "opened" state, over identity normalization — the
+    /// full-scale domain the sensor counts are scaled into) — not flagged as edited
+    /// on open, but resettable to the unstretched min/max baseline.
     @Test
     @MainActor
     func opensWithAutoStretchWhenEnabled() async throws
@@ -58,13 +59,16 @@ struct RAWImageLoaderTests
         let image       = try #require( loader.image )
         let adjustments = image.renderer.adjustments
 
-        #expect( adjustments.baseline.stretch   != nil )
-        #expect( adjustments.baseline.normalize == .identity )
+        #expect( adjustments.stretch          != nil )
+        #expect( adjustments.opened.stretch   != nil )
+        #expect( adjustments.opened.normalize == .identity )
+        #expect( adjustments.baseline.stretch   == nil )
+        #expect( adjustments.baseline.normalize == .minMax )
         #expect( adjustments.hasAdjustments == false )
-        #expect( adjustments.isModified( \.stretch ) == false )
+        #expect( adjustments.isModified( \.stretch ) )
     }
 
-    /// With auto-stretch off, the RAW image opens linear on the default min/max
+    /// With auto-stretch off, the RAW image opens linear on the unstretched min/max
     /// baseline, with no stretch.
     @Test
     @MainActor
@@ -76,6 +80,7 @@ struct RAWImageLoaderTests
 
         let image = try #require( loader.image )
 
+        #expect( image.renderer.adjustments.stretch            == nil )
         #expect( image.renderer.adjustments.baseline.stretch   == nil )
         #expect( image.renderer.adjustments.baseline.normalize == .minMax )
     }

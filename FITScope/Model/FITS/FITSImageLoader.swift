@@ -72,8 +72,9 @@ public class FITSImageLoader: ObservableObject, ImageLoading
     /// observers.
     private var imageObserver: AnyCancellable?
 
-    /// Whether each image frame opens with an auto Screen Transfer applied as its
-    /// baseline (the per-format "auto-stretch on open" preference for FITS).
+    /// Whether each image frame opens with an auto Screen Transfer applied on open —
+    /// as an editable adjustment over the unstretched baseline (the per-format
+    /// "auto-stretch on open" preference for FITS).
     private let autoStretch: Bool
 
     /// Creates a loader for the file at the given URL.
@@ -83,7 +84,8 @@ public class FITSImageLoader: ObservableObject, ImageLoading
     ///   - data:        The file's raw bytes when already in memory; when `nil` (the
     ///                 default) the loader reads them from `url` on load.
     ///   - autoStretch: Whether to open each image frame with an auto Screen Transfer
-    ///                 as its baseline. Defaults to `false`.
+    ///                 applied as an editable adjustment over the unstretched
+    ///                 baseline. Defaults to `false`.
     public init( url: URL, data: Data? = nil, autoStretch: Bool = false )
     {
         self.url          = url
@@ -161,13 +163,13 @@ public class FITSImageLoader: ObservableObject, ImageLoading
                         let hdu         = try? FITSPreviewRenderer.imageHDU( from: file.sections )
                         let isRGBImage  = hdu.map { ImageProcessor.isRGBPlanes( properties: $0.properties ) } ?? false
 
-                        // One render source per frame, each paired with the baseline it
-                        // opens on (an auto Screen Transfer when the preference is on,
-                        // else linear). A multi-image NAXIS=3 cube decodes into one 2-D
-                        // source per plane (each becoming a carousel frame); everything
-                        // else — a 2-D image, an RGB cube, a graph, or an unsupported
-                        // geometry — is a single source.
-                        let frames: [ ( source: Swift.Result< any ImageRenderSource, any Swift.Error >, baseline: ImageProcessor.Settings ) ]
+                        // One render source per frame, each paired with the state it
+                        // opens in (an auto Screen Transfer when the preference is on,
+                        // else `nil` = unstretched linear). A multi-image NAXIS=3 cube
+                        // decodes into one 2-D source per plane (each becoming a carousel
+                        // frame); everything else — a 2-D image, an RGB cube, a graph, or
+                        // an unsupported geometry — is a single source.
+                        let frames: [ ( source: Swift.Result< any ImageRenderSource, any Swift.Error >, opened: ImageProcessor.Settings? ) ]
 
                         if graph == nil, let hdu, let planeSources = Self.multiImageFrameSources( forImageHDU: hdu )
                         {
@@ -175,7 +177,7 @@ public class FITSImageLoader: ObservableObject, ImageLoading
 
                             frames = planeSources.map
                             {
-                                source in ( source: .success( source ), baseline: Self.baseline( detectionImage: source.detectionImage, fullScale: fullScale, autoStretch: self.autoStretch ) )
+                                source in ( source: .success( source ), opened: Self.openedSettings( detectionImage: source.detectionImage, fullScale: fullScale, autoStretch: self.autoStretch ) )
                             }
                         }
                         else
@@ -201,12 +203,12 @@ public class FITSImageLoader: ObservableObject, ImageLoading
                                 return FITSRenderSource( data: hdu.data, properties: hdu.properties, detectionImage: detectionImage )
                             }
 
-                            // A graph is never rendered, so it keeps the default linear
-                            // baseline; an image derives its auto Screen Transfer from the
-                            // detection image, off the main actor, when enabled.
-                            let baseline = graph == nil ? Self.baseline( detectionImage: ( try? source.get() )?.detectionImage, fullScale: hdu.flatMap { ImageProcessor.fullScale( forImageHDU: $0.properties ) }, autoStretch: self.autoStretch ) : ImageProcessor.Settings()
+                            // A graph is never rendered, so it opens unstretched (`nil`);
+                            // an image derives its auto Screen Transfer from the detection
+                            // image, off the main actor, when enabled.
+                            let opened = graph == nil ? Self.openedSettings( detectionImage: ( try? source.get() )?.detectionImage, fullScale: hdu.flatMap { ImageProcessor.fullScale( forImageHDU: $0.properties ) }, autoStretch: self.autoStretch ) : nil
 
-                            frames = [ ( source: source, baseline: baseline ) ]
+                            frames = [ ( source: source, opened: opened ) ]
                         }
 
                         continuation.resume( returning: ( info: info, frames: frames, graph: graph, isRGBImage: isRGBImage ) )
@@ -228,7 +230,7 @@ public class FITSImageLoader: ObservableObject, ImageLoading
                 {
                     frame -> LoadedImage in
 
-                    let renderer = ImageRenderer( source: frame.source, defaults: frame.baseline )
+                    let renderer = ImageRenderer( source: frame.source, opened: frame.opened )
 
                     return LoadedImage( info: result.info, graph: result.graph, isRGBImage: result.isRGBImage, renderer: renderer )
                 }
@@ -252,33 +254,32 @@ public class FITSImageLoader: ObservableObject, ImageLoading
         }
     }
 
-    /// The baseline an image frame opens on.
+    /// The state an image frame opens in, layered over its unstretched baseline, or
+    /// `nil` when it opens unstretched.
     ///
     /// When the auto-stretch-on-open preference is on and the format has a known full
     /// scale (an integer `BITPIX`), an auto Screen Transfer is derived from the
     /// detection image — in the native full-scale `[0, 1]` domain the render scales
-    /// the samples into — and seeded as the baseline, so the frame opens stretched
-    /// with the parameters pre-filled and editable in the inspector. Otherwise the
-    /// frame opens on the default linear (min/max) baseline; a floating-point frame,
-    /// which has no fixed full scale, always opens linear.
+    /// the samples into — so the frame opens stretched with the parameters pre-filled
+    /// and editable in the inspector, while still resetting to the unstretched linear
+    /// view. Returns `nil` (opens linear) when the preference is off, the format is
+    /// floating-point (no fixed full scale), or the derivation fails.
     ///
     /// - Parameters:
     ///   - detectionImage: The frame's single-channel linear detection buffer.
     ///   - fullScale:      The format's full-scale maximum, or `nil` for a
     ///                     floating-point / unknown format.
     ///   - autoStretch:    Whether auto-stretch on open is enabled.
-    /// - Returns: The baseline settings to open the frame with.
-    private nonisolated static func baseline( detectionImage: PixelBuffer?, fullScale: Double?, autoStretch: Bool ) -> ImageProcessor.Settings
+    /// - Returns: The opened settings, or `nil` to open on the unstretched baseline.
+    private nonisolated static func openedSettings( detectionImage: PixelBuffer?, fullScale: Double?, autoStretch: Bool ) -> ImageProcessor.Settings?
     {
-        guard autoStretch,
-              let fullScale,
-              let baseline = ImageProcessor.autoStretchBaseline( detectionImage: detectionImage, fullScale: fullScale )
+        guard autoStretch, let fullScale
         else
         {
-            return ImageProcessor.Settings()
+            return nil
         }
 
-        return baseline
+        return ImageProcessor.autoStretchSettings( detectionImage: detectionImage, fullScale: fullScale )
     }
 
     /// Decodes an image HDU into a graph series when it is graph data rather than a

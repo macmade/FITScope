@@ -1212,6 +1212,30 @@
                     <li><strong>Automated review loop.</strong> One round: a fresh-context reviewer cold-read the full diff and
                         reported <strong>no Critical / High / Medium findings</strong> — the loop converged in one round. One
                         Low finding fixed, two Info deferred (below).</li>
+                    <li><strong>Auto-stretch as an adjustment, not the baseline (post-review change, per the maintainer).</strong>
+                        After the initial approval the maintainer asked that an auto-applied stretch on open — the auto Screen
+                        Transfer <em>and</em> the M4 XISF display function — be treated as an image <em>adjustment</em>: resetting
+                        the view should return to the original unstretched image, which also makes the before/after slider useful
+                        for auto-stretched images. Implemented by splitting the single baseline reference in
+                        <code>ImageAdjustments</code> into two: <code>baseline</code> (the unstretched, min/max "as captured" view
+                        — the reset target and the before/after "original") and a new <code>opened</code> (the "as opened" state,
+                        carrying the auto stretch over <code>.identity</code>). The current values seed from <code>opened</code>;
+                        <code>reset()</code> and the per-control resets return to <code>baseline</code>;
+                        <code>hasAdjustments</code> now compares to <code>opened</code> instead of <code>baseline</code>. That last
+                        change is the close-alert <strong>workaround</strong> the maintainer asked for — it falls out for free: an
+                        image that merely opened auto-stretched has <code>settings == opened</code>, so it is <em>not</em> dirty
+                        (no sidebar "edited" marker, no close/trash confirmation) until the user actually changes something, while
+                        still resetting to the unstretched view. <code>ImageRenderer.init</code> gained an <code>opened:</code>
+                        parameter; the three loaders now pass the auto/display-function settings as <code>opened</code> and keep
+                        the default unstretched <code>baseline</code> (their <code>baseline(…)</code> helpers became
+                        <code>openedSettings(…)</code> returning <code>Settings?</code>, and <code>ImageProcessor.autoStretchBaseline</code>
+                        was renamed <code>autoStretchSettings</code>). The before/after "original" is rendered from
+                        <code>baseline</code> and is always populated, so it now shows unstretched ↔ stretched for an auto-opened
+                        image (previously the baseline <em>was</em> the stretch, so the comparison showed nothing). The M4/M6
+                        loader tests were updated to the new semantics (baseline unstretched, <code>opened</code> carries the
+                        stretch, <code>hasAdjustments == false</code> on open but <code>isModified(\.stretch)</code> true, reset →
+                        unstretched), and a new <code>ImageAdjustments</code> test covers the <code>opened ≠ baseline</code> case.
+                        <strong>All 676 FITScopeTests pass; app + both extensions build.</strong></li>
                 </ul>
             </div>
             <div class="field-label">Automated review</div>
@@ -1243,13 +1267,57 @@
                         wins over auto-stretch; concurrency is safe (derivation off-main, only the <code>Bool</code> crosses, no
                         double decode); graph FITS stays linear; all open paths flow through the preferences plumbing; and the
                         preview/thumbnail extensions still render min/max (unchanged by the folding).</li>
+                    <li><strong>Second round (the auto-stretch-as-adjustment refactor).</strong> A fresh-context reviewer
+                        cold-read the <code>baseline</code>/<code>opened</code> split. <strong>No Critical / High / Medium
+                        findings</strong> — it judged the core implementation "correct and complete." It verified: the init seeds
+                        the current values from <code>opened</code> while retaining the unstretched <code>baseline</code>;
+                        <code>reset()</code>/<code>reset(_:)</code>/<code>isModified(_:)</code> all reference <code>baseline</code>
+                        (return to unstretched); <code>hasAdjustments</code> compares to <code>opened</code> and round-trips exactly
+                        on open (all 14 settings fields covered); every consumer (sidebar marker, <code>WindowModel.hasAdjustedFiles</code>,
+                        the close/trash confirmations, both "Reset View" affordances — gated on <code>hasImage</code>, not
+                        <code>hasAdjustments</code>) is correct; the before/after "original" renders from <code>baseline</code> and
+                        <code>originalImage</code> is never gated on <code>hasAdjustments</code>; the ImageIO photo path is unchanged
+                        (opened coincides with baseline); the loaders' <code>openedSettings</code> plumbing and the renames are
+                        consistent; and the updated tests encode behaviour, not implementation.
+                        <ul>
+                            <li><strong>F4 — Stale loader doc comments ("applied as its baseline")</strong> · <em>Low</em> ·
+                                Documentation · the three loaders' <code>autoStretch</code> property + init-parameter docs still
+                                described the auto stretch as the <em>baseline</em>, the one meaning the refactor redefines.
+                                <strong>Resolution: Fixed</strong> — reworded to "applied on open, as an editable adjustment over
+                                the unstretched baseline."</li>
+                            <li><strong>F5 — Stale wording in <code>ImageRenderer.render()</code></strong> · <em>Low</em> ·
+                                Documentation · the comment called <code>adjustments.baseline</code> "the baseline this image opens
+                                on," but an auto-stretched image now opens on <code>opened</code>. <strong>Resolution: Fixed</strong>
+                                — reworded to describe it as the unstretched reset / before-image target.</li>
+                            <li><strong>F6 — Intentional asymmetry with a UX consequence</strong> · <em>Info</em> · Design · pressing
+                                "Reset View" on an auto-opened image makes it read as edited (differs from <code>opened</code>), so the
+                                sidebar marks it and closing prompts a confirmation; and the Stretch control shows its per-control
+                                reset affordance immediately on open (<code>isModified(\.stretch)</code> is true). Both match the
+                                maintainer's stated requirements. <strong>Resolution: Deferred</strong> (surfaced for awareness).</li>
+                        </ul></li>
                 </ul>
             </div>
             <div class="field-label">Review comments</div>
             <div class="notes">
                 <ul>
-                    <li><strong>Approved.</strong> The maintainer reviewed the work ("Looks good") with no change requests; the
-                        two Info findings (F2, F3) were left as deferred.</li>
+                    <li><strong>Initial approval.</strong> The maintainer first reviewed the work ("Looks good"); the two Info
+                        findings (F2, F3) were left as deferred.</li>
+                    <li><strong>Auto-stretch should be an image adjustment, not the baseline (flagged before continuing).</strong>
+                        Applying auto-stretch — the STF, or the display function / MTF for XISF — should be considered as an
+                        <em>image adjustment</em>. Resetting the view should go back to the original, unstretched image. This
+                        would also make the before/after slider more useful with auto-stretched images. One small issue: the app
+                        would now display an alert when closing an image that has been auto-stretched on open — maybe we can find
+                        a workaround just for this.
+                        <br><strong>Resolution:</strong> Implemented via the <code>baseline</code> (unstretched reset/before
+                        target) / <code>opened</code> (as-opened stretched state) split in <code>ImageAdjustments</code> (see the
+                        Implementation notes). Reset now returns to the unstretched image, the before/after slider shows
+                        unstretched ↔ stretched, and the close/trash alert no longer fires for a merely-auto-opened image
+                        (<code>hasAdjustments</code> compares to <code>opened</code>) — the requested workaround, which falls out of
+                        the split for free. Re-reviewed by a fresh-context reviewer (no Critical/High/Medium; two Low doc fixes,
+                        one Info design consequence — F4/F5/F6 above).</li>
+                    <li><strong>Re-approved.</strong> The maintainer reviewed the adjustment-vs-baseline change ("Looks good"); F6
+                        (Reset View reads as edited on an auto-opened image; the Stretch per-control reset shows on open) was
+                        accepted as the intended behaviour.</li>
                 </ul>
             </div>
         </div>

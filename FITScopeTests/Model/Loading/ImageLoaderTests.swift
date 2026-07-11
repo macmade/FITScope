@@ -93,7 +93,7 @@ struct ImageLoaderTests
 
         await onLoader.load()
 
-        #expect( try #require( onLoader.image ).renderer.adjustments.baseline.stretch != nil, "with the preference on, the file must open with an auto Screen Transfer" )
+        #expect( try #require( onLoader.image ).renderer.adjustments.stretch != nil, "with the preference on, the file must open with an auto Screen Transfer" )
 
         preferences.autoStretchOnOpenFITS = false
 
@@ -101,6 +101,6 @@ struct ImageLoaderTests
 
         await offLoader.load()
 
-        #expect( try #require( offLoader.image ).renderer.adjustments.baseline.stretch == nil, "with the preference off, the file must open linear" )
+        #expect( try #require( offLoader.image ).renderer.adjustments.stretch == nil, "with the preference off, the file must open linear" )
     }
 }

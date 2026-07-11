@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 @testable import FITScope
+import SwiftPixel
 import Testing
 
 /// Tests for `ImageAdjustments`: the observable model that drives the pipeline
@@ -324,6 +325,42 @@ struct ImageAdjustmentsTests
 
         #expect( adjustments.invert )
         #expect( adjustments.isModified( \.invert ) == false )
+    }
+
+    /// A distinct `opened` state (an auto-applied stretch on open) seeds the initial
+    /// values, but the reset target stays the unstretched baseline. So the image is
+    /// not flagged as edited on open (``hasAdjustments`` compares to `opened`), yet
+    /// the stretch is a resettable adjustment over the baseline, and ``reset()``
+    /// returns to the unstretched view — after which the image reads as adjusted.
+    @Test
+    @MainActor
+    func openedStateSeedsCurrentButResetReturnsToBaseline()
+    {
+        let baseline    = ImageProcessor.Settings()
+        let stretch     = Processors.Stretch.STFParameters.uniform( .init( midtones: 0.3 ) )
+        let opened      = ImageProcessor.Settings( normalize: .identity, stretch: stretch )
+        let adjustments = ImageAdjustments( baseline: baseline, opened: opened )
+
+        // The image opens in the stretched "opened" state.
+        #expect( adjustments.stretch   == stretch )
+        #expect( adjustments.normalize == .identity )
+        #expect( adjustments.settings  == opened )
+        #expect( adjustments.opened    == opened )
+        #expect( adjustments.baseline  == baseline )
+
+        // Not flagged as edited on open (compares to `opened`, not `baseline`)...
+        #expect( adjustments.hasAdjustments == false )
+
+        // ...but the stretch is a resettable adjustment over the unstretched baseline.
+        #expect( adjustments.isModified( \.stretch ) )
+
+        adjustments.reset()
+
+        // Reset returns to the unstretched baseline, which differs from `opened`, so
+        // the image now reads as adjusted.
+        #expect( adjustments.stretch   == nil )
+        #expect( adjustments.normalize == .minMax )
+        #expect( adjustments.hasAdjustments )
     }
 
     // MARK: - Per-field reset
