@@ -38,6 +38,30 @@ import SwiftUtilities
 /// (`ImageProcessor+FITS.swift`, `ImageProcessor+XISF.swift`).
 public enum ImageProcessor
 {
+    /// The colour data an auto Screen Transfer is derived from, tagging a source's
+    /// retained linear samples with how they yield per-channel statistics.
+    ///
+    /// A colour source derives an unlinked ``Processors/Stretch/STFParameters/perChannel(red:green:blue:)``
+    /// (each channel clipping only its own darkest tail); a monochrome source
+    /// derives a ``Processors/Stretch/STFParameters/uniform(_:)``. The three cases
+    /// mirror the forms the loaders retain: a single-channel luminance, a raw
+    /// colour-filter-array mosaic (split per channel by ``Processors/Debayer/deinterleave(mosaic:width:height:pattern:)``,
+    /// no demosaic), or a co-located 3-channel buffer (RGB planes or a photographic
+    /// image).
+    public enum AutoStretchColorSource: Sendable
+    {
+        /// A single-channel linear buffer, yielding a uniform (linked) STF.
+        case mono( PixelBuffer )
+
+        /// A single-channel Bayer mosaic and its pattern, yielding a per-channel
+        /// (unlinked) STF by deinterleaving the mosaic into its colour sites.
+        case mosaic( PixelBuffer, pattern: Processors.Debayer.Pattern )
+
+        /// A co-located 3-channel buffer (RGB planes or a photographic image),
+        /// yielding a per-channel (unlinked) STF from its channels directly.
+        case channels( PixelBuffer )
+    }
+
     /// The user's debayering choice, independent of the file's `BAYERPAT`.
     public enum DebayerSelection: Sendable, Equatable
     {
@@ -248,6 +272,106 @@ public enum ImageProcessor
         }
 
         return Settings( normalize: .identity, stretch: stretch )
+    }
+
+    /// Derives the auto Screen Transfer settings for a source's colour data:
+    /// a per-channel (unlinked) STF for a colour source, a uniform (linked) STF for
+    /// a monochrome one — the single shared derivation the on-open path, the
+    /// inspector and the Screen Transfer editor all reach.
+    ///
+    /// Like ``autoStretchSettings(detectionImage:fullScale:shadowClipFactor:targetBackground:)``,
+    /// the STF is authored — and applied — in the native full-scale `[0, 1]` domain
+    /// over ``Processors/Normalize/Mode/identity``: the source's linear samples are
+    /// scaled by `1 / fullScale`, clamped by the identity normalization, then reduced
+    /// to per-channel or uniform parameters, so opening the image and clicking Auto
+    /// agree. A colour-filter-array mosaic is split per channel with
+    /// ``Processors/Debayer/deinterleave(mosaic:width:height:pattern:)`` and reduced
+    /// by ``Processors/Stretch/STFParameters/computed(fromMosaic:pattern:shadowClipFactor:targetBackground:)``;
+    /// a co-located 3-channel buffer by
+    /// ``Processors/Stretch/STFParameters/computed(from:shadowClipFactor:targetBackground:)``;
+    /// a mono buffer by the uniform derivation.
+    ///
+    /// - Parameters:
+    ///   - colorSource:      The source's colour data, or `nil` when none is
+    ///                       available.
+    ///   - fullScale:        The format's full-scale maximum, used to bring the
+    ///                       samples into `[0, 1]`. Must be positive.
+    ///   - shadowClipFactor: How many median-absolute-deviations below the median to
+    ///                       clip the shadows. Defaults to `2.8`.
+    ///   - targetBackground: The value the median should map to. Defaults to `0.25`.
+    /// - Returns: The `{ normalize: .identity, stretch: <auto STF> }` opened settings,
+    ///   or `nil` when no colour source is available, the full scale is not positive,
+    ///   or the derivation fails.
+    static func autoStretchSettings( colorSource: AutoStretchColorSource?, fullScale: Double, shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) -> Settings?
+    {
+        guard let colorSource, fullScale > 0
+        else
+        {
+            return nil
+        }
+
+        switch colorSource
+        {
+            case .mono( let buffer ):
+
+                return Self.autoStretchSettings( detectionImage: buffer, fullScale: fullScale, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+
+            case .mosaic( let buffer, let pattern ):
+
+                return Self.perChannelStretchSettings( buffer, fullScale: fullScale )
+                {
+                    try Processors.Stretch.STFParameters.computed( fromMosaic: $0, pattern: pattern, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+                }
+
+            case .channels( let buffer ):
+
+                return Self.perChannelStretchSettings( buffer, fullScale: fullScale )
+                {
+                    try Processors.Stretch.STFParameters.computed( from: $0, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+                }
+        }
+    }
+
+    /// Builds `{ normalize: .identity, stretch: … }` settings from a source buffer,
+    /// bringing it into the full-scale `[0, 1]` domain before deriving.
+    ///
+    /// Shared by the colour cases of ``autoStretchSettings(colorSource:fullScale:shadowClipFactor:targetBackground:)``:
+    /// the buffer's samples are scaled by `1 / fullScale`, clamped by the identity
+    /// normalization, then handed to `derive`, so every case derives in the same
+    /// domain the render applies the STF over.
+    ///
+    /// - Parameters:
+    ///   - buffer:    The source's linear buffer.
+    ///   - fullScale: The format's full-scale maximum. Must be positive.
+    ///   - derive:    Reduces the normalized buffer to STF parameters.
+    /// - Returns: The opened settings, or `nil` when the buffer is empty, the full
+    ///   scale is not positive, or normalization or derivation fails.
+    private static func perChannelStretchSettings( _ buffer: PixelBuffer, fullScale: Double, derive: ( PixelBuffer ) throws -> Processors.Stretch.STFParameters ) -> Settings?
+    {
+        guard buffer.pixels.isEmpty == false, fullScale > 0
+        else
+        {
+            return nil
+        }
+
+        let scaled = buffer.pixels.map { $0 / fullScale }
+
+        guard var input = try? PixelBuffer( width: buffer.width, height: buffer.height, channels: buffer.channels, pixels: scaled, isNormalized: false )
+        else
+        {
+            return nil
+        }
+
+        do
+        {
+            try Processors.Normalize( mode: .identity ).process( buffer: &input )
+
+            return Settings( normalize: .identity, stretch: try derive( input ) )
+        }
+        catch
+        {
+            return nil
+        }
     }
 
     /// Renders decoded samples through the configured pixel pipeline, independent

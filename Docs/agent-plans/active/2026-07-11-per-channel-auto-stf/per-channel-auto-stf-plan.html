@@ -317,7 +317,7 @@
             <div class="milestone-head">
                 <span class="mnum">1</span>
                 <h3>Per-channel STF derivation from a source's colour data</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">Derive a per-channel (colour) or uniform (mono) STF from the linear colour data a render
@@ -343,15 +343,78 @@
                     <code>BAYERPAT</code>; identity / degenerate inputs are handled.</li>
             </ul>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">&mdash;</p>
+            <p>2026-07-11</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Derivation input.</strong> Confirmed with the maintainer to take the
+                        <em>deinterleave-by-pattern</em> route (not the 3-channel-buffer fallback): the raw mosaic is
+                        split into independent R/G/B sample sets by colour-filter position, so each channel's median /
+                        MAD comes only from its own sites — no demosaic, no interpolation blending the channels'
+                        statistics.</li>
+                    <li><strong>SwiftPixel.</strong> Added <code>Processors.Debayer.deinterleave(mosaic:width:height:pattern:)</code>
+                        (new <code>Debayer+Deinterleave.swift</code>), reusing the existing internal
+                        <code>colorMap</code>/<code>colorAt</code> so the split stays classification-identical to the
+                        demosaic; green collects both green sites, unequal counts are fine. Added
+                        <code>STFParameters.computed(fromMosaic:pattern:…)</code> assembling <code>.perChannel</code> via
+                        <code>Channel.computed</code>, with a <code>channelOrIdentity</code> helper that degrades an
+                        unsampled colour to the identity instead of throwing. Both new files registered in
+                        <code>SwiftPixel.xcodeproj</code> (source&nbsp;→&nbsp;SwiftPixel, test&nbsp;→&nbsp;SwiftPixelTests)
+                        and auto-included by the SPM package glob.</li>
+                    <li><strong>App.</strong> Added <code>ImageProcessor.AutoStretchColorSource</code>
+                        (<code>mono</code> / <code>mosaic(pattern:)</code> / <code>channels</code>) and the shared
+                        <code>ImageProcessor.autoStretchSettings(colorSource:fullScale:…)</code>, deriving in the same
+                        full-scale <code>[0,&nbsp;1]</code> domain over <code>.identity</code> as the existing uniform
+                        on-open path (the <code>mono</code> case delegates to it verbatim). Exposed on
+                        <code>ImageRenderSource</code> as <code>autoStretchColorSource</code> (default
+                        <code>.mono(detectionImage)</code>) plus an <code>autoStretchSettings(…)</code> entry for
+                        full-scale sources.</li>
+                    <li><strong>Behaviour-preserving.</strong> M1 is the foundation only: every source still defaults to
+                        the mono input, so runtime output is unchanged until M2 wires each loader's real colour data and
+                        M3 the inspector / editor. The per-channel machinery is exercised directly by unit tests.</li>
+                    <li><strong>Verification.</strong> The SwiftPixel scheme and the full FITScope test suite both pass
+                        under <code>xcodebuild</code> (10 new SwiftPixel tests, 8 new app tests, no regressions).</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Round 1 — converged (no Critical/High/Medium).</strong> A fresh-context reviewer verified
+                        the deinterleave against <code>colorMap</code>/<code>colorAt</code> for all five patterns, the
+                        per-channel derivation's domain/maths consistency with the uniform path, degenerate-input
+                        handling (no force-unwrap), Sendable / nonisolated safety, correct pbxproj registration (unique
+                        IDs, right targets), and no regressions for existing conformers or callers.</li>
+                    <li><strong>[Low · Style] Implicit <code>public</code> on <code>deinterleave</code>.</strong>
+                        <em>Fixed</em> — made the modifier explicit to match the sibling
+                        <code>computed(fromMosaic:)</code> and the repo convention.</li>
+                    <li><strong>[Info] Redundant <code>fullScale&nbsp;&gt;&nbsp;0</code> guard in the private helper.</strong>
+                        <em>Deferred</em> — kept intentionally so the helper is self-contained.</li>
+                    <li><strong>[Info] No test for the empty-colour identity fallback.</strong> <em>Fixed</em> — added
+                        <code>computedFromMosaicLeavesAColourWithNoSitesAsIdentity</code>.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting human review.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Q — <code>Debayer+Deinterleave</code>: didn't we have something for that already?</strong>
+                        (Question, not a change request — no code changed.) Answered: there was no reusable mosaic
+                        deinterleave. The tile → colour mapping existed only as the <em>internal</em>
+                        <code>colorMap</code>/<code>colorAt</code>/<code>ColorType</code> helpers inside
+                        <code>Debayer</code>, consumed by the full demosaic (<code>Debayer+Bilinear</code>,
+                        <code>Debayer+VNG</code>), plus a <em>private</em> <code>greenPlane</code> in the VNG path — none
+                        of them public or reusable, and all producing a full interpolated RGB image, not per-channel
+                        sample sets. <code>STFParameters.samples(of:in:)</code> only strides an already co-located
+                        interleaved buffer. The new helper adds the missing split and <em>reuses</em>
+                        <code>colorMap</code> rather than duplicating the parity logic.</li>
+                    <li><strong>Commit message must cover the submodules too.</strong> The work spans multiple git
+                        repositories (the app repo, the <code>SwiftAstro</code> submodule, and the nested
+                        <code>SwiftPixel</code> submodule); a single commit message is wrong. Provide one commit message
+                        per affected repository (bottom-up: SwiftPixel → SwiftAstro pointer → FITScope) without being
+                        asked.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- M2 -->

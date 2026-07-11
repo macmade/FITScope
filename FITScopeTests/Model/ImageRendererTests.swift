@@ -124,6 +124,45 @@ struct ImageRendererTests
         #expect( settings == nil )
     }
 
+    /// By default a source's colour input is its single-channel detection image, so
+    /// the shared derivation keeps deriving a uniform STF until a colour source
+    /// overrides it. The full-scale source method then matches the on-open path.
+    @Test
+    func sourceAutoStretchColorSourceDefaultsToMonoAndMatchesTheOnOpenPath() throws
+    {
+        let detection  = try PixelBuffer( width: 8, height: 8, channels: 1, pixels: ( 0 ..< 64 ).map { Double( $0 ) * 4 }, isNormalized: false )
+        let properties = [ FITSPropertySnapshot( name: "BITPIX", value: .integer( 16 ) ) ]
+        let source     = FITSRenderSource( data: Data(), properties: properties, detectionImage: detection )
+        let fullScale  = try #require( source.fullScale )
+
+        guard case .mono( let buffer ) = try #require( source.autoStretchColorSource )
+        else
+        {
+            Issue.record( "a source's default colour input must be the mono detection image" )
+
+            return
+        }
+
+        #expect( buffer.pixels == detection.pixels )
+
+        let fromSource = try #require( source.autoStretchSettings() )
+        let onOpen     = try #require( ImageProcessor.autoStretchSettings( detectionImage: detection, fullScale: fullScale ) )
+
+        #expect( fromSource == onOpen )
+    }
+
+    /// A source without a fixed full scale (a photographic or floating-point one)
+    /// returns no full-scale settings; the caller falls back to the min/max domain.
+    @Test
+    func sourceAutoStretchSettingsAreNilWithoutAFullScale() throws
+    {
+        let detection = try PixelBuffer( width: 8, height: 8, channels: 1, pixels: ( 0 ..< 64 ).map { Double( $0 ) / 64.0 }, isNormalized: true )
+        let source    = FITSRenderSource( data: Data(), properties: [], detectionImage: detection )
+
+        #expect( source.fullScale == nil )
+        #expect( source.autoStretchSettings() == nil )
+    }
+
     /// A valid `BITPIX = 64` image is a format the pixel pipeline does not
     /// support; it must surface a clear, typed error naming the limitation.
     @Test

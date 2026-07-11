@@ -133,6 +133,86 @@ struct ImageProcessorTests
         #expect( ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: 0 ) == nil )
     }
 
+    /// A mono colour source derives exactly the same settings as the single-channel
+    /// detection path — the shared derivation is a superset that keeps mono uniform.
+    @Test
+    func autoStretchSettingsFromAMonoColorSourceMatchTheDetectionPath() throws
+    {
+        let buffer     = try PixelBuffer( width: 4, height: 4, channels: 1, pixels: ( 0 ..< 16 ).map { Double( $0 ) * 100 }, isNormalized: false )
+        let fromColor  = try #require( ImageProcessor.autoStretchSettings( colorSource: .mono( buffer ), fullScale: 1600 ) )
+        let fromMono   = try #require( ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: 1600 ) )
+
+        #expect( fromColor == fromMono )
+    }
+
+    /// A colour-filter-array source derives a per-channel (unlinked) STF over identity
+    /// normalization, in the full-scale domain — matching the mosaic derivation
+    /// applied to the same scaled, clamped samples.
+    @Test
+    func autoStretchSettingsFromAMosaicColorSourceArePerChannel() throws
+    {
+        // A 4×4 RGGB mosaic whose channels carry different levels, so the unlinked
+        // derivation must give the channels different mappings.
+        let fullScale = 1000.0
+        let buffer    = try PixelBuffer( width: 4, height: 4, channels: 1, pixels: ( 0 ..< 16 ).map { Double( $0 ) * 50 }, isNormalized: false )
+        let settings  = try #require( ImageProcessor.autoStretchSettings( colorSource: .mosaic( buffer, pattern: .rggb ), fullScale: fullScale ) )
+
+        #expect( settings.normalize == .identity )
+
+        guard case .perChannel( let red, let green, _ ) = try #require( settings.stretch )
+        else
+        {
+            Issue.record( "a colour-filter-array source must derive a per-channel Screen Transfer" )
+
+            return
+        }
+
+        // The channels are genuinely unlinked: red and green come from their own sites.
+        #expect( red != green )
+
+        // And it matches the mosaic derivation over the same scaled, clamped buffer.
+        var input = try PixelBuffer( width: 4, height: 4, channels: 1, pixels: buffer.pixels.map { $0 / fullScale }, isNormalized: false )
+
+        try Processors.Normalize( mode: .identity ).process( buffer: &input )
+
+        let expected = try Processors.Stretch.STFParameters.computed( fromMosaic: input, pattern: .rggb )
+
+        #expect( settings.stretch == expected )
+    }
+
+    /// A co-located 3-channel source (RGB planes or a photographic image) derives a
+    /// per-channel (unlinked) STF from its channels directly.
+    @Test
+    func autoStretchSettingsFromAChannelsColorSourceArePerChannel() throws
+    {
+        let red      = ( 0 ..< 16 ).map { _ in 50.0 }
+        let green    = ( 0 ..< 16 ).map { Double( $0 ) * 40 }
+        let blue     = ( 0 ..< 16 ).map { Double( $0 ) * 20 }
+        let planes   = zip( red, zip( green, blue ) ).flatMap { [ $0.0, $0.1.0, $0.1.1 ] }
+        let buffer   = try PixelBuffer( width: 4, height: 4, channels: 3, pixels: planes, isNormalized: false )
+        let settings = try #require( ImageProcessor.autoStretchSettings( colorSource: .channels( buffer ), fullScale: 1000 ) )
+
+        #expect( settings.normalize == .identity )
+
+        guard case .perChannel = try #require( settings.stretch )
+        else
+        {
+            Issue.record( "a 3-channel colour source must derive a per-channel Screen Transfer" )
+
+            return
+        }
+    }
+
+    /// No colour source, or a non-positive full scale, yields no settings.
+    @Test
+    func autoStretchSettingsFromAColorSourceAreNilWhenUnavailable() throws
+    {
+        let buffer = try PixelBuffer( width: 2, height: 2, channels: 1, pixels: [ 0, 100, 200, 300 ], isNormalized: false )
+
+        #expect( ImageProcessor.autoStretchSettings( colorSource: nil, fullScale: 1000 ) == nil )
+        #expect( ImageProcessor.autoStretchSettings( colorSource: .mosaic( buffer, pattern: .rggb ), fullScale: 0 ) == nil )
+    }
+
     /// Integer-formatted scaling keywords keep working: a `BZERO` of the
     /// integer `32768` (the usual unsigned-16-bit offset) is read as `32768`.
     @Test
