@@ -1445,7 +1445,7 @@
             <div class="milestone-head">
                 <span class="mnum">8</span>
                 <h3>Improve star detection</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Design decisions (maintainer)</div>
             <div class="notes">
@@ -1494,15 +1494,129 @@
             <p class="deps">None — independent of the Screen Transfer work (may reuse SwiftPixel's median / MAD helpers). The
             maintainer provides the failing test frame(s).</p>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">—</p>
+            <p>2026-07-11</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Approach.</strong> TDD, worked autonomously on the maintainer-provided failing frame
+                        (<code>/Users/macmade/Desktop/Seestar S30/Subs/Light_M 42_10.0s_LP_20260101-234803.fit</code>): diagnosed
+                        with a throwaway instrumented test, committed the frame as a fixture, wrote a failing regression test, then
+                        implemented until green. All changes are in the <strong>SwiftAstro</strong> submodule; the detector's public
+                        API is unchanged.</li>
+                    <li><strong>Diagnosis — two independent root causes (not the plan's leading hypothesis).</strong> The plan
+                        guessed the global robust-noise / 5σ threshold was pushed above the stars by the nebula. Instrumenting the
+                        real frame disproved that: the matched-filter response had <em>thousands</em> of pixels above the 5σ
+                        threshold — candidates were plentiful. The zero-star result came from two other places. <strong>(A) The FWHM
+                        bootstrap over-estimated the scale</strong> (<code>estimateFWHM</code> → <strong>8.74&nbsp;px</strong> vs a
+                        true ≈&nbsp;3): it sized each bright star's half-flux radius over <em>every</em> above-threshold pixel in a
+                        large fixed window, which on a nebulous/crowded frame merges the star with its neighbours and the bright M42
+                        nebulosity. That inflated scale set the min-FWHM purity cut to <code>0.5×8.74 = 4.37&nbsp;px</code>, which
+                        rejected every real ~3&nbsp;px star. <strong>(B) The per-star measurement was far too fragile</strong>: with a
+                        correct scale forced, 2404 candidate peaks still collapsed to ~10 stars because the mandatory 7-parameter
+                        Levenberg–Marquardt Gaussian fit failed on ~76% of genuine faint stars (its moment seed was built from
+                        noise-inflated full-window second moments, so it took no step and could not beat a flat background), and the
+                        code dropped every star whose fit did not converge.</li>
+                    <li><strong>Fix — connected-footprint measurement + fit-optional (both in
+                        <code>MatchedFilterStarDetector</code>).</strong> Added a <code>connectedFootprint(around:radius:level:in:)</code>
+                        helper: an 8-connected flood fill from the peak, bounded to a window, keeping pixels above a local level — so
+                        a star is measured over <em>its own</em> footprint, isolated from neighbours and nebulosity. <em>(A)</em>
+                        <code>estimateFWHM</code> now sizes each bright star over its connected footprint → the estimate drops to
+                        <strong>3.53&nbsp;px</strong> and is insensitive to the window size (its behaviour on isolated stars, and on
+                        the synthetic bootstrap test, is unchanged). <em>(B)</em> <code>measure</code> now derives the moment seed
+                        from the footprint (tight, correctly-scaled), runs the Gaussian fit but <strong>no longer requires it</strong>:
+                        when the fit converges to a physical Gaussian its sub-pixel centre/shape are used; otherwise it falls back to
+                        the robust footprint-moment measurement instead of discarding the star. All purity cuts (sharpness, min/max
+                        FWHM, roundness), the edge and saturation guards, and the linear-data contract are preserved; HFR is measured
+                        over the window around the chosen centre. The 5σ matched-filter threshold — not the fit — remains the gate
+                        against false positives, so purity is unchanged.</li>
+                    <li><strong>Result on the real frame:</strong> <code>estimateFWHM</code> 8.74 → 3.53&nbsp;px; auto-detected stars
+                        <strong>0 → 78</strong>, with physically-sensible median HFR / FWHM / eccentricity.</li>
+                    <li><strong>Fixture &amp; test.</strong> Committed the frame under its original acquisition filename as
+                        <code>Submodules/SwiftAstro/Test Files/Light_M 42_10.0s_LP_20260101-234803.fit</code> (4&nbsp;MB —
+                        consistent with the repo's existing directly-committed 16&nbsp;MB frame) with a
+                        <code>FITSTestImage.seestarM42Detection()</code>
+                        accessor, and a new <code>RealFrameValidationTests.detectsStarsOnAShortLightPollutedSeestarSub</code> that
+                        asserts a healthy field (count &gt; 0, ≥ 40, bounded; stellar HFR/FWHM/eccentricity). It runs over the full
+                        frame (not a crop) because the bootstrap bias is a whole-frame property. Wired the fixture into
+                        <code>SwiftAstro.xcodeproj</code> (test-target resource, round-number pbxproj IDs
+                        <code>…15</code>/<code>…27</code>).</li>
+                    <li><strong>Verification.</strong> SwiftAstro: <strong>all 78 tests pass</strong> (<code>swift test</code>);
+                        <code>RealFrameValidationTests</code> passes via <strong>xcodebuild</strong> (fixture correctly bundled). No
+                        regressions — the 8 synthetic detector tests and the 3 existing real-frame tests (reference HFR≈3.69, M35
+                        cluster, M42 no-nebula-latch) all still pass. App: <code>FITScopeTests/StarDetectionTests</code> passes via
+                        <strong>xcodebuild</strong> against the modified submodule; the app builds. The detector is measured only in
+                        unit tests (a native macOS app with no headless GUI-driving path); the on-screen star overlay is left for the
+                        maintainer to eyeball.</li>
+                    <li><strong>Decisions taken autonomously</strong> (flagged for review): (1) two-root-cause diagnosis over the
+                        plan's single global-threshold hypothesis; (2) making the Gaussian fit optional with a moment fallback — a
+                        design shift toward the NINA/PixInsight moment/HFR measurement the plan cites, rather than gating on a full
+                        PSF fit; (3) connected-component footprint as the isolation mechanism; (4) committing the 4&nbsp;MB frame as a
+                        fixture and testing on the full frame; (5) the new test's conservative bar (≥ 40 vs the ~78 achieved), so it
+                        is robust to future tuning. See the end-of-session summary for the full list.</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in from the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li>One round; a fresh-context reviewer cold-read the full diff and reported <strong>no Critical / High /
+                        Medium findings</strong> — the loop converged in one round. It confirmed the pbxproj wiring (no ID
+                        collisions), the flood-fill bounds / <code>visited</code>-set logic, the division and NaN/Inf guards, the
+                        removed <code>sigmaMajor &gt; 0</code> guard being safe (<code>GaussianFit.validated</code> already
+                        guarantees positive widths), thread-safety, metrics-on-linear-data, and low regression risk. Findings:</li>
+                    <li><strong>1 — <code>Star.flux</code> differs between the fit and fallback branches</strong> · <em>Low</em> ·
+                        Semantics. The fit branch reports the analytic Gaussian integral; the fallback reports the footprint core
+                        sum (a lower bound). Geometric metrics stay comparable; only absolute flux differs, and no consumer ranks by
+                        flux today. <strong>Resolution: Fixed (documented)</strong> — added a comment at the fallback spelling out
+                        the branch-dependent flux meaning.</li>
+                    <li><strong>2 — Type-level doc still described the fit as mandatory</strong> · <em>Low</em> · Documentation.
+                        <strong>Resolution: Fixed</strong> — the class header now describes the connected-footprint measurement, the
+                        fit-optional fallback, and the 5σ threshold (not the fit) as the false-positive gate.</li>
+                    <li><strong>3 — Fixture staged with the executable bit</strong> · <em>Low</em> · Repo hygiene. The file was
+                        mode <code>700</code> and would commit as <code>100755</code>. <strong>Resolution: Fixed</strong> —
+                        <code>chmod 644</code> so it lands as <code>100644</code> like the ESA fixture.</li>
+                    <li><strong>4 — Bootstrap uses global noise, <code>measure</code> uses local window noise</strong> ·
+                        <em>Info</em> · Consistency. Deferred — deliberate (the bootstrap only considers 10σ stars and has an
+                        image-wide estimate; <code>measure</code> needs a per-window floor against gradients).</li>
+                    <li><strong>5 — Footprint seeds from the response-peak pixel</strong> · <em>Info</em> · Edge case. Deferred —
+                        a 1-px response/raw peak misalignment on a very faint star could drop it; low risk for well-sampled PSFs and
+                        documented.</li>
+                    <li><strong>6 — New test runs full-frame Gaussian fits (the other real-frame tests crop for speed)</strong> ·
+                        <em>Low</em> · Test performance. Deferred — the full frame is needed to reproduce the whole-frame bootstrap
+                        bias; runtime is ≈ 8.5&nbsp;s, acceptable.</li>
+                    <li><strong>7 — <code>medianEcc</code> range assertions are tautological</strong> · <em>Info</em> · Test
+                        quality. Deferred — kept for symmetry with the pre-existing real-frame test; the HFR/FWHM/count bounds are
+                        the meaningful, non-tautological ones.</li>
+                    <li><strong>8 — <code>samples.map { $0.value }</code> built twice (median then MAD)</strong> · <em>Info</em> ·
+                        Micro-efficiency. Deferred — trivial next to the LM fit; matches existing style.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting human review.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>"Looks good."</strong> The maintainer reviewed the autonomous work and approved it.</li>
+                    <li><strong>Keep the original filename for the committed M42 sub.</strong> The fixture had been renamed to a
+                        clean <code>seestar_s30_m42_10s_lp.fits</code>; the maintainer asked to keep the frame's original
+                        acquisition filename instead. <strong>Resolution:</strong> renamed the fixture back to
+                        <code>Light_M 42_10.0s_LP_20260101-234803.fit</code> (extension <code>.fit</code>, with the space), updated
+                        the <code>FITSTestImage</code> accessor (a dedicated <code>.fit</code> extension constant) and the
+                        <code>SwiftAstro.xcodeproj</code> file-reference path; re-verified via <code>swift test</code> and
+                        <code>xcodebuild</code>.</li>
+                    <li><strong>Aggregate-HFR-includes-fainter-stars point — accepted.</strong> On being told the reported median
+                        HFR/FWHM now summarizes a larger, fainter population (reference frame 3.75 → 3.576&nbsp;px), the maintainer
+                        was fine with it: "previous star detection was broken anyway." No change; aggregates stay measured over all
+                        detected stars (the "brightest-N" option was offered and not taken).</li>
+                    <li><strong>Fit-optional design shift — accepted.</strong> The maintainer confirmed the change from "drop any
+                        star whose Gaussian fit fails" to "measure robustly, refine with the fit when it converges" (the
+                        NINA/PixInsight-style approach). "Good."</li>
+                    <li><strong>Existing fixtures — confirmed all tested.</strong> The maintainer asked whether the fixtures already
+                        present in SwiftAstro are exercised. They are: the ASI585 <code>H3.69</code> reference frame and the ESA M35
+                        frame each drive a real-frame detector test (plus loader tests), and the SwiftFITS M42 stack drives the
+                        no-nebula-latch test — so the detector is validated against four real frames. "More fixtures" was clarified
+                        to mean more <em>failing</em> subs specifically, if any turn up in future.</li>
+                </ul>
+            </div>
         </div>
 
         <h2 class="section">Appendix</h2>
