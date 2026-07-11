@@ -250,15 +250,15 @@ public class ImageRenderer: ObservableObject
     /// a colour source, preserving the colour ratios. Returns `nil` when the source
     /// failed to extract or exposes no detection image.
     ///
-    /// **Domain.** When the source has a known ``ImageRenderSource/fullScale`` (a
-    /// linear FITS / XISF / RAW format), the STF is derived — and returned to be
-    /// applied — in the native full-scale `[0, 1]` domain over
-    /// ``Processors/Normalize/Mode/identity``, matching the on-open path, so it is not
-    /// brighter than opening the image. A source without a full scale (a photographic
-    /// or floating-point one) has no per-channel linear domain, so *both* modes fall
-    /// back to a uniform STF over ``Processors/Normalize/Mode/minMax``. Returning the
-    /// normalization alongside the stretch keeps the derivation domain and the apply
-    /// domain in step; the caller applies both.
+    /// **Domain.** The STF is derived — and returned to be applied — in the source's
+    /// own domain, matching the on-open path so it is not brighter than opening the
+    /// image: the native full-scale `[0, 1]` domain over ``Processors/Normalize/Mode/identity``
+    /// when the source has a known ``ImageRenderSource/fullScale`` (an integer FITS /
+    /// XISF / RAW), or the ``Processors/Normalize/Mode/minMax`` domain otherwise (a
+    /// floating-point format, or a RAW with no white level). The `linking` shape is
+    /// independent of the domain — a colour source derives per-channel in either.
+    /// Returning the normalization alongside the stretch keeps the derivation domain
+    /// and the apply domain in step; the caller applies both.
     ///
     /// The derivation is an `O(n log n)` pass (a normalize plus a median and a
     /// median-absolute-deviation) over the full-resolution source data, so it runs on a
@@ -278,41 +278,29 @@ public class ImageRenderer: ObservableObject
     ///   unavailable.
     public func autoScreenTransferSettings( linking: ScreenTransferLinking = .automatic, shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) async -> ImageProcessor.Settings?
     {
-        guard let source = try? self.source.get(), let buffer = source.detectionImage
+        guard let source = try? self.source.get(), let detection = source.detectionImage
         else
         {
             return nil
         }
 
-        let fullScale = source.fullScale
-
         return await Task.detached
         {
-            if let fullScale
+            switch linking
             {
-                switch linking
-                {
-                    case .automatic:
+                case .automatic:
 
-                        // Per-channel for colour, uniform for mono — exactly the
-                        // auto-stretch-on-open derivation, so open == click-Auto.
-                        return source.autoStretchSettings( shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+                    // Colour-aware: per-channel for a colour source, uniform for a mono
+                    // one, in the source's own domain (full-scale or min/max) — exactly
+                    // the auto-stretch-on-open derivation, so open == click-Auto.
+                    return source.autoStretchSettings( shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
 
-                    case .uniform:
+                case .uniform:
 
-                        // A single luminance-derived uniform mapping, preserving the
-                        // colour ratios even for a colour source.
-                        return ImageProcessor.autoStretchSettings( detectionImage: buffer, fullScale: fullScale, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
-                }
+                    // A single luminance-derived uniform mapping, preserving the colour
+                    // ratios even for a colour source, in the same domain.
+                    return ImageProcessor.autoStretchSettings( colorSource: .mono( detection ), domain: source.autoStretchDomain, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
             }
-
-            guard let stretch = try? Processors.Stretch.STFParameters.computed( normalizing: buffer, using: .minMax, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
-            else
-            {
-                return nil
-            }
-
-            return ImageProcessor.Settings( normalize: .minMax, stretch: stretch )
         }
         .value
     }

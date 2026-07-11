@@ -151,16 +151,28 @@ struct ImageRendererTests
         #expect( fromSource == onOpen )
     }
 
-    /// A source without a fixed full scale (a photographic or floating-point one)
-    /// returns no full-scale settings; the caller falls back to the min/max domain.
+    /// A source without a fixed full scale (a floating-point one) still derives an auto
+    /// Screen Transfer — over the min/max domain rather than full-scale — so a float
+    /// image is not left unstretched. A mono source's is uniform.
     @Test
-    func sourceAutoStretchSettingsAreNilWithoutAFullScale() throws
+    func sourceAutoStretchSettingsAreMinMaxWithoutAFullScale() throws
     {
         let detection = try PixelBuffer( width: 8, height: 8, channels: 1, pixels: ( 0 ..< 64 ).map { Double( $0 ) / 64.0 }, isNormalized: true )
         let source    = FITSRenderSource( data: Data(), properties: [], detectionImage: detection )
 
         #expect( source.fullScale == nil )
-        #expect( source.autoStretchSettings() == nil )
+
+        let settings = try #require( source.autoStretchSettings() )
+
+        #expect( settings.normalize == .minMax )
+
+        guard case .uniform = try #require( settings.stretch )
+        else
+        {
+            Issue.record( "a mono source's auto Screen Transfer must be uniform" )
+
+            return
+        }
     }
 
     /// The inspector's Auto (the default `.automatic` linking) derives a per-channel

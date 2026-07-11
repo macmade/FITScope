@@ -62,6 +62,25 @@ public enum ImageProcessor
         case channels( PixelBuffer )
     }
 
+    /// The normalization domain an auto Screen Transfer is derived and applied in.
+    ///
+    /// The choice depends only on whether the format has a fixed full scale, not on
+    /// whether it is colour: a colour image derives a per-channel STF in either domain,
+    /// a mono image a uniform one.
+    public enum AutoStretchDomain: Sendable, Equatable
+    {
+        /// The native full-scale `[0, 1]` domain of a format with a fixed full scale
+        /// (an integer FITS / XISF / RAW): samples are scaled by `1 / fullScale` and
+        /// clamped by identity normalization. The associated value is that full scale.
+        case fullScale( Double )
+
+        /// The min/max domain, for a format with no fixed full scale (a floating-point
+        /// FITS / XISF, or a RAW without a white level): samples are rescaled by their
+        /// own minimum and maximum. This is the same domain the render falls back to,
+        /// so the derivation and the render agree.
+        case minMax
+    }
+
     /// The user's debayering choice, independent of the file's `BAYERPAT`.
     public enum DebayerSelection: Sendable, Equatable
     {
@@ -302,9 +321,9 @@ public enum ImageProcessor
     /// - Returns: The `{ normalize: .identity, stretch: <auto STF> }` opened settings,
     ///   or `nil` when no colour source is available, the full scale is not positive,
     ///   or the derivation fails.
-    static func autoStretchSettings( colorSource: AutoStretchColorSource?, fullScale: Double, shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) -> Settings?
+    static func autoStretchSettings( colorSource: AutoStretchColorSource?, domain: AutoStretchDomain, shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) -> Settings?
     {
-        guard let colorSource, fullScale > 0
+        guard let colorSource
         else
         {
             return nil
@@ -314,63 +333,112 @@ public enum ImageProcessor
         {
             case .mono( let buffer ):
 
-                return Self.autoStretchSettings( detectionImage: buffer, fullScale: fullScale, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+                return Self.stretchSettings( buffer, domain: domain )
+                {
+                    try Processors.Stretch.STFParameters.computed( from: $0, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+                }
 
             case .mosaic( let buffer, let pattern ):
 
-                return Self.perChannelStretchSettings( buffer, fullScale: fullScale )
+                return Self.stretchSettings( buffer, domain: domain )
                 {
                     try Processors.Stretch.STFParameters.computed( fromMosaic: $0, pattern: pattern, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
                 }
 
             case .channels( let buffer ):
 
-                return Self.perChannelStretchSettings( buffer, fullScale: fullScale )
+                return Self.stretchSettings( buffer, domain: domain )
                 {
                     try Processors.Stretch.STFParameters.computed( from: $0, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
                 }
         }
     }
 
-    /// Builds `{ normalize: .identity, stretch: … }` settings from a source buffer,
-    /// bringing it into the full-scale `[0, 1]` domain before deriving.
-    ///
-    /// Shared by the colour cases of ``autoStretchSettings(colorSource:fullScale:shadowClipFactor:targetBackground:)``:
-    /// the buffer's samples are scaled by `1 / fullScale`, clamped by the identity
-    /// normalization, then handed to `derive`, so every case derives in the same
-    /// domain the render applies the STF over.
+    /// The full-scale overload of ``autoStretchSettings(colorSource:domain:shadowClipFactor:targetBackground:)``,
+    /// for a format with a fixed full scale — colour → per-channel, mono → uniform, in
+    /// the native full-scale `[0, 1]` domain.
     ///
     /// - Parameters:
-    ///   - buffer:    The source's linear buffer.
-    ///   - fullScale: The format's full-scale maximum. Must be positive.
-    ///   - derive:    Reduces the normalized buffer to STF parameters.
-    /// - Returns: The opened settings, or `nil` when the buffer is empty, the full
-    ///   scale is not positive, or normalization or derivation fails.
-    private static func perChannelStretchSettings( _ buffer: PixelBuffer, fullScale: Double, derive: ( PixelBuffer ) throws -> Processors.Stretch.STFParameters ) -> Settings?
+    ///   - colorSource:      The source's colour data, or `nil` when none is available.
+    ///   - fullScale:        The format's full-scale maximum. Must be positive.
+    ///   - shadowClipFactor: How many median-absolute-deviations below the median to
+    ///                       clip the shadows. Defaults to `2.8`.
+    ///   - targetBackground: The value the median should map to. Defaults to `0.25`.
+    /// - Returns: The `{ normalize: .identity, stretch: <auto STF> }` opened settings,
+    ///   or `nil` when no colour source is available, the full scale is not positive,
+    ///   or the derivation fails.
+    static func autoStretchSettings( colorSource: AutoStretchColorSource?, fullScale: Double, shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) -> Settings?
     {
-        guard buffer.pixels.isEmpty == false, fullScale > 0
+        Self.autoStretchSettings( colorSource: colorSource, domain: .fullScale( fullScale ), shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+    }
+
+    /// Builds `{ normalize, stretch }` settings from a source buffer, normalizing it
+    /// into the derivation domain before deriving so the parameters and the render
+    /// agree.
+    ///
+    /// Shared by every case of ``autoStretchSettings(colorSource:domain:shadowClipFactor:targetBackground:)``:
+    /// in the ``AutoStretchDomain/fullScale(_:)`` domain the samples are scaled by
+    /// `1 / fullScale` and clamped by identity normalization; in the
+    /// ``AutoStretchDomain/minMax`` domain they are rescaled by their own min/max
+    /// (unless already normalized). The result is then handed to `derive`.
+    ///
+    /// - Parameters:
+    ///   - buffer: The source's linear buffer.
+    ///   - domain: The normalization domain to derive in.
+    ///   - derive: Reduces the normalized buffer to STF parameters.
+    /// - Returns: The settings, or `nil` when the buffer is empty, the full scale is
+    ///   not positive, or normalization or derivation fails.
+    private static func stretchSettings( _ buffer: PixelBuffer, domain: AutoStretchDomain, derive: ( PixelBuffer ) throws -> Processors.Stretch.STFParameters ) -> Settings?
+    {
+        guard buffer.pixels.isEmpty == false
         else
         {
             return nil
         }
 
-        let scaled = buffer.pixels.map { $0 / fullScale }
-
-        guard var input = try? PixelBuffer( width: buffer.width, height: buffer.height, channels: buffer.channels, pixels: scaled, isNormalized: false )
-        else
+        switch domain
         {
-            return nil
-        }
+            case .fullScale( let fullScale ):
 
-        do
-        {
-            try Processors.Normalize( mode: .identity ).process( buffer: &input )
+                guard fullScale > 0,
+                      var input = try? PixelBuffer( width: buffer.width, height: buffer.height, channels: buffer.channels, pixels: buffer.pixels.map { $0 / fullScale }, isNormalized: false )
+                else
+                {
+                    return nil
+                }
 
-            return Settings( normalize: .identity, stretch: try derive( input ) )
-        }
-        catch
-        {
-            return nil
+                do
+                {
+                    try Processors.Normalize( mode: .identity ).process( buffer: &input )
+
+                    return Settings( normalize: .identity, stretch: try derive( input ) )
+                }
+                catch
+                {
+                    return nil
+                }
+
+            case .minMax:
+
+                var input = buffer
+
+                do
+                {
+                    // The colour input is raw (not normalized); rescale it by its own
+                    // min/max, the same normalization the render applies for a format
+                    // with no fixed full scale. An already-normalized buffer is left as
+                    // is, matching the previous min/max derivation.
+                    if input.isNormalized == false
+                    {
+                        try Processors.Normalize( mode: .minMax ).process( buffer: &input )
+                    }
+
+                    return Settings( normalize: .minMax, stretch: try derive( input ) )
+                }
+                catch
+                {
+                    return nil
+                }
         }
     }
 

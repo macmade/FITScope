@@ -186,13 +186,13 @@ public class RAWImageLoader: ObservableObject, ImageLoading
     /// The state a RAW image opens in, layered over its unstretched baseline, or
     /// `nil` when it opens unstretched.
     ///
-    /// When the auto-stretch-on-open preference is on and the sensor reports a white
-    /// level, an auto Screen Transfer is derived from the detection image — in the
-    /// native full-scale `[0, 1]` domain the render scales the sensor counts into —
-    /// so the image opens stretched with the parameters pre-filled and editable in
-    /// the inspector, while still resetting to the unstretched linear view. Returns
-    /// `nil` (opens linear) when the preference is off, the sensor has no white level,
-    /// or the derivation fails.
+    /// When the auto-stretch-on-open preference is on, an auto Screen Transfer is
+    /// derived — a per-channel one for a colour-filter-array sensor, uniform for a
+    /// monochrome one — so the image opens stretched with the parameters pre-filled and
+    /// editable in the inspector, while still resetting to the unstretched linear view.
+    /// It is derived in the sensor's own domain: the native full-scale `[0, 1]` domain
+    /// when a white level is known, or the min/max domain otherwise. Returns `nil`
+    /// (opens linear) when the preference is off or the derivation fails.
     ///
     /// - Parameters:
     ///   - info:        The image's metadata snapshot.
@@ -203,13 +203,15 @@ public class RAWImageLoader: ObservableObject, ImageLoading
     /// - Returns: The opened settings, or `nil` to open on the unstretched baseline.
     private nonisolated static func openedSettings( for info: RAWImageInfo, colorSource: ImageProcessor.AutoStretchColorSource?, autoStretch: Bool ) -> ImageProcessor.Settings?
     {
-        guard autoStretch, let whiteLevel = info.imageProperties.whiteLevel
+        guard autoStretch
         else
         {
             return nil
         }
 
-        return ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: whiteLevel )
+        let domain = info.imageProperties.whiteLevel.map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+
+        return ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
     }
 
     /// Builds the render source for an unpacked RAW file: crops the sensor's 16-bit

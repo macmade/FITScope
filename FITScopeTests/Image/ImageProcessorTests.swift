@@ -213,6 +213,52 @@ struct ImageProcessorTests
         #expect( ImageProcessor.autoStretchSettings( colorSource: .mosaic( buffer, pattern: .rggb ), fullScale: 0 ) == nil )
     }
 
+    /// The derivation works over the min/max domain too (a floating-point source with no
+    /// fixed full scale): colour yields per-channel, mono yields uniform — the same
+    /// shape as the full-scale domain, just normalized differently.
+    @Test
+    func autoStretchSettingsDeriveOverTheMinMaxDomain() throws
+    {
+        let red    = ( 0 ..< 16 ).map { Double( 20  + $0 % 8 ) }
+        let green  = ( 0 ..< 16 ).map { Double( 120 + $0 % 8 ) }
+        let blue   = ( 0 ..< 16 ).map { Double( 200 + $0 % 8 ) }
+        let planes = try PixelUtilities.interleave( planes: [ red, green, blue ] )
+        let colour = try PixelBuffer( width: 16, height: 1, channels: 3, pixels: planes, isNormalized: false )
+        let mono   = try PixelBuffer( width: 16, height: 1, channels: 1, pixels: ( 0 ..< 16 ).map { Double( $0 ) * 10 }, isNormalized: false )
+
+        let colourSettings = try #require( ImageProcessor.autoStretchSettings( colorSource: .channels( colour ), domain: .minMax ) )
+        let monoSettings   = try #require( ImageProcessor.autoStretchSettings( colorSource: .mono( mono ), domain: .minMax ) )
+
+        #expect( colourSettings.normalize == .minMax )
+        #expect( monoSettings.normalize   == .minMax )
+
+        guard case .perChannel = try #require( colourSettings.stretch ), case .uniform = try #require( monoSettings.stretch )
+        else
+        {
+            Issue.record( "min/max colour must be per-channel and min/max mono uniform" )
+
+            return
+        }
+    }
+
+    /// A colour-filter-array source derives per-channel over the min/max domain as well.
+    @Test
+    func autoStretchSettingsDeriveMosaicPerChannelOverMinMax() throws
+    {
+        let buffer   = try PixelBuffer( width: 4, height: 4, channels: 1, pixels: ( 0 ..< 16 ).map { Double( $0 ) * 50 }, isNormalized: false )
+        let settings = try #require( ImageProcessor.autoStretchSettings( colorSource: .mosaic( buffer, pattern: .rggb ), domain: .minMax ) )
+
+        #expect( settings.normalize == .minMax )
+
+        guard case .perChannel = try #require( settings.stretch )
+        else
+        {
+            Issue.record( "a mosaic source must derive per-channel over the min/max domain too" )
+
+            return
+        }
+    }
+
     /// A FITS RGB `NAXIS=3` frame exposes a co-located 3-channel colour input, so it
     /// derives a per-channel STF.
     @Test

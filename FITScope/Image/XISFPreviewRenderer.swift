@@ -103,18 +103,25 @@ public enum XISFPreviewRenderer
             return ImageProcessor.Settings( normalize: .identity, stretch: stf )
         }
 
-        // Otherwise auto-stretch only when the shared previews preference is on and a
-        // full scale is known (integer formats); a float format, or an unopenable
-        // suite, falls back to a linear render. A colour frame derives a per-channel
-        // (unlinked) STF — a colour-filter-array frame's mosaic is split per channel by
-        // deinterleaving (no demosaic dependency), an RGB frame by its planes — so the
-        // preview matches the app on open; any other frame uses its plain channel
-        // luminance for a uniform stretch.
+        // Otherwise auto-stretch only when the shared previews preference is on (an
+        // unopenable suite falls back to a linear render). A colour frame derives a
+        // per-channel (unlinked) STF — a colour-filter-array frame's mosaic is split per
+        // channel by deinterleaving (no demosaic dependency), an RGB frame by its planes
+        // — so the preview matches the app on open; any other frame uses its plain
+        // channel luminance for a uniform stretch. It is derived over the format's own
+        // domain: full-scale for an integer sample format, min/max for a floating-point
+        // one.
         guard let defaults = previewsDefaults,
               AutoStretchPreference.autoStretchPreviews( .xisf, in: defaults ),
-              let fullScale   = ImageProcessor.xisfFullScale( properties.sampleFormat ),
-              let colorSource = Self.previewColorSource( data: data, properties: properties ),
-              let settings    = ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale )
+              let colorSource = Self.previewColorSource( data: data, properties: properties )
+        else
+        {
+            return ImageProcessor.Settings()
+        }
+
+        let domain = ImageProcessor.xisfFullScale( properties.sampleFormat ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+
+        guard let settings = ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
         else
         {
             return ImageProcessor.Settings()

@@ -106,9 +106,17 @@ public enum FITSPreviewRenderer
     {
         guard let defaults = previewsDefaults,
               AutoStretchPreference.autoStretchPreviews( .fits, in: defaults ),
-              let fullScale   = ImageProcessor.fullScale( forImageHDU: hdu.properties ),
-              let colorSource = Self.previewColorSource( hdu: hdu ),
-              let settings    = ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale )
+              let colorSource = Self.previewColorSource( hdu: hdu )
+        else
+        {
+            return ImageProcessor.Settings()
+        }
+
+        // Full-scale domain for an integer format, min/max for a floating-point one, so
+        // the preview stretches in the same domain the app opens with.
+        let domain = ImageProcessor.fullScale( forImageHDU: hdu.properties ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+
+        guard let settings = ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
         else
         {
             return ImageProcessor.Settings()

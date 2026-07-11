@@ -97,31 +97,33 @@ public extension ImageRenderSource
         self.detectionImage.map { .mono( $0 ) }
     }
 
+    /// The normalization domain this source's auto Screen Transfer is derived in: the
+    /// native full-scale `[0, 1]` domain when the format has a fixed ``fullScale`` (an
+    /// integer FITS / XISF / RAW), or the min/max domain otherwise (a floating-point
+    /// FITS / XISF, or a RAW with no white level).
+    var autoStretchDomain: ImageProcessor.AutoStretchDomain
+    {
+        self.fullScale.map { .fullScale( $0 ) } ?? .minMax
+    }
+
     /// The auto Screen Transfer settings for this source — per-channel for a colour
-    /// source, uniform for a mono one — in the native full-scale `[0, 1]` domain.
+    /// source, uniform for a mono one — in the source's own domain (full-scale for an
+    /// integer format, min/max for a floating-point one).
     ///
     /// The single entry every consumer reaches so opening the image, the inspector's
     /// Auto and the Screen Transfer editor's Auto all agree. It resolves the source's
     /// ``autoStretchColorSource`` through the shared
-    /// ``ImageProcessor/autoStretchSettings(colorSource:fullScale:shadowClipFactor:targetBackground:)``.
-    /// Returns `nil` for a source without a fixed ``fullScale`` (a photographic or
-    /// floating-point one); such a source is stretched over the min/max domain by the
-    /// caller instead.
+    /// ``ImageProcessor/autoStretchSettings(colorSource:domain:shadowClipFactor:targetBackground:)``
+    /// over its ``autoStretchDomain``.
     ///
     /// - Parameters:
     ///   - shadowClipFactor: How many median-absolute-deviations below the median to
     ///                       clip the shadows. Defaults to `2.8`.
     ///   - targetBackground: The value the median should map to. Defaults to `0.25`.
-    /// - Returns: The `{ normalize: .identity, stretch: <auto STF> }` settings, or
-    ///   `nil` when the source has no fixed full scale or the derivation fails.
+    /// - Returns: The `{ normalize, stretch }` settings, or `nil` when the source
+    ///   exposes no colour input or the derivation fails.
     func autoStretchSettings( shadowClipFactor: Double = 2.8, targetBackground: Double = 0.25 ) -> ImageProcessor.Settings?
     {
-        guard let fullScale = self.fullScale
-        else
-        {
-            return nil
-        }
-
-        return ImageProcessor.autoStretchSettings( colorSource: self.autoStretchColorSource, fullScale: fullScale, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
+        ImageProcessor.autoStretchSettings( colorSource: self.autoStretchColorSource, domain: self.autoStretchDomain, shadowClipFactor: shadowClipFactor, targetBackground: targetBackground )
     }
 }

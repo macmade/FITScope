@@ -255,16 +255,19 @@ public class XISFImageLoader: ObservableObject, ImageLoading
             return ImageProcessor.Settings( normalize: .identity, stretch: stf )
         }
 
-        // Otherwise fall back to an auto Screen Transfer when enabled and a full scale
-        // is known (integer formats); floating-point images have no fixed full scale
-        // and open on the unstretched linear baseline.
-        guard autoStretch, let fullScale = ImageProcessor.xisfFullScale( info.imageProperties.sampleFormat )
+        // Otherwise fall back to an auto Screen Transfer when enabled — a per-channel
+        // one for colour, uniform for mono — in the format's own domain: full-scale for
+        // an integer sample format, min/max for a floating-point one (no fixed full
+        // scale).
+        guard autoStretch
         else
         {
             return nil
         }
 
-        return ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale )
+        let domain = ImageProcessor.xisfFullScale( info.imageProperties.sampleFormat ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+
+        return ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
     }
 
     /// Builds the detection-ready single-channel linear image for an XISF image,

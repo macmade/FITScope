@@ -257,30 +257,33 @@ public class FITSImageLoader: ObservableObject, ImageLoading
     /// The state an image frame opens in, layered over its unstretched baseline, or
     /// `nil` when it opens unstretched.
     ///
-    /// When the auto-stretch-on-open preference is on and the format has a known full
-    /// scale (an integer `BITPIX`), an auto Screen Transfer is derived from the
-    /// detection image — in the native full-scale `[0, 1]` domain the render scales
-    /// the samples into — so the frame opens stretched with the parameters pre-filled
-    /// and editable in the inspector, while still resetting to the unstretched linear
-    /// view. Returns `nil` (opens linear) when the preference is off, the format is
-    /// floating-point (no fixed full scale), or the derivation fails.
+    /// When the auto-stretch-on-open preference is on, an auto Screen Transfer is
+    /// derived — a per-channel one for a colour frame, a uniform one for a mono frame —
+    /// so the frame opens stretched with the parameters pre-filled and editable in the
+    /// inspector, while still resetting to the unstretched linear view. It is derived in
+    /// the format's own domain: the native full-scale `[0, 1]` domain for an integer
+    /// `BITPIX`, or the min/max domain for a floating-point one (which has no fixed full
+    /// scale). Returns `nil` (opens linear) when the preference is off or the derivation
+    /// fails.
     ///
     /// - Parameters:
     ///   - colorSource: The frame's per-channel colour input (a colour frame derives
     ///                  a per-channel STF, a mono frame a uniform one).
-    ///   - fullScale:   The format's full-scale maximum, or `nil` for a
-    ///                  floating-point / unknown format.
+    ///   - fullScale:   The format's full-scale maximum, or `nil` for a floating-point
+    ///                  format, which is derived over the min/max domain instead.
     ///   - autoStretch: Whether auto-stretch on open is enabled.
     /// - Returns: The opened settings, or `nil` to open on the unstretched baseline.
     private nonisolated static func openedSettings( colorSource: ImageProcessor.AutoStretchColorSource?, fullScale: Double?, autoStretch: Bool ) -> ImageProcessor.Settings?
     {
-        guard autoStretch, let fullScale
+        guard autoStretch
         else
         {
             return nil
         }
 
-        return ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale )
+        let domain = fullScale.map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+
+        return ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
     }
 
     /// Decodes an image HDU into a graph series when it is graph data rather than a

@@ -156,21 +156,32 @@ struct FITSImageLoaderTests
         #expect( image.renderer.adjustments.baseline.normalize == .minMax )
     }
 
-    /// A floating-point image has no fixed full scale, so auto-stretch is skipped
-    /// even when enabled: the image opens linear on the min/max baseline.
+    /// A floating-point image has no fixed full scale, so it opens with an auto Screen
+    /// Transfer over the min/max domain (a uniform one for this mono frame) rather than
+    /// linear, still resetting to the unstretched min/max baseline.
     @Test
     @MainActor
-    func floatingPointImageOpensLinearEvenWithAutoStretch() async throws
+    func floatingPointImageOpensWithMinMaxAutoStretch() async throws
     {
         let loader = FITSImageLoader( url: TestFixtures.monoImage, autoStretch: true )
 
         await loader.load()
 
-        let image = try #require( loader.image )
+        let image       = try #require( loader.image )
+        let adjustments = image.renderer.adjustments
 
-        #expect( image.renderer.adjustments.stretch            == nil )
-        #expect( image.renderer.adjustments.baseline.stretch   == nil )
-        #expect( image.renderer.adjustments.baseline.normalize == .minMax )
+        #expect( adjustments.opened.stretch     != nil )
+        #expect( adjustments.opened.normalize   == .minMax )
+        #expect( adjustments.baseline.stretch   == nil )
+        #expect( adjustments.baseline.normalize == .minMax )
+
+        guard case .uniform = try #require( adjustments.opened.stretch )
+        else
+        {
+            Issue.record( "a mono float image must open with a uniform Screen Transfer" )
+
+            return
+        }
     }
 
     /// A failed load leaves no image, so the idempotency guard never
