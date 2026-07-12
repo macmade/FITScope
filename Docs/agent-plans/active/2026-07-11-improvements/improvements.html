@@ -268,6 +268,25 @@
                 <li><code>clip: empty path.</code></li>
             </ul>
         </div>
+
+        <div class="item">
+            <div class="item-header">
+                <span class="item-number">10</span>
+                <h3>Fix the NSSplitView Auto Layout constraint conflict</h3>
+            </div>
+            <p>
+                AppKit logs an <code>Unable to simultaneously satisfy
+                constraints</code> warning to the Xcode debug console at runtime.
+                The conflict is on the split view's trailing edge: the
+                <code>NSSplitView.Edge.Trailing</code> constraints pinning the
+                item view wrapper and its layout guide clash with an
+                <code>NSViewSafeAreaLayoutGuide-right</code> constraint that
+                reserves a fixed 300&nbsp;pt inset, so AppKit recovers by breaking
+                one of the trailing constraints. Investigate the split-view layout
+                and resolve the conflicting constraints so the warning no longer
+                appears.
+            </p>
+        </div>
     </div>
 </body>
 </html>
