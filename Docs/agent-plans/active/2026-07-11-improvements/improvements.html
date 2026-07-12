@@ -287,6 +287,19 @@
                 appears.
             </p>
         </div>
+
+        <div class="item">
+            <div class="item-header">
+                <span class="item-number">11</span>
+                <h3>Fix runaway CPU usage in the Thumbnail extension</h3>
+            </div>
+            <p>
+                <code>FITScopeThumbnailExtension</code> can consume all available
+                CPU — up to 900% on this machine — while generating thumbnails,
+                slowing down the whole system. Investigate the cause and address
+                it so the extension stays within reasonable resource limits.
+            </p>
+        </div>
     </div>
 </body>
 </html>
