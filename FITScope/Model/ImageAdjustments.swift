@@ -481,6 +481,25 @@ public final class ImageAdjustments: ObservableObject
         return PerChannelStretchRequest( settings: settings )
     }
 
+    /// Engages a managed uniform Screen Transfer, deriving it (off the main actor) and
+    /// applying it. A uniform stretch composes with white balance, so there is no
+    /// collision to resolve — white balance is left untouched. Does nothing when no
+    /// derivation is possible.
+    ///
+    /// This is the uniform counterpart to ``requestPerChannelAutoStretch()``: the Screen
+    /// Transfer editor's per-channel toggle uses it to switch a managed stretch to uniform
+    /// silently, while switching to per-channel routes through the confirmation.
+    public func engageUniformStretch() async
+    {
+        guard let settings = await self.deriveAutoStretch( true ), settings.stretch != nil
+        else
+        {
+            return
+        }
+
+        self.applyManagedStretch( settings )
+    }
+
     /// Commits a ``PerChannelStretchRequest`` the way the user resolved its white-balance
     /// collision.
     ///

@@ -682,7 +682,7 @@
             <div class="milestone-head">
                 <span class="mnum">5</span>
                 <h3>STF editor integration</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">Reconcile the Screen Transfer editor's existing per-channel toggle and Auto button with the
@@ -702,15 +702,71 @@
                 <li>Update the editor's SwiftUI preview(s) for managed vs manual.</li>
             </ul>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">&mdash;</p>
+            <p>2026-07-12</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Key insight.</strong> The editor's <code>commit()</code> is a <em>direct</em>
+                        <code>adjustments.stretch</code> write, so &mdash; with Milestone&nbsp;1's <code>didSet</code> &mdash;
+                        every slider/curve edit already disengages Auto (Task&nbsp;2, free). The substantive work was routing
+                        the per-channel toggle through the model while managed, and the banner.</li>
+                    <li><strong>Editor Auto vs. per-channel toggle (design).</strong> The editor's own <em>Auto</em> button
+                        was intentionally left as a one-shot manual derive: it uses the editor's tunable Auto-Clip/Auto-Background
+                        sliders and commits, so it produces a manual STF (consistent with &ldquo;editing turns this off&rdquo;).
+                        The managed re-derive (per-channel toggle) uses the model's default derivation parameters. This split
+                        avoided any change to the committed derivation API.</li>
+                    <li><strong>Per-channel toggle (Task&nbsp;1).</strong> <code>perChannelBinding</code> now branches on
+                        <code>adjustments.isAutoStretch</code>: while managed it dispatches
+                        <code>engageManaged(perChannel:)</code> and returns (no <code>commit()</code>, so managed mode is
+                        preserved); while manual the exact prior logic runs (switch the hand-edited stretch's linking, guarded by
+                        the existing &ldquo;switch to master&rdquo; confirmation). <code>engageManaged</code> routes per-channel
+                        through <code>requestPerChannelAutoStretch()</code> (→ confirm when white balance is on) and uniform
+                        through the new model <code>engageUniformStretch()</code> (silent, composes with white balance).</li>
+                    <li><strong>Model.</strong> Added <code>engageUniformStretch()</code> &mdash; the uniform counterpart to
+                        <code>requestPerChannelAutoStretch()</code>: derive uniform, apply managed, leave white balance
+                        untouched. Unit-tested.</li>
+                    <li><strong>Confirmation &amp; banner.</strong> The editor gets its own inline white-balance-removal
+                        confirmation (agreed approach; matches the codebase's per-view &ldquo;switch to master&rdquo; pattern),
+                        wired to the shared model <code>resolve(_:as:)</code>. A managed banner (&ldquo;Managed automatically
+                        &mdash; editing turns this off&rdquo;) shows while <code>isAutoStretch</code>.</li>
+                    <li><strong>Single source of truth (Task&nbsp;4).</strong> The editor mirrors <code>adjustments.stretch</code>
+                        (linking) and reads <code>isAutoStretch</code>; <code>syncFromAdjustments()</code> writes only
+                        <code>@State</code> (never <code>commit()</code>), so a managed apply from the inspector or a resolve is
+                        reflected without dropping to manual. The reviewer confirmed the editor and model never disagree across
+                        confirm / keep / cancel / outside-dismiss.</li>
+                    <li><strong>Tests / previews.</strong> Model test for <code>engageUniformStretch()</code> (31/31 model
+                        tests pass). Previews for managed vs. manual. The editor's interactive managed flow (no dedicated UI
+                        test) is driven live in Milestone&nbsp;6.</li>
+                    <li><strong>Automated review.</strong> One fresh-context round; converged with no Critical/High/Medium
+                        findings. It traced every managed/manual path and confirmed the toggle stays coherent with the model,
+                        <code>isDeriving</code> clears on all paths, and re-renders fire exactly where state changes. One Low fix
+                        applied; three Info items left as-is (below).</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>[Low &mdash; Fixed] Sliders/toggle live during the off-actor derive.</strong> Only the Auto
+                        button and <code>isRendering</code> gated the controls, leaving a narrow window where a slider edit
+                        during a managed derive could be discarded by the returning managed apply (last-write-wins). Gated the
+                        whole editor on <code>isDeriving</code> too (<code>.disabled( isRendering || isDeriving )</code>),
+                        matching how it already gates on <code>isRendering</code>; also addresses the related Info note about the
+                        per-channel toggle.</li>
+                    <li><strong>[Info &mdash; Deferred] Two stacked confirmation dialogs.</strong> The &ldquo;switch to
+                        master&rdquo; (manual-only) and &ldquo;remove white balance&rdquo; (managed-only) dialogs are mutually
+                        exclusive by construction, so they never present together. Correct as written.</li>
+                    <li><strong>[Info &mdash; Deferred] Previews don't re-render after mutating the stretch.</strong> The
+                        histogram backdrop reflects the pre-stretch render; harmless for a preview.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting review.</p>
+            <div class="notes">
+                <ul>
+                    <li>&ldquo;Looks good&rdquo; &mdash; approved as-is, no changes requested.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 6 -->

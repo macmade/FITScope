@@ -327,6 +327,20 @@ public enum AccessibilityIdentifier
 
         /// The button that resets the screen transfer to the identity.
         public static let resetButton = "ScreenTransferWindowView.resetButton"
+
+        /// The banner shown while the stretch is app-managed ("Auto engaged").
+        public static let managedBanner = "ScreenTransferWindowView.managedBanner"
+
+        /// The white-balance-removal confirmation's default action: apply the
+        /// per-channel stretch and turn white balance off.
+        public static let removeWhiteBalanceButton = "ScreenTransferWindowView.removeWhiteBalanceButton"
+
+        /// The white-balance-removal confirmation's "keep" action: apply the per-channel
+        /// stretch, keep white balance, and drop to manual mode.
+        public static let keepWhiteBalanceButton = "ScreenTransferWindowView.keepWhiteBalanceButton"
+
+        /// The white-balance-removal confirmation's cancel action: apply nothing.
+        public static let cancelWhiteBalanceRemovalButton = "ScreenTransferWindowView.cancelWhiteBalanceRemovalButton"
     }
 
     /// Identifiers applied by ``FITScope/CurvesWindowView`` and its editor.

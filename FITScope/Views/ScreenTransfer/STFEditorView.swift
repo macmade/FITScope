@@ -102,6 +102,11 @@ struct STFEditorView: View
     /// it runs off the main actor.
     @State private var isDeriving = false
 
+    /// The pending per-channel engage awaiting the user's white-balance-removal decision,
+    /// or `nil` when no confirmation is showing. Set when switching a managed stretch to
+    /// per-channel while white balance is active (see ``perChannelBinding``).
+    @State private var pendingRequest: ImageAdjustments.PerChannelStretchRequest?
+
     /// A single channel's editable STF values, the view-side mirror of
     /// ``Processors/Stretch/STFParameters/Channel``.
     struct STF
@@ -200,6 +205,13 @@ struct STFEditorView: View
     {
         VStack( alignment: .leading, spacing: 14 )
         {
+            // While the stretch is app-managed, editing here drops it to a manual value:
+            // say so, so the change of mode is not a surprise.
+            if self.adjustments.isAutoStretch
+            {
+                self.managedBanner
+            }
+
             self.histogram
 
             Grid( alignment: .leading )
@@ -290,7 +302,10 @@ struct STFEditorView: View
                 .help( "Reset the Screen Transfer to the Identity" )
             }
         }
-        .disabled( self.image.renderer.isRendering )
+        // Lock the whole editor while a render or a managed derive is in flight, so a
+        // slider or toggle change during the off-actor derive cannot race the managed
+        // apply that follows it.
+        .disabled( self.image.renderer.isRendering || self.isDeriving )
         .padding( 16 )
         .frame( maxWidth: .infinity, alignment: .top )
         .navigationTitle( "Screen Transfer — \( self.image.url.lastPathComponent )" )
@@ -317,6 +332,60 @@ struct STFEditorView: View
         {
             Text( "Your per-channel adjustments will be discarded." )
         }
+        // Switching a managed stretch to per-channel while white balance is active needs
+        // the user to choose how to resolve the collision before anything is committed.
+        .confirmationDialog( "Remove White Balance?", isPresented: self.isConfirmingWhiteBalanceRemoval, titleVisibility: .visible )
+        {
+            Button( "Remove White Balance" )
+            {
+                self.resolve( .removeWhiteBalance )
+            }
+            .keyboardShortcut( .defaultAction )
+            .accessibilityIdentifier( AccessibilityIdentifier.ScreenTransferWindowView.removeWhiteBalanceButton )
+
+            Button( "Keep White Balance" )
+            {
+                self.resolve( .keepWhiteBalance )
+            }
+            .accessibilityIdentifier( AccessibilityIdentifier.ScreenTransferWindowView.keepWhiteBalanceButton )
+
+            Button( "Cancel", role: .cancel )
+            {
+                self.pendingRequest = nil
+            }
+            .accessibilityIdentifier( AccessibilityIdentifier.ScreenTransferWindowView.cancelWhiteBalanceRemovalButton )
+        }
+        message:
+        {
+            Text( "A per-channel auto stretch neutralizes the colour cast on its own, so white balance is redundant. Remove it for the clean result, or keep both and switch to manual." )
+        }
+    }
+
+    /// A banner shown while the stretch is app-managed, so the user knows that editing
+    /// here drops it to a manual value (the exclusion rule no longer forces the linking).
+    private var managedBanner: some View
+    {
+        HStack( spacing: 6 )
+        {
+            Image( systemName: "wand.and.stars" )
+
+            Text( "Managed automatically \u{2014} editing turns this off." )
+                .fixedSize( horizontal: false, vertical: true )
+        }
+        .font( .caption )
+        .foregroundStyle( .secondary )
+        .frame( maxWidth: .infinity, alignment: .leading )
+        .accessibilityIdentifier( AccessibilityIdentifier.ScreenTransferWindowView.managedBanner )
+    }
+
+    /// Whether the white-balance-removal confirmation is showing, derived from whether a
+    /// request is pending. Dismissing it discards the request.
+    private var isConfirmingWhiteBalanceRemoval: Binding< Bool >
+    {
+        Binding(
+            get: { self.pendingRequest != nil },
+            set: { if $0 == false { self.pendingRequest = nil } }
+        )
     }
 
     /// The histogram backdrop, drawn from the latest committed render so it
@@ -358,8 +427,24 @@ struct STFEditorView: View
         Binding(
             get: { self.perChannel },
             set:
-            {
-                if $0
+            { perChannel in
+
+                // While managed, the linking is app-derived and shared with the inspector:
+                // re-derive at the requested linking through the model's rule rather than
+                // hand-switching (switching to per-channel while white balance is on routes
+                // to the confirmation; switching to uniform composes silently). This keeps
+                // managed mode; only a hand-edit drops to manual.
+                guard self.adjustments.isAutoStretch == false
+                else
+                {
+                    Task { await self.engageManaged( perChannel: perChannel ) }
+
+                    return
+                }
+
+                // Manual: switch the linking of the hand-edited stretch, keeping the two
+                // free to coexist with white balance.
+                if perChannel
                 {
                     if self.perChannel == false
                     {
@@ -384,6 +469,64 @@ struct STFEditorView: View
                 }
             }
         )
+    }
+
+    /// Re-derives and applies a managed stretch at the requested linking through the
+    /// model, so the editor and inspector stay in step on both linking and managed state.
+    /// Switching to per-channel while white balance is active does not commit — it raises
+    /// the white-balance-removal confirmation; switching to uniform composes with white
+    /// balance silently.
+    ///
+    /// - Parameter perChannel: The requested linking (per-channel when `true`).
+    @MainActor
+    private func engageManaged( perChannel: Bool ) async
+    {
+        self.isDeriving = true
+
+        guard perChannel
+        else
+        {
+            await self.adjustments.engageUniformStretch()
+
+            self.isDeriving = false
+
+            self.image.renderer.scheduleReRender()
+
+            return
+        }
+
+        let request = await self.adjustments.requestPerChannelAutoStretch()
+
+        self.isDeriving = false
+
+        guard let request
+        else
+        {
+            self.image.renderer.scheduleReRender()
+
+            return
+        }
+
+        self.pendingRequest = request
+    }
+
+    /// Commits the pending per-channel engage the way the user resolved the white-balance
+    /// collision, clears the request and re-renders.
+    ///
+    /// - Parameter resolution: The chosen outcome (remove or keep white balance).
+    private func resolve( _ resolution: ImageAdjustments.PerChannelStretchResolution )
+    {
+        guard let request = self.pendingRequest
+        else
+        {
+            return
+        }
+
+        self.adjustments.resolve( request, as: resolution )
+
+        self.pendingRequest = nil
+
+        self.image.renderer.scheduleReRender()
     }
 
     /// Whether any per-channel parameters have been adjusted away from the identity
@@ -626,7 +769,9 @@ struct STFEditorView: View
     }
 }
 
-#Preview
+// Managed: the stretch is app-derived, so the banner shows and editing here drops it to
+// a manual value.
+#Preview( "Managed" )
 {
     if let image = PreviewHelper.image( file: .M42 )
     {
@@ -635,6 +780,28 @@ struct STFEditorView: View
             .task
             {
                 await image.renderer.render()
+
+                _ = await image.renderer.adjustments.requestPerChannelAutoStretch()
+            }
+    }
+    else
+    {
+        Text( "Sample image unavailable." )
+    }
+}
+
+// Manual: a hand-set stretch, so there is no managed banner.
+#Preview( "Manual" )
+{
+    if let image = PreviewHelper.image( file: .M42 )
+    {
+        STFEditorView( image: image )
+            .frame( width: 400 )
+            .task
+            {
+                await image.renderer.render()
+
+                image.renderer.adjustments.stretch = .uniform( .init( midtones: 0.3 ) )
             }
     }
     else

@@ -835,4 +835,27 @@ struct ImageAdjustmentsTests
         #expect( none.perChannelStretchHandlesColorBalance == false )
         #expect( none.whiteBalanceHandlesColorBalance == false )
     }
+
+    /// Engaging a uniform managed stretch (the Screen Transfer editor switching a managed
+    /// stretch to uniform) applies the derived uniform STF, engages managed mode, and —
+    /// since a uniform stretch composes with white balance — leaves white balance on.
+    @Test
+    @MainActor
+    func engageUniformStretchAppliesUniformAndKeepsWhiteBalance() async
+    {
+        // A manual per-channel stretch with white balance on.
+        let adjustments = ImageAdjustments()
+
+        adjustments.stretch           = .perChannel( red: .init( midtones: 0.2 ), green: .init( midtones: 0.3 ), blue: .init( midtones: 0.4 ) )
+        adjustments.whiteBalance      = .auto
+        adjustments.deriveAutoStretch = { $0 ? Self.uniformSample : Self.perChannelSample }
+
+        #expect( adjustments.isAutoStretch == false )
+
+        await adjustments.engageUniformStretch()
+
+        #expect( adjustments.stretch      == Self.uniformSample.stretch )
+        #expect( adjustments.isAutoStretch, "the uniform stretch is now managed" )
+        #expect( adjustments.whiteBalance == .auto, "a uniform stretch composes with white balance" )
+    }
 }
