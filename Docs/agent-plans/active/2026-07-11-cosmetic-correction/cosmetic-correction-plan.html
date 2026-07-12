@@ -1,0 +1,516 @@
+<meta charset="utf-8">
+<title>Cosmetic Correction — Implementation Plan</title>
+<style>
+    :root {
+        color-scheme: dark;
+        --bg: #14171c;
+        --panel: #1b1f27;
+        --panel-2: #20252e;
+        --border: #2a2f38;
+        --text: #d7dce3;
+        --text-strong: #f2f5f9;
+        --muted: #8b93a1;
+        --accent: #2d5bd7;
+        --code-bg: #262b34;
+        --code-border: #333a45;
+        --code-text: #e6b673;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        padding: 2.5rem 1.5rem 4rem;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        font-size: 16px;
+    }
+
+    main { max-width: 900px; margin: 0 auto; }
+
+    header.doc {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    h1 {
+        margin: 0 0 0.5rem;
+        font-size: 2rem;
+        color: var(--text-strong);
+        letter-spacing: 0.2px;
+    }
+
+    .meta { margin: 0; font-size: 0.9rem; color: var(--muted); }
+    .meta strong { color: #a9b2c1; font-weight: 600; }
+    .meta time { color: #a9b2c1; font-variant-numeric: tabular-nums; }
+    .meta code { color: var(--code-text); }
+
+    h2.section {
+        margin: 2.5rem 0 1rem;
+        font-size: 1.35rem;
+        color: var(--text-strong);
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.4rem;
+    }
+
+    h3.phase {
+        margin: 2.25rem 0 1rem;
+        font-size: 1.05rem;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: #9fb0d8;
+    }
+
+    p { margin: 0 0 0.85rem; }
+    p.tight { margin: 0 0 0.4rem; }
+
+    code {
+        background: var(--code-bg);
+        border: 1px solid var(--code-border);
+        border-radius: 4px;
+        padding: 0.05rem 0.35rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.86em;
+        color: var(--code-text);
+    }
+
+    ul, ol { margin: 0 0 0.85rem; padding-left: 1.35rem; }
+    li { margin: 0.2rem 0; }
+
+    .qa { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 0.4rem 1.2rem; }
+    .qa dt { font-weight: 600; color: var(--text-strong); margin-top: 0.9rem; }
+    .qa dd { margin: 0.2rem 0 0.9rem; color: #c3cad4; }
+
+    .note { background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; padding: 1rem 1.2rem; margin: 1rem 0; }
+
+    article.milestone {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.2rem 1.4rem 1.35rem;
+        margin-bottom: 1.3rem;
+    }
+
+    article.milestone > header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.5rem;
+    }
+
+    article.milestone h4 {
+        margin: 0;
+        font-size: 1.12rem;
+        color: var(--text-strong);
+    }
+
+    article.milestone h4 .num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.6rem; height: 1.6rem;
+        margin-right: 0.55rem;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 600;
+        vertical-align: middle;
+    }
+
+    .field { margin: 0.7rem 0 0; }
+    .field > .label {
+        display: block;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.9px;
+        color: var(--muted);
+        margin-bottom: 0.15rem;
+    }
+    .field .placeholder { color: #6f7885; font-style: italic; }
+
+    .capsule {
+        display: inline-block;
+        padding: 0.2rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+    .capsule.not-started { background: #333a45; color: #c3cad4; }
+    .capsule.in-progress { background: #7a5a12; color: #ffdf9e; }
+    .capsule.completed  { background: #1f5130; color: #a7e7bf; }
+
+    table.files { width: 100%; border-collapse: collapse; margin: 0.5rem 0 0.85rem; font-size: 0.9rem; }
+    table.files th, table.files td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    table.files th { color: var(--muted); font-weight: 600; }
+    table.files td code { font-size: 0.82em; }
+
+    .divider { height: 1px; background: var(--border); border: 0; margin: 0.9rem 0; }
+</style>
+<main>
+    <header class="doc">
+        <h1>Cosmetic Correction — Implementation Plan</h1>
+        <p class="meta"><strong>Generated:</strong> <time datetime="2026-07-12">2026-07-12</time></p>
+        <p class="meta"><strong>Source:</strong> <code>Docs/agent-plans/active/2026-07-11-cosmetic-correction/cosmetic-correction.html</code></p>
+    </header>
+
+    <h2 class="section">Overview</h2>
+    <p>
+        The backlog item asks that unstretched images no longer have their min/max normalization range
+        distorted by hot pixels. Rather than bolt outlier logic onto the normalization stage, we add a
+        dedicated <strong>Cosmetic Correction</strong> stage that <em>repairs</em> defective pixels
+        (hot and cold) before any other processing, with a matching, user-togglable control in the
+        inspector. Because the repair happens on the raw samples, every downstream stage benefits —
+        normalization <em>and</em> the auto-stretch derivation — and the fix generalizes from "don't let
+        outliers skew the range" to "remove sensor defects from the displayed image."
+    </p>
+    <p>
+        The stage lives in the <code>SwiftPixel</code> submodule as a new <code>PixelProcessor</code>,
+        inserted <strong>before</strong> the channel-forming/debayer stage so a hot pixel is repaired on the
+        raw mosaic before demosaicing can smear it across its neighbours. Detection is a conservative,
+        neighbour-based robust test (median + MAD of same-kind neighbours); correction replaces a detected
+        defect with the median of those neighbours. Both hot- and cold-pixel correction are independently
+        configurable, and the whole stage is <strong>on by default</strong> with intentionally conservative
+        thresholds so it only touches unambiguous, isolated spikes and cannot erase faint stars out of the box.
+    </p>
+
+    <h2 class="section">Questions &amp; answers</h2>
+    <dl class="qa">
+        <dt>Should hot-pixel handling be part of normalization, or a separate processor before normalization, togglable in the inspector?</dt>
+        <dd>A standalone processor, placed <strong>before debayer</strong>, with a matching inspector control.</dd>
+
+        <dt>Range-estimation fix only, or full pixel repair?</dt>
+        <dd>Full hot-pixel correction — the stage repairs the pixels, not just the range used for normalization.</dd>
+
+        <dt>What should be configurable?</dt>
+        <dd>Hot-pixel correction, cold-pixel correction, and any other meaningful options (exposed here as an independent enable + strength for each of hot and cold, under a master enable).</dd>
+
+        <dt>On by default?</dt>
+        <dd>
+            Yes — on by default. Agreed, with one recorded reservation: FITScope is also an inspection tool,
+            so a default-on stage that edits pixels can hide sensor defects a user may want to see and, if
+            detection ever misfires, could erase faint stars. Mitigation baked into the plan: detection is
+            deliberately conservative (isolated single-pixel spikes only, safe threshold), so the out-of-box
+            risk is negligible; users who want it stronger can raise the strength.
+        </dd>
+
+        <dt>Does the pre-debayer placement require knowing the Bayer pattern?</dt>
+        <dd>
+            No. Same-colour CFA neighbours are always at even offsets <code>(±2, 0), (0, ±2), (±2, ±2)</code>
+            for <em>any</em> Bayer pattern (a shift of 2 lands on the same cell of the 2×2 tile), so the stage
+            only needs to know the source <em>layout</em> (mono / CFA / RGB), which comes straight from
+            <code>PixelPipeline.Config.inputFormat</code>. The concrete pattern is not needed.
+        </dd>
+    </dl>
+
+    <h2 class="section">Notes</h2>
+    <p class="tight"><strong>Key components (verified during planning):</strong></p>
+    <table class="files">
+        <tr><th>Layer</th><th>File</th><th>Role</th></tr>
+        <tr><td>Engine</td><td><code>Submodules/SwiftAstro/Submodules/SwiftPixel/SwiftPixel/Processors/Normalize.swift</code></td><td>Existing <code>.minMax</code> scan (<code>vDSP_minvD/maxvD</code>, lines 110–140) — the range it distorts is what this feature protects. Left unchanged.</td></tr>
+        <tr><td>Engine</td><td><code>…/SwiftPixel/PixelUtilities.swift</code></td><td>Reusable <code>median</code>, <code>medianAbsoluteDeviation</code>, <code>parallelOrSerial</code> helpers to build on.</td></tr>
+        <tr><td>Engine</td><td><code>…/SwiftPixel/PixelPipeline.swift</code></td><td><code>Config</code> (fields ~79–148, init ~168), and <code>processors()</code>; forming stage switch at lines 317–330 — insert new stage right after the <code>Scale</code> block (line 312), before the switch.</td></tr>
+        <tr><td>Engine</td><td><code>…/SwiftPixel/PixelProcessor.swift</code></td><td>The <code>PixelProcessor</code> protocol the new stage conforms to.</td></tr>
+        <tr><td>App seam</td><td><code>FITScope/Image/ImageProcessor.swift</code></td><td><code>Settings</code> struct (102–245) and the two <code>config(...)</code> builders (196–244) — add a field and pass it into the <code>PixelPipeline.Config(...)</code> build (227–243).</td></tr>
+        <tr><td>Model</td><td><code>FITScope/Model/ImageAdjustments.swift</code></td><td>Add a <code>@Published</code> tunable + seed it in <code>init</code> (~173–200), <code>reset()</code> (~210–233), and the <code>settings</code> builder (~275–293).</td></tr>
+        <tr><td>UI</td><td><code>FITScope/Views/ImageControls/DebayerControlView.swift</code></td><td>The pattern to follow — direct binding + <code>reRender</code>, testable <code>static</code> mapping helpers, a <code>#Preview</code>.</td></tr>
+        <tr><td>UI</td><td><code>FITScope/Views/Inspector/InspectorView.swift</code></td><td>Add a new <code>InspectorSectionView</code> block (see Debayer 109–123 / White Balance 125–135), ordered to match the pipeline.</td></tr>
+        <tr><td>UI</td><td><code>FITScope/Application/AccessibilityIdentifiers.swift</code></td><td>Add section, section-reset, and per-control identifiers.</td></tr>
+    </table>
+
+    <div class="note">
+        <p class="tight"><strong>Conventions to follow</strong></p>
+        <ul>
+            <li>SwiftPixel and the app both build through Xcode: app scheme <code>FITScope</code>; SwiftPixel scheme <code>SwiftPixel</code>. Test via the <code>FITScope.xctestplan</code> (which includes <code>SwiftPixelTests</code> and <code>FITScopeTests</code>).</li>
+            <li>Tests use <strong>Swift Testing</strong> (<code>import Testing</code>, <code>@Suite</code>, <code>@Test</code>), not XCTest. SwiftPixel test files are named <code>Processors-&lt;Name&gt;.swift</code>.</li>
+            <li>Follow the repo coding conventions: <code>public</code> API in the framework target, <code>let</code> over <code>var</code>, no force-unwrap, document public <em>and</em> private members, one type per file.</li>
+            <li>The Xcode project and any SwiftPM manifest must be kept in sync when adding files.</li>
+            <li><code>ImageAdjustments</code> is <strong>not</strong> persisted (in-memory per image) — no Codable / UserDefaults / SwiftData work is required.</li>
+        </ul>
+    </div>
+
+    <h2 class="section">Milestones</h2>
+
+    <h3 class="phase">Phase A — SwiftPixel engine</h3>
+
+    <article class="milestone">
+        <header>
+            <h4><span class="num">1</span>Cosmetic Correction processor + algorithm (SwiftPixel)</h4>
+            <span class="capsule completed">Completed</span>
+        </header>
+        <p>
+            <strong>Goal:</strong> Add a new <code>Processors.CosmeticCorrection</code> stage that detects and
+            repairs hot/cold pixels on a raw <code>PixelBuffer</code>, self-contained and unit-tested, before
+            any pipeline wiring.
+        </p>
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul>
+                <li>Create <code>Processors/CosmeticCorrection.swift</code> conforming to <code>PixelProcessor</code> (<code>name</code>, <code>process(buffer:)</code>).</li>
+                <li>Define a nested <code>Layout</code> enum (<code>mono</code> / <code>cfa</code> / <code>rgb</code>) selecting the neighbour lattice (step 1 single-channel, step 2 single-channel, step 1 per-channel).</li>
+                <li>Define a <code>Parameters</code> value type: <code>isEnabled</code>, hot (<code>correctHot</code> + <code>hotThreshold</code>), cold (<code>correctCold</code> + <code>coldThreshold</code>); <code>Sendable</code>, <code>Equatable</code>, with a conservative <code>.default</code>. Document each member.</li>
+                <li>Implement detection per pixel: gather same-kind neighbours, compute their median <code>m</code> and robust scale <code>σ ≈ 1.4826·MAD</code>; flag hot if <code>v &gt; m + k·σ</code>, cold if <code>v &lt; m − k·σ</code>; guard flat (zero-MAD) neighbourhoods (require a strict local extreme). See Appendix.</li>
+                <li>Implement correction: replace a flagged pixel with the neighbour median <code>m</code>; leave all others untouched. Use a read-from-source / write-to-copy pass so corrections don't feed back into neighbouring detections.</li>
+                <li>Handle image borders (clamp/mirror or skip) and parallelize with <code>PixelUtilities.parallelOrSerial</code>.</li>
+                <li>Add <code>SwiftPixelTests/Processors-CosmeticCorrection.swift</code>: single hot pixel repaired to neighbour median; single cold pixel; hot/cold toggles honoured; multi-pixel "star" (PSF blob) left intact at conservative threshold; CFA step-2 sampling verified on a synthetic mosaic; RGB per-channel; disabled = no-op; empty/constant buffers; flat-region no false positives; <code>Equatable</code> / <code>description</code>.</li>
+                <li>Keep the SwiftPixel <code>.xcodeproj</code> and <code>Package.swift</code> in sync (new source + test files).</li>
+            </ul>
+        </div>
+        <div class="field"><span class="label">Status</span> <span class="capsule completed">Completed</span></div>
+        <div class="field"><span class="label">Completed</span> <time datetime="2026-07-12">2026-07-12</time></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+            <p>Implemented test-first (Swift Testing). Added <code>Processors/CosmeticCorrection.swift</code> conforming to <code>PixelProcessor</code> and <code>Equatable</code>, with:</p>
+            <ul>
+                <li>A nested <code>Layout</code> enum (<code>mono</code> / <code>cfa</code> / <code>rgb</code>) that exposes a <code>step</code> (1, or 2 for CFA so step-2 offsets always land on the same Bayer colour for any pattern) and a required <code>channels</code> count (1 for mono/cfa, 3 for rgb). A single interleaved index formula <code>(ny·width+nx)·channels + channel</code> with the layout's step covers all three layouts, so no per-pattern knowledge is needed.</li>
+                <li>A nested <code>Parameters</code> value type (<code>isEnabled</code>, <code>correctHot</code> + <code>hotThreshold</code>, <code>correctCold</code> + <code>coldThreshold</code>): <code>Sendable</code>, <code>Equatable</code>, <code>CustomStringConvertible</code>, with a conservative enabled <code>.default</code> (both corrections on, <code>k = 8.0</code>).</li>
+                <li>Detection per sample: gather in-bounds same-kind neighbours (≤8), compute the neighbour median <code>m</code> and <code>σ = max(1.4826·MAD, sigmaFloor)</code>; flag <em>hot</em> when <code>correctHot</code>, the sample is a strict local maximum (<code>v &gt; neighbourMax</code>), and <code>v − m &gt; hotThreshold·σ</code>; <em>cold</em> is the symmetric condition. The strict-local-extreme requirement is the primary star-safety guard (a multi-pixel blob's peak is not strictly greater than its equally bright neighbours), and it also blocks flat-region false positives together with the <code>sigmaFloor</code>.</li>
+                <li>Correction reads from the original samples and writes into a copy (<code>var output = pixels</code>, made unique by <code>withUnsafeMutableBufferPointer</code>), so a repair never feeds back into an adjacent pixel's detection. Parallelized with <code>PixelUtilities.parallelOrSerial</code> using the same <code>nonisolated(unsafe)</code> pointer idiom as <code>readRawPixels</code>; each iteration writes only its own output slot. Borders use whatever in-bounds neighbours exist. Rebuilds the buffer preserving <code>isNormalized</code>.</li>
+            </ul>
+            <p><strong>Decisions.</strong> The stage is value-range-agnostic (neither requires nor changes normalization); it is a no-op when disabled or when both corrections are off, and throws <code>unsupportedChannelCount</code> when the buffer's channel count does not match the layout. <code>sigmaFloor</code> (1e-6) and the default <code>k = 8.0</code> are deliberately provisional — the plan settles the final flat-region guard form and thresholds empirically in Milestone 6. The Xcode project uses explicit file references (no synchronized groups), so both new files were registered by hand in all four <code>project.pbxproj</code> sections (build file, file reference, group, Sources phase) following the existing hand-assigned ID scheme; SwiftPixel's <code>Package.swift</code> globs the target directory, so it needed no change.</p>
+            <p>Added <code>SwiftPixelTests/Processors-CosmeticCorrection.swift</code> (18 tests): name/description, <code>Equatable</code>, conservative default, single hot/cold repair to neighbour median, hot/cold toggles, multi-pixel star left intact, flat-region-with-noise no false positives, corner (partial neighbourhood) repair, CFA step-2 same-colour sampling, RGB per-channel, disabled/constant/empty no-ops, normalization-flag preservation, and wrong-channel-count throwing.</p>
+            <p><strong>Verification.</strong> Ran a genuine TDD red step (stub processor → repair/name/throw tests failed) then green. The full <code>SwiftPixel</code> scheme test suite passes (<code>** TEST SUCCEEDED **</code>), including the 18 new tests, with no regressions.</p>
+            <p><strong>Automated review loop.</strong> 2 fresh-context review rounds. Round 1 found one Medium (per-pixel <code>vDSP.sort</code> performance) plus Low/Info notes; the Medium and one Low were fixed. Round 2 (re-review of the updated state) found no Critical/High/Medium — only Info observations — so the loop converged.</p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+            <p><strong>Round 1</strong></p>
+            <ul>
+                <li><strong>Per-pixel <code>vDSP.sort</code> + allocations in the hot path</strong> — Medium (Performance). <code>repairedValue</code> called <code>PixelUtilities.median</code>/<code>medianAbsoluteDeviation</code>, each triggering a <code>vDSP.sort</code> whose setup cost dominates on an ≤8-element array and would run tens of millions of times on a 24 MP frame, plus a redundant second median and separate <code>max()</code>/<code>min()</code> passes. <em>Fixed:</em> sort the tiny neighbour array once with Swift's <code>.sorted()</code>, derive median/min/max from it, and take one small sort of the absolute deviations for the MAD via a new private <code>median(ofSorted:)</code> helper (documented as equivalent to <code>PixelUtilities.median</code>'s odd/even semantics).</li>
+                <li><strong><code>sigmaFloor</code> is effectively inert; flat-region protection rests on the strict-local-extreme guard</strong> — Low (Correctness/robustness). Not a defect (matches the plan's guard), but the absolute 1e-6 floor means very different things for 16-bit vs [0,1] data. <em>Deferred:</em> the plan settles the flat-region guard/threshold form empirically in Milestone 6; consider making the floor relative to the local level or a noise estimate there.</li>
+                <li><strong><code>=</code> alignment not maintained in <code>corrected</code></strong> — Low (Style). <em>Fixed:</em> re-aligned the three assignments.</li>
+                <li><strong><code>corrected</code>/<code>repairedValue</code> are <code>internal</code> but only exercised through <code>process</code></strong> — Info (API design). <em>Deferred:</em> left <code>internal</code> to allow potential direct unit-testing; harmless.</li>
+                <li><strong>pbxproj hand-edits verified correct and consistent</strong> — Info (Build). No action; all four entries present for both files, source in the framework target and test in the test target.</li>
+            </ul>
+            <p><strong>Round 2</strong> — No Critical/High/Medium findings. Verified the median/MAD refactor is mathematically equivalent to the prior semantics (no off-by-one, empty-array safe via caller guarantees), the read-from-source/concurrency discipline is Swift 6-safe, and the pbxproj IDs are correct and collision-free. Info-only observations (all deferred/no action): the <code>median(ofSorted:)</code> duplication is a justified performance choice; nested <code>Layout</code>/<code>Parameters</code> types match the sibling <code>WhiteBalance</code> convention; these tests exercise the serial path only (buffers below the 4096 parallel threshold).</p>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+            <ul>
+                <li><strong>No use of Accelerate here?</strong> — asked why the processor uses no Accelerate/vDSP, unlike the other SwiftPixel processors. Answered: the core is a windowed order-statistic (median/MAD) filter over an irregular, layout-specific lattice (CFA step-2, RGB channel-strided), which vDSP does not accelerate — in fact round-1 review had removed the one <code>vDSP.sort</code> call because its per-call setup dominated on 8-element arrays. Accelerate could partially help (vImage morphology for the min/max strict-extreme guard, mono-first), but the real remaining perf lever is the per-pixel heap allocations, better solved by a fixed-capacity stack buffer than by Accelerate. Offered to optimize now (stack buffer) or defer. <strong>Decision: option A</strong> — leave the clear, parallelized implementation as-is and do the performance benchmark/tuning (including whether to adopt a stack buffer and/or partial vImage) in Milestone 6.</li>
+            </ul>
+        </div>
+    </article>
+
+    <article class="milestone">
+        <header>
+            <h4><span class="num">2</span>Wire the stage into <code>PixelPipeline</code></h4>
+            <span class="capsule completed">Completed</span>
+        </header>
+        <p>
+            <strong>Goal:</strong> Make the pipeline run cosmetic correction before the forming/debayer stage,
+            configured from the source layout.
+        </p>
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul>
+                <li>Add a <code>cosmeticCorrection: Processors.CosmeticCorrection.Parameters?</code> field to <code>PixelPipeline.Config</code> (near line 130) and a matching defaulted param in its <code>init</code> (line 168), documented.</li>
+                <li>In <code>processors()</code>, after the <code>Scale</code> block (line 312) and before the <code>inputFormat</code> switch (line 314), append the stage when configured — deriving <code>Layout</code> from <code>self.config.inputFormat</code> (<code>.mono</code>→mono, <code>.cfa</code>→cfa, <code>.rgb</code>→rgb).</li>
+                <li>Confirm it does <em>not</em> need to be added to the <code>requiresNormalization</code> predicate (line 407): it runs on raw samples and must not force normalization on its own.</li>
+                <li>Add pipeline-level tests in <code>SwiftPixelTests/PixelPipeline.swift</code> / <code>PixelPipeline-Config.swift</code>: stage present/absent per config; runs before debayer (a hot pixel on a CFA mosaic is repaired and not smeared into demosaiced neighbours); mono and RGB paths.</li>
+            </ul>
+        </div>
+        <div class="field"><span class="label">Status</span> <span class="capsule completed">Completed</span></div>
+        <div class="field"><span class="label">Completed</span> <time datetime="2026-07-12">2026-07-12</time></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+            <p>Implemented test-first (Swift Testing). Changes in <code>SwiftPixel/PixelPipeline.swift</code>:</p>
+            <ul>
+                <li>Added <code>cosmeticCorrection: Processors.CosmeticCorrection.Parameters?</code> to <code>Config</code> (right after <code>inputFormat</code>, since its layout is derived from it), a matching defaulted (<code>nil</code>) init parameter, its assignment, and doc-comment coverage in both the field and the <code>init</code> parameter list.</li>
+                <li>In <code>processors()</code>, appended the stage immediately after the <code>Scale</code> block and <strong>before</strong> the <code>inputFormat</code> forming switch, guarded by <code>if let cosmeticCorrection</code>. The <code>Layout</code> is derived with an explicit switch on <code>inputFormat</code> (<code>.mono→.mono</code>, <code>.cfa→.cfa</code>, <code>.rgb→.rgb</code>) — <code>inputFormat.channels</code> cannot be used because mono and cfa both report 1 channel.</li>
+                <li><strong>Confirmed</strong> it is <em>not</em> in the <code>requiresNormalization</code> predicate: it runs on raw samples and must not force an automatic Normalize. Verified at the pipeline point the buffer carries <code>inputFormat.channels</code> (Scale preserves channel count), which equals the layout's required channel count in all three cases (mono/cfa = 1, rgb = 3), so <code>process</code> cannot throw the channel-mismatch error.</li>
+            </ul>
+            <p><strong>Decision.</strong> The stage is appended whenever <code>cosmeticCorrection</code> is non-<code>nil</code>, regardless of <code>isEnabled</code> — a disabled config becomes a harmless no-op stage (<code>process</code> early-returns). This diverges from how sibling neutral configs (brightness/contrast, levels, …) collapse to <code>nil</code>, but that collapse exists to avoid forcing a Normalize, which does not apply here. Presence is defined by non-<code>nil</code>; the app layer (Milestone 3) collapses to <code>nil</code> when disabled.</p>
+            <p><strong>Tests.</strong> Added to <code>PixelPipeline.swift</code>: absent by default; present when configured; runs after Scale and before mono-forming; runs before debayer; layout derived from input format (mono/cfa/rgb, via the stage name token); does not force normalization (asserts the exact 2-stage chain); and two functional tests — a CFA mosaic with an injected hot pixel demosaics to a flat field when enabled (spike repaired pre-debayer, not smeared) and retains an elevated sample when disabled, plus the mono path. Added to <code>PixelPipeline-Config.swift</code>: the field defaults to <code>nil</code> and round-trips a supplied value. Updated the <code>Self.config</code> test helper to thread the new parameter.</p>
+            <p><strong>Verification.</strong> Genuine TDD red step (Config wired but <code>processors()</code> not yet — present/order/functional tests failed) then green. The full <code>SwiftPixel</code> scheme suite passes (<code>** TEST SUCCEEDED **</code>) with no regressions; the pre-existing exhaustive <code>stageOrder</code>/exact-array tests remain valid because their configs leave <code>cosmeticCorrection</code> at its <code>nil</code> default.</p>
+            <p><strong>Automated review loop.</strong> 1 fresh-context round; no Critical/High/Medium findings, so it converged immediately.</p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+            <p><strong>Round 1</strong> — No Critical/High/Medium findings. Verified placement (after Scale, before forming), correct <code>Layout</code> derivation, channel-count safety (no throw), genuine absence from <code>requiresNormalization</code>, and no regression to the existing <code>stageOrder</code> assertions. Two optional notes:</p>
+            <ul>
+                <li><strong>A disabled/no-op cosmetic config is still appended as a stage</strong> — Low (consistency). Defensible and matches the "non-nil means present" contract; reviewer leaned toward leaving it. <em>Deferred:</em> kept as-is by deliberate decision (app layer collapses to nil when disabled).</li>
+                <li><strong>The CFA functional test doesn't uniquely discriminate the step-2 layout</strong> — Info (test coverage). Its flat-100 background would be repaired even under a wrong <code>.mono</code> (step-1) layout; however, layout derivation <em>is</em> covered by the name-token test, which a wrong layout would fail. <em>Deferred:</em> no change; optionally the functional test could use a two-colour mosaic to exercise step-2 end-to-end.</li>
+            </ul>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+            <ul>
+                <li><strong>"all good"</strong> — approved with no requested changes. The two optional notes (disabled config appended as a no-op stage; CFA functional test uses a flat background) were surfaced and left as-is.</li>
+            </ul>
+        </div>
+    </article>
+
+    <h3 class="phase">Phase B — App integration</h3>
+
+    <article class="milestone">
+        <header>
+            <h4><span class="num">3</span>Thread through <code>ImageProcessor.Settings</code></h4>
+            <span class="capsule completed">Completed</span>
+        </header>
+        <p>
+            <strong>Goal:</strong> Carry the cosmetic-correction parameters from the app settings snapshot into
+            the pipeline config.
+        </p>
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul>
+                <li>Add <code>cosmeticCorrection: Processors.CosmeticCorrection.Parameters</code> to <code>ImageProcessor.Settings</code> (struct 102–245), defaulting to <code>.default</code> (enabled) in <code>init</code> (169–185), documented; keep <code>Equatable</code>.</li>
+                <li>In <code>config( scale:offset:inputFormat: )</code> (225–244), pass it into the <code>PixelPipeline.Config(...)</code> build, collapsing to <code>nil</code> when <code>isEnabled == false</code> (mirroring how neutral values collapse there).</li>
+                <li>Confirm the per-format callers (<code>+FITS</code>, <code>+XISF</code>, <code>+RAW</code>, <code>+ImageIO</code>) need no change — the field is not header-derived, so it flows through the shared builder only.</li>
+                <li>Extend <code>FITScopeTests/Image/ImageProcessorTests.swift</code>: <code>Settings.default</code> carries an enabled cosmetic correction; enabled→config populated; disabled→<code>nil</code> in config.</li>
+            </ul>
+        </div>
+        <div class="field"><span class="label">Status</span> <span class="capsule completed">Completed</span></div>
+        <div class="field"><span class="label">Completed</span> <time datetime="2026-07-12">2026-07-12</time></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+            <p>Implemented test-first (Swift Testing). Changes in <code>FITScope/Image/ImageProcessor.swift</code>:</p>
+            <ul>
+                <li>Added a <code>cosmeticCorrection: Processors.CosmeticCorrection.Parameters</code> stored property to <code>Settings</code> (placed next to <code>debayer</code>/<code>debayerMode</code>, the other raw/forming-adjacent fields), a matching <code>init</code> parameter defaulting to <code>.default</code> (enabled), its assignment, and doc coverage on both the property and the parameter list. Re-aligned the <code>=</code> column in the <code>init</code> body for the longer name. <code>Settings</code> stays <code>Equatable</code> (synthesized; the field type is <code>Equatable</code>).</li>
+                <li>In the shared <code>config( scale:offset:inputFormat: )</code> builder, passed it into <code>PixelPipeline.Config(...)</code> as <code>cosmeticCorrection: self.cosmeticCorrection.isEnabled ? self.cosmeticCorrection : nil</code> — collapsing a disabled snapshot to <code>nil</code>, mirroring how the neutral tunables (brightness/contrast, levels, curves, hue, saturation, orientation) collapse there.</li>
+            </ul>
+            <p><strong>Confirmed the per-format callers need no change.</strong> Verified the only <code>PixelPipeline.Config(</code> construction in the app is this builder, and every format path (<code>+FITS</code>, <code>+XISF</code>, <code>+RAW</code>, <code>+ImageIO</code>) routes through either <code>config(scale:offset:inputFormat:)</code> or <code>config(scale:offset:headerPattern:)</code>, and the latter delegates to the former — so no render path bypasses the wiring, and the field (not header-derived) flows through the shared builder only.</p>
+            <p><strong>Decision.</strong> Collapse keys off the master <code>isEnabled</code> switch only (per the plan). An enabled-but-both-corrections-off snapshot still passes a non-<code>nil</code> value and appends a no-op stage; this is harmless (the stage early-returns) and not worth complicating the condition.</p>
+            <p><strong>Tests.</strong> Added three to <code>ImageProcessorTests.swift</code>: the default <code>Settings()</code> carries an enabled <code>.default</code> cosmetic correction; an enabled correction populates the built config; a disabled (but otherwise fully-populated) correction collapses to <code>nil</code> in the config — proving the collapse keys off <code>isEnabled</code>, not the thresholds.</p>
+            <p><strong>Verification.</strong> Genuine TDD red step (Settings field present but the config builder not yet threading it — <code>enabledCosmeticCorrectionPopulatesConfig</code> failed with <code>config.cosmeticCorrection == nil</code>) then green. The targeted <code>ImageProcessorTests</code> suite passes (28 tests). At the user's direction the full UI test plan was not run; the change is a pure data-plumbing addition covered by these unit tests, with no UI surface.</p>
+            <p><strong>Automated review loop.</strong> 1 fresh-context round; no Critical/High/Medium findings, so it converged immediately.</p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+            <p><strong>Round 1</strong> — No Critical/High/Medium findings. Verified the field/type/label match with <code>PixelPipeline.Config</code>, the single wiring point (no render path bypasses the builder), no positional-arg breakage at any <code>Settings(</code> call site, and that <code>Settings</code> stays <code>Equatable</code>. Notes (all deferred/no action):</p>
+            <ul>
+                <li><strong>Enabled-by-default now makes cosmetic correction live in the real render path</strong> — Info/Low (behavior change, intended). <code>ImageAdjustments.settings</code> builds <code>Settings</code> without passing the field, so it takes <code>.default</code> (enabled) and every app render now inserts an active cosmetic-correction stage. This matches the plan's "on by default"; the UI to toggle it lands in Milestones 4–5. Flagged as a conscious decision.</li>
+                <li><strong>Redundant no-op stage when enabled but both corrections off</strong> — Info (micro-efficiency). Negligible; not worth complicating the collapse condition.</li>
+                <li><strong>Doc-comment column alignment breaks on the new parameter line</strong> — Info (style). The <code>cosmeticCorrection</code> label is longer than the aligned description column, so it cannot align without reflowing every line; left as-is.</li>
+            </ul>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+            <ul>
+                <li><strong>"Looks good"</strong> — approved with no requested changes. The on-by-default behavior change and the two Info notes were surfaced and left as-is.</li>
+            </ul>
+        </div>
+    </article>
+
+    <article class="milestone">
+        <header>
+            <h4><span class="num">4</span>Add the tunable to <code>ImageAdjustments</code></h4>
+            <span class="capsule not-started">Not started</span>
+        </header>
+        <p>
+            <strong>Goal:</strong> Expose cosmetic correction as an observable, resettable model tunable, on by
+            default.
+        </p>
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul>
+                <li>Add <code>@Published public var cosmeticCorrection: Processors.CosmeticCorrection.Parameters = .default</code> (~line 128 area, near <code>debayer</code>).</li>
+                <li>Seed it in <code>init( baseline:opened: )</code> from the <code>Settings</code> snapshot (~173–200).</li>
+                <li>Copy it in <code>reset()</code> (~210–233).</li>
+                <li>Emit it from the <code>settings</code> computed property (~275–293).</li>
+                <li>Verify the generic <code>isModified(_:)</code> / <code>reset(_:)</code> keypath helpers need no change.</li>
+                <li>Extend <code>FITScopeTests/Model/ImageAdjustmentsTests.swift</code>: default is enabled/conservative; <code>settings</code> round-trips the value; <code>reset()</code> restores the default; <code>isModified(\.cosmeticCorrection)</code> tracks a change.</li>
+            </ul>
+        </div>
+        <div class="field"><span class="label">Status</span> <span class="capsule not-started">Not started</span></div>
+        <div class="field"><span class="label">Completed</span> <span class="placeholder">—</span></div>
+        <div class="field"><span class="label">Implementation notes</span> <p class="placeholder">To be filled in during implementation.</p></div>
+        <div class="field"><span class="label">Automated review</span> <p class="placeholder">To be filled in during implementation.</p></div>
+        <div class="field"><span class="label">Review comments</span> <p class="placeholder">Awaiting review.</p></div>
+    </article>
+
+    <article class="milestone">
+        <header>
+            <h4><span class="num">5</span>Inspector control + section</h4>
+            <span class="capsule not-started">Not started</span>
+        </header>
+        <p>
+            <strong>Goal:</strong> A dedicated inspector section letting the user enable/disable cosmetic
+            correction and tune hot/cold strength, following the Debayer control pattern.
+        </p>
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul>
+                <li>Create <code>FITScope/Views/ImageControls/CosmeticCorrectionControlView.swift</code>: a master enable toggle, plus hot and cold enable toggles each with a strength control; bind directly to <code>adjustments.cosmeticCorrection</code> and call <code>reRender()</code> (the simple Debayer pattern — no auto-stretch cross-dependency, unlike White Balance).</li>
+                <li>Expose the model↔UI mapping via <code>static</code> helpers so it is unit-testable without SwiftUI (mirroring <code>DebayerControlView.selection/mode</code>).</li>
+                <li>Add a <code>#Preview</code> using <code>ImageAdjustments()</code> and <code>reRender: {}</code>.</li>
+                <li>Add an <code>InspectorSectionView</code> block in <code>InspectorView.swift</code>, positioned to match the pipeline order (before debayer/normalize sections), with per-section <code>isModified(\.cosmeticCorrection)</code> and an <code>onReset</code>.</li>
+                <li>Add identifiers in <code>AccessibilityIdentifiers.swift</code>: section, section-reset, and per-control ids.</li>
+                <li>Decide visibility: show for all image types (hot/cold pixels affect mono and colour alike) — confirm during review it should not be hidden the way Debayer is behind <code>isColorFilterArray</code>.</li>
+                <li>Add <code>FITScopeTests/Views/ImageControls/CosmeticCorrectionControlViewTests.swift</code> for the mapping helpers.</li>
+            </ul>
+        </div>
+        <div class="field"><span class="label">Status</span> <span class="capsule not-started">Not started</span></div>
+        <div class="field"><span class="label">Completed</span> <span class="placeholder">—</span></div>
+        <div class="field"><span class="label">Implementation notes</span> <p class="placeholder">To be filled in during implementation.</p></div>
+        <div class="field"><span class="label">Automated review</span> <p class="placeholder">To be filled in during implementation.</p></div>
+        <div class="field"><span class="label">Review comments</span> <p class="placeholder">Awaiting review.</p></div>
+    </article>
+
+    <h3 class="phase">Phase C — Finalize</h3>
+
+    <article class="milestone">
+        <header>
+            <h4><span class="num">6</span>Defaults, tuning &amp; end-to-end verification</h4>
+            <span class="capsule not-started">Not started</span>
+        </header>
+        <p>
+            <strong>Goal:</strong> Confirm the default behaviour is safe and effective on real data, and the
+            whole feature holds together.
+        </p>
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul>
+                <li>Settle the conservative default thresholds (hot/cold <code>k</code>) empirically so isolated hot pixels are removed while faint stars survive.</li>
+                <li>Verify on real/synthetic frames: a frame with injected hot pixels shows a restored min/max range (no longer washed out) with the defects gone; a star field is unchanged; a CFA frame shows no colour artefacts from correcting before debayer.</li>
+                <li>Sanity-check performance on a large (e.g. 24 MP) frame.</li>
+                <li>Confirm "Reset View" restores the on-by-default state, and toggling the section off preserves the previously set hot/cold strengths.</li>
+                <li>Run the full <code>FITScope.xctestplan</code> (including <code>SwiftPixelTests</code> and <code>FITScopeTests</code>) and report results.</li>
+            </ul>
+        </div>
+        <div class="field"><span class="label">Status</span> <span class="capsule not-started">Not started</span></div>
+        <div class="field"><span class="label">Completed</span> <span class="placeholder">—</span></div>
+        <div class="field"><span class="label">Implementation notes</span> <p class="placeholder">To be filled in during implementation.</p></div>
+        <div class="field"><span class="label">Automated review</span> <p class="placeholder">To be filled in during implementation.</p></div>
+        <div class="field"><span class="label">Review comments</span> <p class="placeholder">Awaiting review.</p></div>
+    </article>
+
+    <h2 class="section">Appendix — Detection &amp; correction algorithm</h2>
+    <p class="tight"><strong>Neighbour lattice (by layout).</strong> For each pixel, the "same-kind" neighbours are:</p>
+    <ul>
+        <li><strong>mono</strong>: the 8 pixels at offsets <code>(±1, 0), (0, ±1), (±1, ±1)</code>, single channel.</li>
+        <li><strong>cfa</strong>: the 8 pixels at offsets <code>(±2, 0), (0, ±2), (±2, ±2)</code>, single channel — always the same Bayer colour regardless of pattern, because a shift of 2 lands on the same cell of the 2×2 tile.</li>
+        <li><strong>rgb</strong>: the same 8 step-1 offsets, but per channel — read the matching channel of each neighbouring pixel (interleaved, <code>channels</code>-strided).</li>
+    </ul>
+    <p class="tight"><strong>Detection.</strong> Let <code>m</code> = median of the neighbours and <code>σ = 1.4826 · MAD(neighbours around m)</code> (a robust standard-deviation estimate). A pixel value <code>v</code> is:</p>
+    <ul>
+        <li><strong>hot</strong> when <code>correctHot</code> and <code>v &gt; m + hotThreshold · σ</code>;</li>
+        <li><strong>cold</strong> when <code>correctCold</code> and <code>v &lt; m − coldThreshold · σ</code>.</li>
+    </ul>
+    <p class="tight">
+        <strong>Flat-region guard.</strong> When the neighbourhood is (near-)uniform, <code>σ ≈ 0</code> and the
+        test above would flag any tiny deviation. Guard by additionally requiring the pixel to be a strict local
+        extreme (exceed the neighbour <em>max</em> for hot / fall below the neighbour <em>min</em> for cold) by a
+        margin, and/or floor <code>σ</code> with a small absolute epsilon. Final form to be settled in Milestone 6.
+    </p>
+    <p class="tight">
+        <strong>Star-safety.</strong> A real star spans several pixels, so the neighbours of its peak are also
+        bright, raising <code>m</code>; the peak therefore does not exceed <code>m + k·σ</code> at a conservative
+        <code>k</code>. Only genuinely isolated single-pixel spikes are flagged. This is the property Milestone 6
+        verifies.
+    </p>
+    <p class="tight">
+        <strong>Correction.</strong> Replace each flagged pixel with the neighbour median <code>m</code>. Read
+        from the original buffer and write into a copy so a correction never influences the detection of an
+        adjacent pixel in the same pass. Border pixels (incomplete neighbourhoods) are clamped/mirrored or left
+        untouched.
+    </p>
+</main>

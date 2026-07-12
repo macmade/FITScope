@@ -598,4 +598,38 @@ struct ImageProcessorTests
         #expect( message.contains( "NAXIS2" ), "the error must name NAXIS2, got: \"\( message )\"" )
         #expect( message.contains( "0" ),      "the error must report the offending value, got: \"\( message )\"" )
     }
+
+    /// The default settings snapshot carries an enabled, conservative cosmetic
+    /// correction, so an untouched image is repaired out of the box.
+    @Test
+    func defaultSettingsCarryEnabledCosmeticCorrection() throws
+    {
+        let settings = ImageProcessor.Settings()
+
+        #expect( settings.cosmeticCorrection == .default )
+        #expect( settings.cosmeticCorrection.isEnabled )
+    }
+
+    /// An enabled cosmetic correction flows into the built pipeline configuration.
+    @Test
+    func enabledCosmeticCorrectionPopulatesConfig() throws
+    {
+        let settings = ImageProcessor.Settings()
+        let config   = settings.config( scale: 1, offset: 0, inputFormat: .mono )
+
+        #expect( config.cosmeticCorrection == .default )
+    }
+
+    /// A disabled cosmetic correction collapses to `nil` in the configuration, so
+    /// no cosmetic stage is added to the pipeline — mirroring how the other neutral
+    /// tunables collapse.
+    @Test
+    func disabledCosmeticCorrectionCollapsesToNilInConfig() throws
+    {
+        let disabled = Processors.CosmeticCorrection.Parameters( isEnabled: false, correctHot: true, hotThreshold: 8.0, correctCold: true, coldThreshold: 8.0 )
+        let settings = ImageProcessor.Settings( cosmeticCorrection: disabled )
+        let config   = settings.config( scale: 1, offset: 0, inputFormat: .mono )
+
+        #expect( config.cosmeticCorrection == nil )
+    }
 }

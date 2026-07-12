@@ -144,6 +144,11 @@ public enum ImageProcessor
         /// The demosaic algorithm used when debayering.
         public var debayerMode: Processors.Debayer.Mode
 
+        /// The cosmetic-correction (hot/cold pixel repair) parameters. Applied to
+        /// the raw samples before the channel-forming stage; a disabled value is
+        /// omitted from the pipeline configuration.
+        public var cosmeticCorrection: Processors.CosmeticCorrection.Parameters
+
         /// The net orientation (rotation + optional mirror) applied to the
         /// rendered image. Defaults to the captured orientation.
         public var orientation: Processors.Orient.Orientation
@@ -165,23 +170,25 @@ public enum ImageProcessor
         ///   - saturation:   The colour-saturation factor (`1` is neutral).
         ///   - debayer:      How to debayer the image.
         ///   - debayerMode:  The demosaic algorithm used when debayering.
+        ///   - cosmeticCorrection: The hot/cold pixel repair applied to the raw samples (a disabled value is omitted from the configuration).
         ///   - orientation:  The net orientation applied to the rendered image.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.STFParameters? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), colorBalance: Processors.ColorBalance.Ranges = .identity, hue: Double = 0, saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, orientation: Processors.Orient.Orientation = .identity )
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.STFParameters? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), colorBalance: Processors.ColorBalance.Ranges = .identity, hue: Double = 0, saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, cosmeticCorrection: Processors.CosmeticCorrection.Parameters = .default, orientation: Processors.Orient.Orientation = .identity )
         {
-            self.normalize    = normalize
-            self.stretch      = stretch
-            self.whiteBalance = whiteBalance
-            self.invert       = invert
-            self.brightness   = brightness
-            self.contrast     = contrast
-            self.levels       = levels
-            self.curves       = curves
-            self.colorBalance = colorBalance
-            self.hue          = hue
-            self.saturation   = saturation
-            self.debayer      = debayer
-            self.debayerMode  = debayerMode
-            self.orientation  = orientation
+            self.normalize          = normalize
+            self.stretch            = stretch
+            self.whiteBalance       = whiteBalance
+            self.invert             = invert
+            self.brightness         = brightness
+            self.contrast           = contrast
+            self.levels             = levels
+            self.curves             = curves
+            self.colorBalance       = colorBalance
+            self.hue                = hue
+            self.saturation         = saturation
+            self.debayer            = debayer
+            self.debayerMode        = debayerMode
+            self.cosmeticCorrection = cosmeticCorrection
+            self.orientation        = orientation
         }
 
         /// Builds the pipeline configuration, combining these tunables with the
@@ -227,6 +234,7 @@ public enum ImageProcessor
             PixelPipeline.Config(
                 scale:              ( scale, offset ),
                 inputFormat:        inputFormat,
+                cosmeticCorrection: self.cosmeticCorrection.isEnabled ? self.cosmeticCorrection : nil,
                 normalize:          self.normalize,
                 stretch:            self.stretch,
                 correctGamma:       nil,
