@@ -51,22 +51,44 @@ public final class ImageAdjustments: ObservableObject
     {
         didSet
         {
-            // A hand-edited stretch is manual, so the app-managed "Auto engaged"
-            // mode drops out. `init` and `reset()` re-seed `isAutoStretch` after the
-            // stretch assignment, so the on-open / on-reset state is preserved
-            // regardless of this observer firing.
-            self.isAutoStretch = false
+            // A hand-edited stretch is manual, so the app-managed "Auto engaged" mode
+            // drops out — unless the change came from the managed re-derivation itself
+            // (guarded by `isApplyingManagedStretch`), which stays engaged. `init` and
+            // `reset()` re-seed `isAutoStretch` after their stretch assignment, so the
+            // on-open / on-reset state is preserved regardless of this observer firing.
+            if self.isApplyingManagedStretch == false
+            {
+                self.isAutoStretch = false
+            }
         }
     }
 
     /// Whether the stretch is currently app-managed — the "Auto engaged" state.
     ///
-    /// Set when the stretch is auto-derived (an image that opens auto-stretched;
-    /// later, the managed Auto toggle) and cleared the moment the user hand-edits the
-    /// stretch. It is deliberately *not* part of ``settings``, so it never, on its
-    /// own, makes ``hasAdjustments`` report the image as edited: an image that merely
-    /// opened auto-stretched stays unedited until the user changes something.
+    /// Set when the stretch is auto-derived (an image that opens auto-stretched, or the
+    /// managed Auto toggle / mutual-exclusion re-derivation) and cleared the moment the
+    /// user hand-edits the stretch. It is deliberately *not* part of ``settings``, so it
+    /// never, on its own, makes ``hasAdjustments`` report the image as edited: an image
+    /// that merely opened auto-stretched stays unedited until the user changes something.
     @Published public private( set ) var isAutoStretch = false
+
+    /// Guards the managed re-derivation while it assigns ``stretch`` (and its
+    /// normalization), so that assignment is not mistaken for a manual, hand-edited
+    /// stretch and does not disengage ``isAutoStretch``.
+    private var isApplyingManagedStretch = false
+
+    /// Re-derives the auto Screen Transfer — the `{ normalize, stretch }` pair — from the
+    /// image, off the main actor. `uniform` selects a single luminance mapping shared
+    /// across every channel (the colour-preserving result that composes with white
+    /// balance); `false` selects the colour-aware per-channel result. Returns `nil` when
+    /// no derivation is possible (no image, or no detection buffer).
+    ///
+    /// Injected by the owning renderer, which holds the render source the model does not —
+    /// the derivation itself lives in
+    /// ``ImageRenderer/autoScreenTransferSettings(linking:shadowClipFactor:targetBackground:)``.
+    /// Defaults to a no-op, so a model with no source (previews, or tests without a stub)
+    /// simply never re-derives.
+    public var deriveAutoStretch: ( _ uniform: Bool ) async -> ImageProcessor.Settings? = { _ in nil }
 
     /// How to white-balance the colour channels, or `nil` to leave them
     /// untouched. Off by default.
@@ -268,5 +290,201 @@ public final class ImageAdjustments: ObservableObject
             debayerMode:  self.debayerAlgorithm,
             orientation:  self.orientation
         )
+    }
+
+    // MARK: - Managed auto-stretch mutual exclusion
+
+    /// How to resolve a ``PerChannelStretchRequest`` — the outcome the user picked in the
+    /// white-balance-removal confirmation. Cancelling simply discards the request (nothing
+    /// is applied), so it has no case here.
+    public enum PerChannelStretchResolution: Sendable
+    {
+        /// Apply the per-channel Screen Transfer and turn white balance off, staying in
+        /// managed mode — the clean exclusive result (the confirmation's default).
+        case removeWhiteBalance
+
+        /// Apply the per-channel Screen Transfer and keep white balance on, so the two
+        /// coexist and the stretch drops to manual mode.
+        case keepWhiteBalance
+    }
+
+    /// A pending request to engage a per-channel managed Screen Transfer that would
+    /// collide with active white balance.
+    ///
+    /// Returned by ``requestPerChannelAutoStretch()`` so the control layer can present the
+    /// white-balance-removal confirmation before anything is committed; the model applies
+    /// nothing until the view calls ``resolve(_:as:)`` (or discards the request to cancel).
+    /// The derived settings it carries are opaque to the view — it just hands the request
+    /// back.
+    public struct PerChannelStretchRequest: Sendable
+    {
+        /// The derived per-channel `{ normalize, stretch }` to apply once resolved.
+        let settings: ImageProcessor.Settings
+    }
+
+    /// Whether the current stretch is a per-channel (unlinked) Screen Transfer — the
+    /// linking that is mutually exclusive with white balance while managed. A uniform or
+    /// absent stretch composes with white balance and never collides.
+    private var isPerChannelStretch: Bool
+    {
+        guard case .perChannel = self.stretch
+        else
+        {
+            return false
+        }
+
+        return true
+    }
+
+    /// Applies an app-derived `{ normalize, stretch }` and engages managed mode, without
+    /// the assignment being treated as a manual edit — the guard around the ``stretch``
+    /// write suppresses the observer that would otherwise disengage ``isAutoStretch``.
+    ///
+    /// - Parameter settings: The derived settings whose normalization and stretch to apply.
+    /// - Returns: `true` when a stretch was applied; `false` when `settings` carried no
+    ///            stretch, so nothing changed — the caller must not commit a state that
+    ///            relies on the yield having happened.
+    @discardableResult
+    private func applyManagedStretch( _ settings: ImageProcessor.Settings ) -> Bool
+    {
+        guard let stretch = settings.stretch
+        else
+        {
+            return false
+        }
+
+        self.isApplyingManagedStretch = true
+        self.normalize                = settings.normalize
+        self.stretch                  = stretch
+        self.isApplyingManagedStretch = false
+        self.isAutoStretch            = true
+
+        return true
+    }
+
+    /// Enables or disables white balance, enforcing the managed mutual-exclusion rule.
+    ///
+    /// While Auto is engaged with a per-channel Screen Transfer, enabling white balance
+    /// would leave two background neutralizers active at once. The Screen Transfer yields:
+    /// it is silently re-derived as a single uniform mapping — which composes with white
+    /// balance for any gains — and white balance stays on, with no confirmation, since an
+    /// auto STF carries nothing to lose. In every other case (disabling white balance, a
+    /// uniform or absent stretch, or manual mode) the mode is simply set. White balance is
+    /// committed only once the uniform yield actually applies, so a per-channel STF and
+    /// white balance are never both active while managed.
+    ///
+    /// The re-derive runs off the main actor (see ``deriveAutoStretch``), so this is async;
+    /// the managed per-channel precondition is re-checked after it, in case a concurrent
+    /// main-actor edit resolved the collision first.
+    ///
+    /// - Parameter mode: The white-balance mode to apply, or `nil` to turn it off.
+    public func setWhiteBalance( _ mode: Processors.WhiteBalance.Mode? ) async
+    {
+        guard mode != nil, self.isAutoStretch, self.isPerChannelStretch
+        else
+        {
+            // No collision: disabling white balance, a uniform/absent stretch, or manual
+            // mode — set it directly and let a per-channel STF and white balance coexist.
+            self.whiteBalance = mode
+
+            return
+        }
+
+        guard let uniform = await self.deriveAutoStretch( true )
+        else
+        {
+            // The yield cannot be produced (no source): refuse rather than commit a
+            // collision. Unreachable for an image that opened per-channel auto-stretched.
+            return
+        }
+
+        // The off-actor derive suspended this method; main-actor work (e.g. a hand-edit
+        // dropping to manual) may have run meanwhile. If the managed per-channel state no
+        // longer holds, the collision is already gone — just set the mode, preserving that
+        // concurrent edit rather than clobbering it with the now-stale yield.
+        guard self.isAutoStretch, self.isPerChannelStretch
+        else
+        {
+            self.whiteBalance = mode
+
+            return
+        }
+
+        // Commit white balance only if the uniform stretch actually applied.
+        guard self.applyManagedStretch( uniform )
+        else
+        {
+            return
+        }
+
+        self.whiteBalance = mode
+    }
+
+    /// Requests engaging a per-channel managed Screen Transfer (the colour-aware Auto).
+    ///
+    /// Derives the per-channel STF off the main actor. When it does not collide with white
+    /// balance (white balance off), it is applied and managed mode is engaged directly,
+    /// returning `nil`. When white balance is active the two cannot coexist while managed,
+    /// so nothing is applied and a ``PerChannelStretchRequest`` is returned for the control
+    /// layer to resolve through the white-balance-removal confirmation (see
+    /// ``resolve(_:as:)``). Returns `nil` when no derivation is possible.
+    ///
+    /// - Returns: A request to resolve when white balance must be confirmed off, or `nil`
+    ///            when the per-channel STF was applied directly or could not be derived.
+    public func requestPerChannelAutoStretch() async -> PerChannelStretchRequest?
+    {
+        guard let settings = await self.deriveAutoStretch( false ), settings.stretch != nil
+        else
+        {
+            return nil
+        }
+
+        guard self.whiteBalance != nil
+        else
+        {
+            // No white balance to collide with: engage directly and silently. Unlike
+            // `setWhiteBalance`, this deliberately does not re-check for a concurrent
+            // stretch edit after the derive — engaging Auto is an explicit "make it
+            // per-channel" command, so applying the derived STF (last-write-wins) is the
+            // intended outcome.
+            self.applyManagedStretch( settings )
+
+            return nil
+        }
+
+        // White balance is active: commit nothing; hand the derived STF to the view to
+        // confirm removing white balance first.
+        return PerChannelStretchRequest( settings: settings )
+    }
+
+    /// Commits a ``PerChannelStretchRequest`` the way the user resolved its white-balance
+    /// collision.
+    ///
+    /// ``PerChannelStretchResolution/removeWhiteBalance`` applies the per-channel Screen
+    /// Transfer and turns white balance off, staying in managed mode — the clean exclusive
+    /// result. ``PerChannelStretchResolution/keepWhiteBalance`` applies it and leaves white
+    /// balance on, so the two coexist and the stretch drops to manual mode. Cancelling is
+    /// simply not calling this: the pending request is discarded and nothing changes.
+    ///
+    /// - Parameters:
+    ///   - request:    The pending request from ``requestPerChannelAutoStretch()``.
+    ///   - resolution: The outcome the user chose.
+    public func resolve( _ request: PerChannelStretchRequest, as resolution: PerChannelStretchResolution )
+    {
+        switch resolution
+        {
+            case .removeWhiteBalance:
+
+                self.applyManagedStretch( request.settings )
+
+                self.whiteBalance = nil
+
+            case .keepWhiteBalance:
+
+                // Coexist and drop to manual: the direct stretch write disengages managed
+                // mode through the observer, and white balance is left on.
+                self.normalize = request.settings.normalize
+                self.stretch   = request.settings.stretch
+        }
     }
 }

@@ -389,7 +389,7 @@
             <div class="milestone-head">
                 <span class="mnum">2</span>
                 <h3>Mutual-exclusion resolution (last-action-wins)</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">Encode the core rule in the model: while Auto is engaged, a per-channel STF and white balance
@@ -412,15 +412,86 @@
                     <code>stretch</code> linking, <code>whiteBalance</code>, and <code>isAutoStretch</code>.</li>
             </ul>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">&mdash;</p>
+            <p>2026-07-12</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Approach.</strong> TDD &mdash; the truth-table tests were written first (all rows of the
+                        Appendix), then the model API implemented until green. Full <code>ImageAdjustmentsTests</code>:
+                        28/28 passing via <code>xcodebuild</code>.</li>
+                    <li><strong>Design (confirmed with the user before implementing).</strong> The rule lives on
+                        <code>ImageAdjustments</code> (Option A). Because the model holds no render source, it reaches the
+                        derivation through an injected closure
+                        <code>deriveAutoStretch: ( _ uniform: Bool ) async -&gt; ImageProcessor.Settings?</code> (defaults to
+                        a no-op), wired by <code>ImageRenderer.init</code> with <code>[ weak self ]</code> to
+                        <code>autoScreenTransferSettings( linking: uniform ? .uniform : .automatic )</code>. This keeps every
+                        control talking only to <code>adjustments</code> and makes the whole truth table unit-testable with a
+                        stubbed closure &mdash; no fake render source. A plain <code>Bool</code> parameter avoids coupling the
+                        model to the renderer's <code>ScreenTransferLinking</code> enum.</li>
+                    <li><strong>Managed-set seam (deferred from Milestone&nbsp;1).</strong> A private
+                        <code>isApplyingManagedStretch</code> guard lets the managed re-derivation assign <code>stretch</code>
+                        (and its normalization) without the <code>didSet</code> disengaging <code>isAutoStretch</code>.
+                        <code>applyManagedStretch(_:)</code> applies <code>{ normalize, stretch }</code> together (matching the
+                        one-shot Auto path) and returns <code>Bool</code> so callers commit dependent state only when a stretch
+                        actually applied.</li>
+                    <li><strong>Rule methods (Tasks&nbsp;1&ndash;5).</strong>
+                        <code>setWhiteBalance(_:) async</code> &mdash; enabling WB while managed + per-channel silently
+                        re-derives uniform and keeps WB; every other case just sets the mode.
+                        <code>requestPerChannelAutoStretch() async</code> &mdash; derives per-channel; applies + engages
+                        directly when WB is off (returns <code>nil</code>); returns a <code>PerChannelStretchRequest</code>
+                        (commits nothing) when WB is on. <code>resolve(_:as:)</code> commits <em>remove WB</em> (apply, WB off,
+                        stay managed) or <em>keep WB</em> (apply as a direct write ⇒ drop to manual, WB kept); <em>cancel</em>
+                        is simply not resolving. The exclusion is confined to managed mode; the invariant (per-channel STF and
+                        WB never both committed while managed) holds at every commit site.</li>
+                    <li><strong>Milestone boundary (intentional).</strong> Model-only: no view calls these methods yet, so the
+                        rule is dormant in the running app (the WB / stretch controls still write the properties directly).
+                        Milestones&nbsp;3&ndash;5 wire the toggle, the confirmation, and the STF editor to route through this
+                        API.</li>
+                    <li><strong>Automated review.</strong> Two fresh-context rounds. Round&nbsp;1 raised two Medium findings
+                        (both fixed, see below) plus Low/Info notes; round&nbsp;2 (independent re-review of the fixed state)
+                        confirmed both fixes genuinely closed, traced the invariant under reentrant interleavings and found no
+                        violation, and reported no Critical/High/Medium issues &mdash; converged.</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>[Medium &mdash; Fixed] Invariant hole in <code>setWhiteBalance</code>.</strong> A derivation
+                        returning a non-nil <code>Settings</code> whose <code>.stretch</code> was <code>nil</code> would leave
+                        the per-channel STF untouched yet still enable white balance &mdash; committing the collision the
+                        milestone exists to prevent (latent with the wired derivation, reachable via the injectable closure).
+                        Fixed by making <code>applyManagedStretch</code> return <code>Bool</code> and gating the
+                        <code>whiteBalance = mode</code> commit on it. Locked in by a new regression test
+                        (<code>enablingWhiteBalanceRefusesWhenTheUniformYieldHasNoStretch</code>).</li>
+                    <li><strong>[Medium &mdash; Fixed] Main-actor reentrancy could clobber a concurrent edit.</strong>
+                        <code>setWhiteBalance</code> read the managed per-channel precondition before the <code>await</code> and
+                        committed after it, so a hand-edit during the off-actor derive could be overwritten by the stale yield.
+                        Fixed by re-checking <code>isAutoStretch</code> / <code>isPerChannelStretch</code> after the await and
+                        routing to a plain mode-set when the state changed. Locked in by a new regression test
+                        (<code>enablingWhiteBalanceDoesNotClobberAConcurrentManualEdit</code>).</li>
+                    <li><strong>[Low &mdash; Deferred] Stale-request resolution.</strong> <code>resolve(_:as:)</code> applies a
+                        possibly-stale <code>PerChannelStretchRequest</code> unconditionally (last-action-wins). Fine for the
+                        model; noted so the Milestone&nbsp;3/4 UI discards a pending request on any adjustment change.</li>
+                    <li><strong>[Info &mdash; Fixed] Asymmetry note.</strong> Added a comment clarifying that
+                        <code>requestPerChannelAutoStretch</code>'s direct-apply path deliberately does not re-check for a
+                        concurrent edit (engaging Auto is an explicit command; last-write-wins is intended), unlike
+                        <code>setWhiteBalance</code>.</li>
+                    <li><strong>[Info &mdash; Deferred] Direct property writes bypass the rule.</strong> <code>whiteBalance</code>
+                        and <code>stretch</code> stay plain settable <code>@Published</code> vars; the exclusion applies only when
+                        callers route through the new methods. Expected &mdash; the UI wiring is Milestones&nbsp;3&ndash;5.</li>
+                    <li><strong>[Info &mdash; Deferred] Uniform-yield trust.</strong> <code>setWhiteBalance</code> trusts
+                        <code>deriveAutoStretch(true)</code> to return a uniform (not per-channel) stretch; production guarantees
+                        this via <code>linking: .uniform</code>, so a defensive assertion is optional and not added.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting review.</p>
+            <div class="notes">
+                <ul>
+                    <li>&ldquo;Looks good&rdquo; &mdash; approved as-is, no changes requested.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 3 -->

@@ -197,6 +197,14 @@ public class ImageRenderer: ObservableObject
     {
         self.source      = source
         self.adjustments = ImageAdjustments( baseline: defaults, opened: opened )
+
+        // Give the model the phone line to the derivation it cannot run itself (it holds
+        // no source): re-derive the auto Screen Transfer at a uniform or per-channel
+        // linking, off the main actor, for the managed mutual-exclusion rule.
+        self.adjustments.deriveAutoStretch = { [ weak self ] uniform in
+
+            await self?.autoScreenTransferSettings( linking: uniform ? .uniform : .automatic )
+        }
     }
 
     /// Creates a renderer from an already-extracted render source.
