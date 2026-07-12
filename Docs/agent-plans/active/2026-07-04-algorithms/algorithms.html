@@ -130,7 +130,7 @@
     <div class="container">
         <header>
             <h1>Algorithms</h1>
-            <div class="meta">Generated &mdash; 2026-07-04</div>
+            <div class="meta">Generated &mdash; 2026-07-04 &middot; Updated &mdash; 2026-07-12</div>
         </header>
 
         <p class="overview">
@@ -150,6 +150,10 @@
             <li>
                 <h3>Metal-accelerate SwiftPixel's hot processors</h3>
                 <p>Move SwiftPixel's performance-critical processors, which are currently pure CPU/Accelerate, to Metal kernels for better performance.</p>
+            </li>
+            <li>
+                <h3>Optimize the remaining CPU processors</h3>
+                <p>For the processors that won't be moved to Metal, if any, verify their performance and optimize where necessary: lean on Accelerate wherever possible, and reduce allocations, intermediate buffers, and copies.</p>
             </li>
         </ol>
 
