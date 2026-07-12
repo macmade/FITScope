@@ -188,6 +188,22 @@ public struct StretchControlView: View
                         .help( "Open the Screen Transfer Editor" )
                     }
                 }
+
+                // When white balance is neutralizing the colour cast, the managed stretch
+                // is kept uniform (a per-channel one would double up): explain why the auto
+                // stretch stays uniform rather than going per-channel.
+                if self.adjustments.whiteBalanceHandlesColorBalance
+                {
+                    GridRow
+                    {
+                        Text( "Uniform \u{2014} white balance is handling colour balance." )
+                            .font( .caption )
+                            .foregroundStyle( .secondary )
+                            .fixedSize( horizontal: false, vertical: true )
+                            .gridCellColumns( 2 )
+                            .accessibilityIdentifier( AccessibilityIdentifier.StretchControlView.whiteBalanceHandlingNote )
+                    }
+                }
             }
         }
         // A change the control makes (the mode picker): push it to the shared
@@ -383,6 +399,25 @@ public struct StretchControlView: View
             adjustments.stretch = .uniform( .init( midtones: 0.3 ) )
 
             return adjustments
+        }(),
+        reRender:              {},
+        canAutoScreenTransfer: { true }
+    )
+    .frame( maxWidth: .infinity, alignment: .leading )
+    .frame( maxHeight: .infinity, alignment: .top )
+    .padding()
+}
+
+// Managed uniform with white balance on: the auto stretch is kept uniform, and the
+// inline note explains that white balance is handling the colour balance.
+#Preview( "Uniform — white balance on" )
+{
+    StretchControlView(
+        adjustments:
+        {
+            let opened = ImageProcessor.Settings( normalize: .identity, stretch: .uniform( .init( midtones: 0.3 ) ), whiteBalance: .auto )
+
+            return ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
         }(),
         reRender:              {},
         canAutoScreenTransfer: { true }

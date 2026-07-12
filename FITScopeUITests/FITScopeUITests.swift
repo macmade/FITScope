@@ -1089,6 +1089,54 @@ final class FITScopeUITests: XCTestCase
         XCTAssertTrue( edit.waitForNonExistence( timeout: 5 ), "The Screen Transfer editor lingered after leaving Screen Transfer mode." )
     }
 
+    /// Engaging the managed per-channel Auto stretch while white balance is on raises the
+    /// three-way confirmation; choosing "Remove White Balance" applies the per-channel
+    /// stretch, turns white balance off, and surfaces the inline note that the stretch is
+    /// handling the colour balance. The Keep and Cancel outcomes are covered by the model
+    /// unit tests; this drives the presentation and the default outcome end to end.
+    @MainActor
+    func testPerChannelAutoWithWhiteBalanceConfirmsAndRemovesWhiteBalance() throws
+    {
+        let app = try UITestSupport.launchAppOpening( "ColorImage.fits" )
+
+        let stretchPicker = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.modePicker )
+        let wbPicker      = UITestSupport.element( app, AccessibilityIdentifier.WhiteBalanceControlView.modePicker )
+
+        XCTAssertTrue( stretchPicker.waitForExistence( timeout: 30 ), "The stretch mode picker did not appear." )
+        XCTAssertTrue( wbPicker.waitForExistence( timeout: 10 ), "The white-balance mode picker did not appear." )
+
+        // Force a known starting state — a manual (Auto-off) Screen Transfer — so the Auto
+        // toggle starts off regardless of whether the image opened auto-stretched.
+        UITestSupport.selectPickerOption( stretchPicker, "None", in: app )
+        UITestSupport.selectPickerOption( stretchPicker, "Screen Transfer", in: app )
+
+        let auto = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.autoButton )
+
+        XCTAssertTrue( auto.waitForExistence( timeout: 5 ), "The Auto toggle did not appear in Screen Transfer mode." )
+
+        // Turn white balance on, then engage the per-channel Auto — the collision.
+        UITestSupport.selectPickerOption( wbPicker, "Auto", in: app )
+
+        auto.click()
+
+        // The three-way confirmation is presented, with all three actions.
+        let remove = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.removeWhiteBalanceButton )
+        let keep   = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.keepWhiteBalanceButton )
+        let cancel = UITestSupport.element( app, AccessibilityIdentifier.StretchControlView.cancelWhiteBalanceRemovalButton )
+
+        XCTAssertTrue( remove.waitForExistence( timeout: 10 ), "The white-balance-removal confirmation did not appear." )
+        XCTAssertTrue( keep.exists,   "The confirmation is missing its Keep White Balance action." )
+        XCTAssertTrue( cancel.exists, "The confirmation is missing its Cancel action." )
+
+        // Removing white balance turns it off and surfaces the White Balance section's
+        // inline note that the per-channel stretch is now handling the colour balance.
+        remove.click()
+
+        let note = UITestSupport.element( app, AccessibilityIdentifier.WhiteBalanceControlView.stretchHandlingNote )
+
+        XCTAssertTrue( note.waitForExistence( timeout: 10 ), "The per-channel-handling note did not appear after removing white balance." )
+    }
+
     /// The white-balance Manual mode reveals the per-channel red/green/blue gain
     /// sliders, which are absent in the other modes.
     @MainActor

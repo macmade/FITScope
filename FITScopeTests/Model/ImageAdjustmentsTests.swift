@@ -800,4 +800,39 @@ struct ImageAdjustmentsTests
         #expect( adjustments.stretch      == stretch, "the stretch is frozen, not cleared" )
         #expect( adjustments.whiteBalance == whiteBalance, "white balance is untouched" )
     }
+
+    /// The inline-note conditions reflect which control is neutralizing the colour cast
+    /// while managed: a managed per-channel stretch (white balance off) reports the stretch
+    /// is handling it, a managed uniform stretch with white balance on reports white balance
+    /// is handling it, and neither reports true in manual mode or with no managed stretch.
+    @Test
+    @MainActor
+    func colorBalanceHandlingNotesReflectTheManagedState()
+    {
+        // Managed per-channel, white balance off: the stretch is handling the balance.
+        let perChannel = Self.managedPerChannel()
+
+        #expect( perChannel.perChannelStretchHandlesColorBalance )
+        #expect( perChannel.whiteBalanceHandlesColorBalance == false )
+
+        // Managed uniform with white balance on: white balance is handling the balance.
+        let uniform = Self.managedUniformWithWhiteBalance()
+
+        #expect( uniform.whiteBalanceHandlesColorBalance )
+        #expect( uniform.perChannelStretchHandlesColorBalance == false )
+
+        // Manual per-channel (a hand-set stretch): neither note applies — no forcing.
+        let manual = ImageAdjustments()
+
+        manual.stretch = .perChannel( red: .init( midtones: 0.2 ), green: .init( midtones: 0.3 ), blue: .init( midtones: 0.4 ) )
+
+        #expect( manual.perChannelStretchHandlesColorBalance == false )
+        #expect( manual.whiteBalanceHandlesColorBalance == false )
+
+        // No stretch at all: neither note applies.
+        let none = ImageAdjustments()
+
+        #expect( none.perChannelStretchHandlesColorBalance == false )
+        #expect( none.whiteBalanceHandlesColorBalance == false )
+    }
 }

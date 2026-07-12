@@ -179,21 +179,56 @@ public struct WhiteBalanceControlView: View
                     .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.blueSlider )
                     .help( "Blue Gain" )
             }
+
+            // When a managed per-channel stretch is neutralizing the colour cast, white
+            // balance is redundant and off: explain the cross-section state rather than
+            // leaving the section silently disabled.
+            if self.adjustments.perChannelStretchHandlesColorBalance
+            {
+                GridRow
+                {
+                    Text( "Off \u{2014} the per-channel stretch is handling colour balance." )
+                        .font( .caption )
+                        .foregroundStyle( .secondary )
+                        .fixedSize( horizontal: false, vertical: true )
+                        .gridCellColumns( 2 )
+                        .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.stretchHandlingNote )
+                }
+            }
         }
-        // A change the control makes: push it to the shared adjustments and
-        // re-render.
+        // A change the control makes: route it through the model so the managed
+        // mutual-exclusion rule is enforced (enabling white balance over a managed
+        // per-channel stretch silently re-derives that stretch as uniform), then
+        // re-render. Skipped when it already matches the model — a managed re-derivation
+        // syncs the control, and that must not echo back as a redundant write.
         .onChange( of: self.whiteBalanceMode )
         {
-            self.adjustments.whiteBalance = self.whiteBalanceMode
+            guard self.whiteBalanceMode != self.adjustments.whiteBalance
+            else
+            {
+                return
+            }
 
-            self.reRender()
+            Task { await self.applyWhiteBalance() }
         }
-        // A change from outside the control (e.g. a menu Reset View): pull it
-        // back into the control's displayed state.
+        // A change from outside the control (e.g. a menu Reset View, or the stretch
+        // forcing white balance off): pull it back into the control's displayed state.
         .onChange( of: self.adjustments.whiteBalance )
         {
             self.syncFromAdjustments()
         }
+    }
+
+    /// Applies the control's white-balance selection through the model's mutual-exclusion
+    /// rule, then re-renders. The rule may re-derive the stretch off the main actor
+    /// (enabling white balance over a managed per-channel stretch yields it to uniform),
+    /// so this is async.
+    @MainActor
+    private func applyWhiteBalance() async
+    {
+        await self.adjustments.setWhiteBalance( self.whiteBalanceMode )
+
+        self.reRender()
     }
 
     /// The white-balance mode derived from the current selection and gains.
@@ -234,4 +269,22 @@ public struct WhiteBalanceControlView: View
         .frame( maxWidth: .infinity, alignment: .leading )
         .frame( maxHeight: .infinity, alignment: .top )
         .padding()
+}
+
+// A managed per-channel stretch is handling the colour balance, so white balance is off
+// and the inline note explains why.
+#Preview( "Stretch handling balance" )
+{
+    WhiteBalanceControlView(
+        adjustments:
+        {
+            let opened = ImageProcessor.Settings( normalize: .identity, stretch: .perChannel( red: .init( midtones: 0.2 ), green: .init( midtones: 0.3 ), blue: .init( midtones: 0.4 ) ) )
+
+            return ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
+        }(),
+        reRender: {}
+    )
+    .frame( maxWidth: .infinity, alignment: .leading )
+    .frame( maxHeight: .infinity, alignment: .top )
+    .padding()
 }

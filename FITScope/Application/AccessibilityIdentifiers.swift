@@ -493,6 +493,10 @@ public enum AccessibilityIdentifier
 
         /// The white-balance-removal confirmation's cancel action: apply nothing.
         public static let cancelWhiteBalanceRemovalButton = "StretchControlView.cancelWhiteBalanceRemovalButton"
+
+        /// The inline note shown when a managed stretch is kept uniform because white
+        /// balance is handling the colour balance.
+        public static let whiteBalanceHandlingNote = "StretchControlView.whiteBalanceHandlingNote"
     }
 
     /// Identifiers applied by ``FITScope/WhiteBalanceControlView``.
@@ -518,6 +522,10 @@ public enum AccessibilityIdentifier
 
         /// The reset button for the manual blue-gain slider.
         public static let blueReset = "WhiteBalanceControlView.blueReset"
+
+        /// The inline note shown when a managed per-channel stretch is handling the
+        /// colour balance, so white balance is off.
+        public static let stretchHandlingNote = "WhiteBalanceControlView.stretchHandlingNote"
     }
 
     /// Identifiers applied by ``FITScope/DebayerControlView``.

@@ -336,6 +336,22 @@ public final class ImageAdjustments: ObservableObject
         return true
     }
 
+    /// Whether a managed per-channel Screen Transfer is currently neutralizing the colour
+    /// cast on its own, so white balance is redundant and off. Drives the White Balance
+    /// section's inline note explaining why that section reads "Off".
+    public var perChannelStretchHandlesColorBalance: Bool
+    {
+        self.isAutoStretch && self.isPerChannelStretch && self.whiteBalance == nil
+    }
+
+    /// Whether a managed Screen Transfer is being kept uniform because white balance is
+    /// neutralizing the colour cast — the dual of the exclusion. Drives the Stretch
+    /// section's inline note explaining why the managed stretch stays uniform.
+    public var whiteBalanceHandlesColorBalance: Bool
+    {
+        self.isAutoStretch && self.isPerChannelStretch == false && self.stretch != nil && self.whiteBalance != nil
+    }
+
     /// Disengages the managed "Auto engaged" mode, freezing the current stretch as a
     /// manual value. The stretch, its normalization and white balance are all left
     /// untouched, so the image is unchanged and re-engaging Auto simply re-derives.

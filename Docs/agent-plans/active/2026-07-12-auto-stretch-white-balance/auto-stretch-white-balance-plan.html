@@ -591,7 +591,7 @@
             <div class="milestone-head">
                 <span class="mnum">4</span>
                 <h3>White-balance removal confirmation &amp; inline notes</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">Present the three-way confirmation whenever a managed action would remove white balance, and
@@ -611,15 +611,70 @@
                 <li>Add UI-level tests or previews covering the three confirmation outcomes.</li>
             </ul>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">&mdash;</p>
+            <p>2026-07-12</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Scope.</strong> The three-way confirmation itself was built in Milestone&nbsp;3 (inspector
+                        entry point), so this milestone covered: wiring the White Balance control through the model rule,
+                        the two inline explanatory notes, and tests. The Screen&nbsp;Transfer-editor entry point remains
+                        Milestone&nbsp;5.</li>
+                    <li><strong>White Balance wired to the rule.</strong> <code>WhiteBalanceControlView</code> now routes its
+                        write through <code>adjustments.setWhiteBalance(_:)</code> (async, in a <code>Task</code>) instead of
+                        assigning <code>whiteBalance</code> directly &mdash; activating the silent yield: enabling white balance
+                        over a managed per-channel stretch re-derives the stretch as uniform and keeps white balance on. Added
+                        the same echo guard as the stretch control
+                        (<code>guard whiteBalanceMode != adjustments.whiteBalance</code>) so a managed re-derivation's sync does
+                        not echo back as a redundant write.</li>
+                    <li><strong>Inline notes (managed-only).</strong> Two <code>@Published</code>-derived model computed
+                        properties encode the conditions as a single testable source of truth:
+                        <code>perChannelStretchHandlesColorBalance</code> (managed per-channel, WB off) drives the White Balance
+                        section's &ldquo;Off &mdash; the per-channel stretch is handling colour balance&rdquo;, and
+                        <code>whiteBalanceHandlesColorBalance</code> (managed uniform, WB on) drives the Stretch section's
+                        symmetric &ldquo;Uniform &mdash; white balance is handling colour balance&rdquo;. Both are false in
+                        manual mode, so per-channel STF and white balance coexist there with no note.</li>
+                    <li><strong>Confirmation handles auto and manual WB alike.</strong> <code>resolve(.removeWhiteBalance)</code>
+                        sets <code>whiteBalance = nil</code> regardless of whether it was auto or manual gains &mdash; no change
+                        needed, verified.</li>
+                    <li><strong>Tests.</strong> Model unit test for the two note conditions across every state (30/30 model
+                        tests pass). Previews for both notes. A new UI test
+                        (<code>testPerChannelAutoWithWhiteBalanceConfirmsAndRemovesWhiteBalance</code>) drives the full flow on a
+                        colour image &mdash; force manual Screen&nbsp;Transfer, turn WB on, engage per-channel, assert the
+                        three-way confirmation's buttons appear, tap Remove, and assert the White Balance note appears (19.5&nbsp;s,
+                        passing). The Keep/Cancel outcomes are covered by the Milestone&nbsp;2 model unit tests; consistent with
+                        the suite's convention of leaving multi-outcome interactive flows to unit/manual verification, only the
+                        default outcome is driven at the UI level. Existing white-balance / stretch UI tests still pass.</li>
+                    <li><strong>Automated review.</strong> One fresh-context round; converged with no Critical/High/Medium
+                        findings. It verified the echo guard, the two computed properties across all states, note reactivity, and
+                        re-render timing. One Low and two Info items deferred (below); no code changes were required.</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>[Low &mdash; Deferred] Rapid WB mode-toggle during the off-actor derive can drop the second
+                        change.</strong> Switching WB none→auto then auto→none while <code>setWhiteBalance</code>'s
+                        <code>deriveAutoStretch</code> is still suspended can lose the second click (the guard sees
+                        <code>whiteBalance</code> not yet committed). The result is still a valid coexisting state; the window is
+                        narrow; and this is inherent to the async model API and mirrors the already-committed
+                        <code>engageAuto</code>. Left as-is (closing it would touch committed behaviour) &mdash; surfaced for the
+                        user's call.</li>
+                    <li><strong>[Info &mdash; Deferred] Identity manual gains still show the note.</strong>
+                        <code>.manual(1,1,1)</code> counts as &ldquo;white balance on&rdquo;, so the uniform note shows even
+                        when the gains do no balancing. Nominal on/off is reasonable note semantics; left as-is.</li>
+                    <li><strong>[Info &mdash; Deferred] Per-drag <code>Task</code> spawn.</strong> Manual-gain drags now defer
+                        the model write by one main-actor hop instead of writing inline; imperceptible (state updates immediately,
+                        render is debounced). Left as-is.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting review.</p>
+            <div class="notes">
+                <ul>
+                    <li>&ldquo;Looks good&rdquo; &mdash; approved as-is, no changes requested.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 5 -->
