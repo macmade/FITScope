@@ -163,6 +163,9 @@ public enum AccessibilityIdentifier
             /// The debayer section.
             public static let debayer = "InspectorView.Section.debayer"
 
+            /// The cosmetic-correction section.
+            public static let cosmeticCorrection = "InspectorView.Section.cosmeticCorrection"
+
             /// The color section.
             public static let color = "InspectorView.Section.color"
 
@@ -195,6 +198,9 @@ public enum AccessibilityIdentifier
 
             /// The debayer section's reset button.
             public static let debayer = "InspectorView.SectionReset.debayer"
+
+            /// The cosmetic-correction section's reset button.
+            public static let cosmeticCorrection = "InspectorView.SectionReset.cosmeticCorrection"
 
             /// The stretch section's reset button.
             public static let stretch = "InspectorView.SectionReset.stretch"
@@ -553,6 +559,13 @@ public enum AccessibilityIdentifier
 
         /// The reconstruction-algorithm picker (disabled when mode is None).
         public static let algorithmPicker = "DebayerControlView.algorithmPicker"
+    }
+
+    /// Identifiers applied by ``FITScope/CosmeticCorrectionControlView``.
+    public enum CosmeticCorrectionControlView
+    {
+        /// The defect-repair mode picker (Off / Hot & Cold / Hot Only / Cold Only).
+        public static let modePicker = "CosmeticCorrectionControlView.modePicker"
     }
 
     /// Identifiers applied by ``FITScope/ColorControlView``.

@@ -81,6 +81,7 @@
 		05B189F92FEAE7BC0056553A /* ThumbnailProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B189F62FEAE7BC0056553A /* ThumbnailProvider.swift */; };
 		05B18A002FEAE7BE0056553A /* PreviewProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B189FB2FEAE7BE0056553A /* PreviewProvider.swift */; };
 		05BD7A942DF311F700F4AAFC /* DebayerControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */; };
+		05FB1000000000000000B0F1 /* CosmeticCorrectionControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A0F1 /* CosmeticCorrectionControlView.swift */; };
 		05BD7A982DF3120E00F4AAFC /* StretchControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A972DF3120600F4AAFC /* StretchControlView.swift */; };
 		05BD7A9A2DF3121600F4AAFC /* WhiteBalanceControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A992DF3121100F4AAFC /* WhiteBalanceControlView.swift */; };
 		05BD7A9C2DF3121B00F4AAFC /* HistogramControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BD7A9B2DF3121800F4AAFC /* HistogramControlView.swift */; };
@@ -164,6 +165,7 @@
 		05FB1000000000000000B006 /* StretchControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A006 /* StretchControlViewTests.swift */; };
 		05FB1000000000000000B008 /* WhiteBalanceControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A008 /* WhiteBalanceControlViewTests.swift */; };
 		05FB1000000000000000B009 /* DebayerControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A009 /* DebayerControlViewTests.swift */; };
+		05FB1000000000000000B007 /* CosmeticCorrectionControlViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A007 /* CosmeticCorrectionControlViewTests.swift */; };
 		05FB1000000000000000B00A /* HistogramViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A00A /* HistogramViewTests.swift */; };
 		05FB1000000000000000B00B /* FITSImageLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A00B /* FITSImageLoaderTests.swift */; };
 		05FB1000000000000000B00C /* SliderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000A00C /* SliderTests.swift */; };
@@ -624,6 +626,7 @@
 		05B189FA2FEAE7BE0056553A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		05B189FB2FEAE7BE0056553A /* PreviewProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewProvider.swift; sourceTree = "<group>"; };
 		05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebayerControlView.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A0F1 /* CosmeticCorrectionControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CosmeticCorrectionControlView.swift; sourceTree = "<group>"; };
 		05BD7A972DF3120600F4AAFC /* StretchControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchControlView.swift; sourceTree = "<group>"; };
 		05BD7A992DF3121100F4AAFC /* WhiteBalanceControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteBalanceControlView.swift; sourceTree = "<group>"; };
 		05BD7A9B2DF3121800F4AAFC /* HistogramControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramControlView.swift; sourceTree = "<group>"; };
@@ -692,6 +695,7 @@
 		05FB1000000000000000A006 /* StretchControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchControlViewTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A008 /* WhiteBalanceControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteBalanceControlViewTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A009 /* DebayerControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebayerControlViewTests.swift; sourceTree = "<group>"; };
+		05FB1000000000000000A007 /* CosmeticCorrectionControlViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CosmeticCorrectionControlViewTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A00A /* HistogramViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramViewTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A00B /* FITSImageLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITSImageLoaderTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000A00C /* SliderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderTests.swift; sourceTree = "<group>"; };
@@ -1398,6 +1402,7 @@
 				0AB10000000000000000FC01 /* SaturationControlView.swift */,
 				FEEDFACE0000000000000011 /* ColorBalanceControlView.swift */,
 				05BD7A932DF311F200F4AAFC /* DebayerControlView.swift */,
+				05FB1000000000000000A0F1 /* CosmeticCorrectionControlView.swift */,
 				05BD7A9B2DF3121800F4AAFC /* HistogramControlView.swift */,
 				0524AD7D2DF3450200180358 /* HistogramStatisticsView.swift */,
 				0524AD802DF3457C00180358 /* HistogramView.swift */,
@@ -1604,6 +1609,7 @@
 				05FB1000000000000000A006 /* StretchControlViewTests.swift */,
 				05FB1000000000000000A008 /* WhiteBalanceControlViewTests.swift */,
 				05FB1000000000000000A009 /* DebayerControlViewTests.swift */,
+				05FB1000000000000000A007 /* CosmeticCorrectionControlViewTests.swift */,
 				05FB1000000000000000A00A /* HistogramViewTests.swift */,
 				0752B6126A583839BB8F8BEF /* StatisticsFormatTests.swift */,
 			);
@@ -2445,6 +2451,7 @@
 				05DD1000000000000000FB0E /* FITSRenderSource.swift in Sources */,
 				05D710D02DF201C300CE32E3 /* NSBundle.swift in Sources */,
 				05BD7A942DF311F700F4AAFC /* DebayerControlView.swift in Sources */,
+				05FB1000000000000000B0F1 /* CosmeticCorrectionControlView.swift in Sources */,
 				0AB10000000000000000F002 /* ColorControlView.swift in Sources */,
 				0AB10000000000000000FA02 /* OrientationControlView.swift in Sources */,
 				0AB10000000000000000FB02 /* BrightnessContrastControlView.swift in Sources */,
@@ -2667,6 +2674,7 @@
 				05FB1000000000000000B006 /* StretchControlViewTests.swift in Sources */,
 				05FB1000000000000000B008 /* WhiteBalanceControlViewTests.swift in Sources */,
 				05FB1000000000000000B009 /* DebayerControlViewTests.swift in Sources */,
+				05FB1000000000000000B007 /* CosmeticCorrectionControlViewTests.swift in Sources */,
 				05FB1000000000000000B00A /* HistogramViewTests.swift in Sources */,
 				1B8A22E86CD946413A1C30D9 /* OpenFileTests.swift in Sources */,
 				CA1100000000000000000014 /* OpenFileFramesTests.swift in Sources */,

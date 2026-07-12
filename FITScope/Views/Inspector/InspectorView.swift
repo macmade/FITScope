@@ -98,6 +98,24 @@ public struct InspectorView: View
 
                     Divider()
 
+                    // Cosmetic correction repairs hot/cold pixels on the raw samples
+                    // before any other stage, so it leads the pipeline sections. It
+                    // applies to any image — hot and cold pixels affect mono and
+                    // colour alike — so, unlike Debayer, it is not gated behind a
+                    // colour-filter-array check.
+                    InspectorSectionView(
+                        "Cosmetic Correction",
+                        identifier:      AccessibilityIdentifier.InspectorView.Section.cosmeticCorrection,
+                        isModified:      self.adjustments.isModified( \.cosmeticCorrection ),
+                        resetIdentifier: AccessibilityIdentifier.InspectorView.SectionReset.cosmeticCorrection,
+                        onReset:         { self.reset( \.cosmeticCorrection ) }
+                    )
+                    {
+                        CosmeticCorrectionControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
+                    }
+
+                    Divider()
+
                     // From here down the sections follow the order the pipeline
                     // applies them (see ImageProcessor / PixelPipeline): debayer,
                     // white balance, brightness/contrast, stretch, gamma, then

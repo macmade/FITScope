@@ -453,7 +453,7 @@
     <article class="milestone">
         <header>
             <h4><span class="num">5</span>Inspector control + section</h4>
-            <span class="capsule not-started">Not started</span>
+            <span class="capsule completed">Completed</span>
         </header>
         <p>
             <strong>Goal:</strong> A dedicated inspector section letting the user enable/disable cosmetic
@@ -471,11 +471,32 @@
                 <li>Add <code>FITScopeTests/Views/ImageControls/CosmeticCorrectionControlViewTests.swift</code> for the mapping helpers.</li>
             </ul>
         </div>
-        <div class="field"><span class="label">Status</span> <span class="capsule not-started">Not started</span></div>
-        <div class="field"><span class="label">Completed</span> <span class="placeholder">—</span></div>
-        <div class="field"><span class="label">Implementation notes</span> <p class="placeholder">To be filled in during implementation.</p></div>
-        <div class="field"><span class="label">Automated review</span> <p class="placeholder">To be filled in during implementation.</p></div>
-        <div class="field"><span class="label">Review comments</span> <p class="placeholder">Awaiting review.</p></div>
+        <div class="field"><span class="label">Status</span> <span class="capsule completed">Completed</span></div>
+        <div class="field"><span class="label">Completed</span> <time datetime="2026-07-12">2026-07-12</time></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+            <p><strong>First attempt.</strong> A master capsule toggle plus checkbox sub-toggles for hot/cold, each with its own strength slider. The user rejected it on review (see Review comments): use a menu to enable, no checkboxes, keep it compact and consistent with the existing controls.</p>
+            <p><strong>Redesign (in response to the feedback).</strong> Rebuilt <code>CosmeticCorrectionControlView.swift</code> to mirror the compact Debayer pattern — a two-row <code>Grid</code>:</p>
+            <ul>
+                <li>A <strong>Mode picker</strong> (menu) folding the enable + hot/cold choices into one control: <em>Off</em> / <em>Hot &amp; Cold</em> / <em>Hot Only</em> / <em>Cold Only</em>. No toggles or checkboxes. Pure static helpers <code>mode(for:)</code> and <code>parameters(for:applyingTo:)</code> do the mapping (mirroring <code>DebayerControlView.selection/mode</code>); applying a mode changes only the enable/hot/cold flags and <strong>preserves the thresholds</strong>.</li>
+            </ul>
+            <p><strong>Strength slider removed (per the user's follow-up decision).</strong> The user approved the compact redesign, then asked whether exposing a strength control is meaningful for a viewer/inspection tool. Agreed it is not — real cosmetic correction happens at calibration time, and the algorithm's strict-local-extreme guard already provides star safety regardless of the threshold <code>k</code> — so the slider (and its inverse strength↔threshold mapping) was dropped. The control is now a <strong>single Mode picker</strong>; the detection strength stays at the model's conservative default (settled in Milestone 6). This also removes the earlier review's two carry-over notes (the strength-range/default coupling and the strength readout), which no longer apply.</p>
+            <p>Accessibility identifiers reduced to a single <code>modePicker</code>; tests cover <code>mode(for:)</code> (incl. enabled-but-inert → Off), <code>parameters(for:applyingTo:)</code> preserving thresholds, and the mode round-trip. The inspector section (before Debayer, all image types), the per-section reset, and the two files' Xcode-project registration are unchanged. Tests pass (3); the app builds.</p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+            <p>The first automated round reviewed the original (rejected) toggle/checkbox design and is obsolete. A fresh round then reviewed the final Mode-picker-only design: <strong>no Critical/High/Medium findings.</strong> Verified the <code>mode(for:)</code>/<code>parameters(for:applyingTo:)</code> mapping (guard-on-<code>isEnabled</code>-first, thresholds preserved, round-trips), the single-fire <code>.onChange</code> re-render path (incl. external Reset), no dead code from the removed slider, correct inspector placement (all image types, before Debayer), convention compliance, and correct pbxproj target membership with no ID collisions. Two Info-only notes (no action): the re-render uses <code>.onChange</code> rather than Debayer's in-setter <code>reRender()</code> (a documented, more robust choice), and a theoretically-unreachable enabled-but-inert state the picker can never produce.</p>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+            <ul>
+                <li><strong>"Doesn't look good."</strong> Controls should be consistent with the existing ones. Use a menu for enabling. Don't use checkboxes. Try to keep the view compact — it takes a lot of space.</li>
+                <li>Redesign approved ("Looks good"), with a follow-up question: does the strength slider need to be exposed? Is it meaningful for astrophotography? (Answered as a question; awaiting the user's decision before changing anything.)</li>
+                <li>Decision: remove the strength slider (option A) — not meaningful for a viewer/inspection tool; keep the Mode picker only.</li>
+                <li>Requested synthetic FITS fixtures (mono + RGB) with injected hot/cold pixels and real stars for manual testing; added under <code>FITScopeUITests/Fixtures/</code>.</li>
+                <li>Final control approved ("Looks good") after testing with the fixtures.</li>
+            </ul>
+        </div>
     </article>
 
     <h3 class="phase">Phase C — Finalize</h3>
