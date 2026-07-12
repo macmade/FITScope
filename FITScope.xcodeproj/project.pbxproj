@@ -95,6 +95,7 @@
 		05C4BD762DF2E62500326B69 /* PreviewHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C4BD752DF2E62200326B69 /* PreviewHelper.swift */; };
 		05C4BD782DF2E7D600326B69 /* InfoViewTableCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C4BD772DF2E7D000326B69 /* InfoViewTableCell.swift */; };
 		05D710C62DF2007D00CE32E3 /* FITScopeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */; };
+		FE5C0FE00000000000B01D02 /* SingletonWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5C0FE00000000000F11E02 /* SingletonWindow.swift */; };
 		05D710CE2DF2012500CE32E3 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710CC2DF2012500CE32E3 /* AboutView.swift */; };
 		05D710D02DF201C300CE32E3 /* NSBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710CF2DF201C100CE32E3 /* NSBundle.swift */; };
 		05DC79A12DF2F82A003E2AFA /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DC79A02DF2F827003E2AFA /* ErrorView.swift */; };
@@ -642,6 +643,7 @@
 		05C4BD772DF2E7D000326B69 /* InfoViewTableCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoViewTableCell.swift; sourceTree = "<group>"; };
 		05C9EFEE0E53D9E62C7D3A9F /* ImageToolbarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageToolbarView.swift; sourceTree = "<group>"; };
 		05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FITScopeApp.swift; sourceTree = "<group>"; };
+		FE5C0FE00000000000F11E02 /* SingletonWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SingletonWindow.swift; sourceTree = "<group>"; };
 		05D710CC2DF2012500CE32E3 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		05D710CF2DF201C100CE32E3 /* NSBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSBundle.swift; sourceTree = "<group>"; };
 		05DC79A02DF2F827003E2AFA /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
@@ -1427,6 +1429,7 @@
 			isa = PBXGroup;
 			children = (
 				05D710C42DF2007D00CE32E3 /* FITScopeApp.swift */,
+				FE5C0FE00000000000F11E02 /* SingletonWindow.swift */,
 				C5ED175000000000000000A1 /* AppCredits.swift */,
 				DF3765F1937F36620A92317F /* MainWindowView.swift */,
 				77051EA6E847507556D8B2B0 /* AppModel.swift */,
@@ -2495,6 +2498,7 @@
 				05C4BD782DF2E7D600326B69 /* InfoViewTableCell.swift in Sources */,
 				057F611C2DF8B78600EE82D1 /* ImageControlContainer.swift in Sources */,
 				05D710C62DF2007D00CE32E3 /* FITScopeApp.swift in Sources */,
+				FE5C0FE00000000000B01D02 /* SingletonWindow.swift in Sources */,
 				C5ED175000000000000000A2 /* AppCredits.swift in Sources */,
 				05D710CE2DF2012500CE32E3 /* AboutView.swift in Sources */,
 				BB151EF31682CFC60AB2CB64 /* OpenFile.swift in Sources */,

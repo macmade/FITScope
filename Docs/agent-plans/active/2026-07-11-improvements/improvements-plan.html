@@ -434,13 +434,37 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
-                <span class="completed-date">Completed: —</span>
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-12</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p><strong>Investigation first (at the user's request).</strong> System Events automation was blocked (no assistive access), so a temporary DEBUG-only <code>-dumpWindowMenu</code> launch-argument diagnostic (a <code>Timer</code> in <code>.common</code> run-loop mode, firing even under the launch Open panel) dumped the live menus; it was fully reverted afterward. Findings:</p>
+                <ul>
+                    <li>With nothing open, the Window menu listed exactly the five singleton <code>Window("…", id:)</code> scenes: <em>Levels, Curves, Screen Transfer, Session Metrics, About FITScope</em>. The two <code>WindowGroup(id:, for:)</code> scenes (Info, PlateSolve) were correctly absent. SwiftUI adds a <strong>persistent</strong> Window-menu command for every <code>Window</code> scene, present whether or not it is open (confirmed against Apple DevForums / SerialCoder / Swift-with-Majid).</li>
+                    <li>Controlled experiment converting Session Metrics: a <strong>value-less</strong> <code>WindowGroup(id:)</code> removed the menu entry but opening it twice produced <strong>2</strong> windows (duplicates). A <strong>value-keyed</strong> <code>WindowGroup(id:, for: String.self)</code> opened twice with the same constant produced <strong>1</strong> window (single instance) <em>and</em> removed the menu entry.</li>
+                </ul>
+                <p><strong>Chosen fix (approved by the user, incl. About):</strong> convert all five singleton <code>Window(...)</code> scenes to value-keyed <code>WindowGroup(id:, for: String.self)</code> presented with one shared constant — mirroring the app's already-correct Info/PlateSolve windows.</p>
+                <ul>
+                    <li>New <code>FITScope/Application/SingletonWindow.swift</code>: an internal <code>enum SingletonWindow</code> with <code>static let token = "default"</code> (documented rationale). Wired into the app target via four <code>project.pbxproj</code> edits.</li>
+                    <li><code>FITScopeApp.swift</code>: the five scenes converted to <code>WindowGroup( "…", id:, for: String.self ) { _ in … }</code>, each keeping its exact prior modifiers (<code>.windowResizability(.contentSize)</code>, <code>.defaultSize</code>, About's <code>.hiddenTitleBar</code>/<code>.defaultPosition(.center)</code>/content <code>.fixedSize()</code>, and <code>.restorationBehavior(.disabled)</code> throughout) and its <code>.environmentObject(appModel)</code> injection.</li>
+                    <li>All eight <code>openWindow(id:)</code> call sites updated to pass <code>value: SingletonWindow.token</code>: Levels (<code>ImageCommands</code>, <code>InspectorView</code>), Curves (<code>ImageCommands</code>, <code>InspectorView</code>), Session Metrics (<code>ImageCommands</code>, <code>FilesSidebarView</code>), Screen Transfer (<code>StretchControlView</code>), About (<code>FITScopeApp</code>).</li>
+                </ul>
+                <p><strong>Verification.</strong> Debug build succeeds. Final menu dump (diagnostic re-added then reverted): the closed-state Window menu now shows only <em>Minimize / Zoom / Bring All to Front</em>, and the File menu shows only the app's own commands — no stray "New Levels/Curves/…" items. Four focused UI tests pass — <code>testOpeningLevelsEditorWindow</code>, <code>testOpeningCurvesEditorWindow</code>, <code>testAboutCommandOpensAboutWindow</code>, <code>testStretchModeRevealsScreenTransferEditor</code> — confirming each converted window still opens correctly. Open windows still list in the Window menu (standard AppKit behavior), so the change is limited to the closed state.</p>
+                <p><strong>Automated review loop:</strong> 1 round; converged with no Critical/High/Medium findings. Only Info-level notes (a cosmetic blank line after <code>_ in</code>, and a suggestion to confirm the File menu — done above).</p>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <ul>
+                    <li><strong>Verdict: correct and complete, no blocking issues.</strong> The reviewer independently confirmed: all eight call sites pass the token (no stray value-less open remains for these ids); every converted scene preserves its prior modifiers and <code>environmentObject</code> injection; distinct group <code>id</code>s mean the shared constant cannot collide across groups (single-instance holds); <code>.restorationBehavior(.disabled)</code> prevents auto-reopen; <code>String</code> satisfies <code>WindowGroup(for:)</code>'s <code>Codable &amp; Hashable</code>; token visibility matches the codebase and leaks into no public signature; pbxproj wiring is consistent (<code>plutil -lint</code> OK) and targets the app's Sources phase; open windows still list.</li>
+                    <li><strong>Blank line after <code>_ in</code> in the converted closures</strong> — Info (style). Deemed a reasonable readability choice, not a violation. <em>Resolution: Deferred (no change).</em></li>
+                    <li><strong>Confirm no File-menu "New …" items were added</strong> — Info. <em>Resolution: Fixed/verified — File-menu dump shows only the app's own commands.</em></li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>"Looks good" — approved as implemented (value-keyed <code>WindowGroup</code> conversion for all five windows, including About).</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 3 -->

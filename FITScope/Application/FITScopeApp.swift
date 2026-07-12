@@ -118,7 +118,7 @@ public struct FITScopeApp: App
 
             CommandGroup( replacing: CommandGroupPlacement.appInfo )
             {
-                Button( action: { openWindow( id: "AboutWindow" ) } )
+                Button( action: { openWindow( id: "AboutWindow", value: SingletonWindow.token ) } )
                 {
                     Label( "About \( Bundle.main.title )...", systemImage: "info.circle" )
                 }
@@ -198,8 +198,10 @@ public struct FITScopeApp: App
         // `.persistsWindowFrame(...)` on their content (state restoration stays off,
         // so they never reopen at launch); on first run — before a frame is saved —
         // that modifier centers the window rather than leaving it in a corner.
-        Window( "Levels", id: "LevelsWindow" )
+        WindowGroup( "Levels", id: "LevelsWindow", for: String.self )
         {
+            _ in
+
             LevelsWindowView()
                 .environmentObject( self.appDelegate.appModel )
         }
@@ -207,8 +209,10 @@ public struct FITScopeApp: App
         .windowResizability( .contentSize )
         .restorationBehavior( .disabled )
 
-        Window( "Curves", id: "CurvesWindow" )
+        WindowGroup( "Curves", id: "CurvesWindow", for: String.self )
         {
+            _ in
+
             CurvesWindowView()
                 .environmentObject( self.appDelegate.appModel )
         }
@@ -216,8 +220,10 @@ public struct FITScopeApp: App
         .windowResizability( .contentSize )
         .restorationBehavior( .disabled )
 
-        Window( "Screen Transfer", id: StretchControlView.screenTransferWindowID )
+        WindowGroup( "Screen Transfer", id: StretchControlView.screenTransferWindowID, for: String.self )
         {
+            _ in
+
             STFWindowView()
                 .environmentObject( self.appDelegate.appModel )
         }
@@ -229,8 +235,10 @@ public struct FITScopeApp: App
         // the charts want room and benefit from resizing, so this window is freely
         // resizable (opening at a sensible default) rather than sized to its
         // content; it persists its frame across launches like the editors do.
-        Window( "Session Metrics", id: "SessionMetricsWindow" )
+        WindowGroup( "Session Metrics", id: "SessionMetricsWindow", for: String.self )
         {
+            _ in
+
             SessionMetricsWindowView()
                 .environmentObject( self.appDelegate.appModel )
         }
@@ -238,8 +246,10 @@ public struct FITScopeApp: App
         .defaultSize( width: 900, height: 760 )
         .restorationBehavior( .disabled )
 
-        Window( "About \( Bundle.main.title )", id: "AboutWindow" )
+        WindowGroup( "About \( Bundle.main.title )", id: "AboutWindow", for: String.self )
         {
+            _ in
+
             AboutView()
                 .padding()
                 .fixedSize()

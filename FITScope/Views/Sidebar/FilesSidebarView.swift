@@ -125,7 +125,7 @@ public struct FilesSidebarView: View
     {
         Button
         {
-            self.openWindow( id: "SessionMetricsWindow" )
+            self.openWindow( id: "SessionMetricsWindow", value: SingletonWindow.token )
         }
         label:
         {

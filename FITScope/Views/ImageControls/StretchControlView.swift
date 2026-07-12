@@ -177,7 +177,7 @@ public struct StretchControlView: View
 
                         Button
                         {
-                            self.openWindow( id: Self.screenTransferWindowID )
+                            self.openWindow( id: Self.screenTransferWindowID, value: SingletonWindow.token )
                         }
                         label:
                         {

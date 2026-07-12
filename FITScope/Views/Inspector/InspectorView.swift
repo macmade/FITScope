@@ -179,7 +179,7 @@ public struct InspectorView: View
                         {
                             Button
                             {
-                                self.openWindow( id: "LevelsWindow" )
+                                self.openWindow( id: "LevelsWindow", value: SingletonWindow.token )
                             }
                             label:
                             {
@@ -191,7 +191,7 @@ public struct InspectorView: View
 
                             Button
                             {
-                                self.openWindow( id: "CurvesWindow" )
+                                self.openWindow( id: "CurvesWindow", value: SingletonWindow.token )
                             }
                             label:
                             {
