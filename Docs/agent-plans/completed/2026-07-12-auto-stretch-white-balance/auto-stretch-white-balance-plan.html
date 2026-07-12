@@ -215,14 +215,18 @@
             confirmation rather than happening silently.</p>
 
             <p class="q">Does the exclusion apply in manual mode too?</p>
-            <p class="a">No. The forcing/exclusion is a behaviour of the Auto (managed) toggle only. In manual mode a
-            hand-built per-channel STF and white balance may coexist freely, with no forcing and no confirm (at most a
-            passive hint).</p>
+            <p class="a"><strong>Corrected (Milestone&nbsp;6):</strong> the exclusion applies symmetrically, not only in
+            managed mode. Adding white balance over a <em>hand-built</em> per-channel STF <strong>does</strong> confirm
+            first (converting it to uniform would lose that work) &mdash; offering Convert to uniform / Keep both / Cancel.
+            An <em>auto</em> per-channel STF still yields to uniform silently. (The original plan wrongly said manual mode
+            never forces or confirms.)</p>
 
             <p class="q">(a) Does hand-editing a per-channel STF drop fully to manual?</p>
-            <p class="a"><strong>Yes.</strong> A hand-edited stretch is manual, so it is never force-switched. This makes
-            a switch-to-uniform only ever happen to an <em>auto</em> STF (no edits to lose), so that direction is always
-            silent &mdash; the only confirmation in the whole system is white-balance removal.</p>
+            <p class="a"><strong>Yes</strong>, a hand-edited stretch is manual. <strong>Corrected (Milestone&nbsp;6):</strong>
+            there are <em>two</em> symmetric confirmations, not one &mdash; removing an enabled white balance (engaging
+            per-channel over WB) and converting a hand-built per-channel STF (adding WB over it). The silent conversions are
+            the two <em>auto</em> directions: auto per-channel + add WB → uniform, and managed uniform + remove WB →
+            per-channel.</p>
 
             <p class="q">(b) Confirm on all white-balance removal, or only manual gains?</p>
             <p class="a"><strong>All.</strong> Confirm whenever an action would remove white balance, whether it is Auto
@@ -774,7 +778,7 @@
             <div class="milestone-head">
                 <span class="mnum">6</span>
                 <h3>End-to-end verification &amp; regression pass</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">Confirm the whole flow behaves as specified on real images, and that nothing in the existing
@@ -789,22 +793,123 @@
                 <li>Keep the <code>.xcodeproj</code> and package manifest in sync for any files added.</li>
             </ul>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">&mdash;</p>
+            <p>2026-07-12</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Full test suite (Task&nbsp;4).</strong> <code>xcodebuild test</code> on the whole scheme:
+                        <strong>TEST SUCCEEDED</strong> &mdash; 324 swift-testing tests (33 suites) and 40 XCTest UI cases,
+                        <strong>0 failures</strong>. This includes the new confirmation UI test
+                        (<code>testPerChannelAutoWithWhiteBalanceConfirmsAndRemovesWhiteBalance</code>, ~20&nbsp;s) and the
+                        pre-existing open / reset / before-after / provenance coverage, so Task&nbsp;3 (no regression to
+                        open&nbsp;→&nbsp;not-edited, reset&nbsp;→&nbsp;baseline, the before/after slider) is covered.</li>
+                    <li><strong>Truth table (Task&nbsp;1).</strong> Every Appendix row is verified: row&nbsp;1 (colour opens
+                        per-channel, Auto engaged) confirmed <em>live</em> (see below) and by the seeding unit tests; rows&nbsp;2
+                        and 3-Remove confirmed <em>live end-to-end</em> by the confirmation UI test (turn WB on over a managed
+                        per-channel stretch → silent uniform yield → engage per-channel → three-way confirmation → Remove →
+                        note); rows&nbsp;2&ndash;8 (silent yield, remove/keep/cancel, hand-edit&nbsp;→&nbsp;manual, manual
+                        coexistence, WB-off keeps uniform) each covered by a dedicated model unit test in
+                        <code>ImageAdjustmentsTests</code>.</li>
+                    <li><strong>Live smoke test (Tasks&nbsp;1&nbsp;&amp;&nbsp;2).</strong> Launched the built app on the real
+                        fixtures. <em>Colour</em> (<code>ColorImage.fits</code>, CFA): opened auto-stretched with the Stretch
+                        &ldquo;Auto&rdquo; toggle <strong>engaged</strong> and the White&nbsp;Balance section reading
+                        &ldquo;None&rdquo; with the inline note <strong>&ldquo;Off &mdash; the per-channel stretch is handling
+                        colour balance.&rdquo;</strong> <em>Mono</em> (<code>MonoImage.fits</code>, grayscale): opened with a
+                        <strong>uniform</strong> auto stretch, Auto engaged, White&nbsp;Balance &ldquo;None&rdquo;, and
+                        <strong>no</strong> per-channel exclusion note &mdash; confirming a mono image is unaffected
+                        (Task&nbsp;2).</li>
+                    <li><strong>Project sync (Task&nbsp;5).</strong> The entire feature (all six milestones) added <em>no new
+                        files</em> &mdash; every change was an edit to an existing file &mdash; so the <code>.xcodeproj</code>
+                        needs no updates, and there is no package manifest to keep in sync.</li>
+                    <li><strong>Follow-up (review feedback): inline notes removed.</strong> On review the user found the White
+                        Balance inline note shifted the whole inspector panel as it appeared/disappeared (inherent to inserting
+                        a row). At their direction, <em>both</em> inline notes were removed &mdash; along with their now-unused
+                        supporting code: the two model computed properties
+                        (<code>perChannelStretchHandlesColorBalance</code>/<code>whiteBalanceHandlesColorBalance</code>) and
+                        their unit test, the two note accessibility identifiers, and the note-demo previews. The White
+                        Balance&nbsp;→&nbsp;<code>setWhiteBalance</code> wiring (the silent per-channel&nbsp;→&nbsp;uniform yield)
+                        was kept. The confirmation UI test's final assertion was changed from &ldquo;note appears&rdquo; to
+                        &ldquo;confirmation dismisses&rdquo;.</li>
+                    <li><strong>Re-verification after the removal.</strong> Unit tests green
+                        (<code>ImageAdjustmentsTests</code> 30/30; all swift-testing suites pass); build clean; the modified
+                        confirmation UI test passed individually; a live launch confirmed the note is gone with no panel shift.
+                        A clean full-suite re-run was blocked by environmental issues on the machine (a leftover manually-launched
+                        app instance, then an active system-authentication dialog) &mdash; both unrelated to the code; the full
+                        suite (324 swift-testing + 40 UI) was green on the run prior to the note removal.</li>
+                    <li><strong>Follow-up (review feedback): STF editor Auto is now a managed toggle.</strong> Converted the
+                        Screen Transfer editor's Auto button to a <code>.toggleStyle(.button)</code> managed toggle reflecting
+                        <code>isAutoStretch</code>, matching the inspector. Engaging derives at the per-channel toggle's linking
+                        using the editor's tunable Auto-Clip/Auto-Background and applies through the rule; disengaging freezes to
+                        manual. Added the model <code>requestManagedStretch(_:perChannel:)</code> (apply a caller-derived STF
+                        through the rule) and removed the now-superseded <code>engageUniformStretch()</code> and the one-shot
+                        <code>auto()</code>.</li>
+                    <li><strong>Follow-up (review feedback): symmetric alerts.</strong> The user corrected the design (the plan
+                        doc had documented an asymmetric, single-confirmation model &mdash; a mistake; the Appendix and Q&amp;A
+                        are now fixed). The rule is symmetric: <em>silent conversion when the affected stretch is auto; a
+                        confirmation when explicit user work would be lost.</em> Added <strong>case&nbsp;3</strong> (disable WB
+                        while managed uniform → silently re-derive back to per-channel) and <strong>case&nbsp;4</strong> (add WB
+                        over a <em>manual</em> per-channel stretch → confirm: Convert to uniform / Keep both / Cancel).
+                        <code>setWhiteBalance</code> now returns an optional <code>WhiteBalanceRequest</code>; added
+                        <code>WhiteBalanceResolution</code> and a second async <code>resolve</code> overload; the White Balance
+                        control presents the case-4 confirmation and reverts its picker on cancel. Model tests updated (30/30).</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li>The end-to-end verification itself made no code changes. The three review-driven follow-ups (note
+                        removal, editor toggle, symmetric alerts) were each verified by build + the model suite; the substantial
+                        <strong>symmetric-alerts</strong> change additionally went through a two-round fresh-context review loop.</li>
+                    <li><strong>[High &mdash; Fixed] UI-test regression.</strong> The colour fixture opens <em>per-channel</em>
+                        (not uniform), so the new case-4 rule broke the committed confirmation UI test's flow. Reordered it to
+                        enable white balance while the stretch is &ldquo;None&rdquo; (so it applies) before engaging per-channel,
+                        reaching the case-2 removal confirmation.</li>
+                    <li><strong>[Medium &mdash; Fixed] Picker flicker.</strong> The White Balance dialog's dismiss handler
+                        reverted the picker even on the affirmative buttons (async resolve). Guarded the revert to run only while
+                        a request is still pending (genuine cancel / outside-dismiss).</li>
+                    <li><strong>[Low &mdash; Fixed] Convert-to-uniform.</strong> White balance was committed even if the uniform
+                        re-derive failed; now gated on the uniform actually applying.</li>
+                    <li><strong>[Info &mdash; Fixed] Disable-branch dedup + comment.</strong> Hoisted the shared
+                        <code>whiteBalance = nil</code> and documented the intentional no-recheck (white balance is off before the
+                        derive, so no collision can be committed).</li>
+                    <li>Round&nbsp;2 (independent) confirmed all five fixes correct and complete, no new issues, and traced all
+                        13 stretch/white-balance commit paths &mdash; a <em>managed</em> per-channel stretch and white balance
+                        are never both committed (only manual coexistence, which is allowed). Converged.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting review.</p>
+            <div class="notes">
+                <ul>
+                    <li>&ldquo;I don't like the note on WB, it shifts the whole panel.&rdquo; &mdash; the White Balance inline
+                        note (&ldquo;Off &mdash; the per-channel stretch is handling colour balance&rdquo;, from Milestone&nbsp;4)
+                        appears/disappears as a row, shifting the inspector panel below it.</li>
+                    <li>&ldquo;In the STF window, the auto button still looks one-shot.&rdquo; &mdash; the Screen Transfer
+                        editor's Auto is still a plain button, not a persistent managed toggle reflecting the engaged state like
+                        the inspector's Auto (Milestone&nbsp;5 deliberately left it as a one-shot manual derive). <em>Addressed:
+                        converted to a managed <code>.toggleStyle(.button)</code> Toggle.</em></li>
+                    <li>&ldquo;That's not what we agreed on&hellip; there should be two symmetric alerts.&rdquo; The user
+                        enumerated four cases: (1) auto per-channel STF + add WB → convert to uniform, silent — OK; (2) WB
+                        active, toggle per-channel STF → warning — OK; (3) auto STF + WB, remove white balance → convert to
+                        per-channel, silent — &ldquo;verify this one&rdquo;; (4) <strong>manually-edited per-channel STF + add
+                        WB → there should be an alert — missing.</strong> The user wants the exclusion to be symmetric: a silent
+                        conversion when the affected STF is auto/recomputable, and an alert when explicit user work (a manual
+                        per-channel STF, or an enabled white balance) would be lost.</li>
+                    <li>&ldquo;Looks good&rdquo; &mdash; after the note removal, the editor managed toggle, and the symmetric
+                        alerts (all four cases), approved.</li>
+                </ul>
+            </div>
         </div>
 
         <h2 class="section">Appendix — resolution truth table</h2>
         <div class="appendix">
-            <p>Behaviour of every collision-creating action while <strong>Auto is engaged</strong>. &ldquo;Silent&rdquo;
-            means the model applies it directly; &ldquo;Confirm&rdquo; means the three-way dialog is shown first. In
-            <strong>manual</strong> mode none of these force anything &mdash; per-channel STF and white balance coexist.</p>
+            <p><strong>Corrected to the symmetric design</strong> (see Milestone&nbsp;6 review comments &mdash; the original
+            table was asymmetric and wrong). A per-channel STF and white balance both neutralize the colour cast, so the
+            rule resolves the collision <strong>symmetrically</strong>: a <strong>silent</strong> conversion when the
+            affected stretch is <em>auto</em> (nothing is lost), and a <strong>confirmation</strong> when explicit user work
+            would be lost. There are two symmetric confirmations &mdash; removing an enabled white balance (engaging
+            per-channel over WB), and converting a hand-built per-channel stretch (adding WB over it).</p>
             <table>
                 <thead>
                     <tr><th>Starting state</th><th>User action</th><th>Result</th><th>Prompt</th></tr>
@@ -816,8 +921,11 @@
                     <tr><td>Uniform auto STF, WB on</td><td>Engage per-channel → <em>Keep White Balance</em></td><td>Per-channel STF + WB coexist; drops to manual</td><td>Confirm chosen</td></tr>
                     <tr><td>Uniform auto STF, WB on</td><td>Engage per-channel → <em>Cancel</em></td><td>No change (uniform auto STF, WB on)</td><td>Confirm cancelled</td></tr>
                     <tr><td>Per-channel auto STF (WB off)</td><td>Hand-edit the curve</td><td>STF unchanged in value; Auto disengages → manual</td><td>&mdash;</td></tr>
-                    <tr><td>Manual per-channel STF, WB off</td><td>Turn WB on</td><td>Both coexist (manual freedom)</td><td>&mdash; (passive hint)</td></tr>
-                    <tr><td>Uniform auto STF, WB on</td><td>Turn WB off manually</td><td>WB off; STF still uniform auto</td><td>&mdash;</td></tr>
+                    <tr><td>Uniform auto STF, WB on</td><td>Turn WB off manually</td><td>STF re-derives → <strong>per-channel</strong> (symmetric to the enable-side yield)</td><td>Silent</td></tr>
+                    <tr><td><strong>Manual</strong> per-channel STF, WB off</td><td>Turn WB on</td><td>Converting to uniform would lose hand edits → confirm</td><td>Confirm (default: Convert to uniform)</td></tr>
+                    <tr><td>Manual per-channel STF, WB off</td><td>Turn WB on → <em>Convert Stretch to Uniform</em></td><td>Managed uniform auto STF + WB (hand edits discarded)</td><td>Confirm chosen</td></tr>
+                    <tr><td>Manual per-channel STF, WB off</td><td>Turn WB on → <em>Keep Both</em></td><td>Per-channel STF + WB coexist (manual)</td><td>Confirm chosen</td></tr>
+                    <tr><td>Manual per-channel STF, WB off</td><td>Turn WB on → <em>Cancel</em></td><td>No change (WB not added)</td><td>Confirm cancelled</td></tr>
                 </tbody>
             </table>
         </div>

@@ -78,6 +78,12 @@ public struct WhiteBalanceControlView: View
     /// The manual blue-channel gain.
     @State private var blue: Double
 
+    /// A pending request to add white balance that would collide with a hand-built
+    /// per-channel stretch, or `nil` when no confirmation is showing. Set when
+    /// ``applyWhiteBalance()`` gets one back from the model; the confirmation dialog
+    /// resolves it.
+    @State private var pendingRequest: ImageAdjustments.WhiteBalanceRequest?
+
     /// Creates the white-balance control.
     ///
     /// The manual gains are seeded from the image's adjustments when Manual is
@@ -179,22 +185,6 @@ public struct WhiteBalanceControlView: View
                     .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.blueSlider )
                     .help( "Blue Gain" )
             }
-
-            // When a managed per-channel stretch is neutralizing the colour cast, white
-            // balance is redundant and off: explain the cross-section state rather than
-            // leaving the section silently disabled.
-            if self.adjustments.perChannelStretchHandlesColorBalance
-            {
-                GridRow
-                {
-                    Text( "Off \u{2014} the per-channel stretch is handling colour balance." )
-                        .font( .caption )
-                        .foregroundStyle( .secondary )
-                        .fixedSize( horizontal: false, vertical: true )
-                        .gridCellColumns( 2 )
-                        .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.stretchHandlingNote )
-                }
-            }
         }
         // A change the control makes: route it through the model so the managed
         // mutual-exclusion rule is enforced (enabling white balance over a managed
@@ -217,18 +207,97 @@ public struct WhiteBalanceControlView: View
         {
             self.syncFromAdjustments()
         }
+        // Adding white balance over a hand-built per-channel stretch would discard that
+        // work, so confirm how to resolve it before committing anything.
+        .confirmationDialog( "Add White Balance?", isPresented: self.isConfirmingCoexistence, titleVisibility: .visible )
+        {
+            Button( "Convert Stretch to Uniform" )
+            {
+                self.resolve( .convertStretchToUniform )
+            }
+            .keyboardShortcut( .defaultAction )
+            .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.convertStretchButton )
+
+            Button( "Keep Both" )
+            {
+                self.resolve( .keepBoth )
+            }
+            .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.keepBothButton )
+
+            Button( "Cancel", role: .cancel )
+            {
+                self.cancelWhiteBalance()
+            }
+            .accessibilityIdentifier( AccessibilityIdentifier.WhiteBalanceControlView.cancelWhiteBalanceButton )
+        }
+        message:
+        {
+            Text( "A per-channel stretch and white balance both neutralize the colour cast. Convert the stretch to uniform so they compose, keep both (they may double up), or cancel." )
+        }
+    }
+
+    /// Whether the coexistence confirmation is showing, derived from whether a request is
+    /// pending. Dismissing it (tapping outside) cancels, reverting the picker.
+    private var isConfirmingCoexistence: Binding< Bool >
+    {
+        Binding(
+            get: { self.pendingRequest != nil },
+            // Revert only on a genuine dismissal (Cancel, or tapping outside): the
+            // affirmative buttons clear `pendingRequest` before the dialog dismisses, so
+            // reverting here too would transiently flip the picker back to "None" before the
+            // async resolve re-applies it.
+            set: { if $0 == false, self.pendingRequest != nil { self.cancelWhiteBalance() } }
+        )
     }
 
     /// Applies the control's white-balance selection through the model's mutual-exclusion
     /// rule, then re-renders. The rule may re-derive the stretch off the main actor
-    /// (enabling white balance over a managed per-channel stretch yields it to uniform),
-    /// so this is async.
+    /// (enabling white balance over a managed per-channel stretch yields it to uniform), so
+    /// this is async. When adding white balance would discard a hand-built per-channel
+    /// stretch, the model returns a request instead of committing — held for the
+    /// confirmation dialog.
     @MainActor
     private func applyWhiteBalance() async
     {
-        await self.adjustments.setWhiteBalance( self.whiteBalanceMode )
+        let request = await self.adjustments.setWhiteBalance( self.whiteBalanceMode )
+
+        if let request
+        {
+            self.pendingRequest = request
+        }
 
         self.reRender()
+    }
+
+    /// Commits the pending white-balance addition the way the user resolved the collision,
+    /// clears the request and re-renders.
+    ///
+    /// - Parameter resolution: The chosen outcome (convert the stretch to uniform, or keep both).
+    private func resolve( _ resolution: ImageAdjustments.WhiteBalanceResolution )
+    {
+        guard let request = self.pendingRequest
+        else
+        {
+            return
+        }
+
+        self.pendingRequest = nil
+
+        Task
+        {
+            await self.adjustments.resolve( request, as: resolution )
+
+            self.reRender()
+        }
+    }
+
+    /// Cancels a pending white-balance addition: nothing is committed, so the picker is
+    /// reverted to the model's (unchanged) white-balance state.
+    private func cancelWhiteBalance()
+    {
+        self.pendingRequest = nil
+
+        self.syncFromAdjustments()
     }
 
     /// The white-balance mode derived from the current selection and gains.
@@ -269,22 +338,4 @@ public struct WhiteBalanceControlView: View
         .frame( maxWidth: .infinity, alignment: .leading )
         .frame( maxHeight: .infinity, alignment: .top )
         .padding()
-}
-
-// A managed per-channel stretch is handling the colour balance, so white balance is off
-// and the inline note explains why.
-#Preview( "Stretch handling balance" )
-{
-    WhiteBalanceControlView(
-        adjustments:
-        {
-            let opened = ImageProcessor.Settings( normalize: .identity, stretch: .perChannel( red: .init( midtones: 0.2 ), green: .init( midtones: 0.3 ), blue: .init( midtones: 0.4 ) ) )
-
-            return ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
-        }(),
-        reRender: {}
-    )
-    .frame( maxWidth: .infinity, alignment: .leading )
-    .frame( maxHeight: .infinity, alignment: .top )
-    .padding()
 }

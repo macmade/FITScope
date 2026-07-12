@@ -591,7 +591,7 @@ struct ImageAdjustmentsTests
 
         #expect( adjustments.isAutoStretch )
 
-        await adjustments.setWhiteBalance( .auto )
+        _ = await adjustments.setWhiteBalance( .auto )
 
         #expect( adjustments.stretch      == Self.uniformSample.stretch )
         #expect( adjustments.normalize    == Self.uniformSample.normalize )
@@ -673,41 +673,77 @@ struct ImageAdjustmentsTests
         #expect( adjustments.isAutoStretch )
     }
 
-    /// Appendix row 7: in manual mode the exclusion does not apply — enabling white
-    /// balance with a per-channel stretch leaves the stretch untouched, and the two
-    /// coexist. The re-derivation is never consulted.
+    /// Enabling white balance over a hand-built (manual) per-channel stretch would discard
+    /// that work, so — unlike an auto stretch, which yields silently — nothing is committed
+    /// and a request is returned to confirm. Converting the stretch to uniform re-derives a
+    /// managed uniform mapping and adds white balance; keeping both adds white balance and
+    /// leaves the hand-built stretch, coexisting in manual mode; cancelling adds nothing.
     @Test
     @MainActor
-    func enablingWhiteBalanceInManualModeLeavesPerChannelStretchUntouched() async
+    func addingWhiteBalanceOverAManualPerChannelStretchConfirms() async throws
     {
-        let perChannel  = Processors.Stretch.STFParameters.perChannel( red: .init( midtones: 0.2 ), green: .init( midtones: 0.3 ), blue: .init( midtones: 0.4 ) )
-        let adjustments = ImageAdjustments()
+        let perChannel = Processors.Stretch.STFParameters.perChannel( red: .init( midtones: 0.2 ), green: .init( midtones: 0.3 ), blue: .init( midtones: 0.4 ) )
 
-        // A direct write is a manual edit, so this is a hand-built per-channel STF.
-        adjustments.stretch           = perChannel
-        adjustments.deriveAutoStretch = { _ in Self.uniformSample }
+        // Convert to uniform: re-derives a managed uniform stretch and adds white balance.
+        let converting = ImageAdjustments()
 
-        #expect( adjustments.isAutoStretch == false )
+        converting.stretch           = perChannel        // a direct write ⇒ manual
+        converting.deriveAutoStretch = { $0 ? Self.uniformSample : Self.perChannelSample }
 
-        await adjustments.setWhiteBalance( .auto )
+        let convertRequest = try #require( await converting.setWhiteBalance( .auto ) )
 
-        #expect( adjustments.stretch      == perChannel, "no forcing in manual mode" )
-        #expect( adjustments.whiteBalance == .auto )
-        #expect( adjustments.isAutoStretch == false )
+        // Nothing committed until resolved.
+        #expect( converting.stretch      == perChannel )
+        #expect( converting.whiteBalance == nil )
+
+        await converting.resolve( convertRequest, as: .convertStretchToUniform )
+
+        #expect( converting.stretch      == Self.uniformSample.stretch )
+        #expect( converting.whiteBalance == .auto )
+        #expect( converting.isAutoStretch, "converting re-derives a managed uniform stretch" )
+
+        // Keep both: white balance is added, the per-channel stretch is untouched, manual.
+        let keeping = ImageAdjustments()
+
+        keeping.stretch           = perChannel
+        keeping.deriveAutoStretch = { $0 ? Self.uniformSample : Self.perChannelSample }
+
+        let keepRequest = try #require( await keeping.setWhiteBalance( .auto ) )
+
+        await keeping.resolve( keepRequest, as: .keepBoth )
+
+        #expect( keeping.stretch      == perChannel, "the hand-built stretch is kept" )
+        #expect( keeping.whiteBalance == .auto )
+        #expect( keeping.isAutoStretch == false, "coexistence stays manual" )
+
+        // Cancel: not resolving leaves white balance off and the stretch untouched.
+        let cancelling = ImageAdjustments()
+
+        cancelling.stretch           = perChannel
+        cancelling.deriveAutoStretch = { $0 ? Self.uniformSample : Self.perChannelSample }
+
+        _ = try #require( await cancelling.setWhiteBalance( .auto ) )
+
+        #expect( cancelling.stretch      == perChannel )
+        #expect( cancelling.whiteBalance == nil, "white balance is not added on cancel" )
+        #expect( cancelling.isAutoStretch == false )
     }
 
-    /// Appendix row 8: turning white balance off while a managed uniform STF is active
-    /// simply removes white balance — the uniform STF is unchanged and stays managed.
+    /// Turning white balance off while a managed uniform stretch is active (one forced
+    /// uniform because white balance was on) silently re-derives it back to per-channel, now
+    /// that it no longer collides — the symmetric counterpart of the enable-side yield.
     @Test
     @MainActor
-    func disablingWhiteBalanceLeavesTheUniformStretchEngaged() async
+    func disablingWhiteBalanceReDerivesTheManagedStretchToPerChannel() async
     {
         let adjustments = Self.managedUniformWithWhiteBalance()
 
-        await adjustments.setWhiteBalance( nil )
+        #expect( adjustments.isAutoStretch )
+
+        _ = await adjustments.setWhiteBalance( nil )
 
         #expect( adjustments.whiteBalance == nil )
-        #expect( adjustments.stretch      == .uniform( .init( midtones: 0.3 ) ), "the stretch is untouched" )
+        #expect( adjustments.stretch      == Self.perChannelSample.stretch, "re-derived back to per-channel" )
         #expect( adjustments.isAutoStretch, "still managed" )
     }
 
@@ -727,7 +763,7 @@ struct ImageAdjustmentsTests
         #expect( request == nil )
         #expect( adjustments.stretch == Self.perChannelSample.stretch )
 
-        await adjustments.setWhiteBalance( .auto )
+        _ = await adjustments.setWhiteBalance( .auto )
 
         #expect( adjustments.whiteBalance == nil, "white balance is not enabled without a yield" )
         #expect( adjustments.stretch      == Self.perChannelSample.stretch )
@@ -747,7 +783,7 @@ struct ImageAdjustmentsTests
         // Non-nil settings, but with no stretch — the uniform yield cannot be produced.
         adjustments.deriveAutoStretch = { _ in ImageProcessor.Settings( normalize: .identity ) }
 
-        await adjustments.setWhiteBalance( .auto )
+        _ = await adjustments.setWhiteBalance( .auto )
 
         #expect( adjustments.whiteBalance == nil, "no usable yield ⇒ white balance stays off" )
         #expect( adjustments.stretch      == Self.perChannelSample.stretch, "the per-channel STF is untouched" )
@@ -774,7 +810,7 @@ struct ImageAdjustmentsTests
             return Self.uniformSample
         }
 
-        await adjustments.setWhiteBalance( .auto )
+        _ = await adjustments.setWhiteBalance( .auto )
 
         #expect( adjustments.stretch      == manualEdit, "the concurrent manual edit is preserved" )
         #expect( adjustments.isAutoStretch == false )
@@ -801,61 +837,46 @@ struct ImageAdjustmentsTests
         #expect( adjustments.whiteBalance == whiteBalance, "white balance is untouched" )
     }
 
-    /// The inline-note conditions reflect which control is neutralizing the colour cast
-    /// while managed: a managed per-channel stretch (white balance off) reports the stretch
-    /// is handling it, a managed uniform stretch with white balance on reports white balance
-    /// is handling it, and neither reports true in manual mode or with no managed stretch.
+    /// Applying a caller-derived managed stretch (the Screen Transfer editor's Auto, which
+    /// derives with its own clip/background) routes through the same rule: a uniform stretch
+    /// applies and engages while keeping white balance; a per-channel stretch applies when
+    /// white balance is off; and a per-channel stretch while white balance is on commits
+    /// nothing and returns a request to confirm.
     @Test
     @MainActor
-    func colorBalanceHandlingNotesReflectTheManagedState()
+    func requestManagedStretchAppliesOrConfirmsByLinkingAndWhiteBalance()
     {
-        // Managed per-channel, white balance off: the stretch is handling the balance.
-        let perChannel = Self.managedPerChannel()
+        // Uniform composes with white balance: applied and engaged, white balance kept.
+        let uniform = ImageAdjustments()
 
-        #expect( perChannel.perChannelStretchHandlesColorBalance )
-        #expect( perChannel.whiteBalanceHandlesColorBalance == false )
+        uniform.stretch      = .perChannel( red: .init( midtones: 0.2 ), green: .init( midtones: 0.3 ), blue: .init( midtones: 0.4 ) )
+        uniform.whiteBalance = .auto
 
-        // Managed uniform with white balance on: white balance is handling the balance.
-        let uniform = Self.managedUniformWithWhiteBalance()
+        let uniformRequest = uniform.requestManagedStretch( Self.uniformSample, perChannel: false )
 
-        #expect( uniform.whiteBalanceHandlesColorBalance )
-        #expect( uniform.perChannelStretchHandlesColorBalance == false )
+        #expect( uniformRequest == nil )
+        #expect( uniform.stretch      == Self.uniformSample.stretch )
+        #expect( uniform.isAutoStretch )
+        #expect( uniform.whiteBalance == .auto, "a uniform stretch composes with white balance" )
 
-        // Manual per-channel (a hand-set stretch): neither note applies — no forcing.
-        let manual = ImageAdjustments()
+        // Per-channel with white balance off: applied and engaged directly.
+        let applied = ImageAdjustments()
 
-        manual.stretch = .perChannel( red: .init( midtones: 0.2 ), green: .init( midtones: 0.3 ), blue: .init( midtones: 0.4 ) )
+        let appliedRequest = applied.requestManagedStretch( Self.perChannelSample, perChannel: true )
 
-        #expect( manual.perChannelStretchHandlesColorBalance == false )
-        #expect( manual.whiteBalanceHandlesColorBalance == false )
+        #expect( appliedRequest == nil )
+        #expect( applied.stretch == Self.perChannelSample.stretch )
+        #expect( applied.isAutoStretch )
 
-        // No stretch at all: neither note applies.
-        let none = ImageAdjustments()
+        // Per-channel with white balance on: nothing committed, a request is returned.
+        let collides = ImageAdjustments()
 
-        #expect( none.perChannelStretchHandlesColorBalance == false )
-        #expect( none.whiteBalanceHandlesColorBalance == false )
-    }
+        collides.whiteBalance = .auto
 
-    /// Engaging a uniform managed stretch (the Screen Transfer editor switching a managed
-    /// stretch to uniform) applies the derived uniform STF, engages managed mode, and —
-    /// since a uniform stretch composes with white balance — leaves white balance on.
-    @Test
-    @MainActor
-    func engageUniformStretchAppliesUniformAndKeepsWhiteBalance() async
-    {
-        // A manual per-channel stretch with white balance on.
-        let adjustments = ImageAdjustments()
+        let request = collides.requestManagedStretch( Self.perChannelSample, perChannel: true )
 
-        adjustments.stretch           = .perChannel( red: .init( midtones: 0.2 ), green: .init( midtones: 0.3 ), blue: .init( midtones: 0.4 ) )
-        adjustments.whiteBalance      = .auto
-        adjustments.deriveAutoStretch = { $0 ? Self.uniformSample : Self.perChannelSample }
-
-        #expect( adjustments.isAutoStretch == false )
-
-        await adjustments.engageUniformStretch()
-
-        #expect( adjustments.stretch      == Self.uniformSample.stretch )
-        #expect( adjustments.isAutoStretch, "the uniform stretch is now managed" )
-        #expect( adjustments.whiteBalance == .auto, "a uniform stretch composes with white balance" )
+        #expect( request != nil )
+        #expect( collides.stretch == nil, "nothing is committed until the collision is resolved" )
+        #expect( collides.whiteBalance == .auto )
     }
 }

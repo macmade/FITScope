@@ -280,16 +280,13 @@ struct STFEditorView: View
 
             HStack
             {
-                Button
-                {
-                    Task { await self.auto() }
-                }
-                label:
+                Toggle( isOn: self.autoBinding )
                 {
                     Label( "Auto", systemImage: "wand.and.stars" )
                 }
+                .toggleStyle( .button )
                 .accessibilityIdentifier( AccessibilityIdentifier.ScreenTransferWindowView.autoButton )
-                .help( "Auto-Compute the Screen Transfer From the Image" )
+                .help( "Manage the Screen Transfer Automatically" )
                 .disabled( self.isDeriving || self.image.renderer.canAutoScreenTransfer == false )
 
                 Spacer()
@@ -471,11 +468,37 @@ struct STFEditorView: View
         )
     }
 
-    /// Re-derives and applies a managed stretch at the requested linking through the
-    /// model, so the editor and inspector stay in step on both linking and managed state.
-    /// Switching to per-channel while white balance is active does not commit — it raises
-    /// the white-balance-removal confirmation; switching to uniform composes with white
-    /// balance silently.
+    /// The Auto (managed) toggle's binding: reads the model's engaged state, and engages or
+    /// disengages on change. Engaging derives at the current per-channel linking (with the
+    /// editor's Auto-Clip / Auto-Background) and applies through the model rule; disengaging
+    /// freezes the current stretch as a manual value. Reflects
+    /// ``ImageAdjustments/isAutoStretch``, so it stays visually off until an engage that
+    /// routes to the confirmation is resolved.
+    private var autoBinding: Binding< Bool >
+    {
+        Binding(
+            get: { self.adjustments.isAutoStretch },
+            set:
+            { engage in
+
+                if engage
+                {
+                    Task { await self.engageManaged( perChannel: self.perChannel ) }
+                }
+                else
+                {
+                    self.adjustments.disengageAutoStretch()
+                }
+            }
+        )
+    }
+
+    /// Re-derives and applies a managed stretch at the requested linking through the model,
+    /// so the editor and inspector stay in step on both linking and managed state. The
+    /// derivation uses the editor's tunable Auto-Clip / Auto-Background, off the main actor.
+    /// A per-channel result while white balance is active does not commit — it raises the
+    /// white-balance-removal confirmation; a uniform result composes with white balance
+    /// silently.
     ///
     /// - Parameter perChannel: The requested linking (per-channel when `true`).
     @MainActor
@@ -483,23 +506,18 @@ struct STFEditorView: View
     {
         self.isDeriving = true
 
-        guard perChannel
-        else
-        {
-            await self.adjustments.engageUniformStretch()
-
-            self.isDeriving = false
-
-            self.image.renderer.scheduleReRender()
-
-            return
-        }
-
-        let request = await self.adjustments.requestPerChannelAutoStretch()
+        let linking  = perChannel ? ImageRenderer.ScreenTransferLinking.automatic : .uniform
+        let settings = await self.image.renderer.autoScreenTransferSettings( linking: linking, shadowClipFactor: self.shadowClipFactor, targetBackground: self.targetBackground )
 
         self.isDeriving = false
 
-        guard let request
+        guard let settings
+        else
+        {
+            return
+        }
+
+        guard let request = self.adjustments.requestManagedStretch( settings, perChannel: perChannel )
         else
         {
             self.image.renderer.scheduleReRender()
@@ -690,60 +708,6 @@ struct STFEditorView: View
                 self.green      = Self.identityChannel
                 self.blue       = Self.identityChannel
         }
-    }
-
-    /// Derives an auto-STF from the image (off the main actor) using the current
-    /// auto settings and fills the sliders, then commits. Does nothing when no
-    /// derivation is available.
-    @MainActor
-    private func auto() async
-    {
-        self.isDeriving = true
-
-        // The editor's Auto respects the per-channel toggle: an unlinked derivation
-        // (per-channel for a colour image) when the toggle is on, and a
-        // colour-preserving uniform one when it is off — rather than letting the
-        // derived kind flip the toggle.
-        let linking = self.perChannel ? ImageRenderer.ScreenTransferLinking.automatic : .uniform
-        let derived = await self.image.renderer.autoScreenTransferSettings( linking: linking, shadowClipFactor: self.shadowClipFactor, targetBackground: self.targetBackground )
-
-        self.isDeriving = false
-
-        guard let settings = derived, let parameters = settings.stretch
-        else
-        {
-            return
-        }
-
-        // Apply the derived normalization alongside the stretch so the STF acts in
-        // the domain it was derived in (full-scale for a linear format, min/max
-        // otherwise); `commit()` writes the stretch and re-renders.
-        self.image.renderer.adjustments.normalize = settings.normalize
-
-        switch parameters
-        {
-            case .uniform( let channel ):
-
-                self.perChannel = false
-                self.master     = STF( channel )
-                self.red        = STF( channel )
-                self.green      = STF( channel )
-                self.blue       = STF( channel )
-
-            case .perChannel( let r, let g, let b ):
-
-                self.perChannel = true
-                self.master     = STF( .identity )
-                self.red        = STF( r )
-                self.green      = STF( g )
-                self.blue       = STF( b )
-
-            @unknown default:
-
-                return
-        }
-
-        self.commit()
     }
 
     /// Writes the current parameters into the image's adjustments (as a
