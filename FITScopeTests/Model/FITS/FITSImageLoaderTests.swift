@@ -72,6 +72,10 @@ struct FITSImageLoaderTests
 
         #expect( image.metadata.sections.isEmpty == false, "the loaded image must carry parsed header info" )
 
+        // FITS is raw sensor data, so cosmetic correction is on by default.
+        #expect( image.renderer.adjustments.cosmeticCorrection.isEnabled )
+        #expect( image.renderer.adjustments.baseline.cosmeticCorrection.isEnabled )
+
         await image.renderer.render()
 
         #expect( image.renderer.result != nil, "the loaded image's renderer must render" )

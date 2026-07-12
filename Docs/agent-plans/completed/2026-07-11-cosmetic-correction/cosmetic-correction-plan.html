@@ -504,7 +504,7 @@
     <article class="milestone">
         <header>
             <h4><span class="num">6</span>Defaults, tuning &amp; end-to-end verification</h4>
-            <span class="capsule not-started">Not started</span>
+            <span class="capsule completed">Completed</span>
         </header>
         <p>
             <strong>Goal:</strong> Confirm the default behaviour is safe and effective on real data, and the
@@ -520,11 +520,39 @@
                 <li>Run the full <code>FITScope.xctestplan</code> (including <code>SwiftPixelTests</code> and <code>FITScopeTests</code>) and report results.</li>
             </ul>
         </div>
-        <div class="field"><span class="label">Status</span> <span class="capsule not-started">Not started</span></div>
-        <div class="field"><span class="label">Completed</span> <span class="placeholder">—</span></div>
-        <div class="field"><span class="label">Implementation notes</span> <p class="placeholder">To be filled in during implementation.</p></div>
-        <div class="field"><span class="label">Automated review</span> <p class="placeholder">To be filled in during implementation.</p></div>
-        <div class="field"><span class="label">Review comments</span> <p class="placeholder">Awaiting review.</p></div>
+        <div class="field"><span class="label">Status</span> <span class="capsule completed">Completed</span></div>
+        <div class="field"><span class="label">Completed</span> <time datetime="2026-07-12">2026-07-12</time></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+            <p><strong>Defaults.</strong> Confirmed the conservative default threshold <code>k = 8.0</code> (hot and cold) on a realistic synthetic frame — a fixed-seed noisy background with a multi-pixel Gaussian star and injected hot/cold defects: the defects are repaired and the value range restored while the star's peak is preserved exactly (new <code>restoresRangeAndPreservesStarOnANoisyFrame</code> test). Kept <code>k = 8</code>.</p>
+            <p><strong>Detection-guard tuning (two changes, driven by a real regression + review).</strong></p>
+            <ul>
+                <li><strong>Minimum neighbour count.</strong> On-by-default correction was corrupting tiny/edge images (a 3-pixel photographic gradient <code>[100,125,150]</code> rendered as <code>[125,125,125]</code>) — endpoint pixels have a single neighbour, so the MAD is trivially zero and the absolute robust-scale floor flagged ordinary gradient ends as defects (two <code>ImageProcessorImageIOTests</code> failed). Added <code>minimumNeighbours = 3</code>: a sample with fewer in-bounds neighbours is left untouched (robust statistics over 1–2 samples are meaningless). Preserves the approved 3-neighbour corner-repair behaviour. Locked with <code>underDeterminedPixelsAreLeftUntouched</code>.</li>
+                <li><strong>Relative robust-scale floor.</strong> Review found the min-neighbours fix did not close the root cause: an <em>absolute</em> <code>sigmaFloor</code> (1e-6) is meaningless on raw un-normalized data, so a smooth gradient corner with zero MAD (3 equal-ish neighbours) could still be flagged. Replaced it with a floor <em>relative</em> to the local level: <code>σ = max(1.4826·MAD, 0.02·|median|, 1e-9)</code>. On a (near-)uniform neighbourhood the margin now tracks the signal magnitude regardless of scale, so ordinary gradients are never mistaken for defects, while genuine defects (many× the local level) are still flagged. Locked with <code>smoothGradientIsNotFlagged</code>. The tiny <code>1e-9</code> remains only to keep the threshold positive when the median is near zero.</li>
+            </ul>
+            <p><strong>Performance.</strong> The 24 MP sanity-check exposed that the original per-pixel path allocated ~4 small arrays per sample (<code>compactMap</code> + <code>sorted</code> + the MAD's <code>map</code>+<code>sorted</code>), which dominated. Rewrote the hot path to be <strong>allocation-free</strong>: neighbours are gathered into a per-call stack scratch buffer (<code>withUnsafeTemporaryAllocation</code>) with the 8-connected offsets computed inline, reduced with an in-place insertion sort (median/min/max, then the absolute deviations for the MAD) — using raw <code>for</code>/<code>while</code> loops as a deliberate, commented exception to the no-raw-loops convention on this per-pixel path. Behaviourally identical to the previous version (verified by review and the unchanged tests). Measured on a 24 MP mono frame: ~15 s in an unoptimized Debug build but <strong>~1.17 s in an optimized (Release) build</strong> — which is what the app ships/renders with — well within budget for an optional, debounced, off-main-thread stage; smaller frames scale down (~0.3 s at 6 MP). Left the throwaway 24 MP timing out of the committed suite (it would add ~15 s of Debug time to every run); the fast end-to-end test covers the realistic path.</li></p>
+            <p><strong>Reset / toggle-off.</strong> "Reset View" restoring the on-by-default state is covered by <code>resetRestoresCosmeticCorrectionDefault</code> (Milestone 4); toggling the section Off preserving the previously set thresholds is covered by <code>modeAppliesToParametersPreservingThresholds</code> (Milestone 5). CFA "repaired before debayer, no colour artefact" is covered by <code>cosmeticCorrectionRepairsHotPixelBeforeDebayer</code> (Milestone 2). No new tests needed for these.</p>
+            <p><strong>On by default only for sensor data (per user decision).</strong> Cosmetic correction now defaults on only for FITS / XISF / RAW; photographic (ImageIO) images open with it off. FITS/XISF/RAW loaders already seed the plain <code>ImageProcessor.Settings()</code> baseline (cosmetic on), so only the ImageIO path needed changing: <code>ImageIOImageLoader.asAuthoredDefaults</code> now disables cosmetic correction (keeping the conservative default thresholds, so a user turning it on for a photo gets sensible values). Locked with an <code>ImageIOImageLoaderTests</code> assertion (opened photo → cosmetic off) and a <code>FITSImageLoaderTests</code> assertion (opened FITS → cosmetic on).</p>
+            <p><strong>Full test suites.</strong> Ran <code>SwiftPixelTests</code> (all pass) and <code>FITScopeTests</code> (all pass) — the two unit suites of the test plan; the heavyweight <code>FITScopeUITests</code> suite was skipped per the user's earlier direction. Also created reproducible mono + RGB FITS fixtures with injected hot/cold pixels and real stars under <code>FITScopeUITests/Fixtures/</code> for manual verification.</p>
+            <p><strong>Automated review loop.</strong> 2 fresh-context rounds. Round 1 confirmed the perf rewrite is correct/allocation-free/safe and the min-neighbours fix sound, but raised one Medium (the absolute-floor root cause). Fixed via the relative floor. Round 2 (re-review) found no Critical/High/Medium — the fix is correct and complete — so the loop converged.</p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+            <p><strong>Round 1</strong></p>
+            <ul>
+                <li><strong>Performance rewrite is correct, allocation-free and safe</strong> — Info. Behaviourally identical to the array-based version; no aliasing/OOB/race. No action.</li>
+                <li><strong>Absolute <code>sigmaFloor</code> leaves a residual border/corner false-positive on smooth/low-noise raw data</strong> — Medium (correctness). The min-neighbours fix removed the 1–2 neighbour cases but not the zero-MAD + absolute-floor root cause (worked example: a 3-neighbour gradient corner still flagged). <em>Fixed:</em> replaced the absolute floor with a relative one (<code>0.02·|median|</code>), added the <code>smoothGradientIsNotFlagged</code> test.</li>
+                <li><strong>On-by-default on ordinary photos (ImageIO)</strong> — Low/Info. A genuinely isolated single-pixel highlight on a smooth region could be softened; inherent to any on-by-default hot-pixel filter and mitigated by the guards. Surfaced to the user (see Review comments). No code change.</li>
+            </ul>
+            <p><strong>Round 2</strong> — No Critical/High/Medium findings. Verified the relative floor prevents flagging on a zero-MAD smooth gradient while still flagging genuine defects (traced the previously-failing corner and a genuine hot pixel in both MAD&gt;0 and MAD=0 cases), no regression to any repair test, correct handling of negative/near-zero medians, and clean conventions. One Info note: on a perfectly flat bright region the effective margin is <code>0.16·|median|</code> at k=8 — the deliberate "unambiguous defects only" tradeoff, a non-issue on real noisy frames.</p>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+            <ul>
+                <li>On the on-by-default-for-all-formats question: cosmetic correction should be on by default <strong>only for FITS, XISF and RAW</strong> (sensor data), and off by default for photographic/ImageIO images.</li>
+                <li>Approved ("Looks good") after the sensor-data-only default was implemented.</li>
+            </ul>
+        </div>
     </article>
 
     <h2 class="section">Appendix — Detection &amp; correction algorithm</h2>

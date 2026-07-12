@@ -68,6 +68,11 @@ struct ImageIOImageLoaderTests
         #expect( image.renderer.adjustments.baseline.normalize == .identity )
         #expect( image.renderer.adjustments.hasAdjustments == false )
         #expect( Array( result.bytes.prefix( 3 ) ) == [ 10, 20, 100 ] )
+
+        // A photographic image is not raw sensor data, so cosmetic correction is off
+        // by default (it stays on by default only for FITS / XISF / RAW).
+        #expect( image.renderer.adjustments.cosmeticCorrection.isEnabled == false )
+        #expect( image.renderer.adjustments.baseline.cosmeticCorrection.isEnabled == false )
     }
 
     /// A 16-bit grayscale TIFF loads as a monochrome frame decoded at full precision.

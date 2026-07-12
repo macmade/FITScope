@@ -72,7 +72,18 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
     /// The as-authored baseline seeded into each photographic frame's renderer:
     /// the identity normalization, so the image opens showing its stored values
     /// unchanged rather than range-stretched.
-    private static let asAuthoredDefaults = ImageProcessor.Settings( normalize: .identity )
+    private static let asAuthoredDefaults: ImageProcessor.Settings =
+    {
+        // A photographic image is already-processed content, not raw sensor data,
+        // so cosmetic correction (a hot/cold pixel repair) is off by default here —
+        // it stays on by default only for FITS / XISF / RAW. The user can still turn
+        // it on for a photo; the conservative default thresholds are preserved.
+        var cosmeticCorrection = Processors.CosmeticCorrection.Parameters.default
+
+        cosmeticCorrection.isEnabled = false
+
+        return ImageProcessor.Settings( normalize: .identity, cosmeticCorrection: cosmeticCorrection )
+    }()
 
     /// The URL the file is (or will be) read from, retained for metadata.
     private let url: URL
