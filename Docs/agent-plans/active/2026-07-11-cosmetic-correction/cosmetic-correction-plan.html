@@ -403,7 +403,7 @@
     <article class="milestone">
         <header>
             <h4><span class="num">4</span>Add the tunable to <code>ImageAdjustments</code></h4>
-            <span class="capsule not-started">Not started</span>
+            <span class="capsule completed">Completed</span>
         </header>
         <p>
             <strong>Goal:</strong> Expose cosmetic correction as an observable, resettable model tunable, on by
@@ -420,11 +420,34 @@
                 <li>Extend <code>FITScopeTests/Model/ImageAdjustmentsTests.swift</code>: default is enabled/conservative; <code>settings</code> round-trips the value; <code>reset()</code> restores the default; <code>isModified(\.cosmeticCorrection)</code> tracks a change.</li>
             </ul>
         </div>
-        <div class="field"><span class="label">Status</span> <span class="capsule not-started">Not started</span></div>
-        <div class="field"><span class="label">Completed</span> <span class="placeholder">—</span></div>
-        <div class="field"><span class="label">Implementation notes</span> <p class="placeholder">To be filled in during implementation.</p></div>
-        <div class="field"><span class="label">Automated review</span> <p class="placeholder">To be filled in during implementation.</p></div>
-        <div class="field"><span class="label">Review comments</span> <p class="placeholder">Awaiting review.</p></div>
+        <div class="field"><span class="label">Status</span> <span class="capsule completed">Completed</span></div>
+        <div class="field"><span class="label">Completed</span> <time datetime="2026-07-12">2026-07-12</time></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+            <p>Implemented test-first (Swift Testing). Changes in <code>FITScope/Model/ImageAdjustments.swift</code>:</p>
+            <ul>
+                <li>Added <code>@Published public var cosmeticCorrection: Processors.CosmeticCorrection.Parameters = .default</code> next to <code>debayerAlgorithm</code>, documented (on-by-default, conservative).</li>
+                <li>Seeded it in <code>init( baseline:opened: )</code> from <code>opened.cosmeticCorrection</code>, copied it in <code>reset()</code> from the fresh baseline-seeded instance, and emitted it from the <code>settings</code> computed snapshot (in the same slot the <code>Settings</code> initializer expects, between <code>debayerMode</code> and <code>orientation</code>).</li>
+                <li>Re-aligned the <code>=</code> columns in the <code>init</code> and <code>reset</code> assignment blocks and the label column in the <code>settings</code> builder, since <code>cosmeticCorrection</code> is now the longest identifier. Verified no right-hand side changed.</li>
+            </ul>
+            <p><strong>Confirmed the generic keypath helpers need no change.</strong> <code>isModified(_:)</code> and <code>reset(_:)</code> are generic over <code>Equatable</code>, and <code>Parameters</code> is <code>Equatable</code>, so they cover the new field automatically. Also confirmed the field is safe against <code>hasAdjustments</code> (<code>settings != opened</code>): since it is seeded from <code>opened</code>, a freshly opened image is not reported as edited on its account.</p>
+            <p><strong>Tests.</strong> Added four to <code>ImageAdjustmentsTests.swift</code>: default is enabled (<code>.default</code>); a change round-trips through <code>settings</code>; <code>reset()</code> restores the default; and <code>isModified(\.cosmeticCorrection)</code> tracks false→true→false across a change and a per-field <code>reset(\.cosmeticCorrection)</code>.</p>
+            <p><strong>Verification.</strong> Genuine TDD red step (property present but not yet seeded/reset/emitted — the round-trip and reset tests failed) then green. The <code>ImageAdjustmentsTests</code> suite passes (34 tests); the pre-existing <code>resetRestoresEveryValueToItsDefault</code> / <code>adjustmentsBuildPipelineConfig</code> equality tests remain valid (both sides default to <code>.default</code>). Per the user's direction the full UI test plan was not run; the change is model-plumbing with no view surface, covered by these unit tests.</p>
+            <p><strong>Automated review loop.</strong> 1 fresh-context round; no Critical/High/Medium findings, so it converged immediately.</p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+            <p><strong>Round 1</strong> — No Critical/High/Medium findings. Verified the three-point threading is complete (seed / reset / emit), the <code>settings</code> labels and order match the <code>Settings</code> initializer, the <code>=</code>/label re-alignment is correct with no RHS drift, the field is safe against <code>hasAdjustments</code>, the generic helpers need no change, and no regression to the existing equality tests. Notes (deferred/no action):</p>
+            <ul>
+                <li><strong>No test for opening with a non-default cosmetic correction via the <code>opened:</code> parameter</strong> — Info (test coverage). Symmetric with every other field (none has such a per-field "opened" test), so consistent rather than a gap. Optional to add.</li>
+            </ul>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+            <ul>
+                <li><strong>"Looks good"</strong> — approved with no requested changes.</li>
+            </ul>
+        </div>
     </article>
 
     <article class="milestone">

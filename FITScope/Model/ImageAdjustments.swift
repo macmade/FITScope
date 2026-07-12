@@ -130,6 +130,11 @@ public final class ImageAdjustments: ObservableObject
     /// The demosaic algorithm used when debayering.
     @Published public var debayerAlgorithm: Processors.Debayer.Mode = .bilinear
 
+    /// The cosmetic-correction (hot/cold pixel repair) parameters, applied to the
+    /// raw samples before the channel-forming stage. Enabled with conservative
+    /// defaults, so isolated sensor defects are repaired when the image opens.
+    @Published public var cosmeticCorrection: Processors.CosmeticCorrection.Parameters = .default
+
     /// The net orientation (rotation + optional mirror) applied to the image.
     /// Identity by default, so the image opens as captured.
     @Published public var orientation: Processors.Orient.Orientation = .identity
@@ -174,22 +179,23 @@ public final class ImageAdjustments: ObservableObject
     {
         let opened = opened ?? baseline
 
-        self.baseline         = baseline
-        self.opened           = opened
-        self.normalize        = opened.normalize
-        self.stretch          = opened.stretch
-        self.whiteBalance     = opened.whiteBalance
-        self.invert           = opened.invert
-        self.brightness       = opened.brightness
-        self.contrast         = opened.contrast
-        self.levels           = opened.levels
-        self.curves           = opened.curves
-        self.colorBalance     = opened.colorBalance
-        self.hue              = opened.hue
-        self.saturation       = opened.saturation
-        self.debayer          = opened.debayer
-        self.debayerAlgorithm = opened.debayerMode
-        self.orientation      = opened.orientation
+        self.baseline           = baseline
+        self.opened             = opened
+        self.normalize          = opened.normalize
+        self.stretch            = opened.stretch
+        self.whiteBalance       = opened.whiteBalance
+        self.invert             = opened.invert
+        self.brightness         = opened.brightness
+        self.contrast           = opened.contrast
+        self.levels             = opened.levels
+        self.curves             = opened.curves
+        self.colorBalance       = opened.colorBalance
+        self.hue                = opened.hue
+        self.saturation         = opened.saturation
+        self.debayer            = opened.debayer
+        self.debayerAlgorithm   = opened.debayerMode
+        self.cosmeticCorrection = opened.cosmeticCorrection
+        self.orientation        = opened.orientation
 
         // The image opened auto-stretched — and so starts "Auto engaged" — exactly
         // when its opened state carries a stretch (the baseline is always unstretched,
@@ -211,20 +217,21 @@ public final class ImageAdjustments: ObservableObject
     {
         let defaults = ImageAdjustments( baseline: self.baseline )
 
-        self.normalize        = defaults.normalize
-        self.stretch          = defaults.stretch
-        self.whiteBalance     = defaults.whiteBalance
-        self.invert           = defaults.invert
-        self.brightness       = defaults.brightness
-        self.contrast         = defaults.contrast
-        self.levels           = defaults.levels
-        self.curves           = defaults.curves
-        self.colorBalance     = defaults.colorBalance
-        self.hue              = defaults.hue
-        self.saturation       = defaults.saturation
-        self.debayer          = defaults.debayer
-        self.debayerAlgorithm = defaults.debayerAlgorithm
-        self.orientation      = defaults.orientation
+        self.normalize          = defaults.normalize
+        self.stretch            = defaults.stretch
+        self.whiteBalance       = defaults.whiteBalance
+        self.invert             = defaults.invert
+        self.brightness         = defaults.brightness
+        self.contrast           = defaults.contrast
+        self.levels             = defaults.levels
+        self.curves             = defaults.curves
+        self.colorBalance       = defaults.colorBalance
+        self.hue                = defaults.hue
+        self.saturation         = defaults.saturation
+        self.debayer            = defaults.debayer
+        self.debayerAlgorithm   = defaults.debayerAlgorithm
+        self.cosmeticCorrection = defaults.cosmeticCorrection
+        self.orientation        = defaults.orientation
 
         // Track the baseline like every other field: reset returns to the unstretched
         // baseline, which is never auto-stretched. Set last so it wins over the
@@ -275,20 +282,21 @@ public final class ImageAdjustments: ObservableObject
     public var settings: ImageProcessor.Settings
     {
         ImageProcessor.Settings(
-            normalize:    self.normalize,
-            stretch:      self.stretch,
-            whiteBalance: self.whiteBalance,
-            invert:       self.invert,
-            brightness:   self.brightness,
-            contrast:     self.contrast,
-            levels:       self.levels,
-            curves:       self.curves,
-            colorBalance: self.colorBalance,
-            hue:          self.hue,
-            saturation:   self.saturation,
-            debayer:      self.debayer,
-            debayerMode:  self.debayerAlgorithm,
-            orientation:  self.orientation
+            normalize:          self.normalize,
+            stretch:            self.stretch,
+            whiteBalance:       self.whiteBalance,
+            invert:             self.invert,
+            brightness:         self.brightness,
+            contrast:           self.contrast,
+            levels:             self.levels,
+            curves:             self.curves,
+            colorBalance:       self.colorBalance,
+            hue:                self.hue,
+            saturation:         self.saturation,
+            debayer:            self.debayer,
+            debayerMode:        self.debayerAlgorithm,
+            cosmeticCorrection: self.cosmeticCorrection,
+            orientation:        self.orientation
         )
     }
 

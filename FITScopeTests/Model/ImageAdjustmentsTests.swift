@@ -879,4 +879,61 @@ struct ImageAdjustmentsTests
         #expect( collides.stretch == nil, "nothing is committed until the collision is resolved" )
         #expect( collides.whiteBalance == .auto )
     }
+
+    /// Cosmetic correction defaults to the enabled, conservative preset.
+    @Test
+    @MainActor
+    func cosmeticCorrectionDefaultsToEnabled()
+    {
+        let adjustments = ImageAdjustments()
+
+        #expect( adjustments.cosmeticCorrection == .default )
+        #expect( adjustments.cosmeticCorrection.isEnabled )
+    }
+
+    /// A change to the cosmetic-correction tunable flows into the settings snapshot.
+    @Test
+    @MainActor
+    func cosmeticCorrectionRoundTripsThroughSettings()
+    {
+        let adjustments = ImageAdjustments()
+        let custom      = Processors.CosmeticCorrection.Parameters( isEnabled: true, correctHot: true, hotThreshold: 5.0, correctCold: false, coldThreshold: 8.0 )
+
+        adjustments.cosmeticCorrection = custom
+
+        #expect( adjustments.settings.cosmeticCorrection == custom )
+    }
+
+    /// Resetting the view restores the cosmetic-correction default.
+    @Test
+    @MainActor
+    func resetRestoresCosmeticCorrectionDefault()
+    {
+        let adjustments = ImageAdjustments()
+
+        adjustments.cosmeticCorrection = Processors.CosmeticCorrection.Parameters( isEnabled: false, correctHot: true, hotThreshold: 8.0, correctCold: true, coldThreshold: 8.0 )
+
+        adjustments.reset()
+
+        #expect( adjustments.cosmeticCorrection == .default )
+    }
+
+    /// The per-field modification helper tracks a cosmetic-correction change against
+    /// the baseline.
+    @Test
+    @MainActor
+    func isModifiedTracksCosmeticCorrection()
+    {
+        let adjustments = ImageAdjustments()
+
+        #expect( adjustments.isModified( \.cosmeticCorrection ) == false )
+
+        adjustments.cosmeticCorrection = Processors.CosmeticCorrection.Parameters( isEnabled: false, correctHot: true, hotThreshold: 8.0, correctCold: true, coldThreshold: 8.0 )
+
+        #expect( adjustments.isModified( \.cosmeticCorrection ) )
+
+        adjustments.reset( \.cosmeticCorrection )
+
+        #expect( adjustments.isModified( \.cosmeticCorrection ) == false )
+    }
 }
