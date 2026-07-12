@@ -780,4 +780,24 @@ struct ImageAdjustmentsTests
         #expect( adjustments.isAutoStretch == false )
         #expect( adjustments.whiteBalance == .auto )
     }
+
+    /// Disengaging the managed mode (the Auto toggle turned off) freezes the current
+    /// stretch as a manual value: the stretch and white balance are untouched and only
+    /// the managed flag clears, so re-engaging simply re-derives.
+    @Test
+    @MainActor
+    func disengageAutoStretchFreezesTheCurrentStretchAsManual() async
+    {
+        let adjustments = Self.managedUniformWithWhiteBalance()
+        let stretch     = adjustments.stretch
+        let whiteBalance = adjustments.whiteBalance
+
+        #expect( adjustments.isAutoStretch )
+
+        adjustments.disengageAutoStretch()
+
+        #expect( adjustments.isAutoStretch == false )
+        #expect( adjustments.stretch      == stretch, "the stretch is frozen, not cleared" )
+        #expect( adjustments.whiteBalance == whiteBalance, "white balance is untouched" )
+    }
 }

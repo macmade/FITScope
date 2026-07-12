@@ -336,6 +336,14 @@ public final class ImageAdjustments: ObservableObject
         return true
     }
 
+    /// Disengages the managed "Auto engaged" mode, freezing the current stretch as a
+    /// manual value. The stretch, its normalization and white balance are all left
+    /// untouched, so the image is unchanged and re-engaging Auto simply re-derives.
+    public func disengageAutoStretch()
+    {
+        self.isAutoStretch = false
+    }
+
     /// Applies an app-derived `{ normalize, stretch }` and engages managed mode, without
     /// the assignment being treated as a manual edit — the guard around the ``stretch``
     /// write suppresses the observer that would otherwise disengage ``isAutoStretch``.

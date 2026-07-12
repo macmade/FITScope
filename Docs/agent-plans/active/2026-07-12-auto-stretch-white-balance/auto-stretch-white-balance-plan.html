@@ -499,7 +499,7 @@
             <div class="milestone-head">
                 <span class="mnum">3</span>
                 <h3>Auto toggle in the inspector</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">Replace the one-shot Auto button in the Stretch section with a persistent Auto (managed)
@@ -518,15 +518,72 @@
                 <li>Update / add the SwiftUI preview(s) for the toggle's on/off and colour/mono states.</li>
             </ul>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">&mdash;</p>
+            <p>2026-07-12</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Scope decision (confirmed with the user).</strong> The three-way white-balance-removal
+                        confirmation was pulled into this milestone so the toggle works end-to-end: engaging a per-channel
+                        Auto while white balance is on now shows the dialog here rather than silently no-op'ing until a later
+                        milestone. Milestone&nbsp;4 remains substantial (inline explanatory notes; presenting the same
+                        confirmation from the Screen Transfer editor's per-channel toggle).</li>
+                    <li><strong>Toggle.</strong> The one-shot Auto <code>Button</code> in <code>StretchControlView</code> is now
+                        a persistent <code>Toggle</code> (<code>.toggleStyle( .button )</code>) bound to
+                        <code>isAutoStretch</code> via <code>autoBinding</code>. Engaging dispatches an async
+                        <code>engageAuto()</code> (the derivation is off the main actor); disengaging calls the new model
+                        <code>disengageAutoStretch()</code> (freezes the current STF as manual &mdash; stretch and white balance
+                        untouched). The existing <code>canAutoScreenTransfer</code> gating and the deriving/busy state are kept;
+                        the Edit&hellip; button and the <code>autoButton</code>/<code>editButton</code> identifiers are unchanged
+                        (help text updated for a toggle).</li>
+                    <li><strong>Engage routes through the model rule.</strong> <code>engageAuto()</code> calls
+                        <code>adjustments.requestPerChannelAutoStretch()</code> (per-channel/automatic linking, matching the old
+                        one-shot Auto). When white balance is off it applies + engages directly; when on, the returned
+                        <code>PerChannelStretchRequest</code> is held in <code>@State</code> and the confirmation dialog
+                        (Remove&nbsp;WB default / Keep&nbsp;WB / Cancel) resolves it via <code>adjustments.resolve(_:as:)</code>.
+                        The old injected <code>autoScreenTransfer</code> closure and <code>applyAutoScreenTransfer()</code> are
+                        removed (superseded by the model path); <code>InspectorView</code>'s call site updated.</li>
+                    <li><strong>Echo-loop guard (the subtle part).</strong> The control mirrors the stretch in
+                        <code>@State</code> and writes it back on change. A managed engage sets the stretch through the model,
+                        which triggers <code>syncFromAdjustments()</code> and would then echo a <em>direct</em>
+                        <code>adjustments.stretch</code> write &mdash; whose <code>didSet</code> would disengage Auto. Added
+                        <code>guard self.stretchParameters != self.adjustments.stretch else { return }</code> to the write-back
+                        so the echo is skipped (the managed paths re-render explicitly). The legitimate Mode-picker write
+                        (None&nbsp;↔&nbsp;Screen&nbsp;Transfer) always differs, so it is never suppressed.</li>
+                    <li><strong>Tests / previews.</strong> Added a model unit test for <code>disengageAutoStretch()</code>
+                        (freezes stretch + white balance, clears the flag). Full <code>ImageAdjustmentsTests</code>: 29/29 via
+                        <code>xcodebuild</code>. The existing UI test <code>testStretchModeRevealsScreenTransferEditor</code>
+                        still passes (a <code>.button</code>-styled Toggle with the same identifier is still a queryable element).
+                        Added three previews (Auto engaged / Auto off / None) and three confirmation-button accessibility
+                        identifiers for later UI tests.</li>
+                    <li><strong>Automated review.</strong> One fresh-context round; converged with no Critical/High/Medium
+                        findings. It independently traced the echo guard safe across all three commit paths (engage-direct,
+                        remove-WB, keep-WB). One Low style fix applied; two Info notes deferred (below).</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>[Low &mdash; Fixed] Call/assignment spacing.</strong> <code>resolve(_:)</code> had a function
+                        call immediately followed by an assignment without a blank line, against the house convention; added the
+                        separating blank line.</li>
+                    <li><strong>[Info &mdash; Deferred] Toggle <code>disabled</code> gates both directions.</strong>
+                        <code>.disabled(isDerivingAuto || canAutoScreenTransfer() == false)</code> also gates disengage, which
+                        needs no derivation. Not reachable as a bug (<code>canAutoScreenTransfer</code> is fixed at load and true
+                        for any engageable image), so left as-is.</li>
+                    <li><strong>[Info &mdash; Deferred] Stale pending request.</strong> A pending request is not discarded on a
+                        concurrent adjustment change, but the dialog is effectively window-modal and its derived settings come
+                        from the image (not white balance), so it stays valid. Noted for the Milestone&nbsp;4 STF-editor entry
+                        point.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting review.</p>
+            <div class="notes">
+                <ul>
+                    <li>&ldquo;Looks good&rdquo; &mdash; approved as-is, no changes requested.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 4 -->

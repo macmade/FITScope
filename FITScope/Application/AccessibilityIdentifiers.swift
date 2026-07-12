@@ -475,13 +475,24 @@ public enum AccessibilityIdentifier
         /// The stretch-mode picker.
         public static let modePicker = "StretchControlView.modePicker"
 
-        /// The Auto button (shown only in screen-transfer mode) that derives and
-        /// applies an auto-STF from the image.
+        /// The Auto (managed) toggle (shown only in screen-transfer mode) that derives
+        /// and applies an app-managed auto-STF and reflects the engaged state.
         public static let autoButton = "StretchControlView.autoButton"
 
         /// The Edit button (shown only in screen-transfer mode) that opens the
         /// Screen Transfer editor window.
         public static let editButton = "StretchControlView.editButton"
+
+        /// The white-balance-removal confirmation's default action: apply the
+        /// per-channel stretch and turn white balance off.
+        public static let removeWhiteBalanceButton = "StretchControlView.removeWhiteBalanceButton"
+
+        /// The white-balance-removal confirmation's "keep" action: apply the per-channel
+        /// stretch, keep white balance, and drop to manual mode.
+        public static let keepWhiteBalanceButton = "StretchControlView.keepWhiteBalanceButton"
+
+        /// The white-balance-removal confirmation's cancel action: apply nothing.
+        public static let cancelWhiteBalanceRemovalButton = "StretchControlView.cancelWhiteBalanceRemovalButton"
     }
 
     /// Identifiers applied by ``FITScope/WhiteBalanceControlView``.
