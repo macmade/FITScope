@@ -33,10 +33,28 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
     /// The shared app model, also injected into the SwiftUI environment.
     public let appModel = AppModel()
 
-    /// The launch argument that makes the app back its preferences with an
-    /// isolated, wiped-on-launch defaults suite, so UI tests never read or mutate
-    /// the real user preferences.
-    public static let isolatedPreferencesArgument = "-uiTestingIsolatedDefaults"
+    #if DEBUG
+
+        /// The launch argument that makes the app back its preferences with an
+        /// isolated, wiped-on-launch defaults suite, so UI tests never read or mutate
+        /// the real user preferences.
+        ///
+        /// Test-only, so it is compiled out of a release build entirely.
+        public static let isolatedPreferencesArgument = "-uiTestingIsolatedDefaults"
+
+        /// The launch argument, followed by a single absolute file path, that tells a
+        /// UI-test launch to open that fixture at startup — the fast, powerbox-free
+        /// path the UI-test suite uses instead of driving the system Open panel.
+        ///
+        /// A shipping, sandboxed build cannot open an arbitrary path; a build-for-
+        /// testing launch can, because Xcode grants the app-under-test a temporary
+        /// read-only exception for the whole file system (alongside `get-task-allow`
+        /// and the testmanagerd exceptions). This is honoured only alongside
+        /// ``isolatedPreferencesArgument``. Test-only, so it is compiled out of a
+        /// release build entirely.
+        public static let uiTestingOpenFixtureArgument = "-uiTestingOpenFixture"
+
+    #endif
 
     /// The app's persisted user preferences, injected into the SwiftUI
     /// environment so the windows and the Preferences scene share one store.
@@ -67,44 +85,108 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
     /// - Returns: The preferences store to use for this launch.
     private static func makePreferences() -> Preferences
     {
-        guard ProcessInfo.processInfo.arguments.contains( Self.isolatedPreferencesArgument )
-        else
+        #if DEBUG
+
+            if ProcessInfo.processInfo.arguments.contains( Self.isolatedPreferencesArgument )
+            {
+                let suiteName       = "com.xs-labs.FITScope.uitests"
+                let sharedSuiteName = "com.xs-labs.FITScope.uitests.shared"
+                let defaults        = UserDefaults( suiteName: suiteName ) ?? .standard
+                let sharedDefaults  = UserDefaults( suiteName: sharedSuiteName ) ?? defaults
+
+                defaults.removePersistentDomain( forName: suiteName )
+                sharedDefaults.removePersistentDomain( forName: sharedSuiteName )
+
+                return Preferences( defaults: defaults, sharedDefaults: sharedDefaults )
+            }
+
+        #endif
+
+        return Preferences()
+    }
+
+    #if DEBUG
+
+        /// Whether the app is hosting a test bundle. When tests run, the app must
+        /// not present the modal Open panel at launch: it would block the main
+        /// thread before the test runner can begin executing tests.
+        ///
+        /// Test-only, so it is compiled out of a release build entirely.
+        private var isRunningTests: Bool
         {
-            return Preferences()
+            let environment = ProcessInfo.processInfo.environment
+
+            return environment[ "XCTestConfigurationFilePath" ] != nil
+                || environment[ "XCTestBundlePath" ]            != nil
+                || NSClassFromString( "XCTestCase" )            != nil
         }
 
-        let suiteName       = "com.xs-labs.FITScope.uitests"
-        let sharedSuiteName = "com.xs-labs.FITScope.uitests.shared"
-        let defaults        = UserDefaults( suiteName: suiteName ) ?? .standard
-        let sharedDefaults  = UserDefaults( suiteName: sharedSuiteName ) ?? defaults
+        /// Resolves the fixture a UI-test launch asked the app to open.
+        ///
+        /// Returns `nil` unless the launch is an isolated-defaults UI-test run carrying
+        /// ``uiTestingOpenFixtureArgument`` with an existing file path. Test-only, so it
+        /// is compiled out of a release build entirely.
+        ///
+        /// - Returns: The fixture URL to open, or `nil`.
+        private static func uiTestingFixtureURLToOpen() -> URL?
+        {
+            let arguments = ProcessInfo.processInfo.arguments
 
-        defaults.removePersistentDomain( forName: suiteName )
-        sharedDefaults.removePersistentDomain( forName: sharedSuiteName )
+            guard arguments.contains( Self.isolatedPreferencesArgument ),
+                  let flagIndex = arguments.firstIndex( of: Self.uiTestingOpenFixtureArgument )
+            else
+            {
+                return nil
+            }
 
-        return Preferences( defaults: defaults, sharedDefaults: sharedDefaults )
-    }
+            let valueIndex = arguments.index( after: flagIndex )
 
-    /// Whether the app is hosting a test bundle. When tests run, the app must
-    /// not present the modal Open panel at launch: it would block the main
-    /// thread before the test runner can begin executing tests.
-    private var isRunningTests: Bool
-    {
-        let environment = ProcessInfo.processInfo.environment
+            guard valueIndex < arguments.endIndex
+            else
+            {
+                return nil
+            }
 
-        return environment[ "XCTestConfigurationFilePath" ] != nil
-            || environment[ "XCTestBundlePath" ]            != nil
-            || NSClassFromString( "XCTestCase" )            != nil
-    }
+            let url = URL( fileURLWithPath: arguments[ valueIndex ] )
+
+            return FileManager.default.fileExists( atPath: url.path ) ? url : nil
+        }
+
+    #endif
 
     /// On launch with no file arguments, present the Open panel; chosen files
     /// open in a new window, Cancel leaves no window.
     public func applicationDidFinishLaunching( _ notification: Notification )
     {
-        guard self.isRunningTests == false
-        else
-        {
-            return
-        }
+        #if DEBUG
+
+            if let uiTestingFixture = Self.uiTestingFixtureURLToOpen()
+            {
+                // A UI-test launch asked us to open a fixture directly — the fast
+                // path that avoids the system Open panel. Mark the launch as having
+                // opened files so the panel below is suppressed, then route it
+                // through the normal open path once the scene has wired up its
+                // window-opening handler.
+                self.didOpenFilesAtLaunch = true
+
+                DispatchQueue.main.async
+                {
+                    self.appModel.openIntoActiveWindowOrNew( urls: [ uiTestingFixture ] )
+                }
+
+                return
+            }
+
+            // When hosting a test bundle, do not present the modal Open panel at
+            // launch: it would block the main thread before the test runner can
+            // begin executing tests.
+            guard self.isRunningTests == false
+            else
+            {
+                return
+            }
+
+        #endif
 
         DispatchQueue.main.asyncAfter( deadline: .now() + Self.backgroundUpdateCheckDelay )
         {

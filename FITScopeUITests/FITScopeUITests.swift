@@ -28,13 +28,13 @@ import XCTest
 /// accessibility identifiers (never display strings, except when *choosing* a
 /// menu/picker value, where the title is the only handle).
 ///
-/// **Opening files.** Most tests open a fixture the fast way — launching the app
-/// straight onto the file through LaunchServices (see
-/// ``UITestSupport/launchAppOpening(_:timeout:)``), the same path a Finder
-/// double-click takes, which grants the sandbox extension without driving the
-/// system Open panel. The slow, system-panel path is still covered on purpose:
-/// the "add file" and additional-open tests present and drive the real powerbox,
-/// so the panel flow itself is not left untested.
+/// **Opening files.** Most tests open a fixture the fast way — the app is
+/// launched in process (see ``UITestSupport/launchAppOpening(_:)``) with an
+/// argument naming the fixture's absolute path, which it opens directly (a
+/// build-for-testing app may read any path), so no system Open panel and no
+/// powerbox are involved. The slow, system-panel path is still covered on
+/// purpose: the "add file" and additional-open tests present and drive the real
+/// powerbox, so the panel flow itself is not left untested.
 ///
 /// The suite aims to cover the whole current UI: the core viewing flows, the
 /// windows and menu commands, the files sidebar and its context menu, the canvas
@@ -71,20 +71,12 @@ final class FITScopeUITests: XCTestCase
         self.continueAfterFailure = false
     }
 
-    override func tearDownWithError() throws
-    {
-        // Tests attach to an app launched out-of-band (via LaunchServices), which
-        // XCTest does not auto-terminate the way it does an app it launched itself.
-        // Terminate any surviving instance so it never lingers into the next test.
-        UITestSupport.terminateRunningInstances()
-    }
-
     // MARK: - Core viewing flows
 
     /// Verifies the UI-test launch hook: launching straight into a renderable
-    /// fixture brings up the image canvas. This proves the LaunchServices open path
-    /// and the canvas identifier work — the foundation the M0.2 smoke suite builds
-    /// on.
+    /// fixture brings up the image canvas. This proves the fast, in-process open
+    /// path and the canvas identifier work — the foundation the M0.2 smoke suite
+    /// builds on.
     @MainActor
     func testOpeningFixtureRendersCanvas() throws
     {
@@ -1082,8 +1074,12 @@ final class FITScopeUITests: XCTestCase
 
         XCTAssertTrue( picker.waitForExistence( timeout: 30 ), "The stretch mode picker did not appear." )
 
-        // Default is None — no Screen Transfer editor.
-        XCTAssertFalse( edit.exists, "The Screen Transfer editor was visible in None mode." )
+        // A floating-point image can open with an auto Screen Transfer already
+        // applied (the per-format auto-stretch-on-open preference defaults to on),
+        // so the starting mode is set to None explicitly rather than assumed. In
+        // None mode there is no Screen Transfer editor.
+        UITestSupport.selectPickerOption( picker, "None", in: app )
+        XCTAssertTrue( edit.waitForNonExistence( timeout: 5 ), "The Screen Transfer editor was visible in None mode." )
 
         UITestSupport.selectPickerOption( picker, "Screen Transfer", in: app )
         XCTAssertTrue( edit.waitForExistence( timeout: 5 ), "Screen Transfer mode did not reveal the Edit button." )

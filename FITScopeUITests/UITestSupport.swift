@@ -28,17 +28,40 @@ import XCTest
 /// Shared plumbing for the UI-test suite.
 ///
 /// The app is sandboxed (`com.apple.security.app-sandbox`) with only
-/// `files.user-selected.read-write`, so it cannot open an arbitrary file by
-/// path: the bytes have to be granted through the powerbox. Rather than weaken
-/// the sandbox or bundle fixtures, the tests open files exactly as a user would
-/// — by driving the standard Open panel. This grants the sandbox extension
-/// legitimately and keeps the shipping configuration untouched.
+/// `files.user-selected.read-write`, so a shipping build cannot open an arbitrary
+/// file by path: the bytes have to be granted through the powerbox. Two open
+/// paths are used, deliberately:
+///
+/// - **Most opens take the fast path** (see ``launchAppOpening(_:)``): the app is
+///   launched in process — the way `XCUIApplication` always has — with an
+///   argument naming the fixture's absolute path, and opens it directly. This
+///   works because a *build-for-testing* app is granted a temporary read-only
+///   exception for the whole file system (Xcode adds it to the test host,
+///   alongside `get-task-allow`), so no powerbox and no Open panel are involved.
+/// - **The Open-panel path stays covered on purpose** (see
+///   ``openAnotherFixture(_:in:timeout:)`` and ``dismissLaunchPanel(in:timeout:)``):
+///   the add-file, additional-open and no-file tests still present and drive the
+///   real powerbox, so the panel flow itself is not left untested.
+///
+/// The out-of-band `NSWorkspace`/LaunchServices launch this replaced crashed the
+/// XCUITest runner under CI; launching the app in process (as `XCUIApplication`
+/// does) is the path CI supports.
 ///
 /// The app under test does **not** have XCTest injected (only the runner does),
-/// so its launch-time `isRunningTests` guard is `false` and it presents its Open
-/// panel automatically at launch. The helpers below drive that panel.
+/// so its launch-time `isRunningTests` guard is `false`; it opens the named
+/// fixture (suppressing the launch panel) or, with no fixture, presents its Open
+/// panel. The helpers below launch the app and drive that panel.
 enum UITestSupport
 {
+    /// The launch argument that isolates the app's preferences. Must match
+    /// `AppDelegate.isolatedPreferencesArgument`.
+    private static let isolatedDefaultsArgument = "-uiTestingIsolatedDefaults"
+
+    /// The launch argument, followed by a fixture's absolute path, that asks the
+    /// app to open that fixture at launch. Must match
+    /// `AppDelegate.uiTestingOpenFixtureArgument`.
+    private static let openFixtureArgument = "-uiTestingOpenFixture"
+
     /// The identifier of the system Open panel's "Go to Folder" sheet.
     private static let goToFolderSheet = "GoToWindow"
 
@@ -78,118 +101,39 @@ enum UITestSupport
     {
         let app = XCUIApplication()
 
-        app.launchArguments.append( "-uiTestingIsolatedDefaults" )
+        app.launchArguments.append( self.isolatedDefaultsArgument )
         app.launch()
 
         return app
     }
 
-    /// The bundle identifier of the app under test. Used to *attach* to an instance
-    /// launched out-of-band (through LaunchServices) rather than launching it with
-    /// `XCUIApplication`.
-    static let appBundleID = "com.xs-labs.FITScope"
-
-    /// The freshly-built app under test.
+    /// Launches the app already opening the named fixture, the fast way.
     ///
-    /// It is resolved from the test bundle's own location in the build products
-    /// directory — `…/Products/<config>/<Runner>.app/Contents/PlugIns/<tests>.xctest`
-    /// — so the *just-built* binary is launched, not some other copy LaunchServices
-    /// might have registered elsewhere.
-    static var appURL: URL
-    {
-        Bundle( for: BundleToken.self ).bundleURL
-            .deletingLastPathComponent() // …/Contents/PlugIns
-            .deletingLastPathComponent() // …/Contents
-            .deletingLastPathComponent() // <Runner>.app
-            .deletingLastPathComponent() // Products/<config>
-            .appendingPathComponent( "FITScope.app" )
-    }
-
-    /// Launches the app already opening the named fixture, then attaches to it.
+    /// Instead of driving the system Open panel, the app is launched — in process,
+    /// the way `XCUIApplication` always launches it — with an argument naming the
+    /// fixture's absolute path, and opens it directly. A build-for-testing app is
+    /// granted a temporary read-only exception for the whole file system, so it
+    /// can read the fixture without the powerbox, and the launch Open panel is
+    /// suppressed for free (the open path sets the app's `didOpenFilesAtLaunch`
+    /// flag).
     ///
-    /// Instead of driving the system Open panel, the fixture is opened *with* the
-    /// app through LaunchServices — exactly as a Finder double-click would. That
-    /// grants the sandbox extension for the file and routes it through the app's
-    /// `application(_:open:)`, so no powerbox is involved and the whole launch-panel
-    /// dance disappears. Because the app is launched out-of-band, the test *attaches*
-    /// to it by bundle identifier rather than launching it through `XCUIApplication`.
+    /// This replaced an out-of-band `NSWorkspace`/LaunchServices launch that
+    /// crashed the XCUITest runner under CI; launching in process is the path CI
+    /// supports.
     ///
-    /// The launch Open panel the app would otherwise present is suppressed for free:
-    /// the document-open path sets the app's `didOpenFilesAtLaunch` flag, so the
-    /// panel is never shown.
-    ///
-    /// - Parameters:
-    ///   - name:    Fixture file name within the `Fixtures` directory.
-    ///   - timeout: How long to wait for the launch and for the app to come forward.
-    /// - Returns: The attached application proxy.
+    /// - Parameter name: Fixture file name within the `Fixtures` directory.
+    /// - Returns: The launched application proxy.
     @MainActor
-    static func launchAppOpening( _ name: String, timeout: TimeInterval = 30 ) throws -> XCUIApplication
+    static func launchAppOpening( _ name: String ) throws -> XCUIApplication
     {
-        // Clear any instance a previous test may have leaked, so the bundle-id
-        // attach below binds to the instance this call launches.
-        self.terminateRunningInstances()
+        let app = XCUIApplication()
 
-        try self.launch( opening: [ self.fixtureURL( name ) ], timeout: timeout )
-
-        let app = XCUIApplication( bundleIdentifier: self.appBundleID )
-
-        XCTAssertTrue( app.wait( for: .runningForeground, timeout: timeout ), "The app did not come to the foreground after launch." )
+        app.launchArguments.append( self.isolatedDefaultsArgument )
+        app.launchArguments.append( self.openFixtureArgument )
+        app.launchArguments.append( self.fixtureURL( name ).path )
+        app.launch()
 
         return app
-    }
-
-    /// Launches a fresh instance of the app under test through LaunchServices,
-    /// opening the given URLs, and blocks until the launch has been delivered.
-    ///
-    /// - Parameters:
-    ///   - urls:    The file URLs to open at launch.
-    ///   - timeout: How long to wait for LaunchServices to finish.
-    @MainActor
-    private static func launch( opening urls: [ URL ], timeout: TimeInterval ) throws
-    {
-        let configuration = NSWorkspace.OpenConfiguration()
-
-        configuration.arguments                     = [ "-uiTestingIsolatedDefaults" ]
-        configuration.activates                     = true
-        configuration.addsToRecentItems             = false
-        configuration.createsNewApplicationInstance = true
-
-        let semaphore = DispatchSemaphore( value: 0 )
-
-        // Written on the completion's background queue and read here only after the
-        // semaphore is signalled, so the wait provides the necessary barrier; the
-        // compiler cannot see that, hence `nonisolated(unsafe)`.
-        nonisolated( unsafe ) var openError: Error?
-
-        // The completion handler is delivered on a background queue, so blocking the
-        // calling thread on the semaphore here cannot deadlock the open.
-        NSWorkspace.shared.open( urls, withApplicationAt: self.appURL, configuration: configuration )
-        {
-            _, error in
-
-            openError = error
-
-            semaphore.signal()
-        }
-
-        let waited = semaphore.wait( timeout: .now() + timeout )
-
-        XCTAssertEqual( waited, .success, "LaunchServices did not finish opening within \( timeout )s." )
-
-        if let openError
-        {
-            throw openError
-        }
-    }
-
-    /// Force-terminates any running instance of the app under test, so an instance
-    /// a test launched (or leaked) never lingers into the next one.
-    static func terminateRunningInstances()
-    {
-        NSRunningApplication.runningApplications( withBundleIdentifier: self.appBundleID ).forEach
-        {
-            $0.forceTerminate()
-        }
     }
 
     /// Returns a descendant of `app` with the given accessibility identifier,
@@ -338,9 +282,9 @@ enum UITestSupport
     }
 
     /// Opens an *additional* fixture, through the real Open panel, once the app
-    /// already has a window. Most opens now take the faster LaunchServices path
-    /// (see ``launchAppOpening(_:timeout:)``); this deliberately drives the system
-    /// panel so the powerbox flow itself stays covered. No panel is showing at this
+    /// already has a window. Most opens now take the faster shared-container path
+    /// (see ``launchAppOpening(_:)``); this deliberately drives the system panel so
+    /// the powerbox flow itself stays covered. No panel is showing at this
     /// point, so it is requested first with the Open command (`⌘O`) and then driven.
     ///
     /// - Parameters:
@@ -399,9 +343,4 @@ enum UITestSupport
         XCTAssertTrue( field.waitForNonExistence( timeout: timeout ), "The Go-to-Folder sheet did not dismiss." )
         app.typeKey( .return, modifierFlags: [] )
     }
-
-    /// A token whose bundle is the UI-test bundle, used by ``appURL`` to locate the
-    /// built app relative to the test bundle on disk. (`Bundle(for:)` needs a class,
-    /// which an `enum` cannot provide for itself.)
-    private final class BundleToken {}
 }
