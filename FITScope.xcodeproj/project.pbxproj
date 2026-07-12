@@ -26,7 +26,7 @@
 		05282AF630014A4B0097206C /* SwiftRAW.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 05282AEE30014A3D0097206C /* SwiftRAW.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		05282AF730014A540097206C /* SwiftRAW.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05282AEE30014A3D0097206C /* SwiftRAW.framework */; };
 		05282AF830014A5A0097206C /* SwiftRAW.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05282AEE30014A3D0097206C /* SwiftRAW.framework */; };
-		05398CE32DEECF4F005904EC /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
+		05398CE32DEECF4F005904EC /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F487791F7710DA6CF7393B2 /* SwiftUtilities.framework */; };
 		053C2E752DF6EE3300DA637A /* Slider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 053C2E742DF6EE3200DA637A /* Slider.swift */; };
 		056E5C512DDF1356003254C7 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
 		056E5C522DDF1356003254C7 /* SwiftFITS.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -62,11 +62,11 @@
 		05A1B2C30000000000000B09 /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */; };
 		05A1B2C30000000000000C01 /* SwiftPixel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 050F38492DEEC2F000E84F97 /* SwiftPixel.framework */; };
 		05A1B2C30000000000000C02 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
-		05A1B2C30000000000000C03 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
+		05A1B2C30000000000000C03 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F487791F7710DA6CF7393B2 /* SwiftUtilities.framework */; };
 		05A1B2C30000000000000C04 /* SwiftPixel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 050F38492DEEC2F000E84F97 /* SwiftPixel.framework */; };
 		05A1B2C30000000000000C05 /* SwiftFITS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 056E5C452DDF104D003254C7 /* SwiftFITS.framework */; };
-		05A1B2C30000000000000C06 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; };
-		05A1B2C30000000000000C07 /* SwiftUtilities.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 05398CE22DEECF4F005904EC /* SwiftUtilities.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		05A1B2C30000000000000C06 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F487791F7710DA6CF7393B2 /* SwiftUtilities.framework */; };
+		05A1B2C30000000000000C07 /* SwiftUtilities.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 7F487791F7710DA6CF7393B2 /* SwiftUtilities.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		05AA5D942FF85F9E00FCF406 /* BinaryFloatingPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 475F241719EB1923148BA51A /* BinaryFloatingPoint.swift */; };
 		05AA5D952FF85F9E00FCF406 /* BinaryFloatingPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 475F241719EB1923148BA51A /* BinaryFloatingPoint.swift */; };
 		05AA61792FFEE8A900FCF406 /* SwiftXISF.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05AA61762FFEE89D00FCF406 /* SwiftXISF.framework */; };
@@ -131,9 +131,6 @@
 		05F15F0000000000000000A6 /* ImageInformation+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F6 /* ImageInformation+XISF.swift */; };
 		05F15F0000000000000000A7 /* LoadedImage+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F7 /* LoadedImage+XISF.swift */; };
 		05F15F0000000000000000A8 /* XISFImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F8 /* XISFImageLoader.swift */; };
-		05F15F0000000000000000B1 /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
-		05F15F0000000000000000BC /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
-		05F15F0000000000000000BD /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
 		05F15F0000000000000000A9 /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
 		05F15F0000000000000000AA /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
 		05F15F0000000000000000AB /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
@@ -142,6 +139,7 @@
 		05F15F0000000000000000AE /* XISFImageProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F1 /* XISFImageProperties.swift */; };
 		05F15F0000000000000000AF /* ImageProcessor+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FB /* ImageProcessor+XISF.swift */; };
 		05F15F0000000000000000B0 /* ImageProcessor+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FB /* ImageProcessor+XISF.swift */; };
+		05F15F0000000000000000B1 /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
 		05F15F0000000000000000B2 /* XISFPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FC /* XISFPreviewRenderer.swift */; };
 		05F15F0000000000000000B3 /* XISFPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FC /* XISFPreviewRenderer.swift */; };
 		05F15F0000000000000000B4 /* XISFPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FC /* XISFPreviewRenderer.swift */; };
@@ -150,9 +148,11 @@
 		05F15F0000000000000000B7 /* PreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FD /* PreviewRenderer.swift */; };
 		05F15F0000000000000000B8 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
 		05F15F0000000000000000B9 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 056E5C642DDFA8EB003254C7 /* UTType.swift */; };
+		05F15F0000000000000000BA /* STFDisplayFunctionMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E0 /* STFDisplayFunctionMappingTests.swift */; };
+		05F15F0000000000000000BC /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
+		05F15F0000000000000000BD /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
 		05F15F0000000000000000E2 /* XISFTestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E1 /* XISFTestData.swift */; };
 		05F15F0000000000000000E4 /* XISFImageLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E3 /* XISFImageLoaderTests.swift */; };
-		05F15F0000000000000000BA /* STFDisplayFunctionMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E0 /* STFDisplayFunctionMappingTests.swift */; };
 		05F15F0000000000000000E6 /* ImageProcessorXISFTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E5 /* ImageProcessorXISFTests.swift */; };
 		05F15F0000000000000000E9 /* XISFPreviewRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000E8 /* XISFPreviewRendererTests.swift */; };
 		05FB0B02000000000000FB02 /* BannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB0B01000000000000FB01 /* BannerView.swift */; };
@@ -177,10 +177,6 @@
 		05FB1000000000000000E202 /* APIKeyStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E201 /* APIKeyStoreTests.swift */; };
 		05FB1000000000000000E302 /* APIKeyFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E301 /* APIKeyFieldView.swift */; };
 		05FB1000000000000000E402 /* GeneralPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E401 /* GeneralPreferencesView.swift */; };
-		0AB10000000000000000E402 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
-		0AB10000000000000000E404 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
-		0AB10000000000000000E405 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
-		0AB10000000000000000E502 /* AutoStretchPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E501 /* AutoStretchPreferencesView.swift */; };
 		05FB1000000000000000E502 /* APIKeysPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E501 /* APIKeysPreferencesView.swift */; };
 		05FB1000000000000000E702 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000E701 /* Keychain.swift */; };
 		05FB1000000000000000F102 /* InfoField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB1000000000000000F101 /* InfoField.swift */; };
@@ -195,18 +191,22 @@
 		0AB10000000000000000D502 /* CurvesUnavailableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000D501 /* CurvesUnavailableView.swift */; };
 		0AB10000000000000000D602 /* CurveEditorCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000D601 /* CurveEditorCanvas.swift */; };
 		0AB10000000000000000D702 /* CurvesEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000D701 /* CurvesEditorView.swift */; };
+		0AB10000000000000000E002 /* STFActiveModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E001 /* STFActiveModelView.swift */; };
+		0AB10000000000000000E102 /* STFEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E101 /* STFEditorView.swift */; };
+		0AB10000000000000000E202 /* STFUnavailableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E201 /* STFUnavailableView.swift */; };
+		0AB10000000000000000E302 /* STFWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E301 /* STFWindowView.swift */; };
+		0AB10000000000000000E402 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
+		0AB10000000000000000E403 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
+		0AB10000000000000000E404 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
+		0AB10000000000000000E405 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
+		0AB10000000000000000E502 /* AutoStretchPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E501 /* AutoStretchPreferencesView.swift */; };
 		0AB10000000000000000F002 /* ColorControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000F001 /* ColorControlView.swift */; };
 		0AB10000000000000000FA02 /* OrientationControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000FA01 /* OrientationControlView.swift */; };
 		0AB10000000000000000FB02 /* BrightnessContrastControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000FB01 /* BrightnessContrastControlView.swift */; };
 		0AB10000000000000000FC02 /* SaturationControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000FC01 /* SaturationControlView.swift */; };
 		0AB10000000000000000FE02 /* LevelsWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000FE01 /* LevelsWindowView.swift */; };
-		0AB10000000000000000E002 /* STFActiveModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E001 /* STFActiveModelView.swift */; };
-		0AB10000000000000000E102 /* STFEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E101 /* STFEditorView.swift */; };
-		0AB10000000000000000E202 /* STFUnavailableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E201 /* STFUnavailableView.swift */; };
-		0AB10000000000000000E302 /* STFWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E301 /* STFWindowView.swift */; };
 		0AC10000000000000000F002 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */; };
 		0AC10000000000000000F003 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */; };
-		0AB10000000000000000E403 /* AutoStretchPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB10000000000000000E401 /* AutoStretchPreference.swift */; };
 		0AC10000000000000000F005 /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC10000000000000000F004 /* UITestSupport.swift */; };
 		0B8F6AE680E1526BC19F3E4A /* StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0750384B9B00F3AF15C9AFC /* StatusBarView.swift */; };
 		0CEEF32A7D5262CA32ADE85F /* CanvasOverlayStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F02EA5AA79E7AB973E861807 /* CanvasOverlayStyleTests.swift */; };
@@ -472,6 +472,13 @@
 			remoteGlobalIDString = 05B189E22FEAE7AD0056553A;
 			remoteInfo = FITScopePreviewExtension;
 		};
+		C26E0FB096FF02740E5C7790 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 17284595CC1624354A6F83F2 /* SwiftUtilities.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 05C527822DD8E36300843626;
+			remoteInfo = SwiftUtilities;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -527,7 +534,6 @@
 		05282A9E300113B00097206C /* License-SwiftUtilities.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftUtilities.txt"; sourceTree = "<group>"; };
 		05282A9F300113B00097206C /* License-SwiftXISF.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "License-SwiftXISF.txt"; sourceTree = "<group>"; };
 		05282ADA30014A3C0097206C /* SwiftRAW.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftRAW.xcodeproj; path = Submodules/SwiftAstro/Submodules/SwiftRAW/SwiftRAW.xcodeproj; sourceTree = "<group>"; };
-		05398CE22DEECF4F005904EC /* SwiftUtilities.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SwiftUtilities.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAA22DDDDDA800EF0C79 /* FITScope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FITScope.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEAB12DDDDDA900EF0C79 /* FITScopeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FITScopeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		053BEABB2DDDDDA900EF0C79 /* FITScopeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FITScopeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -660,9 +666,9 @@
 		05EE1000000000000000FA05 /* ImageMetadataSection+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataSection+FITS.swift"; sourceTree = "<group>"; };
 		05EE1000000000000000FA11 /* ImageMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataTests.swift; sourceTree = "<group>"; };
 		05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataFITSTests.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000E0 /* STFDisplayFunctionMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STFDisplayFunctionMappingTests.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000E1 /* XISFTestData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFTestData.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000E3 /* XISFImageLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageLoaderTests.swift; sourceTree = "<group>"; };
-		05F15F0000000000000000E0 /* STFDisplayFunctionMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STFDisplayFunctionMappingTests.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000E5 /* ImageProcessorXISFTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessorXISFTests.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000E8 /* XISFPreviewRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFPreviewRendererTests.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000F1 /* XISFImageProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageProperties.swift; sourceTree = "<group>"; };
@@ -670,10 +676,10 @@
 		05F15F0000000000000000F3 /* ImageMetadataProperty+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataProperty+XISF.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F4 /* ImageMetadataSection+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataSection+XISF.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F5 /* XISFImageInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageInfo.swift; sourceTree = "<group>"; };
-		05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "STFParameters+XISFDisplayFunction.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F6 /* ImageInformation+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageInformation+XISF.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F7 /* LoadedImage+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LoadedImage+XISF.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F8 /* XISFImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageLoader.swift; sourceTree = "<group>"; };
+		05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "STFParameters+XISFDisplayFunction.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000FA /* ImageProcessor+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageProcessor+FITS.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000FB /* ImageProcessor+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageProcessor+XISF.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000FC /* XISFPreviewRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFPreviewRenderer.swift; sourceTree = "<group>"; };
@@ -700,10 +706,6 @@
 		05FB1000000000000000E201 /* APIKeyStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIKeyStoreTests.swift; sourceTree = "<group>"; };
 		05FB1000000000000000E301 /* APIKeyFieldView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIKeyFieldView.swift; sourceTree = "<group>"; };
 		05FB1000000000000000E401 /* GeneralPreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GeneralPreferencesView.swift; sourceTree = "<group>"; };
-		0AB10000000000000000E401 /* AutoStretchPreference.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AutoStretchPreference.swift; sourceTree = "<group>"; };
-		0AB10000000000000000E501 /* AutoStretchPreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AutoStretchPreferencesView.swift; sourceTree = "<group>"; };
-		0AB10000000000000000E601 /* FITScopePreviewExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScopePreviewExtension.entitlements; sourceTree = "<group>"; };
-		0AB10000000000000000E701 /* FITScopeThumbnailExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScopeThumbnailExtension.entitlements; sourceTree = "<group>"; };
 		05FB1000000000000000E501 /* APIKeysPreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIKeysPreferencesView.swift; sourceTree = "<group>"; };
 		05FB1000000000000000E701 /* Keychain.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		05FB1000000000000000F101 /* InfoField.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InfoField.swift; sourceTree = "<group>"; };
@@ -722,15 +724,19 @@
 		0AB10000000000000000D501 /* CurvesUnavailableView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CurvesUnavailableView.swift; sourceTree = "<group>"; };
 		0AB10000000000000000D601 /* CurveEditorCanvas.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CurveEditorCanvas.swift; sourceTree = "<group>"; };
 		0AB10000000000000000D701 /* CurvesEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CurvesEditorView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E001 /* STFActiveModelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFActiveModelView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E101 /* STFEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFEditorView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E201 /* STFUnavailableView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFUnavailableView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E301 /* STFWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFWindowView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E401 /* AutoStretchPreference.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AutoStretchPreference.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E501 /* AutoStretchPreferencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AutoStretchPreferencesView.swift; sourceTree = "<group>"; };
+		0AB10000000000000000E601 /* FITScopePreviewExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScopePreviewExtension.entitlements; sourceTree = "<group>"; };
+		0AB10000000000000000E701 /* FITScopeThumbnailExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FITScopeThumbnailExtension.entitlements; sourceTree = "<group>"; };
 		0AB10000000000000000F001 /* ColorControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorControlView.swift; sourceTree = "<group>"; };
 		0AB10000000000000000FA01 /* OrientationControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationControlView.swift; sourceTree = "<group>"; };
 		0AB10000000000000000FB01 /* BrightnessContrastControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrightnessContrastControlView.swift; sourceTree = "<group>"; };
 		0AB10000000000000000FC01 /* SaturationControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaturationControlView.swift; sourceTree = "<group>"; };
 		0AB10000000000000000FE01 /* LevelsWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LevelsWindowView.swift; sourceTree = "<group>"; };
-		0AB10000000000000000E001 /* STFActiveModelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFActiveModelView.swift; sourceTree = "<group>"; };
-		0AB10000000000000000E101 /* STFEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFEditorView.swift; sourceTree = "<group>"; };
-		0AB10000000000000000E201 /* STFUnavailableView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFUnavailableView.swift; sourceTree = "<group>"; };
-		0AB10000000000000000E301 /* STFWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = STFWindowView.swift; sourceTree = "<group>"; };
 		0AC10000000000000000F001 /* AccessibilityIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityIdentifiers.swift; sourceTree = "<group>"; };
 		0AC10000000000000000F004 /* UITestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSupport.swift; sourceTree = "<group>"; };
 		0C5D104F82BB5EF35C693E8E /* ReticleOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReticleOverlayTests.swift; sourceTree = "<group>"; };
@@ -745,6 +751,7 @@
 		1338FBA7DD4E85EC331EE06F /* ImageIOImageProperties.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageIOImageProperties.swift; sourceTree = "<group>"; };
 		15A76B7A5EE76FA883E623C6 /* MoonPhaseSymbol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseSymbol.swift; sourceTree = "<group>"; };
 		170E04A3A163A9DF3923D3BA /* GraphSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphSeries.swift; sourceTree = "<group>"; };
+		17284595CC1624354A6F83F2 /* SwiftUtilities.xcodeproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "wrapper.pb-project"; name = SwiftUtilities.xcodeproj; path = Submodules/SwiftUtilities/SwiftUtilities.xcodeproj; sourceTree = "<group>"; };
 		173D76779066B7B4F578E096 /* ImageIOImageInfoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageIOImageInfoTests.swift; sourceTree = "<group>"; };
 		175A64B30C566653D8539B3F /* FITSImageLoaderGraphTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FITSImageLoaderGraphTests.swift; sourceTree = "<group>"; };
 		175A64B30C566653D8539B40 /* FITSImageLoaderRGBTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FITSImageLoaderRGBTests.swift; sourceTree = "<group>"; };
@@ -1069,6 +1076,7 @@
 				0587FF162DDE64E3005DECEF /* FITScopeUITests */,
 				056E5C4F2DDF134F003254C7 /* Frameworks */,
 				053BEAA32DDDDDA800EF0C79 /* Products */,
+				17284595CC1624354A6F83F2 /* SwiftUtilities.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1249,7 +1257,6 @@
 			isa = PBXGroup;
 			children = (
 				05C01AB32FEF2AD600FE62EC /* SwiftAstro.framework */,
-				05398CE22DEECF4F005904EC /* SwiftUtilities.framework */,
 				05B189C72FEAE7930056553A /* QuickLookThumbnailing.framework */,
 				05B189C92FEAE7930056553A /* Quartz.framework */,
 			);
@@ -1676,6 +1683,17 @@
 			path = PlateSolve;
 			sourceTree = "<group>";
 		};
+		0AB10000000000000000EE00 /* ScreenTransfer */ = {
+			isa = PBXGroup;
+			children = (
+				0AB10000000000000000E001 /* STFActiveModelView.swift */,
+				0AB10000000000000000E101 /* STFEditorView.swift */,
+				0AB10000000000000000E201 /* STFUnavailableView.swift */,
+				0AB10000000000000000E301 /* STFWindowView.swift */,
+			);
+			path = ScreenTransfer;
+			sourceTree = "<group>";
+		};
 		1E14CF146FA3005EA2F8FD4D /* Controls */ = {
 			isa = PBXGroup;
 			children = (
@@ -1741,6 +1759,14 @@
 			path = FITS;
 			sourceTree = "<group>";
 		};
+		5E42A9BDAFA3914DB1D6263E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				7F487791F7710DA6CF7393B2 /* SwiftUtilities.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		6317902288B95FCED889978F /* Canvas */ = {
 			isa = PBXGroup;
 			children = (
@@ -1771,17 +1797,6 @@
 				0AB10000000000000000FE01 /* LevelsWindowView.swift */,
 			);
 			path = Levels;
-			sourceTree = "<group>";
-		};
-		0AB10000000000000000EE00 /* ScreenTransfer */ = {
-			isa = PBXGroup;
-			children = (
-				0AB10000000000000000E001 /* STFActiveModelView.swift */,
-				0AB10000000000000000E101 /* STFEditorView.swift */,
-				0AB10000000000000000E201 /* STFUnavailableView.swift */,
-				0AB10000000000000000E301 /* STFWindowView.swift */,
-			);
-			path = ScreenTransfer;
 			sourceTree = "<group>";
 		};
 		83A3FB9C9D3342458B744782 /* Overlays */ = {
@@ -2219,6 +2234,10 @@
 					ProductGroup = 05AA61632FFEE89C00FCF406 /* Products */;
 					ProjectRef = 05AA61622FFEE89C00FCF406 /* SwiftXISF.xcodeproj */;
 				},
+				{
+					ProductGroup = 5E42A9BDAFA3914DB1D6263E /* Products */;
+					ProjectRef = 17284595CC1624354A6F83F2 /* SwiftUtilities.xcodeproj */;
+				},
 			);
 			projectRoot = "";
 			targets = (
@@ -2258,6 +2277,13 @@
 			fileType = wrapper.framework;
 			path = SwiftXISF.framework;
 			remoteRef = 05AA61752FFEE89D00FCF406 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		7F487791F7710DA6CF7393B2 /* SwiftUtilities.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = SwiftUtilities.framework;
+			remoteRef = C26E0FB096FF02740E5C7790 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -2905,11 +2931,11 @@
 		05B189D32FEAE7930056553A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FITScopeThumbnailExtension/FITScopeThumbnailExtension.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				CODE_SIGN_ENTITLEMENTS = FITScopeThumbnailExtension/FITScopeThumbnailExtension.entitlements;
 				INFOPLIST_FILE = FITScopeThumbnailExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FITScopeThumbnailExtension;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2927,11 +2953,11 @@
 		05B189D42FEAE7930056553A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FITScopeThumbnailExtension/FITScopeThumbnailExtension.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				CODE_SIGN_ENTITLEMENTS = FITScopeThumbnailExtension/FITScopeThumbnailExtension.entitlements;
 				INFOPLIST_FILE = FITScopeThumbnailExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FITScopeThumbnailExtension;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2949,11 +2975,11 @@
 		05B189F32FEAE7AD0056553A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FITScopePreviewExtension/FITScopePreviewExtension.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				CODE_SIGN_ENTITLEMENTS = FITScopePreviewExtension/FITScopePreviewExtension.entitlements;
 				INFOPLIST_FILE = FITScopePreviewExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FITScopePreviewExtension;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2971,11 +2997,11 @@
 		05B189F42FEAE7AD0056553A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FITScopePreviewExtension/FITScopePreviewExtension.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				CODE_SIGN_ENTITLEMENTS = FITScopePreviewExtension/FITScopePreviewExtension.entitlements;
 				INFOPLIST_FILE = FITScopePreviewExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FITScopePreviewExtension;
 				LD_RUNPATH_SEARCH_PATHS = (

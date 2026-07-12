@@ -238,7 +238,8 @@ public enum ImageProcessor
                 colorBalance:       self.colorBalance.isIdentity ? nil : self.colorBalance,
                 hue:                self.hue.isApproximatelyEqual( to: 0 ) ? nil : self.hue,
                 saturation:         self.saturation.isApproximatelyEqual( to: 1 ) ? nil : self.saturation,
-                orient:             self.orientation.isIdentity ? nil : self.orientation
+                orient:             self.orientation.isIdentity ? nil : self.orientation,
+                measure:            { label, stage in try Benchmark.run( label: label, output: Benchmarking.log, action: stage ) }
             )
         }
     }

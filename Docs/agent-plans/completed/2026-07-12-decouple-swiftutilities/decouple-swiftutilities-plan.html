@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decouple SwiftUtilities to a First-Level Submodule — Implementation Plan</title>
+    <style>
+        :root {
+            --bg:         #0f1117;
+            --bg-card:    #181b24;
+            --bg-card-2:  #1d212c;
+            --border:     #2a2f3c;
+            --text:       #e6e9ef;
+            --text-dim:   #9aa3b2;
+            --accent:     #5aa9ff;
+            --accent-dim: #2d3b52;
+            --code-bg:    #12151d;
+            --green:      #3fb950;
+            --green-dim:  #16351d;
+            --amber:      #d29922;
+            --amber-dim:  #3a2f12;
+            --gray:       #6b7280;
+            --gray-dim:   #262b36;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container { max-width: 940px; margin: 0 auto; padding: 48px 24px 96px; }
+
+        header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 36px; }
+        h1 { margin: 0 0 12px; font-size: 2.4rem; letter-spacing: -0.02em; }
+        .meta { color: var(--text-dim); font-size: 0.9rem; }
+        .meta code { color: var(--accent); }
+
+        h2.section {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text-dim);
+            margin: 48px 0 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        p { margin: 0 0 16px; }
+        .overview { color: var(--text); }
+
+        code {
+            font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.86em;
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 1px 5px;
+        }
+
+        .qa {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 4px 22px;
+            margin-bottom: 14px;
+        }
+        .qa .q { font-weight: 650; color: var(--text); margin: 16px 0 6px; }
+        .qa .a { color: var(--text-dim); margin: 0 0 16px; }
+        .qa .a::before { content: "\2192 "; color: var(--accent); }
+
+        .notes ul { margin: 0 0 16px; padding-left: 22px; }
+        .notes li { margin-bottom: 8px; color: var(--text-dim); }
+        .notes strong { color: var(--text); }
+
+        .phase-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent);
+            margin: 34px 0 14px;
+            font-weight: 700;
+        }
+
+        .milestone {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px 26px 8px;
+            margin-bottom: 20px;
+        }
+        .milestone-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+        .milestone-head h3 { margin: 0; font-size: 1.2rem; flex: 1 1 auto; }
+
+        .mnum {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 8px;
+            flex: 0 0 auto;
+        }
+
+        .capsule {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 650;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .capsule.not-started { background: var(--gray-dim);  color: #b6bdc9; border: 1px solid #3a414f; }
+        .capsule.in-progress { background: var(--amber-dim); color: var(--amber); border: 1px solid #5a4a1e; }
+        .capsule.completed   { background: var(--green-dim); color: var(--green); border: 1px solid #1f5a2c; }
+
+        .field-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 20px 0 6px;
+            font-weight: 650;
+        }
+        .goal { color: var(--text-dim); }
+
+        .milestone ul.tasks { margin: 6px 0 4px; padding-left: 4px; list-style: none; }
+        .milestone ul.tasks li { position: relative; padding-left: 28px; margin-bottom: 7px; color: var(--text-dim); }
+        .milestone ul.tasks li::before {
+            content: "";
+            position: absolute;
+            left: 2px;
+            top: 6px;
+            width: 15px;
+            height: 15px;
+            border: 1.5px solid var(--accent-dim);
+            border-radius: 4px;
+            background: var(--code-bg);
+        }
+
+        .placeholder { color: #6b7280; font-style: italic; margin: 4px 0 14px; }
+        .deps { color: var(--text-dim); font-size: 0.9rem; }
+        .deps strong { color: var(--text); }
+
+        .appendix h3 { margin: 26px 0 8px; font-size: 1.05rem; }
+        .appendix table { border-collapse: collapse; width: 100%; margin: 8px 0 20px; font-size: 0.9rem; }
+        .appendix th, .appendix td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+        .appendix th { background: var(--bg-card-2); color: var(--text); }
+        .appendix td { color: var(--text-dim); }
+        .appendix code { white-space: nowrap; }
+
+        footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Decouple SwiftUtilities to a First-Level Submodule</h1>
+            <div class="meta">
+                Generated &mdash; 2026-07-12<br>
+                Source &mdash; design discussion in this session (no source document on disk)
+            </div>
+        </header>
+
+        <p class="overview">
+            SwiftUtilities is currently a doubly-nested submodule, living only under
+            <code>Submodules/SwiftAstro/Submodules/SwiftPixel/Submodules/SwiftUtilities</code>. It is consumed by
+            <strong>SwiftPixel</strong> (four low-level types only) and by the <strong>FITScope app</strong> (those types
+            plus the AppKit/SwiftUI surface: About, Credits, GitHub updater, window helpers, <code>Pill</code>).
+            <strong>SwiftAstro does not use it in source at all</strong> &mdash; its <code>.xcodeproj</code> only links and
+            embeds <code>SwiftUtilities.framework</code> transitively so SwiftPixel works when SwiftAstro is built
+            standalone. The nesting, and SwiftAstro's <code>.xcodeproj</code> reaching <em>across</em> into SwiftPixel's
+            copy (<code>Submodules/SwiftPixel/Submodules/SwiftUtilities/&hellip;</code>), is the coupling to remove.
+        </p>
+        <p class="overview">
+            The goal is for SwiftUtilities to become a <strong>first-level submodule of FITScope</strong>, with no change
+            in built behavior. The approach is <em>not</em> to relocate the submodule (SwiftPixel legitimately needs it to
+            build standalone), but to <strong>remove SwiftPixel's dependency on SwiftUtilities entirely</strong>: adopt the
+            language-level <code>nonisolated(unsafe)</code> in place of the two <code>@unchecked Sendable</code> boxes,
+            hand per-stage benchmarking to the consumer through a <code>measure</code> hook (so no timing code lives in
+            SwiftPixel), and replace <code>RuntimeError</code> with structured error types. Once
+            SwiftPixel is SwiftUtilities-free, SwiftAstro's transitive embed disappears, and SwiftUtilities drops into
+            FITScope as a clean, app-only, first-level submodule. Work lands bottom-up across three repos
+            (SwiftPixel &rarr; SwiftAstro &rarr; FITScope); SwiftUtilities itself is not modified.
+        </p>
+
+        <h2 class="section">Questions &amp; answers</h2>
+
+        <div class="qa">
+            <p class="q">Why not simply relocate the SwiftUtilities submodule up to FITScope's top level?</p>
+            <p class="a">Because SwiftPixel and SwiftAstro are standalone repos with their own CI that builds their
+            <code>.xcodeproj</code> by relative path. There is one physical SwiftUtilities working copy today, referenced
+            from two parents by different relative paths &mdash; those paths differ per build context and can't all be
+            satisfied at once without risking two copies producing two <code>SwiftUtilities.framework</code> targets. The
+            robust fix is to remove SwiftPixel's dependency, not to move a shared nested copy.</p>
+
+            <p class="q">What does SwiftPixel actually use from SwiftUtilities?</p>
+            <p class="a">Only four low-level types: <code>RuntimeError</code> (103 sites), <code>UnsafeMutableSendable</code>
+            (9), <code>UnsafeSendable</code> (3), and <code>Benchmark</code> (1). None of the AppKit/SwiftUI surface. All
+            four are replaceable within SwiftPixel.</p>
+
+            <p class="q">How should the <code>UnsafeSendable</code> / <code>UnsafeMutableSendable</code> boxes be handled?</p>
+            <p class="a"><strong>Eliminate them</strong>, not copy them. They are pre-<code>nonisolated(unsafe)</code>
+            hand-rolls that box a raw pointer so it can be captured into a <code>@Sendable</code>
+            <code>concurrentPerform</code> closure. Replacing each with <code>nonisolated(unsafe) let</code> on the local
+            binding removes the wrapper types entirely (and the <code>.value</code> indirection). Verified to compile under
+            Swift 6.3.2 with complete concurrency for both patterns SwiftPixel uses; same safety profile.</p>
+
+            <p class="q">How should <code>Benchmark</code> be handled?</p>
+            <p class="a"><strong>No benchmarking code stays in SwiftPixel.</strong> (An earlier revision of this plan
+            proposed absorbing the timer into SwiftPixel; that was rejected during Milestone&nbsp;2 review.) Instead,
+            <code>PixelPipeline.Config</code>'s <code>benchmark: Bool</code> + <code>benchmarkOutput</code> sink are replaced
+            by a single consumer-supplied per-stage hook
+            <code>measure: ( @Sendable ( String, () throws -&gt; Void ) throws -&gt; Void )?</code>. SwiftPixel wraps each
+            stage in this hook when set (passing the stage label and the work to run) and does no timing or formatting of
+            its own. The consumer &mdash; FITScope, which keeps SwiftUtilities &mdash; supplies a <code>measure</code> that
+            forwards to <code>SwiftUtilities.Benchmark.run</code>, so the <code>"Benchmarking - {label}: {seconds} seconds"</code>
+            formatting lives on the consumer side.</p>
+
+            <p class="q">Should errors preserve their current messages, or is changing them acceptable?</p>
+            <p class="a">Changing them is acceptable and desired &mdash; make the API clear. Replace <code>RuntimeError</code>
+            with genuinely structured cases per failure kind. Tests that assert on messages get adapted.</p>
+
+            <p class="q">One error enum, or several?</p>
+            <p class="a">Several. A single monolithic enum is not required. Use domain-focused enums for runtime/data
+            failures (<code>PixelBufferError</code>, <code>PixelImageError</code>, <code>PixelInterleaveError</code>,
+            <code>PixelPipelineError</code>) plus per-processor nested <code>ValidationError</code> enums for config-time
+            constraints (Levels, Curves, CorrectGamma, STFParameters). This is the granular option, chosen over a coarser
+            two-type version because it makes each processor's failure contract explicit.</p>
+
+            <p class="q"><code>nonPositiveGamma</code> occurs in both Levels and CorrectGamma &mdash; share or duplicate?</p>
+            <p class="a">Keep it per-processor (duplicated case in each processor's nested <code>ValidationError</code>) for
+            clearer ownership, rather than factoring a shared case.</p>
+
+            <p class="q">Are submodule changes to SwiftPixel and SwiftAstro approved?</p>
+            <p class="a">Yes. The plan deliberately modifies the SwiftPixel and SwiftAstro repositories (source and
+            <code>.xcodeproj</code>) and updates FITScope's <code>.gitmodules</code>. SwiftUtilities itself is not
+            modified.</p>
+        </div>
+
+        <h2 class="section">Notes</h2>
+        <div class="notes">
+            <ul>
+                <li><strong>Bottom-up landing, one repo per phase.</strong> Submodule pointers flow upward, so land in
+                    SwiftPixel first, then bump and adjust SwiftAstro, then FITScope. Each phase is independently green and
+                    is a separate repository commit. Per the working agreement, <strong>the user commits</strong> &mdash;
+                    this plan never commits or pushes.</li>
+                <li><strong>Changing thrown types is control-flow-safe.</strong> There are zero
+                    <code>as RuntimeError</code> / <code>as? RuntimeError</code> / <code>is RuntimeError</code> pattern
+                    matches anywhere in FITScope, SwiftAstro, or SwiftPixel &mdash; every caller uses a generic
+                    <code>catch</code>. Only <em>assertions on messages</em> break, and those are all in-repo per phase.</li>
+                <li><strong>Test impact.</strong> <code>SwiftPixelTests</code> has ~45 error assertions across 16 files
+                    (updated in Milestone&nbsp;3). <code>FITScopeTests</code> has <strong>0</strong>
+                    <code>RuntimeError</code> references, so FITScope-side test churn is expected to be near-zero.</li>
+                <li><strong>New error types must match <code>RuntimeError</code>'s conformances</strong> where callers rely
+                    on them: <code>RuntimeError: LocalizedError, CustomStringConvertible, Equatable</code>. The new types
+                    conform to <code>LocalizedError</code> (so <code>localizedDescription</code> keeps working) and
+                    <code>Equatable</code> (tests compare).</li>
+                <li><strong>FITScope owns the framework product after Phase&nbsp;2 &mdash; the single riskiest step.</strong>
+                    FITScope currently has <em>no</em> project reference to SwiftUtilities; it inherits
+                    <code>SwiftUtilities.framework</code> from the nested project via <code>BUILT_PRODUCTS_DIR</code>. Once
+                    SwiftAstro's reference is removed, FITScope must add its own direct project reference + target
+                    dependency, or the link breaks.</li>
+                <li><strong>Preserve the pinned commit.</strong> When adding SwiftUtilities as a first-level submodule in
+                    FITScope, pin it to the same commit the nested copy uses today (<code>d138534</code>) so behavior is
+                    unchanged.</li>
+                <li><strong>FITScope keeps SwiftUtilities.</strong> FITScope's own ~47 <code>RuntimeError</code> uses and
+                    the AppKit/SwiftUI surface are unaffected &mdash; FITScope continues to depend on SwiftUtilities;
+                    only its <em>submodule location</em> and <em>project reference</em> change.</li>
+                <li><strong>Keep Xcode and SwiftPM in sync.</strong> SwiftPixel has both a <code>.xcodeproj</code> and a
+                    <code>Package.swift</code>; both must drop SwiftUtilities. SwiftAstro's <code>Package.swift</code> never
+                    referenced SwiftUtilities directly, and FITScope is Xcode-only, so no SwiftPM surprises are expected
+                    (confirm <code>Package.resolved</code>).</li>
+                <li><strong>Verification per phase.</strong> Build via <code>xcodebuild</code> (Debug + Release) plus
+                    <code>swift build</code> where a package exists, run the relevant test suite, and for FITScope launch
+                    the app and exercise the About / Credits / GitHub-updater UI.</li>
+            </ul>
+        </div>
+
+        <h2 class="section">Milestones</h2>
+
+        <div class="phase-label">Phase 1 &mdash; SwiftPixel (make it SwiftUtilities-free)</div>
+
+        <!-- Milestone 1 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">1</span>
+                <h3>Replace the concurrency boxes with <code>nonisolated(unsafe)</code></h3>
+                <span class="capsule completed">Completed</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Remove SwiftPixel's use of <code>UnsafeSendable</code> / <code>UnsafeMutableSendable</code> by
+                adopting the language-level <code>nonisolated(unsafe)</code> escape hatch at the 12 capture sites. Lowest-risk
+                first step; leaves the SwiftUtilities dependency in place for now.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Convert the 12 sites from <code>let x = UnsafeMutableSendable( $0 )</code> + <code>x.value</code> to
+                    <code>nonisolated(unsafe) let x = $0</code> + direct access, across <code>PixelUtilities.swift</code>,
+                    <code>Processors/Orient.swift</code>, <code>ColorBalance.swift</code>, <code>Debayer+VNG.swift</code>,
+                    <code>Hue.swift</code>, <code>Saturation.swift</code>, <code>Debayer+Bilinear.swift</code>,
+                    <code>Stretch.swift</code>, <code>MonoToRGB.swift</code>.</li>
+                <li>Handle the buffer-pointer-construction case equivalently (<code>Stretch.swift:152</code> wraps
+                    <code>UnsafeMutableBufferPointer( start:count: )</code>).</li>
+                <li>Confirm no remaining references to either box type in SwiftPixel.</li>
+                <li>Build SwiftPixel (<code>xcodebuild</code> Debug + Release, complete concurrency) and run the test suite;
+                    confirm green.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span></p>
+            <div class="field-label">Completed</div>
+            <p>2026-07-12</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>All 12 planned source capture sites converted</strong> from
+                        <code>UnsafeSendable</code> / <code>UnsafeMutableSendable</code> to the language-level
+                        <code>nonisolated( unsafe ) let</code> binding, dropping the <code>.value</code> indirection:
+                        <code>PixelUtilities.swift</code> (<code>resultBuffer</code>, <code>base</code>),
+                        <code>Debayer+Bilinear.swift</code> (<code>input</code>, <code>output</code>),
+                        <code>Debayer+VNG.swift</code> (<code>output</code>, <code>buffer</code>),
+                        <code>Orient.swift</code> (<code>sendableResult</code>),
+                        <code>Saturation.swift</code>, <code>Hue.swift</code>, <code>ColorBalance.swift</code>
+                        (<code>pixels</code>), <code>MonoToRGB.swift</code> (<code>sendableRGBBuffer</code>), and
+                        <code>Stretch.swift</code> (<code>pixels</code>).</li>
+                    <li><strong>Stretch's buffer-pointer-construction case</strong> was handled by keeping the freshly
+                        built <code>UnsafeMutableBufferPointer( start:count: )</code> and simply dropping the box wrapper
+                        (<code>nonisolated( unsafe ) let pixels = UnsafeMutableBufferPointer(&hellip;)</code>).</li>
+                    <li><strong>A 13th, identical capture site was found beyond the plan's list</strong> &mdash;
+                        <code>SwiftPixelTests/PixelUtilities-ReadRawPixels.swift:234</code> used the same
+                        <code>UnsafeMutableSendable( $0 )</code> pattern in the <code>parallelOrSerial</code> coverage
+                        test. It was converted too, so the codebase has zero box references. The test file keeps
+                        <code>import SwiftUtilities</code> for its <code>RuntimeError</code> assertions (removed later in
+                        Milestones&nbsp;3&ndash;4).</li>
+                    <li><strong>Semantics are unchanged.</strong> The boxes were pure <code>@unchecked Sendable</code>
+                        escape hatches; <code>nonisolated(unsafe)</code> suppresses the same compiler check without
+                        altering runtime behaviour. Every mutable site writes through the pointer's
+                        <code>nonmutating</code> subscript, so a <code>let</code> binding is a valid mutable target and no
+                        site reassigned the binding itself. The disjoint-index write pattern that makes the parallel loops
+                        race-free is untouched.</li>
+                    <li><strong>The repo formatter normalised</strong> the attribute to the spaced
+                        <code>nonisolated( unsafe )</code> form to match house style.</li>
+                    <li><strong>Verification.</strong> <code>xcodebuild</code> Debug and Release both
+                        <code>BUILD SUCCEEDED</code> under Swift&nbsp;6 language mode with
+                        <code>-warnings-as-errors</code>; the full <code>SwiftPixel</code> test suite reported
+                        <code>** TEST SUCCEEDED **</code> (including the parallel-heavy <code>largeRoundTrip_*</code>,
+                        <code>sendableHandoff</code>, and <code>parallelOrSerialCoversAllIndices</code> tests). Confirmed
+                        <code>grep</code> shows no remaining <code>UnsafeSendable</code> / <code>UnsafeMutableSendable</code>
+                        references in SwiftPixel source or tests.</li>
+                    <li><strong>Automated review loop: 1 round, converged.</strong> A fresh-context reviewer verified all
+                        13 sites and reported no in-scope findings.</li>
+                </ul>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Round 1 &mdash; no findings.</strong> An independent fresh-context reviewer read the box
+                        definitions and every changed site, cross-checked all 13 capture sites against their
+                        <code>parallelOrSerial</code> callers, and confirmed: binding equivalence (box <code>.value</code>
+                        vs. <code>nonisolated(unsafe) let</code>), <code>let</code> is a valid mutable pointer target with
+                        no site reassigning the binding, zero missed or over-eager <code>.value</code> replacements,
+                        pre-existing name-shadowing (<code>output</code>/<code>buffer</code>) still resolves correctly for
+                        the outer <code>return</code> values, correct binding types at each site, and an unchanged
+                        disjoint-write (race-free) pattern. Both the framework and test targets compile cleanly. Nothing to
+                        fix. <em>Resolution: no action required.</em></li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting review.</p>
+        </div>
+
+        <!-- Milestone 2 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">2</span>
+                <h3>Absorb the benchmark timer</h3>
+                <span class="capsule completed">Completed</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Remove the single dependency on <code>SwiftUtilities.Benchmark</code> by deleting <em>all</em>
+                in-pipeline timing and formatting from SwiftPixel and delegating per-stage measurement to a
+                consumer-supplied hook. SwiftPixel performs no benchmarking itself; the consumer (FITScope, which keeps
+                SwiftUtilities) provides the timing when it wants it. <strong>Revised after review</strong> &mdash; the
+                original "absorb the timer into SwiftPixel" approach was rejected (see Review comments); no benchmark code
+                lives in SwiftPixel.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Replace <code>Config.benchmark: Bool</code> and the <code>benchmarkOutput</code> string sink with a
+                    single optional per-stage hook
+                    <code>measure: ( @Sendable ( String, () throws -&gt; Void ) throws -&gt; Void )?</code> (default
+                    <code>nil</code>).</li>
+                <li>In <code>PixelPipeline.run</code>'s <code>processors().forEach</code> loop, wrap each stage with
+                    <code>measure</code> when set (passing <code>processor.description</code> and the stage closure), else
+                    run the stage directly. Delete the internal <code>ContinuousClock</code> / <code>%.9f</code> /
+                    <code>"Benchmarking - {label}: {seconds} seconds"</code> formatting entirely.</li>
+                <li>Update <code>SwiftPixelTests</code>: the <code>config()</code> helper drops
+                    <code>benchmark</code>/<code>benchmarkOutput</code> and gains <code>measure</code>; rewrite the two
+                    benchmark tests to cover hook-absent-by-default and hook-wraps-each-stage-once.</li>
+                <li>Build + test SwiftPixel; confirm no <code>Benchmark</code> symbol remains and rendering is unchanged
+                    when <code>measure</code> is <code>nil</code>. (FITScope's <code>measure</code> wiring &mdash; forwarding
+                    to <code>SwiftUtilities.Benchmark.run</code> &mdash; lands in Milestone&nbsp;6.)</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span></p>
+            <div class="field-label">Completed</div>
+            <p>2026-07-12</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>First attempt reverted.</strong> Following the plan's original wording, a copied timing
+                        helper was added to <code>PixelPipeline</code>. The user rejected this (see Review comments): no
+                        benchmark code belongs in SwiftPixel. That change was reverted with
+                        <code>git checkout</code> and the design below was agreed before re-implementing.</li>
+                    <li><strong>Config API replaced.</strong> <code>Config.benchmark: Bool</code> and
+                        <code>Config.benchmarkOutput: ( @Sendable ( String ) -&gt; Void )?</code> were both removed and
+                        replaced by a single optional per-stage hook
+                        <code>measure: ( @Sendable ( String, () throws -&gt; Void ) throws -&gt; Void )?</code> (default
+                        <code>nil</code>). The <code>init</code> and its doc were updated accordingly; the struct stays
+                        <code>Sendable</code> (the stored closure is <code>@Sendable</code>).</li>
+                    <li><strong>Run loop.</strong> In <code>PixelPipeline.run(pixels:&hellip;)</code>, each stage is now
+                        <code>let stage = { try processor.process( buffer: &amp;buffer ) }</code>; when
+                        <code>config.measure</code> is set it runs <code>try measure( processor.description, stage )</code>,
+                        otherwise <code>try stage()</code>. All internal timing/formatting
+                        (<code>ContinuousClock</code>, <code>%.9f</code>, the <code>"Benchmarking - &hellip;"</code> string,
+                        and the <code>output</code>-sink selection) was deleted. SwiftPixel now performs no benchmarking.</li>
+                    <li><strong>inout capture compiles clean.</strong> The <code>stage</code> closure captures the local
+                        <code>var buffer</code> and is passed to the <code>@Sendable</code> <code>measure</code>; its
+                        <code>() throws -&gt; Void</code> parameter is intentionally not <code>@Sendable</code>. Execution is
+                        synchronous and sequential (<code>forEach</code>, <code>measure</code> invokes <code>stage</code>
+                        inline), so there is no data race &mdash; verified by a clean Swift&nbsp;6 complete-concurrency build
+                        with <code>-warnings-as-errors</code>.</li>
+                    <li><strong>Tests rewritten.</strong> The <code>config()</code> helper drops
+                        <code>benchmark</code>/<code>benchmarkOutput</code> and gains <code>measure</code>.
+                        <code>benchmarkSilentByDefault</code>/<code>benchmarkEmitsOneLinePerStage</code> became
+                        <code>measureHookAbsentByDefault</code> (asserts <code>config.measure == nil</code> and that a
+                        no-hook run still yields a 2&times;2&times;3 RGB buffer) and <code>measureWrapsEachStageOnce</code>
+                        (a recording <code>measure</code> is invoked once per stage with a non-empty label, and the wrapped
+                        result equals the un-wrapped result). The <code>"Benchmarking - "</code> assertion moved out &mdash;
+                        that formatting now lives in the consumer.</li>
+                    <li><strong>No downstream break.</strong> FITScope never set
+                        <code>benchmark</code>/<code>benchmarkOutput</code>, and <code>measure</code> defaults to
+                        <code>nil</code>, so removing the old fields does not break FITScope's build. FITScope's actual
+                        <code>measure</code> wiring is a Milestone&nbsp;6 task.</li>
+                    <li><strong>Verification.</strong> <code>xcodebuild</code> Debug and Release both
+                        <code>BUILD SUCCEEDED</code> under Swift&nbsp;6 with <code>-warnings-as-errors</code>; the full test
+                        suite reported <code>** TEST SUCCEEDED **</code>, including both rewritten measure tests.
+                        <code>grep</code> confirms no live <code>Benchmark</code>/<code>benchmark</code>/<code>benchmarkOutput</code>
+                        symbol remains in SwiftPixel source or tests (only doc-comment prose).</li>
+                    <li><strong>Automated review loop: 1 round, converged</strong> (no Critical/High/Medium; two Low
+                        findings fixed &mdash; see Automated review).</li>
+                </ul>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Round 1 &mdash; no Critical/High/Medium.</strong> An independent fresh-context reviewer read
+                        the full run loop, the <code>Config</code> struct/init, <code>processors()</code>, the
+                        <code>PixelProcessor</code> protocol, and both tests, and confirmed: both run paths execute every
+                        stage exactly once in order and mutate <code>buffer</code> correctly; the inout-capturing
+                        <code>stage</code> closure passed to the <code>@Sendable</code> hook is sound (synchronous,
+                        sequential, no race); the non-measure path is behaviourally identical to before; the API surface is
+                        clean with no leftover <code>benchmark</code>/<code>benchmarkOutput</code> references; and the
+                        2-stage test count (MonoToRGB + Normalize) and non-empty-label assertions are accurate.
+                        <em>Resolution: no action required.</em></li>
+                    <li><strong>Low &mdash; test name vs. assertion (Fixed).</strong>
+                        <code>measureHookAbsentByDefault</code> did not directly assert the default was <code>nil</code>.
+                        Added <code>#expect( Self.config( normalize: .minMax ).measure == nil )</code> so the test matches
+                        its name. <em>Resolution: Fixed.</em></li>
+                    <li><strong>Low &mdash; closure formatting (Fixed).</strong> The inline <code>measure</code> closure in
+                        <code>measureWrapsEachStageOnce</code> did not follow the house style (statement on the
+                        <code>in</code> line). Extracted it to a typed <code>let measure: @Sendable &hellip;</code> local
+                        with one statement per line. <em>Resolution: Fixed.</em></li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="notes">
+                <ul>
+                    <li>This is not what we agreed on while making the plan. No benchmark code should be added to
+                        SwiftPixel. It will be passed by consumers by reusing the <code>benchmarkOutput</code> (that needs
+                        to be renamed). The implementation is plain wrong. FITScope will use SwiftUtilities itself, and use
+                        its benchmark helper when calling inside SwiftPixel.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Milestone 3 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">3</span>
+                <h3>Structured error types replace <code>RuntimeError</code></h3>
+                <span class="capsule completed">Completed</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Replace all 103 <code>RuntimeError</code> throws with structured
+                <code>LocalizedError</code>/<code>Equatable</code> error types (domain enums + per-processor nested
+                <code>ValidationError</code>), removing the last source-level use of SwiftUtilities and making each API's
+                failure contract explicit. See the Appendix for the full site-to-case mapping.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Define <code>PixelBufferError</code>, <code>PixelImageError</code>, <code>PixelInterleaveError</code>,
+                    and <code>PixelPipelineError</code> (cases per the Appendix).</li>
+                <li>Define per-processor nested <code>ValidationError</code> enums for <code>Levels</code>,
+                    <code>Curves</code>, <code>CorrectGamma</code>, and <code>STFParameters</code>
+                    (<code>nonPositiveGamma</code> kept per-processor).</li>
+                <li>Migrate all 103 <code>throw</code> sites across the 23 files; update every <code>- Throws:</code> doc
+                    comment that references <code>RuntimeError</code>.</li>
+                <li>Update the ~45 assertions across the 16 <code>SwiftPixelTests</code> files to the new types / messages.</li>
+                <li>Confirm no source file in SwiftPixel still imports SwiftUtilities.</li>
+                <li>Build + test SwiftPixel standalone; confirm green.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span></p>
+            <div class="field-label">Completed</div>
+            <p>2026-07-12</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Ground-truthed the site count.</strong> The Appendix's "103" counted doc-comment mentions
+                        too; the actual <code>throw RuntimeError(&hellip;)</code> sites number <strong>64</strong> across 22
+                        files. All 64 were migrated and map cleanly onto the Appendix design.</li>
+                    <li><strong>File organisation (confirmed with the user).</strong> The four domain enums are
+                        <em>nested in their primary owner</em> rather than each in its own file:
+                        <code>PixelImageError</code> in <code>PixelBuffer.swift</code>,
+                        <code>PixelInterleaveError</code> in <code>PixelUtilities.swift</code>,
+                        <code>PixelPipelineError</code> in <code>PixelPipeline.swift</code>, and only the widely-shared
+                        <code>PixelBufferError</code> as a new file <code>SwiftPixel/Errors/PixelBufferError.swift</code>.
+                        This kept the <code>.xcodeproj</code> surgery to a single added file.</li>
+                    <li><strong>Error types.</strong> <code>PixelBufferError</code>
+                        (<code>.notNormalized</code>, <code>.mustNotBeNormalized</code>,
+                        <code>.bufferAccessFailed(role:)</code> with a nested <code>Role</code> enum,
+                        <code>.dataSizeMismatch</code>, <code>.pixelCountMismatch</code>, <code>.invalidChannelCount</code>,
+                        <code>.negativeDimensions</code>, <code>.geometryOverflow</code>,
+                        <code>.unsupportedChannelCount(actual:supported:)</code> rendered via a
+                        <code>channelRequirement(for:)</code> helper); <code>PixelImageError</code>
+                        (<code>.unsupportedChannelConfiguration</code>, <code>.dataProviderCreationFailed</code>,
+                        <code>.imageCreationFailed</code>); <code>PixelInterleaveError</code>; <code>PixelPipelineError</code>;
+                        and nested <code>ValidationError</code> enums in <code>Levels</code>, <code>Curves</code>,
+                        <code>CorrectGamma</code>, <code>STFParameters</code> (<code>nonPositiveGamma</code> duplicated
+                        per-processor). All conform to <code>LocalizedError, Equatable, Sendable</code>; each
+                        <code>errorDescription</code> preserves the original message text and interpolated values.</li>
+                    <li><strong>Xcode project.</strong> The new <code>PixelBufferError.swift</code> was added to the
+                        <em>framework</em> target only (an <code>Errors</code> group + file reference + Sources build-phase
+                        entry), via the <code>xcodeproj</code> Ruby gem for a well-formed edit. The
+                        <code>SwiftPixelTests</code> target uses <code>@testable import</code> and compiles no framework
+                        sources, so it needed no change. SwiftPM auto-globs the new file.</li>
+                    <li><strong>Doc comments.</strong> All 39 <code>- Throws:</code>/prose <code>RuntimeError</code>
+                        mentions updated to name the concrete type(s) now thrown (single type where unambiguous, both types
+                        for multi-throw methods, "An error" for the pipeline entry points).</li>
+                    <li><strong>Imports.</strong> Removed <code>import SwiftUtilities</code> from all 21 source files and
+                        all test files that had it &mdash; <code>RuntimeError</code> was the last SwiftUtilities symbol used.
+                        <code>grep</code> confirms zero <code>RuntimeError</code> / <code>SwiftUtilities</code> references
+                        remain in <code>SwiftPixel/</code> or <code>SwiftPixelTests/</code>.</li>
+                    <li><strong>Tests.</strong> All 45 <code>#expect( throws: RuntimeError.self )</code> assertions were
+                        retargeted to the specific new type each scenario produces (37 &rarr; <code>PixelBufferError</code>,
+                        2 &rarr; <code>PixelImageError</code>, 7 &rarr; a per-processor <code>ValidationError</code>). The
+                        first test run caught one mis-typed Stretch case (a degenerate-channel STF validation) I had
+                        blanket-mapped to <code>PixelBufferError</code>; corrected to
+                        <code>Stretch.STFParameters.ValidationError</code> and the suite went green.</li>
+                    <li><strong>Verification.</strong> <code>xcodebuild</code> Debug + Release
+                        <code>BUILD SUCCEEDED</code> (Swift&nbsp;6, <code>-warnings-as-errors</code>);
+                        <code>swift build</code> succeeds; the full xcodebuild test suite reports
+                        <code>** TEST SUCCEEDED **</code>. (<code>swift test</code> executes 0 &mdash; the package's tests
+                        run through the <code>.xcodeproj</code>.)</li>
+                    <li><strong>Automated review loop: 1 round, converged</strong> (no Critical/High/Medium; two Low/Info
+                        items applied &mdash; see Automated review).</li>
+                </ul>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Round 1 &mdash; no correctness bugs.</strong> An independent fresh-context reviewer read the
+                        full diff (42 files, ~2,100 lines), the new error file, and the pbxproj, and verified: every one of
+                        the 64 mappings is faithful with correct <code>expected</code>/<code>actual</code> argument order and
+                        correct <code>supported:</code> channel lists; <code>errorDescription</code> text reproduces the
+                        originals (incl. the <code>channelRequirement</code> renderer and <code>Role.phrase</code>);
+                        conformances are sound; control flow / guard ordering is unchanged so callers see the same error for
+                        the same bad input; no <code>catch/as?/is RuntimeError</code> remains; the pbxproj adds the file to
+                        the framework target only; and the retargeted test assertions each match their scenario.
+                        <em>Resolution: no action required.</em></li>
+                    <li><strong>Low/pre-existing &mdash; <code>Normalize.process</code> doc (Fixed).</strong> The reviewer
+                        noted <code>Normalize.process</code> is declared <code>throws</code> but never throws (it satisfies
+                        the protocol), so a <code>- Throws:</code> line naming an un-throwable type is misleading. Replaced
+                        that line with a <code>- Note:</code> explaining it never fails. <em>Resolution: Fixed.</em></li>
+                    <li><strong>Info &mdash; explicit <code>Role: Equatable</code> (Fixed).</strong> The
+                        <code>PixelBufferError.Role</code> enum was declared <code>: Sendable</code> only (its
+                        <code>Equatable</code> was implicit). Added an explicit <code>Equatable</code> conformance to match
+                        the codebase's explicit-conformance style. <em>Resolution: Fixed.</em></li>
+                    <li><strong>Info (no action) &mdash; lost processor context.</strong> The shared
+                        <code>unsupportedChannelCount</code> message no longer names the specific stage
+                        (e.g. "Color Balance requires&hellip;" &rarr; "Requires&hellip;"). This is an accepted consequence
+                        of sharing one geometry error across processors, with message changes explicitly allowed.
+                        <em>Resolution: deferred / no change.</em></li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting review.</p>
+        </div>
+
+        <!-- Milestone 4 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">4</span>
+                <h3>Drop the SwiftUtilities dependency from SwiftPixel</h3>
+                <span class="capsule completed">Completed</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">With no remaining usage, remove SwiftUtilities entirely from SwiftPixel &mdash; package
+                manifest, Xcode project, and the git submodule &mdash; so SwiftPixel builds standalone with no SwiftUtilities
+                anywhere.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Remove the SwiftUtilities package dependency and product from <code>SwiftPixel/Package.swift</code>
+                    (both the <code>SwiftPixel</code> target and the <code>SwiftPixelTests</code> target).</li>
+                <li>Remove the <code>SwiftUtilities.xcodeproj</code> project reference, the framework link, and the embed
+                    from <code>SwiftPixel.xcodeproj</code>.</li>
+                <li>Remove the <code>Submodules/SwiftUtilities</code> git submodule (<code>.gitmodules</code> entry, the
+                    gitlink, and the cached module under <code>.git/modules</code>).</li>
+                <li>Verify: <code>git submodule status</code> clean; <code>xcodebuild</code> (Debug + Release) +
+                    <code>swift build</code> + tests all green with SwiftUtilities entirely absent.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span></p>
+            <div class="field-label">Completed</div>
+            <p>2026-07-12</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Package.swift.</strong> Removed the package-level
+                        <code>.package( url: SwiftUtilities&hellip; )</code> dependency and the
+                        <code>.product( name: "SwiftUtilities", &hellip; )</code> entries from both the
+                        <code>SwiftPixel</code> target (which now declares no dependencies) and the
+                        <code>SwiftPixelTests</code> target (which now depends only on <code>"SwiftPixel"</code>).
+                        <code>swift package dump-package</code> parses clean with no external dependency.</li>
+                    <li><strong>Xcode project.</strong> Via the <code>xcodeproj</code> Ruby gem, removed the
+                        <code>SwiftUtilities.xcodeproj</code> subproject reference, the <code>SwiftUtilities.framework</code>
+                        link (Frameworks phase) and the Embed Frameworks entry from the <code>SwiftPixel</code> target,
+                        plus the full supporting object graph (the two <code>PBXBuildFile</code>s, the product
+                        <code>PBXContainerItemProxy</code>, the <code>PBXReferenceProxy</code>, the subproject
+                        <code>Products</code> group, and the <code>projectReferences</code> entry). The gem's first save
+                        aborted on a dangling container proxy (leaving the file untouched); a second, UUID-scoped pass that
+                        also swept orphan reference/container proxies saved cleanly.
+                        <code>grep -c SwiftUtilities project.pbxproj</code> is now <strong>0</strong>, and the
+                        autogenerated <code>SwiftUtilities</code> scheme is gone (only <code>SwiftPixel</code> remains).</li>
+                    <li><strong>Git submodule.</strong> Removed <code>Submodules/SwiftUtilities</code> with
+                        <code>git submodule deinit -f</code> &rarr; <code>git rm -f</code> &rarr;
+                        <code>rm -rf</code> of the cached module at
+                        <code>&lt;gitdir&gt;/modules/Submodules/SwiftUtilities</code>. The <code>.gitmodules</code> entry,
+                        the gitlink, and the <code>.git/config</code> entry are all gone; the removal is staged as a
+                        deletion. The second submodule, <code>Submodules/xcconfig</code>, was left completely untouched
+                        (still registered, same commit <code>a66e484</code>).</li>
+                    <li><strong>Verification (SwiftUtilities entirely absent).</strong> After deleting the working copy:
+                        <code>xcodebuild</code> Debug (clean) + Release both <code>BUILD SUCCEEDED</code>;
+                        <code>xcodebuild test</code> <code>** TEST SUCCEEDED **</code>; a clean
+                        <code>swift build</code> (after <code>rm -rf .build</code>) completes.
+                        <code>git submodule status</code> lists only <code>xcconfig</code>.</li>
+                    <li><strong>Automated review loop: 1 round, converged</strong> with no findings.</li>
+                </ul>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Round 1 &mdash; no issues.</strong> An independent fresh-context reviewer verified:
+                        <code>Package.swift</code> has zero SwiftUtilities references and dumps clean; the pbxproj parses,
+                        both targets are intact (30 sources retained incl. <code>PixelBufferError.swift</code>), the
+                        Frameworks/Embed phases are empty of SwiftUtilities, and there are <strong>no dangling objects</strong>
+                        (0 reference proxies, 0 orphan build files, 0 <code>projectReferences</code>; the one remaining
+                        container proxy is the legitimate <code>SwiftPixelTests &rarr; SwiftPixel</code> dependency); and the
+                        git removal is complete and staged with <code>xcconfig</code> demonstrably undisturbed.
+                        <em>Resolution: no action required.</em></li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting review.</p>
+        </div>
+
+        <div class="phase-label">Phase 2 &mdash; SwiftAstro (drop the pass-through embed)</div>
+
+        <!-- Milestone 5 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">5</span>
+                <h3>Remove the orphaned SwiftUtilities embed from SwiftAstro</h3>
+                <span class="capsule completed">Completed</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">SwiftAstro only ever carried <code>SwiftUtilities.framework</code> to satisfy SwiftPixel. With
+                SwiftPixel no longer depending on it, bump the SwiftPixel pointer and strip the now-dangling framework and
+                project references.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Bump the <code>Submodules/SwiftPixel</code> submodule pointer to the Milestone&nbsp;4 commit.</li>
+                <li>Remove from <code>SwiftAstro.xcodeproj</code>: the reach-in <code>SwiftUtilities.xcodeproj</code> project
+                    reference (path <code>Submodules/SwiftPixel/Submodules/SwiftUtilities/&hellip;</code>), the
+                    <code>SwiftUtilities.framework</code> link in Frameworks, and the Embed Frameworks entry.</li>
+                <li>Re-confirm nothing in SwiftAstro's own source imports SwiftUtilities (already verified none).</li>
+                <li>Verify SwiftAstro standalone: <code>xcodebuild</code> (Debug + Release) + <code>swift build</code> +
+                    tests green.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span></p>
+            <div class="field-label">Completed</div>
+            <p>2026-07-12</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Submodule pointer bump.</strong> Staged the <code>Submodules/SwiftPixel</code> pointer from
+                        <code>420f833</code> to <code>7ead162</code> (the SwiftPixel Milestone&nbsp;4 commit, which carries
+                        all of Phase&nbsp;1 and is fully SwiftUtilities-free). No other submodule pointer changed.</li>
+                    <li><strong>Partial prior state.</strong> An earlier owner commit
+                        (<code>6c6e200 "Removed linking with SwiftUtilities"</code>) had already removed the
+                        <code>SwiftUtilities.framework</code> <em>link</em> from the Frameworks phase, but left the Embed
+                        Frameworks entry and the reach-in subproject reference in place. This milestone finished the job.</li>
+                    <li><strong>Xcode project.</strong> Via the <code>xcodeproj</code> Ruby gem, removed the remaining
+                        SwiftUtilities references from <code>SwiftAstro.xcodeproj</code>: the Embed Frameworks entry and the
+                        reach-in <code>Submodules/SwiftPixel/Submodules/SwiftUtilities/SwiftUtilities.xcodeproj</code>
+                        subproject reference &mdash; along with its <code>projectReferences</code> entry, product
+                        <code>Products</code> group, <code>PBXReferenceProxy</code>, and container proxy.
+                        <code>grep -c SwiftUtilities project.pbxproj</code> is now <strong>0</strong>. The other two
+                        subproject references (<code>SwiftFITS.xcodeproj</code>, <code>SwiftPixel.xcodeproj</code>) and both
+                        build phases' remaining entries are intact.</li>
+                    <li><strong>Source.</strong> Re-confirmed SwiftAstro's own source has zero
+                        <code>import SwiftUtilities</code> (as the plan expected) &mdash; and its <code>Package.swift</code>
+                        never referenced SwiftUtilities.</li>
+                    <li><strong>Verification (SwiftAstro standalone).</strong> <code>xcodebuild</code> Debug (clean) +
+                        Release both <code>BUILD SUCCEEDED</code>; <code>xcodebuild test</code>
+                        <code>** TEST SUCCEEDED **</code>; a clean <code>swift build</code> completes. Schemes are
+                        <code>SwiftAstro</code>/<code>SwiftFITS</code>/<code>SwiftPixel</code> (no SwiftUtilities scheme).</li>
+                    <li><strong>Automated review loop: 1 round, converged</strong> with no findings.</li>
+                </ul>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Round 1 &mdash; no issues.</strong> An independent fresh-context reviewer confirmed: the
+                        pbxproj parses and has 0 SwiftUtilities mentions with <strong>no dangling objects</strong> (each of
+                        the 5 removed UUIDs has zero remaining references; no orphan proxies or nil-ref build files); the
+                        <code>SwiftFITS</code> and <code>SwiftPixel</code> subproject references, proxies, product groups and
+                        both build phases are undamaged; both targets survive; the staged
+                        <code>Submodules/SwiftPixel</code> bump is <code>420f833 &rarr; 7ead162</code> and that commit is
+                        verified SwiftUtilities-free, with no other submodule pointer touched; and SwiftAstro source has no
+                        SwiftUtilities usage. <em>Resolution: no action required.</em></li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">Awaiting review.</p>
+        </div>
+
+        <div class="phase-label">Phase 3 &mdash; FITScope (first-level submodule)</div>
+
+        <!-- Milestone 6 -->
+        <div class="milestone">
+            <div class="milestone-head">
+                <span class="mnum">6</span>
+                <h3>SwiftUtilities as a first-level submodule of FITScope</h3>
+                <span class="capsule not-started">Not started</span>
+            </div>
+            <div class="field-label">Goal</div>
+            <p class="goal">Bring SwiftUtilities up as a first-level submodule of FITScope and make FITScope own its
+                framework product directly, completing the decoupling with no behavior change.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Bump the <code>Submodules/SwiftAstro</code> submodule pointer to the Milestone&nbsp;5 commit (this pulls
+                    in the updated SwiftPixel too).</li>
+                <li>Add SwiftUtilities as a first-level submodule at <code>Submodules/SwiftUtilities</code>
+                    (<code>https://github.com/macmade/SwiftUtilities.git</code>); add the <code>.gitmodules</code> entry.
+                    <em>(Per review, left at the current <code>main</code> tip <code>a7b50e9</code> &mdash; not pinned to
+                    <code>d138534</code>.)</em></li>
+                <li>Repoint <code>FITScope.xcodeproj</code>: add a direct project reference + target dependency on
+                    <code>Submodules/SwiftUtilities/SwiftUtilities.xcodeproj</code> (replacing the framework product
+                    previously inherited from SwiftAstro's now-removed nested reference). Keep the existing
+                    <code>SwiftUtilities.framework</code> link/embed and the <code>License-SwiftUtilities.txt</code>
+                    resource.</li>
+                <li>Adapt any FITScope tests that assert on SwiftPixel error messages (expected ~0).</li>
+                <li>Wire up per-stage benchmarking (from Milestone&nbsp;2's redesign): where FITScope builds a
+                    <code>PixelPipeline.Config</code> (<code>ImageProcessor</code>), supply the new
+                    <code>measure</code> hook as a closure forwarding to
+                    <code>SwiftUtilities.Benchmark.run( label:output:Benchmarking.log, action: )</code>, so per-stage timings
+                    print in debug builds as before &mdash; the timing/formatting now lives on the FITScope side.</li>
+                <li>Verify: <code>xcodebuild</code> across all targets (app + Preview/Thumbnail extensions + tests), run the
+                    full <code>FITScope.xctestplan</code>, and launch the app on a sample image &mdash; confirm the
+                    About / Credits / GitHub-updater UI still work.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span></p>
+            <div class="field-label">Completed</div>
+            <p>2026-07-12</p>
+            <div class="field-label">Implementation notes</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Submodule pointers.</strong> Staged the <code>Submodules/SwiftAstro</code> bump
+                        (<code>6c6e200 &rarr; dcd9c53</code>, the Milestone&nbsp;5 commit, which pulls in the updated
+                        SwiftPixel). Added SwiftUtilities as a first-level submodule at <code>Submodules/SwiftUtilities</code>
+                        via <code>git submodule add</code>. <strong>Left at the <code>main</code> tip
+                        <code>a7b50e9</code></strong> rather than pinned to <code>d138534</code>, per the user's review
+                        instruction (see Review comments). Its nested <code>Submodules/xcconfig</code> submodule was
+                        initialized (by the user) so <code>SwiftUtilities.xcodeproj</code>'s base configuration resolves.</li>
+                    <li><strong>Xcode project (the riskiest step).</strong> FITScope previously <em>inherited</em>
+                        <code>SwiftUtilities.framework</code> as a bare <code>BUILT_PRODUCTS_DIR</code>
+                        <code>PBXFileReference</code> (produced by the nested project). Via the <code>xcodeproj</code> gem,
+                        replaced that with a proper first-level subproject wiring mirroring how
+                        <code>SwiftPixel.framework</code> is set up: a <code>SwiftUtilities.xcodeproj</code> file reference +
+                        <code>projectReferences</code> entry + <code>Products</code> group holding a
+                        <code>PBXReferenceProxy</code> for the framework (its container proxy's
+                        <code>remoteGlobalIDString</code> = <code>05C52782&hellip;</code>, the framework product inside
+                        <code>SwiftUtilities.xcodeproj</code>). The app's + both extensions' framework links and the app's
+                        Embed Frameworks entry were repointed from the old bare fileref to the reference proxy
+                        (<code>CodeSignOnCopy</code>/<code>RemoveHeadersOnCopy</code> preserved), the old fileref removed, and
+                        the <code>License-SwiftUtilities.txt</code> resource kept. Xcode now resolves the framework via an
+                        implicit dependency on the SwiftUtilities target and builds it from the first-level submodule.</li>
+                    <li><strong>Benchmarking hook (Milestone&nbsp;2 redesign).</strong> Added the <code>measure</code>
+                        argument to the single <code>PixelPipeline.Config(&hellip;)</code> construction in
+                        <code>ImageProcessor.swift</code>:
+                        <code>{ label, stage in try Benchmark.run( label: label, output: Benchmarking.log, action: stage ) }</code>.
+                        It captures only module-level symbols (no <code>self</code>), so it satisfies the
+                        <code>@Sendable</code> hook type, and restores per-stage timing output in debug builds &mdash; now
+                        formatted on the FITScope side by <code>SwiftUtilities.Benchmark</code>.</li>
+                    <li><strong>Tests.</strong> No FITScope test changes were needed: they assert
+                        <code>( any Error ).self</code> or FITScope's own error types &mdash; zero assertions on SwiftPixel
+                        error messages/types.</li>
+                    <li><strong>Verification.</strong> The FITScope app and both the Thumbnail and Preview extensions build
+                        (<code>BUILD SUCCEEDED</code>), including a re-confirmed app build after the submodule settled at
+                        <code>a7b50e9</code>. The user ran the full <code>FITScope.xctestplan</code> and the app-launch
+                        (About / Credits / GitHub-updater) verification themselves and approved.</li>
+                    <li><strong>Package.resolved.</strong> The workspace SwiftPM <code>Package.resolved</code> dropped the
+                        <code>swift-cmark</code>/<code>swift-markdown</code> pins &mdash; a correct side effect of removing
+                        SwiftUtilities from the SwiftPM graph (they were its transitive dependencies).</li>
+                    <li><strong>Automated review loop: 1 round, converged</strong> with no findings.</li>
+                </ul>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="notes">
+                <ul>
+                    <li><strong>Round 1 &mdash; no defects.</strong> An independent fresh-context reviewer (inspection only,
+                        to avoid colliding with the user's concurrent build) verified via the <code>xcodeproj</code> gem:
+                        <code>SwiftUtilities.framework</code> has a single representation and it is the
+                        <code>PBXReferenceProxy</code> (the old bare <code>BUILT_PRODUCTS_DIR</code> fileref is fully gone);
+                        the container proxy's <code>remoteGlobalIDString</code> matches the real framework product in
+                        <code>SwiftUtilities.xcodeproj</code>; the app links + embeds the proxy (attributes preserved) and
+                        keeps the license resource; both extensions link it; there are <strong>no dangling objects</strong>
+                        and the other five subproject references are intact (5 targets survive); the submodule bumps and
+                        <code>.gitmodules</code> are consistent; and the <code>measure</code> closure is type-correct,
+                        rethrows-correct, and <code>@Sendable</code>-clean (no <code>self</code> capture).
+                        <em>Resolution: no action required.</em></li>
+                    <li><strong>Info (no action) &mdash; noisy pbxproj diff.</strong> The gem re-serialized/reordered
+                        pre-existing objects, so the <code>project.pbxproj</code> diff is larger than the logical change. The
+                        reviewer confirmed it is <em>purely reordering</em> (object counts and children preserved, no
+                        orphans). Unavoidable when editing the project programmatically; harmless.
+                        <em>Resolution: no change.</em></li>
+                </ul>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="notes">
+                <ul>
+                    <li>Do not pin SwiftUtilities to <code>d138534</code>. Leave the first-level
+                        <code>Submodules/SwiftUtilities</code> submodule at its current <code>main</code> tip
+                        (<code>a7b50e9</code>) instead.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2 class="section">Appendix A &mdash; error type mapping</h2>
+        <div class="appendix">
+            <p>The 103 <code>RuntimeError</code> throw sites collapse into the failure kinds below. All error types conform
+            to <code>LocalizedError</code> and <code>Equatable</code>. Case names and associated-value shapes are the
+            proposed design; exact spellings may be refined during implementation.</p>
+
+            <h3><code>PixelBufferError</code> &mdash; buffer geometry, state &amp; access</h3>
+            <table>
+                <thead><tr><th>Proposed case</th><th>Replaces (message)</th><th>Approx. sites</th></tr></thead>
+                <tbody>
+                    <tr><td><code>.notNormalized</code></td><td>"Buffer needs to be normalized"</td><td>~13</td></tr>
+                    <tr><td><code>.mustNotBeNormalized</code></td><td>"Input buffer must not be normalized"</td><td>2</td></tr>
+                    <tr><td><code>.bufferAccessFailed(role)</code></td><td>"Failed to access {data / input / output} buffer"</td><td>~9</td></tr>
+                    <tr><td><code>.dataSizeMismatch(expected:actual:)</code></td><td>"Data size does not match expected size: a != b"</td><td>5</td></tr>
+                    <tr><td><code>.pixelCountMismatch(expected:actual:)</code></td><td>"Pixel count does not match geometry"</td><td>1</td></tr>
+                    <tr><td><code>.invalidChannelCount(Int)</code></td><td>"Channel count must be at least 1"</td><td>1</td></tr>
+                    <tr><td><code>.negativeDimensions(width:height:)</code></td><td>"Dimensions must not be negative"</td><td>1</td></tr>
+                    <tr><td><code>.geometryOverflow(width:height:channels:)</code></td><td>"Image geometry overflows Int"</td><td>1</td></tr>
+                    <tr><td><code>.unsupportedChannelCount(actual:supported:)</code></td><td>"Unsupported channel count" / "requires a 3-channel buffer" / "1- or 3-channel only" / "requires a single-channel buffer"</td><td>~13</td></tr>
+                </tbody>
+            </table>
+
+            <h3><code>PixelImageError</code> &mdash; CGImage conversion (<code>PixelBuffer</code>)</h3>
+            <table>
+                <thead><tr><th>Proposed case</th><th>Replaces (message)</th></tr></thead>
+                <tbody>
+                    <tr><td><code>.unsupportedChannelConfiguration(Int)</code></td><td>"Unsupported channel configuration"</td></tr>
+                    <tr><td><code>.dataProviderCreationFailed</code></td><td>"Failed to create CGDataProvider"</td></tr>
+                    <tr><td><code>.imageCreationFailed</code></td><td>"Failed to create CGImage"</td></tr>
+                </tbody>
+            </table>
+
+            <h3><code>PixelInterleaveError</code> (<code>PixelUtilities</code>) &amp; <code>PixelPipelineError</code></h3>
+            <table>
+                <thead><tr><th>Proposed case</th><th>Replaces (message)</th></tr></thead>
+                <tbody>
+                    <tr><td><code>PixelInterleaveError.noNonEmptyPlane</code></td><td>"Cannot interleave: at least one non-empty plane is required."</td></tr>
+                    <tr><td><code>PixelInterleaveError.unequalPlaneLengths</code></td><td>"Cannot interleave planes of unequal length."</td></tr>
+                    <tr><td><code>PixelPipelineError.planeCountMismatch(expected:actual:)</code></td><td>"Plane count N does not match the input format's channel count M."</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Per-processor nested <code>ValidationError</code> &mdash; config-time constraints</h3>
+            <table>
+                <thead><tr><th>Processor</th><th>Proposed cases</th><th>Replaces (message)</th></tr></thead>
+                <tbody>
+                    <tr><td><code>Levels</code></td><td><code>.nonPositiveGamma(Double)</code>, <code>.invalidInputRange(black:white:)</code></td><td>"Levels gamma must be greater than zero"; "Levels input white must be greater than input black"</td></tr>
+                    <tr><td><code>Curves</code></td><td><code>.tooFewControlPoints</code>, <code>.controlPointOutOfRange(x:y:)</code>, <code>.nonIncreasingX</code></td><td>"Curves needs at least two control points"; "Curves control point out of range"; "Curves control points must have strictly increasing x"</td></tr>
+                    <tr><td><code>CorrectGamma</code></td><td><code>.nonPositiveGamma(Double)</code></td><td>"Gamma must be greater than zero"</td></tr>
+                    <tr><td><code>STFParameters</code></td><td><code>.highlightsNotAboveShadows(highlights:shadows:)</code>, <code>.highNotAboveLow(high:low:)</code>, <code>.midtonesOutOfRange(Double)</code>, <code>.emptyBuffer</code>, <code>.emptyChannel</code></td><td>"STF highlights must be greater than shadows"; "STF high expansion must be greater than low"; "STF midtones balance must be within [0, 1]"; "Cannot derive an STF from an empty buffer" / "&hellip; empty channel"</td></tr>
+                </tbody>
+            </table>
+            <p>Note: per-processor "requires a 3-channel buffer" throws (Saturation, Hue, ColorBalance, Stretch, per-channel
+            Levels/Curves, and the STF auto-derive channel checks) reuse
+            <code>PixelBufferError.unsupportedChannelCount</code> &mdash; they are buffer constraints, not config
+            constraints.</p>
+        </div>
+
+        <h2 class="section">Appendix B &mdash; dependency map, before &rarr; after</h2>
+        <div class="appendix">
+            <table>
+                <thead><tr><th>Aspect</th><th>Before</th><th>After</th></tr></thead>
+                <tbody>
+                    <tr><td>SwiftUtilities submodule location</td><td>Nested under <code>SwiftAstro/SwiftPixel/Submodules/SwiftUtilities</code> (declared only by SwiftPixel)</td><td>First-level in FITScope: <code>Submodules/SwiftUtilities</code>, and still SwiftPixel-independent</td></tr>
+                    <tr><td>SwiftPixel &rarr; SwiftUtilities</td><td>Depends on it (Package.swift URL dep + xcodeproj); uses <code>RuntimeError</code>, <code>Unsafe*Sendable</code>, <code>Benchmark</code></td><td>No dependency; owns errors, uses <code>nonisolated(unsafe)</code>, delegates per-stage benchmarking to the consumer via a <code>measure</code> hook (no timing code of its own)</td></tr>
+                    <tr><td>SwiftAstro &rarr; SwiftUtilities</td><td><code>.xcodeproj</code> links/embeds the framework transitively (no source use)</td><td>No reference at all</td></tr>
+                    <tr><td>FITScope &rarr; SwiftUtilities</td><td>Links <code>SwiftUtilities.framework</code> from <code>BUILT_PRODUCTS_DIR</code>; owns no project reference</td><td>Owns a direct project reference + target dependency to its first-level submodule</td></tr>
+                    <tr><td>SwiftUtilities repo itself</td><td>&mdash;</td><td>Unchanged</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            Living document &mdash; the implement command updates each milestone's Status, Completed, Implementation
+            notes, Automated review, and Review comments in place as work progresses.
+        </footer>
+    </div>
+</body>
+</html>
