@@ -287,6 +287,7 @@
 		6A1572CF23B612DB37F852EC /* CanvasGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D3D9131B43725B5D03FCFA /* CanvasGeometry.swift */; };
 		6AEF32A8FE8675F975E8F5BC /* MoonPhaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A96803DD5818B6BF04A14656 /* MoonPhaseTests.swift */; };
 		6C479C2FA028C5ADED59EDBA /* LocationInfoViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3079567CE7B6AC8339AA61C2 /* LocationInfoViewTests.swift */; };
+		FE5C0FE00000000000B01D01 /* FilesSidebarViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5C0FE00000000000F11E01 /* FilesSidebarViewTests.swift */; };
 		6CAD1CBC7CFE3A21EE6078A1 /* ThumbnailLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1B6B4FF556A46DD0F7C876 /* ThumbnailLayoutTests.swift */; };
 		6EF419627CCE3666D397E62D /* AstrometryClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DF5F41CCB06024918FD83D1 /* AstrometryClientTests.swift */; };
 		71A010338BF16A00B98556CB /* OpenMeteoClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FD59DBA32F275D80213F313 /* OpenMeteoClient.swift */; };
@@ -782,6 +783,7 @@
 		2DF5F41CCB06024918FD83D1 /* AstrometryClientTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AstrometryClientTests.swift; sourceTree = "<group>"; };
 		2FD59DBA32F275D80213F313 /* OpenMeteoClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoClient.swift; sourceTree = "<group>"; };
 		3079567CE7B6AC8339AA61C2 /* LocationInfoViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LocationInfoViewTests.swift; sourceTree = "<group>"; };
+		FE5C0FE00000000000F11E01 /* FilesSidebarViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilesSidebarViewTests.swift; sourceTree = "<group>"; };
 		3608534BB97DAB5C88B42771 /* SkyBackgroundView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SkyBackgroundView.swift; sourceTree = "<group>"; };
 		37A6023D1148AA3BC889366A /* WeatherConditionsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeatherConditionsTests.swift; sourceTree = "<group>"; };
 		3B32FB9C155A9685F962137B /* CompassDirectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CompassDirectionTests.swift; sourceTree = "<group>"; };
@@ -1869,6 +1871,7 @@
 		B7C060953231127EB7B135F0 /* Sidebar */ = {
 			isa = PBXGroup;
 			children = (
+				FE5C0FE00000000000F11E01 /* FilesSidebarViewTests.swift */,
 				3079567CE7B6AC8339AA61C2 /* LocationInfoViewTests.swift */,
 				8AE099AFB1D8E2318FF1E09B /* MoonPhaseDiscTests.swift */,
 			);
@@ -2716,6 +2719,7 @@
 				21119A804F11C06003EF388B /* ScaleBarOverlayTests.swift in Sources */,
 				4C535A3C6EFB551F5B5A49F3 /* ReticleOverlayTests.swift in Sources */,
 				6C479C2FA028C5ADED59EDBA /* LocationInfoViewTests.swift in Sources */,
+				FE5C0FE00000000000B01D01 /* FilesSidebarViewTests.swift in Sources */,
 				6AEF32A8FE8675F975E8F5BC /* MoonPhaseTests.swift in Sources */,
 				47488E190519065F0F17E6F7 /* MoonPhaseDiscTests.swift in Sources */,
 				4783C1A3F58CA4341CD69ED0 /* WeatherConditionsTests.swift in Sources */,

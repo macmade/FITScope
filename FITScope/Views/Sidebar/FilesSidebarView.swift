@@ -63,6 +63,15 @@ public struct FilesSidebarView: View
                     .foregroundStyle( .secondary )
                     .kerning( 1.2 )
 
+                if let count = Self.fileCountLabel( for: self.model.files.count )
+                {
+                    Text( count )
+                        .font( .system( size: 10, weight: .semibold ) )
+                        .monospacedDigit()
+                        .foregroundStyle( .tertiary )
+                        .accessibilityIdentifier( AccessibilityIdentifier.FilesSidebarView.fileCount )
+                }
+
                 Spacer()
 
                 self.metricsButton
@@ -192,4 +201,28 @@ public struct FilesSidebarView: View
             self.model.open( urls: urls )
         }
     }
+
+    /// The badge label to show next to the "FILES" header for the given open-file
+    /// count, or `nil` when the count is zero so an empty sidebar shows no badge.
+    ///
+    /// - Parameter count: The number of open files.
+    /// - Returns: The count as a string, or `nil` when no files are open.
+    nonisolated static func fileCountLabel( for count: Int ) -> String?
+    {
+        count > 0 ? String( count ) : nil
+    }
+}
+
+#Preview
+{
+    let model      = WindowModel()
+    let appModel   = AppModel()
+    let actions    = FileActions( appModel: appModel, model: model, preferences: Preferences() )
+    let sampleURLs = [ PreviewHelper.url( file: .M42 ), PreviewHelper.url( file: .HST_FOS ) ].compactMap { $0 }
+
+    model.open( urls: sampleURLs )
+
+    return FilesSidebarView( model: model, actions: actions )
+        .environmentObject( appModel )
+        .frame( width: 280, height: 400 )
 }

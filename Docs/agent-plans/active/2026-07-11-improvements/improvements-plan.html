@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improvements — Implementation Plan</title>
+    <style>
+        :root {
+            --bg:         #0f1117;
+            --bg-card:    #181b24;
+            --bg-card-2:  #1d212c;
+            --border:     #2a2f3c;
+            --text:       #e6e9ef;
+            --text-dim:   #9aa3b2;
+            --accent:     #5aa9ff;
+            --accent-dim: #2d3b52;
+
+            --status-notstarted-bg:   #33384a;
+            --status-notstarted-text: #b7c0d2;
+            --status-inprogress-bg:   #4a3a12;
+            --status-inprogress-text: #ffcf6b;
+            --status-completed-bg:    #16482c;
+            --status-completed-text:  #6ee7a0;
+
+            --phase-a: #5aa9ff;
+            --phase-b: #f0a24b;
+            --phase-c: #c58cf0;
+            --phase-d: #6ee7a0;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 36px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 2.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .meta code {
+            font-size: 0.85em;
+        }
+
+        .overview {
+            color: var(--text-dim);
+            margin: 24px 0 8px;
+            font-size: 1.02rem;
+        }
+
+        h2 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 48px 0 20px;
+            font-weight: 600;
+        }
+
+        .qa, .notes, .appendix {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 24px;
+            margin-bottom: 18px;
+        }
+
+        .qa dt, .notes h3 {
+            font-weight: 700;
+            color: var(--text);
+            margin-top: 16px;
+        }
+
+        .qa dd {
+            margin: 4px 0 16px;
+            color: var(--text-dim);
+        }
+
+        .qa dd::before {
+            content: "→ ";
+            color: var(--accent);
+        }
+
+        .notes ul, .appendix ul {
+            padding-left: 20px;
+            color: var(--text-dim);
+        }
+
+        .notes li, .appendix li { margin-bottom: 8px; }
+
+        .phase-heading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 48px 0 8px;
+        }
+
+        .phase-heading .bar {
+            width: 4px;
+            height: 26px;
+            border-radius: 2px;
+        }
+
+        .phase-heading h2 {
+            margin: 0;
+            font-size: 1.05rem;
+            text-transform: none;
+            letter-spacing: -0.01em;
+            color: var(--text);
+        }
+
+        .phase-a .bar { background: var(--phase-a); }
+        .phase-b .bar { background: var(--phase-b); }
+        .phase-c .bar { background: var(--phase-c); }
+        .phase-d .bar { background: var(--phase-d); }
+
+        .phase-sub {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin: 0 0 12px 16px;
+        }
+
+        .milestone {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 24px 8px;
+            margin-bottom: 18px;
+        }
+
+        .milestone-header {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+
+        .milestone-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 26px;
+            height: 26px;
+            padding: 0 8px;
+            border-radius: 6px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-size: 0.85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .milestone-header h3 {
+            margin: 0;
+            font-size: 1.15rem;
+            letter-spacing: -0.01em;
+            flex: 1;
+        }
+
+        .orig-ref {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .status.notstarted { background: var(--status-notstarted-bg); color: var(--status-notstarted-text); }
+        .status.inprogress { background: var(--status-inprogress-bg); color: var(--status-inprogress-text); }
+        .status.completed  { background: var(--status-completed-bg);  color: var(--status-completed-text); }
+
+        .field {
+            margin: 16px 0;
+        }
+
+        .field-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-dim);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .field p { margin: 0; color: var(--text-dim); }
+
+        .field ul {
+            margin: 0;
+            padding-left: 22px;
+            color: var(--text);
+        }
+
+        .field ul li { margin-bottom: 6px; }
+
+        .field.placeholder p {
+            color: #6b7383;
+            font-style: italic;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+
+        .status-row .completed-date {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        code {
+            background: var(--bg-card-2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.86em;
+            color: var(--text);
+        }
+
+        hr.sep {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 16px 0 0;
+        }
+
+        a { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Improvements — Implementation Plan</h1>
+            <div class="meta">
+                Generated 2026-07-12<br>
+                Source: <code>Docs/agent-plans/active/2026-07-11-improvements/improvements.html</code>
+            </div>
+        </header>
+
+        <p class="overview">
+            This plan turns the 12-item FITScope improvements backlog into
+            independently reviewable and committable milestones — one milestone
+            per backlog item, as requested. Each milestone carries its own status,
+            completion date, implementation notes, automated-review findings, and
+            human review comments so it can be updated in place as work proceeds.
+        </p>
+        <p class="overview">
+            The milestones are <strong>reordered</strong> relative to the backlog's
+            numbering to sequence them by dependency and quick-win value: isolated
+            UI wins first, then a warnings/stability cleanup pass, then rendering
+            and processing behavior, and finally the FITS-write feature cluster
+            (which shares the FITS/SwiftFITS subsystem and is best built together).
+            Each milestone notes its original backlog number. The mapping between
+            plan order and backlog order is summarized in the appendix.
+        </p>
+
+        <h2>Questions &amp; answers</h2>
+        <div class="qa">
+            <dl>
+                <dt>Items 1–3 depend on SwiftFITS gaining FITS-write capability — what is the current state of that dependency?</dt>
+                <dd>Available now. SwiftFITS already exposes write support (<code>serializedData(options:)</code>, <code>write(to:options:)</code> in <code>FITSFile.swift</code>), so items 1–3 are planned as ready-to-implement. The app currently only reads FITS; these milestones introduce the first write usage.</dd>
+
+                <dt>How should the 12 items be grouped into milestones?</dt>
+                <dd>One item per milestone — 12 milestones total, each independently reviewable and committable. Related milestones are grouped under named phases for readability only.</dd>
+
+                <dt>Should the plan cover all 12 items, or a subset/priority order?</dt>
+                <dd>All 12 items, reordered by dependency and quick-win value, with the reasoning recorded (see Notes and the Appendix mapping).</dd>
+
+                <dt>Item 5 runs brightness/contrast before the STF stretch, and that ordering is fixed inside the SwiftPixel submodule. How should the plan treat the "move after STF" idea?</dt>
+                <dd>Include the submodule reorder as in-scope: milestone 9 (backlog item 5) may reorder the <code>PixelPipeline</code> stages in the SwiftPixel submodule so brightness/contrast run after the STF stretch, alongside the app-side behavior fix.</dd>
+            </dl>
+        </div>
+
+        <h2>Notes</h2>
+        <div class="notes">
+            <h3>Build &amp; test</h3>
+            <p>
+                An <code>.xcodeproj</code> exists (<code>FITScope.xcodeproj</code>),
+                so build and test through Xcode (<code>xcodebuild</code>) rather
+                than <code>swift build</code>/<code>swift test</code>. Keep the
+                Xcode project and any package manifests in sync. Test plan:
+                <code>FITScope.xctestplan</code>.
+            </p>
+
+            <h3>Dependency layout</h3>
+            <ul>
+                <li>Direct submodules (<code>.gitmodules</code>): <code>xcconfig</code>, <code>SwiftAstro</code>, <code>SwiftUtilities</code>.</li>
+                <li><code>SwiftFITS</code>, <code>SwiftPixel</code>, <code>SwiftXISF</code>, <code>SwiftRAW</code>, LibRAW come in <em>transitively</em> through SwiftAstro's nested submodules / <code>Package.swift</code>. They live under <code>Submodules/SwiftAstro/Submodules/…</code>.</li>
+                <li>Per the working agreement, submodule changes require explicit approval. The submodule reorder for milestone 9 has been pre-approved (see Q&amp;A). Any other submodule change surfaced during implementation must be raised before making it.</li>
+            </ul>
+
+            <h3>Reordering rationale</h3>
+            <ul>
+                <li><strong>Phase A (quick UI wins)</strong> — small, isolated, low-risk view changes that deliver value immediately and touch little shared state.</li>
+                <li><strong>Phase B (warnings &amp; stability)</strong> — console-warning and resource-usage cleanups; grouped so the debug console is quieted in one focused pass.</li>
+                <li><strong>Phase C (rendering &amp; processing)</strong> — behavior changes to the render/zoom path and the pixel pipeline (including the pre-approved SwiftPixel reorder).</li>
+                <li><strong>Phase D (FITS-write features)</strong> — all three depend on SwiftFITS write. Milestone 10 (backlog item 3) is sequenced first because a robust FITS-keyword/card generation path (replacing the hand-built cards) is the foundation that the FITS export (item 1) and the FITS plate-solve upload (item 2) both build on.</li>
+            </ul>
+
+            <h3>Key files by area (from codebase map)</h3>
+            <ul>
+                <li><strong>FITS read/write</strong>: <code>Submodules/SwiftAstro/Submodules/SwiftFITS/SwiftFITS/FITSFile.swift</code> (write API), <code>FITScope/Image/ImageExporter.swift</code>, <code>FITScope/Views/Common/ImageExportOptionsView.swift</code>, <code>FITScope/Model/FITS/*</code>.</li>
+                <li><strong>Plate-solving</strong>: <code>FITScope/Network/AstrometryClient.swift</code>, <code>FITScope/Network/PlateSolveSession.swift</code> (<code>shouldUploadOriginalFile</code>).</li>
+                <li><strong>XISF FITS keywords</strong>: <code>FITScope/Model/XISF/ImageMetadataProperty+XISF.swift</code> (<code>fitsValue(name:rawValue:)</code>, hand-built padding), <code>ImageMetadataSection+XISF.swift</code>, <code>XISFImageInfo.swift</code>.</li>
+                <li><strong>Stars overlay</strong>: <code>FITScope/Views/Overlays/StarsOverlay.swift</code>, <code>FITScope/Model/StarDetection.swift</code>, <code>FITScope/Model/Overlays/OverlayAppearance.swift</code>, <code>FITScope/Views/Preferences/OverlayAppearancePreferencesView.swift</code>.</li>
+                <li><strong>Pixel pipeline</strong>: <code>FITScope/Image/ImageProcessor.swift</code>, <code>Submodules/SwiftAstro/Submodules/SwiftPixel/SwiftPixel/PixelPipeline.swift</code> (fixed stage order), <code>FITScope/Views/ImageControls/BrightnessContrastControlView.swift</code>, <code>StretchControlView.swift</code>.</li>
+                <li><strong>Canvas/zoom</strong>: <code>FITScope/Views/Canvas/ZoomableImageView.swift</code> (<code>HoverImageNSView.draw</code>), <code>ImageCanvasView.swift</code>.</li>
+                <li><strong>App group / CFPrefs</strong>: <code>FITScope/Model/Preferences/AutoStretchPreference.swift</code> (<code>appGroupID</code>, <code>sharedDefaults</code>), the three <code>*.entitlements</code> files, <code>FITScope/Application/AppDelegate.swift</code>.</li>
+                <li><strong>Window menu / scenes</strong>: <code>FITScope/Application/FITScopeApp.swift</code>, <code>FITScope/Application/Commands/ImageCommands.swift</code>.</li>
+                <li><strong>Thumbnail extension</strong>: <code>FITScopeThumbnailExtension/ThumbnailProvider.swift</code>, <code>FITScope/Image/PreviewRenderer.swift</code> / <code>FITSPreviewRenderer.swift</code> / <code>XISFPreviewRenderer.swift</code>, <code>ThumbnailLayout.swift</code>.</li>
+                <li><strong>Sidebar</strong>: <code>FITScope/Views/Sidebar/FilesSidebarView.swift</code>, <code>FITScope/Model/WindowModel.swift</code> (<code>files</code>).</li>
+            </ul>
+
+            <h3>Open investigation notes</h3>
+            <ul>
+                <li><strong>default.csv (milestone 6 / item 9)</strong>: The literal <code>default.csv</code> does not appear anywhere in app or submodule source. The "Failed to locate resource named default.csv" warning most likely originates from a dependency (e.g. a star-detection/catalog resource in SwiftPixel/SwiftAstro) at runtime — confirm the source before deciding whether it is bundled, harmless, or fixable app-side.</li>
+                <li><strong>Rendering (milestone 7 / item 6)</strong>: There is no Metal / <code>CAMetalLayer</code> in the app. The main canvas draws with <code>NSImage.draw(in:)</code> using AppKit's default interpolation; "real pixels when zoomed" means setting <code>interpolationQuality = .none</code> (nearest-neighbor) above a zoom threshold, not a Metal rewrite. The <code>CAMetalLayer ignoring invalid setDrawableSize</code> warning in item 9 therefore comes from SwiftUI/system compositing, not app-owned Metal code.</li>
+            </ul>
+        </div>
+
+        <!-- ================= PHASE A ================= -->
+        <div class="phase-heading phase-a">
+            <span class="bar"></span>
+            <h2>Phase A — Quick UI wins</h2>
+        </div>
+        <p class="phase-sub">Small, isolated, low-risk view changes that deliver immediate value.</p>
+
+        <!-- Milestone 1 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">1</span>
+                <h3>Show the open-file count in the sidebar header</h3>
+                <span class="orig-ref">backlog item 12</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Give users an at-a-glance count of how many images are loaded by showing the number of open files next to the <code>FILES</code> header in the sidebar.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>In <code>FITScope/Views/Sidebar/FilesSidebarView.swift</code>, add a count next to the <code>Text("FILES")</code> header, sourced from <code>WindowModel.files.count</code>.</li>
+                    <li>Style it as a subtle secondary label/badge consistent with the existing header controls; hide or show <code>0</code> deliberately (decide during review).</li>
+                    <li>Ensure the count updates reactively as files are added/removed (<code>@Published files</code> in <code>WindowModel</code>).</li>
+                    <li>Add/refresh the SwiftUI preview for <code>FilesSidebarView</code>.</li>
+                    <li>Build &amp; run; verify the count tracks open files.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-12</span>
+            </div>
+            <hr class="sep">
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p>Implemented with TDD.</p>
+                <ul>
+                    <li><strong>Helper (tested first):</strong> added <code>nonisolated static func fileCountLabel( for count: Int ) -&gt; String?</code> to <code>FilesSidebarView</code>, returning the count as a string or <code>nil</code> when zero. Marked <code>nonisolated</code> so the (non-isolated) Swift Testing cases can call it synchronously despite <code>View</code> being <code>@MainActor</code>; default (internal) access, reached via <code>@testable import</code>. This is the sole unit-testable logic in an otherwise view-only change.</li>
+                    <li><strong>Tests:</strong> new <code>FITScopeTests/Views/Sidebar/FilesSidebarViewTests.swift</code> covering 0→<code>nil</code> (hidden), 1→"1", and 5/42. Wired into the <code>FITScopeTests</code> target via four <code>project.pbxproj</code> edits (build file, file reference, <code>Sidebar</code> group, Sources phase), mirroring <code>LocationInfoViewTests</code>.</li>
+                    <li><strong>View:</strong> next to <code>Text( "FILES" )</code>, show the badge when <code>fileCountLabel( for: model.files.count )</code> is non-nil — same <code>size: 10, weight: .semibold</code> as the header, <code>.monospacedDigit()</code> to avoid width jitter, <code>.tertiary</code> so it sits below the <code>.secondary</code> "FILES" label. Reactivity comes for free: <code>files</code> is <code>@Published</code> and the view holds the model via <code>@ObservedObject</code>.</li>
+                    <li><strong>Decision — the 0 case:</strong> the badge is hidden when no files are open, so an empty sidebar stays clean rather than reading "0". Flagged for review (see below).</li>
+                    <li><strong>Accessibility:</strong> added <code>AccessibilityIdentifier.FilesSidebarView.fileCount</code> and applied it to the badge.</li>
+                    <li><strong>Preview:</strong> added a <code>#Preview</code> building a <code>WindowModel</code>, opening the two bundled sample files, and framing the sidebar.</li>
+                    <li><strong>Build/test:</strong> <code>xcodebuild test</code> (scheme <code>FITScope</code>, macOS) compiled the app + test target and the three new tests passed.</li>
+                </ul>
+                <p><strong>Automated review loop:</strong> 1 round; converged with no Critical/High/Medium findings. One Low/Info style nit (misaligned <code>=</code> in the preview) was fixed since it violated the project's alignment convention.</p>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <ul>
+                    <li><strong>Misaligned <code>=</code> in the preview block</strong> — Low/Info (style). The <code>let</code> statements in the new <code>#Preview</code> did not align their <code>=</code>. <em>Resolution: Fixed.</em></li>
+                    <li>Reviewer otherwise confirmed: reactive count is correct, <code>nonisolated static</code> helper is well-judged and safe, no force-unwraps/raw loops, styling and spaced-paren convention consistent, pbxproj passes <code>plutil -lint</code> with internally consistent IDs and correct test-target wiring, and no regressions to existing behavior/APIs/callers/tests.</li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>"Looks good" — approved as implemented, including hiding the badge when no files are open.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Milestone 2 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">2</span>
+                <h3>Only list open windows in the Window menu</h3>
+                <span class="orig-ref">backlog item 8</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>The Window menu should list only windows that are actually open, not every declared scene (About, Levels, Curves, Screen Transfer, Session Metrics, …).</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Investigate why unopened scenes appear in the Window menu — review the scene declarations in <code>FITScope/Application/FITScopeApp.swift</code> (the <code>Window</code>/<code>WindowGroup</code> scenes and their titles/ids).</li>
+                    <li>Determine the correct mechanism (e.g. presenting these as on-demand windows so AppKit only lists them once opened, rather than always-declared <code>Window</code> scenes appearing in the standard Window menu).</li>
+                    <li>Apply the change so only open windows are listed; confirm menu commands that open them (<code>ImageCommands.swift</code>: <code>LevelsWindow</code>, <code>CurvesWindow</code>, <code>InfoWindow</code>, <code>SessionMetricsWindow</code>) still work.</li>
+                    <li>Verify the About item (replaced via <code>CommandGroup(replacing: .appInfo)</code>) still behaves correctly.</li>
+                    <li>Build &amp; run; confirm the Window menu only shows open windows and reopening still functions.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 3 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">3</span>
+                <h3>Show star measurement labels in the stars overlay</h3>
+                <span class="orig-ref">backlog item 4</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Display a selectable measurement label (<code>None</code>, <code>HFR</code>, or <code>FWHM</code>, defaulting to <code>HFR</code>) next to each detected star in the stars overlay, configurable from the Overlay preferences.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Confirm HFR and FWHM are available per detected star from the star-detection results (<code>StarDetection.swift</code> → SwiftAstro/SwiftPixel <code>StarField</code>); note any gaps.</li>
+                    <li>Add a <code>None</code>/<code>HFR</code>/<code>FWHM</code> preference (default <code>HFR</code>) to the overlay appearance model (<code>FITScope/Model/Overlays/OverlayAppearance.swift</code>) and surface it in <code>Views/Preferences/OverlayAppearancePreferencesView.swift</code>.</li>
+                    <li>In <code>FITScope/Views/Overlays/StarsOverlay.swift</code>, draw the selected metric next to each star marker, respecting display scale, existing overlay colors/opacity, and readability at various zooms.</li>
+                    <li>Decide label formatting (precision, units) and avoid clutter at low zoom / dense fields.</li>
+                    <li>Add/refresh previews for the overlay and the preferences view.</li>
+                    <li>Build &amp; run; verify switching the metric updates labels live.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- ================= PHASE B ================= -->
+        <div class="phase-heading phase-b">
+            <span class="bar"></span>
+            <h2>Phase B — Warnings &amp; stability cleanup</h2>
+        </div>
+        <p class="phase-sub">Quiet the console and rein in resource usage in one focused pass.</p>
+
+        <!-- Milestone 4 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">4</span>
+                <h3>Silence the CFPrefs app-group warning at startup</h3>
+                <span class="orig-ref">backlog item 7</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Eliminate the startup <code>Couldn't read values in CFPrefsPlistSource … Using kCFPreferencesAnyUser with a container is only allowed for System Containers</code> warning caused by accessing the <code>group.com.xs-labs.FITScope</code> app group.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Investigate how the shared app-group defaults are created and accessed: <code>AutoStretchPreference.appGroupID</code> / <code>sharedDefaults</code> (<code>UserDefaults(suiteName:)</code>), its use in <code>Preferences.swift</code>, and the seeding in <code>AppDelegate.swift</code> (lines ~94–100).</li>
+                    <li>Determine the root cause (the <code>kCFPreferencesAnyUser</code>/container combination) and the correct access pattern for a sandboxed app-group suite shared with the Preview/Thumbnail extensions.</li>
+                    <li>Confirm entitlements are consistent across the three targets (<code>FITScope.entitlements</code>, <code>FITScopePreviewExtension.entitlements</code>, <code>FITScopeThumbnailExtension.entitlements</code>).</li>
+                    <li>Apply the fix and verify shared preferences (auto-stretch previews) still round-trip between the app and extensions.</li>
+                    <li>Launch the app and confirm the warning no longer appears in the console.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 5 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">5</span>
+                <h3>Fix the NSSplitView Auto Layout constraint conflict</h3>
+                <span class="orig-ref">backlog item 10</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Resolve the runtime <code>Unable to simultaneously satisfy constraints</code> warning on the split view's trailing edge, where the <code>NSSplitView.Edge.Trailing</code> constraints clash with an <code>NSViewSafeAreaLayoutGuide-right</code> constraint reserving a fixed 300&nbsp;pt inset.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Reproduce the conflict and capture the full constraint log to identify the exact views/guides involved.</li>
+                    <li>Locate the split-view layout in the app's AppKit-backed views (the <code>NSViewRepresentable</code>/scroll-and-split hierarchy around the canvas and sidebar; start from <code>ZoomableImageView.swift</code> / canvas controllers and the split container).</li>
+                    <li>Determine why the trailing item-view/layout-guide constraints and the safe-area 300&nbsp;pt inset both apply, and adjust priorities or the offending constraint so they no longer conflict.</li>
+                    <li>Verify the fix does not regress the split behavior (min/max widths, collapsing, resizing).</li>
+                    <li>Run the app and confirm the warning is gone across resize and collapse operations.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 6 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">6</span>
+                <h3>Investigate and fix additional debug-console warnings</h3>
+                <span class="orig-ref">backlog item 9</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Investigate each of the remaining Xcode debug-console warnings and fix them where possible, or document why a given one is external/harmless.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li><code>Unable to obtain a task name port right for pid …</code> — determine whether this is app-caused or a system/sandbox artifact; fix or document.</li>
+                    <li><code>Failed to locate resource named "default.csv"</code> — trace the origin (not present in app/submodule source; likely a dependency catalog/star-detection resource). Decide whether to bundle the resource, adjust the lookup, or document it as external.</li>
+                    <li><code>CAMetalLayer ignoring invalid setDrawableSize width=0 height=0</code> — investigate the zero-size drawable (likely SwiftUI/system compositing of a view laid out at zero size); mitigate app-side if a view is being sized to zero.</li>
+                    <li><code>clip: empty path.</code> — find the drawing/clip path being built empty (overlay/canvas draw code) and guard against empty paths.</li>
+                    <li>For each: record the outcome (fixed / external / accepted) in the implementation notes.</li>
+                    <li>Run the app and confirm which warnings are eliminated.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 7 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">7</span>
+                <h3>Fix runaway CPU usage in the Thumbnail extension</h3>
+                <span class="orig-ref">backlog item 11</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Keep <code>FITScopeThumbnailExtension</code> within reasonable resource limits — it can currently consume up to ~900% CPU while generating thumbnails.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Profile <code>ThumbnailProvider.provideThumbnail</code> → <code>PreviewRenderer.render</code> (<code>FITSPreviewRenderer</code>/<code>XISFPreviewRenderer</code>) to confirm the cost is the full-resolution pixel pipeline (auto-stretch/STF derivation + full <code>ImageProcessor.render</code>) with no pre-downsampling.</li>
+                    <li>Reduce work for thumbnails: e.g. decode/downsample before running the pipeline, cap concurrency/thread count, or use a cheaper render path sized to the requested thumbnail (<code>ThumbnailLayout</code>).</li>
+                    <li>Verify thumbnail quality remains acceptable for both FITS and XISF sources.</li>
+                    <li>Confirm the shared render code changes do not regress the in-app preview/rendering paths.</li>
+                    <li>Measure CPU before/after (e.g. batch-generating thumbnails in Finder/Quick Look) and record the numbers.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- ================= PHASE C ================= -->
+        <div class="phase-heading phase-c">
+            <span class="bar"></span>
+            <h2>Phase C — Rendering &amp; processing</h2>
+        </div>
+        <p class="phase-sub">Behavior changes to the render/zoom path and the pixel pipeline.</p>
+
+        <!-- Milestone 8 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">8</span>
+                <h3>Show real pixels when zoomed in</h3>
+                <span class="orig-ref">backlog item 6</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Render crisp, nearest-neighbor magnification at high zoom so users can inspect individual pixels, instead of the current smooth interpolated rendering.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>In <code>FITScope/Views/Canvas/ZoomableImageView.swift</code> (<code>HoverImageNSView.draw(_:)</code>), set the drawing context's <code>interpolationQuality</code> to <code>.none</code> when the effective magnification is above a threshold (real pixels), keeping smooth interpolation when zoomed out.</li>
+                    <li>Decide the zoom threshold at which nearest-neighbor kicks in (e.g. ≥ 100% / where one image pixel maps to ≥ 1 screen pixel), and whether it should be automatic or a toggle.</li>
+                    <li>Ensure overlays and comparison layers still render correctly with the changed interpolation.</li>
+                    <li>Verify behavior across Retina/non-Retina and different magnifications.</li>
+                    <li>Build &amp; run; confirm pixels are crisp when zoomed in and smooth when zoomed out.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 9 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">9</span>
+                <h3>Fix the brightness and contrast adjustments</h3>
+                <span class="orig-ref">backlog item 5</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Rework brightness/contrast so they respond in a controlled, predictable way (they currently look wrong and are far too sensitive), and move them to <em>after</em> the STF stretch in the pipeline. <strong>The SwiftPixel submodule reorder is pre-approved for this milestone.</strong></p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Characterize the current behavior: brightness/contrast map into <code>PixelPipeline.Config</code> via <code>ImageProcessor.config(...)</code> and currently run <strong>before</strong> the STF stretch (linear domain) in <code>PixelPipeline.swift</code> (order: … <code>BrightnessContrast → Stretch(STF) → …</code>). Identify why the response is off/over-sensitive.</li>
+                    <li>Move the <code>BrightnessContrast</code> stage to run <strong>after</strong> the <code>Stretch</code> stage in <code>Submodules/SwiftAstro/Submodules/SwiftPixel/SwiftPixel/PixelPipeline.swift</code>, keeping the SwiftPixel package/Xcode integration in sync.</li>
+                    <li>Rework the brightness/contrast transfer function and the UI control ranges (<code>Views/ImageControls/BrightnessContrastControlView.swift</code>) so adjustments are gentle and predictable in the post-stretch domain.</li>
+                    <li>Check for interactions with other post-stretch stages (gamma, levels, curves) and with saved/restored settings.</li>
+                    <li>Add/adjust tests where feasible; update previews.</li>
+                    <li>Build &amp; run; visually verify brightness/contrast now behave correctly on representative images.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- ================= PHASE D ================= -->
+        <div class="phase-heading phase-d">
+            <span class="bar"></span>
+            <h2>Phase D — FITS-write features</h2>
+        </div>
+        <p class="phase-sub">All depend on SwiftFITS write (available). Milestone 10 establishes the robust FITS generation path that milestones 11–12 build on.</p>
+
+        <!-- Milestone 10 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">10</span>
+                <h3>Simplify XISF embedded FITS keyword handling</h3>
+                <span class="orig-ref">backlog item 3</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Replace the hand-built FITS card construction used to parse XISF-embedded FITS keywords with SwiftFITS's write/serialization API, making the handling simpler and more robust (especially around 80-column padding and truncation).</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Review the current hand-rolled builder <code>fitsValue(name:rawValue:)</code> in <code>FITScope/Model/XISF/ImageMetadataProperty+XISF.swift</code> (name padding to 8, <code>"name= value"</code>, guard <code>&lt;= 80</code> + ASCII, pad to 80, then <code>FITSProperty(string:options:.lenient)</code>) and its callers (<code>ImageMetadataSection+XISF.swift</code>, <code>XISFImageInfo.swift</code>).</li>
+                    <li>Identify the SwiftFITS API that builds/serializes a card or keyword directly from a name/value (via the write path in <code>FITSFile.swift</code> / <code>FITSSerializationOptions</code>) rather than string-assembling a card.</li>
+                    <li>Rework the XISF keyword ingestion to use that API, removing manual padding and the truncation hazard while preserving current behavior for valid keywords.</li>
+                    <li>Verify against real XISF files: keywords still parse into <code>FITSMetadata</code> identically (or better) than before; handle edge cases (long names/values, non-ASCII) explicitly.</li>
+                    <li>Add/adjust tests for keyword conversion where feasible.</li>
+                    <li>Build &amp; run; confirm XISF metadata displays correctly.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 11 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">11</span>
+                <h3>Offer FITS as an export format</h3>
+                <span class="orig-ref">backlog item 1</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Let users export an image to FITS, offered for every source except files that are already FITS (where re-exporting to the same format adds nothing).</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Add a <code>.fits</code> case to <code>ImageExporter.Format</code> (<code>FITScope/Image/ImageExporter.swift</code>) and implement writing a FITS file via SwiftFITS (<code>FITSFile.write(to:options:)</code> / <code>serializedData</code>).</li>
+                    <li>Decide what pixel data and metadata the exported FITS carries — clarify with the maintainer whether it should be the rendered display pixels (as PNG/JPEG/TIFF export does today) or the underlying image data, and which header keywords to include.</li>
+                    <li>Surface the FITS option in the export UI (<code>Views/Common/ImageExportOptionsView.swift</code> <code>Kind</code> enum + save-panel accessory, <code>ImageShareLink.swift</code>, <code>RenderedImageShareItem.swift</code>), and set the correct file extension/UTType.</li>
+                    <li>Hide/disable the FITS option when the source is already a FITS file.</li>
+                    <li>Verify exported FITS files open correctly in FITScope and other FITS viewers.</li>
+                    <li>Add/adjust tests and previews where feasible; build &amp; run to verify the full export flow.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 12 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">12</span>
+                <h3>Upload a FITS file for plate-solving XISF images</h3>
+                <span class="orig-ref">backlog item 2</span>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>For XISF images submitted to nova.astrometry.net, generate and upload a FITS file carrying the correct metadata instead of a blind-solve PNG, most likely speeding up the solve.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Review the current upload strategy in <code>FITScope/Network/PlateSolveSession.swift</code> (<code>shouldUploadOriginalFile</code>, <code>uploadData(from:originalFileURL:)</code>) and <code>AstrometryClient.upload(...)</code>; today XISF (and other non-FITS) sources upload a rendered PNG (blind solve).</li>
+                    <li>For XISF sources, build a FITS file from the image data plus the relevant header metadata (RA/Dec, pixel scale, focal length, sensor info, etc.) using SwiftFITS write — reusing the robust keyword generation from milestone 10.</li>
+                    <li>Populate whichever hint keywords astrometry.net can use to avoid a blind solve; verify the service accepts the generated FITS.</li>
+                    <li>Wire the new FITS-generation path into the plate-solve upload for XISF, keeping the PNG fallback for sources without usable metadata.</li>
+                    <li>Test end-to-end against nova.astrometry.net with a real XISF image; compare solve time/behavior vs. the PNG path and record findings.</li>
+                    <li>Build &amp; run the full plate-solve flow.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- ================= APPENDIX ================= -->
+        <h2>Appendix</h2>
+        <div class="appendix">
+            <h3 style="font-weight:700;color:var(--text);margin-top:16px;">Plan order ↔ backlog order</h3>
+            <ul>
+                <li>Milestone 1 → backlog 12 — open-file count in sidebar</li>
+                <li>Milestone 2 → backlog 8 — only list open windows</li>
+                <li>Milestone 3 → backlog 4 — star measurement labels</li>
+                <li>Milestone 4 → backlog 7 — silence CFPrefs app-group warning</li>
+                <li>Milestone 5 → backlog 10 — NSSplitView constraint conflict</li>
+                <li>Milestone 6 → backlog 9 — additional debug-console warnings</li>
+                <li>Milestone 7 → backlog 11 — thumbnail extension CPU</li>
+                <li>Milestone 8 → backlog 6 — real pixels when zoomed</li>
+                <li>Milestone 9 → backlog 5 — brightness/contrast fix + post-STF reorder</li>
+                <li>Milestone 10 → backlog 3 — simplify XISF FITS keyword handling</li>
+                <li>Milestone 11 → backlog 1 — FITS export format</li>
+                <li>Milestone 12 → backlog 2 — FITS upload for plate-solving XISF</li>
+            </ul>
+            <h3 style="font-weight:700;color:var(--text);margin-top:24px;">Dependencies &amp; sequencing</h3>
+            <ul>
+                <li>Milestones 10–12 all rely on SwiftFITS write (confirmed available). Milestone 10 (robust keyword/card generation) is the foundation; milestone 12 explicitly reuses it.</li>
+                <li>Milestone 9 includes a pre-approved reorder of the fixed stage order in the SwiftPixel submodule (<code>PixelPipeline.swift</code>).</li>
+                <li>Phases A and B are largely independent of one another and of Phases C/D; they can be tackled in any order within their phase, but the listed order front-loads the smallest, lowest-risk changes.</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

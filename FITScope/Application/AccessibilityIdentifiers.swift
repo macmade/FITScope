@@ -106,6 +106,9 @@ public enum AccessibilityIdentifier
         /// The files sidebar list.
         public static let list = "FilesSidebarView.list"
 
+        /// The open-file count badge next to the "FILES" header.
+        public static let fileCount = "FilesSidebarView.fileCount"
+
         /// The "open files" (+) button in the sidebar header.
         public static let addButton = "FilesSidebarView.addButton"
 
