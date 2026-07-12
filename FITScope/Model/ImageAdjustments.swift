@@ -43,7 +43,30 @@ public final class ImageAdjustments: ObservableObject
 
     /// The non-linear stretch applied to bring out faint detail, or `nil` for a
     /// linear image. Off by default, so the image opens linear.
+    ///
+    /// Any direct change here is treated as a manual, hand-edited stretch and
+    /// disengages the managed ``isAutoStretch`` mode — a new curve, a mode change,
+    /// or clearing the stretch all drop out of "Auto engaged".
     @Published public var stretch: Processors.Stretch.STFParameters? = nil
+    {
+        didSet
+        {
+            // A hand-edited stretch is manual, so the app-managed "Auto engaged"
+            // mode drops out. `init` and `reset()` re-seed `isAutoStretch` after the
+            // stretch assignment, so the on-open / on-reset state is preserved
+            // regardless of this observer firing.
+            self.isAutoStretch = false
+        }
+    }
+
+    /// Whether the stretch is currently app-managed — the "Auto engaged" state.
+    ///
+    /// Set when the stretch is auto-derived (an image that opens auto-stretched;
+    /// later, the managed Auto toggle) and cleared the moment the user hand-edits the
+    /// stretch. It is deliberately *not* part of ``settings``, so it never, on its
+    /// own, makes ``hasAdjustments`` report the image as edited: an image that merely
+    /// opened auto-stretched stays unedited until the user changes something.
+    @Published public private( set ) var isAutoStretch = false
 
     /// How to white-balance the colour channels, or `nil` to leave them
     /// untouched. Off by default.
@@ -145,6 +168,13 @@ public final class ImageAdjustments: ObservableObject
         self.debayer          = opened.debayer
         self.debayerAlgorithm = opened.debayerMode
         self.orientation      = opened.orientation
+
+        // The image opened auto-stretched — and so starts "Auto engaged" — exactly
+        // when its opened state carries a stretch (the baseline is always unstretched,
+        // so a stretch in `opened` is an auto-applied one). The `stretch` observer does
+        // not run for the assignments above — property observers do not fire during a
+        // type's own initializer — so this is a plain seed, not a re-derivation.
+        self.isAutoStretch = opened.stretch != nil
     }
 
     /// Restores every adjustment to the image's baseline, rendering the file as
@@ -173,6 +203,11 @@ public final class ImageAdjustments: ObservableObject
         self.debayer          = defaults.debayer
         self.debayerAlgorithm = defaults.debayerAlgorithm
         self.orientation      = defaults.orientation
+
+        // Track the baseline like every other field: reset returns to the unstretched
+        // baseline, which is never auto-stretched. Set last so it wins over the
+        // `stretch` observer that the assignment above triggered.
+        self.isAutoStretch = defaults.isAutoStretch
     }
 
     /// Whether the value at `keyPath` differs from the image's baseline, driving

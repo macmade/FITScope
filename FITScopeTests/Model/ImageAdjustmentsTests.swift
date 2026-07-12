@@ -419,4 +419,128 @@ struct ImageAdjustmentsTests
         #expect( adjustments.isModified( \.stretch ) == false )
         #expect( adjustments.orientation.isIdentity )
     }
+
+    // MARK: - Managed auto-stretch ("Auto engaged")
+
+    /// The managed "Auto engaged" state is seeded from how the image opened: an image
+    /// that opened auto-stretched (an `opened` state carrying a stretch) starts
+    /// engaged, while an image that opened linear — with the pipeline defaults or a
+    /// distinct but unstretched baseline — does not.
+    @Test
+    @MainActor
+    func autoStretchEngagedReflectsHowTheImageOpened()
+    {
+        // Opened linear on the pipeline defaults: not managed.
+        #expect( ImageAdjustments().isAutoStretch == false )
+
+        // A non-default but unstretched baseline still opens linear: not managed.
+        #expect( ImageAdjustments( baseline: ImageProcessor.Settings( normalize: .identity ) ).isAutoStretch == false )
+
+        // Opened with an auto-applied stretch: managed on open.
+        let stretch = Processors.Stretch.STFParameters.uniform( .init( midtones: 0.3 ) )
+        let opened  = ImageProcessor.Settings( normalize: .identity, stretch: stretch )
+        let managed = ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
+
+        #expect( managed.isAutoStretch )
+    }
+
+    /// Being merely opened auto-stretched does not, by itself, mark the image as
+    /// edited: the "Auto engaged" state is not part of the settings snapshot, so
+    /// `hasAdjustments` stays `false` until the user changes something.
+    @Test
+    @MainActor
+    func autoStretchAloneDoesNotMarkTheImageEdited()
+    {
+        let stretch = Processors.Stretch.STFParameters.uniform( .init( midtones: 0.3 ) )
+        let opened  = ImageProcessor.Settings( stretch: stretch )
+        let managed = ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
+
+        #expect( managed.isAutoStretch )
+        #expect( managed.hasAdjustments == false )
+    }
+
+    /// Hand-editing the stretch disengages the managed mode: any direct change to the
+    /// stretch — a new value, or clearing it (mode → None) — drops out of "Auto
+    /// engaged".
+    @Test
+    @MainActor
+    func manualStretchEditDisengagesAutoStretch()
+    {
+        let stretch = Processors.Stretch.STFParameters.uniform( .init( midtones: 0.3 ) )
+        let opened  = ImageProcessor.Settings( stretch: stretch )
+
+        // Editing the stretch to a new value disengages.
+        let edited = ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
+
+        #expect( edited.isAutoStretch )
+
+        edited.stretch = .uniform( .init( midtones: 0.6 ) )
+
+        #expect( edited.isAutoStretch == false )
+
+        // Clearing the stretch (mode → None) also disengages.
+        let cleared = ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
+
+        #expect( cleared.isAutoStretch )
+
+        cleared.stretch = nil
+
+        #expect( cleared.isAutoStretch == false )
+    }
+
+    /// A change to any other adjustment does not disengage the managed mode — only a
+    /// stretch edit does — so nudging brightness leaves the auto stretch engaged.
+    @Test
+    @MainActor
+    func nonStretchEditKeepsAutoStretchEngaged()
+    {
+        let stretch = Processors.Stretch.STFParameters.uniform( .init( midtones: 0.3 ) )
+        let opened  = ImageProcessor.Settings( stretch: stretch )
+        let managed = ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
+
+        managed.brightness = 0.3
+
+        #expect( managed.isAutoStretch )
+    }
+
+    /// `reset()` returns to the unstretched baseline, so it disengages the managed
+    /// mode: after a reset the image is linear and no longer auto-stretched.
+    @Test
+    @MainActor
+    func resetDisengagesAutoStretch()
+    {
+        let stretch = Processors.Stretch.STFParameters.uniform( .init( midtones: 0.3 ) )
+        let opened  = ImageProcessor.Settings( stretch: stretch )
+        let managed = ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
+
+        #expect( managed.isAutoStretch )
+
+        managed.reset()
+
+        #expect( managed.isAutoStretch == false )
+    }
+
+    /// The per-field reset of the stretch disengages the managed mode (it is a stretch
+    /// change), while a per-field reset of an unrelated field leaves it engaged.
+    @Test
+    @MainActor
+    func perFieldResetDisengagesOnlyForStretch()
+    {
+        let stretch = Processors.Stretch.STFParameters.uniform( .init( midtones: 0.3 ) )
+        let opened  = ImageProcessor.Settings( stretch: stretch )
+
+        // Resetting an unrelated field keeps the managed mode.
+        let keptManaged = ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
+
+        keptManaged.reset( \.brightness )
+
+        #expect( keptManaged.isAutoStretch )
+
+        // Resetting the stretch itself disengages.
+        let disengaged = ImageAdjustments( baseline: ImageProcessor.Settings(), opened: opened )
+
+        disengaged.reset( \.stretch )
+
+        #expect( disengaged.isAutoStretch == false )
+    }
 }

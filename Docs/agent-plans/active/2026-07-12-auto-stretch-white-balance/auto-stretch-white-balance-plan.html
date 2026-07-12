@@ -291,7 +291,7 @@
             <div class="milestone-head">
                 <span class="mnum">1</span>
                 <h3>Managed &ldquo;Auto engaged&rdquo; state</h3>
-                <span class="capsule not-started">Not started</span>
+                <span class="capsule completed">Completed</span>
             </div>
             <div class="field-label">Goal</div>
             <p class="goal">Introduce the model-level notion of an app-managed stretch: a single &ldquo;Auto
@@ -311,15 +311,77 @@
                 <li>Add unit tests for the set/clear transitions (open engaged, manual edit disengages, reset behaviour).</li>
             </ul>
             <div class="field-label">Status</div>
-            <p><span class="capsule not-started">Not started</span></p>
+            <p><span class="capsule completed">Completed</span></p>
             <div class="field-label">Completed</div>
-            <p class="placeholder">&mdash;</p>
+            <p>2026-07-12</p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">To be filled in during implementation.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>Approach.</strong> TDD &mdash; the six new transition tests in
+                        <code>FITScopeTests/Model/ImageAdjustmentsTests.swift</code> were written first and confirmed to
+                        fail to compile (no <code>isAutoStretch</code> member), then the model was implemented until they
+                        pass. Full <code>ImageAdjustmentsTests</code> suite: 18/18 passing via <code>xcodebuild</code>.</li>
+                    <li><strong>New state.</strong> Added <code>@Published public private( set ) var isAutoStretch = false</code>
+                        to <code>ImageAdjustments</code>. It is deliberately <em>not</em> part of the <code>settings</code>
+                        snapshot, so <code>hasAdjustments</code> (<code>settings != opened</code>) is unaffected and an
+                        image that merely opened auto-stretched is never, on its own, reported as edited. Made
+                        <code>private( set )</code> because nothing outside the model needs to write it this milestone; the
+                        Auto toggle (Milestone&nbsp;3) will drive it through a managed setter added in Milestone&nbsp;2.</li>
+                    <li><strong>Seeding (Task&nbsp;2).</strong> Seeded in <code>init</code> as
+                        <code>isAutoStretch = opened.stretch != nil</code>. Because the loaders already funnel an
+                        auto-applied stretch (auto Screen Transfer or XISF display function) through the <code>opened</code>
+                        state via their <code>openedSettings(&hellip;)</code> path &mdash; and <code>baseline</code> is always
+                        unstretched &mdash; this picks up every auto-stretched open with <strong>no loader changes</strong>.
+                        Deriving it from the existing <code>opened</code> rather than threading a new parameter keeps the
+                        change minimal and consistent with how <code>baseline</code>/<code>opened</code> already work.</li>
+                    <li><strong>Clearing on manual edit (Task&nbsp;3).</strong> Added a <code>didSet</code> on
+                        <code>stretch</code> that clears <code>isAutoStretch</code>. Any direct write to <code>stretch</code>
+                        (new curve, mode change, clearing to <code>nil</code>) disengages Auto. Property observers do not
+                        fire during <code>init</code>, so the on-open seed is preserved; in <code>reset()</code> the observer
+                        <em>does</em> fire, and the explicit <code>isAutoStretch = defaults.isAutoStretch</code> is set last
+                        so it wins. A change to any <em>other</em> field (e.g. brightness) does not touch <code>stretch</code>,
+                        so it leaves Auto engaged.</li>
+                    <li><strong>reset (Task&nbsp;4).</strong> <code>reset()</code> copies <code>isAutoStretch</code> from a
+                        fresh baseline-seeded instance, exactly as it copies every other field, so it tracks the baseline
+                        automatically. <code>reset(\.stretch)</code> disengages (it is a stretch write); a per-field reset of
+                        an unrelated field leaves it engaged. <code>isModified(_:)</code>/<code>hasAdjustments</code> are
+                        unchanged and remain correct.</li>
+                    <li><strong>Milestone boundary (intentional).</strong> The one-shot Auto button in
+                        <code>StretchControlView</code> currently writes <code>adjustments.stretch</code> directly, so with the
+                        new <code>didSet</code> it now leaves <code>isAutoStretch == false</code> after a click. That is
+                        harmless here because nothing reads <code>isAutoStretch</code> yet; Milestone&nbsp;2/3 route the
+                        managed derivation through a setter that bypasses the disengage, and Milestone&nbsp;3 turns the button
+                        into the persistent toggle.</li>
+                    <li><strong>Automated review.</strong> One fresh-context review round; converged with no
+                        Critical/High/Medium findings. One Low (an inaccurate <code>init</code> comment claiming the observer
+                        fires during initialization) was fixed; two Info items were noted (see below).</li>
+                </ul>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">To be filled in during the automated review loop.</p>
+            <div class="notes">
+                <ul>
+                    <li><strong>[Low &mdash; Fixed] <code>init</code> comment claimed the <code>stretch</code> observer fires
+                        during initialization.</strong> Property observers do not run for assignments made inside a type's own
+                        initializer, so the &ldquo;seeded last so it survives the observer firing&rdquo; rationale was wrong
+                        for <code>init</code> (it remains correct for <code>reset()</code>). Reworded the comment to state the
+                        observer does not run during init and that this is a plain seed.</li>
+                    <li><strong>[Info &mdash; Fixed] Seeding comment more specific than the code.</strong> The comment
+                        referenced a comparison against <code>baseline.stretch</code> that the code does not literally perform
+                        (<code>opened.stretch != nil</code>). Folded the &ldquo;baseline is always unstretched&rdquo; invariant
+                        into the reworded comment so it matches the code.</li>
+                    <li><strong>[Info &mdash; Deferred] Every <code>stretch</code> write republishes
+                        <code>isAutoStretch</code>.</strong> The unconditional <code>didSet</code> emits a second
+                        <code>objectWillChange</code> even when <code>isAutoStretch</code> was already <code>false</code>.
+                        SwiftUI coalesces emissions within a run-loop tick, so there is no extra render or functional change;
+                        left as-is (a guarded early-return would be premature). Surfaced for your call.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">Awaiting review.</p>
+            <div class="notes">
+                <ul>
+                    <li>&ldquo;Looks good&rdquo; &mdash; approved as-is, no changes requested.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 2 -->
