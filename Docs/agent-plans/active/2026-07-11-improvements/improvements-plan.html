@@ -606,13 +606,24 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
+                <span class="status" style="background: var(--status-inprogress-bg); color: var(--status-inprogress-text);">Deferred</span>
                 <span class="completed-date">Completed: —</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p><strong>Deferred by the user</strong> — the warning is intermittent and could not be reproduced on demand during this session, so the exact conflicting constraints could not be captured.</p>
+                <ul>
+                    <li><strong>Layout is pure SwiftUI, not app-authored AppKit.</strong> The main window uses <code>NavigationSplitView</code> (sidebar <code>.navigationSplitViewColumnWidth( min: 250, ideal: 300, max: 500 )</code>) plus <code>.inspector( isPresented: )</code> (<code>.inspectorColumnWidth( min: 250, ideal: 300, max: 500 )</code>) in <code>FITScope/Application/MainWindowView.swift</code>, with <code>.frame( minWidth: 900 )</code>. There are no app-authored <code>NSLayoutConstraint</code>s — the plan's assumption that the split lives in an <code>NSViewRepresentable</code>/canvas hierarchy (<code>ZoomableImageView</code> etc.) does not hold; the offending <code>NSSplitView</code> trailing / <code>NSViewSafeAreaLayoutGuide-right</code> 300&nbsp;pt constraints are generated internally by SwiftUI's <code>.inspector</code> (the inspector's ideal width is 300).</li>
+                    <li><strong>Reproduction attempts (unsuccessful this session):</strong> unit- and UI-test runs don't surface it (the unit host opens no main window; the app-under-test's layout log isn't forwarded); a direct sandboxed launch with the DEBUG fixture-open args produced no window/log; a <code>log show</code>/<code>log stream</code> sweep for <em>"Unable to simultaneously satisfy…"</em> / <em>NSSplitView</em> / <em>SafeAreaLayoutGuide</em> caught nothing while the conflict didn't fire. The user confirmed the warning is real but intermittent and could not trigger it on demand either.</li>
+                    <li><strong>Next step when revisited:</strong> capture the full constraint log at the moment it fires (e.g. <code>log show --last 2m --predicate 'eventMessage CONTAINS "simultaneously"'</code> right after it appears, or set a symbolic breakpoint on <code>UIViewAlertForUnsatisfiableConstraints</code> in Xcode), then determine whether it is a benign SwiftUI-<code>.inspector</code> artifact (cf. milestone 4) or resolvable by adjusting the app's column/window width constraints (e.g. the 250/300/500 tiers vs the 900&nbsp;pt window minimum).</li>
+                </ul>
+            </div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Not applicable — deferred, no code change.</p></div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>"I can't seem to reproduce it for now - but it does happen - Defer that milestone."</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 6 -->
@@ -638,13 +649,34 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
-                <span class="completed-date">Completed: —</span>
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-13</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p><strong>All four warnings are external/system artifacts, not app bugs — three of them trace to the sidebar's capture-location <code>MKMapView</code> (MapKit / VectorKit).</strong> A definitive backtrace was captured under <code>lldb</code> (breakpoint on <code>CGPostError</code>, opening the bundled sample image), settling what static analysis alone could not.</p>
+                <ul>
+                    <li><strong>📄 External — <code>clip: empty path.</code> (MapKit / VectorKit).</strong> The captured backtrace is unambiguous: <code>CoreGraphics`clip</code> → <code>VectorKit`grl::ShapeLayerRenderer::renderBalloonToContext(…)</code> → <code>MapKit`-[MKMarkerStyle initWithBalloonIcon:configuration:]</code> → <code>MapKit`-[MKMapView _didChangeRegionMidstream:]</code>. It is emitted when the sidebar's location map (<code>FITScope/Views/Sidebar/LocationMapRepresentable.swift</code>, an <code>MKMapView</code> with an <code>MKPointAnnotation</code>) renders its marker for an image that carries location metadata. This is inside VectorKit's balloon-icon rendering — <strong>not app code</strong>, and not app-fixable. The app has <em>no</em> explicit clip anywhere except the comparison layer (below), confirming the observed warning is entirely MapKit-internal. Backtraces were captured for <em>both</em> of the two <code>clip: empty path.</code> messages logged per image load; both originate at <code>VectorKit`renderBalloonToContext</code>, with <strong>no</strong> <code>FITScope</code>, SwiftUI <code>Canvas</code>, or <code>CanvasOverlayLayer</code> frame in either stack — so no app <code>Canvas</code> is a source. (The <code>[com.xs-labs.FITScope]</code> subsystem tag on the message is just the running process's identifier, not an indication of app code.)</li>
+                    <li><strong>➕ Separate defensive fix (not the observed warning) — <code>ImageComparisonLayer</code>.</strong> While hunting the source, the one place the app itself <em>could</em> clip an empty path was found: the before/after comparison's <code>beforeReveal(dividerX:)</code> did <code>context.clip( to: Path( CGRect( x: 0, y: 0, width: dividerX, height: size.height ) ) )</code>, which is empty when the divider is dragged fully left (<code>dividerX == 0</code>) or during a transient zero-height layout. Guarded it with a new tested <code>nonisolated static func revealsBeforeImage( dividerX:height: )</code> (early-returns when there's nothing to reveal — visually identical). This prevents a real but rarely-hit, comparison-mode-only empty clip from <em>our</em> code; it is <strong>not</strong> the warning the user sees (which is MapKit). New <code>ImageComparisonLayerTests</code> (3 cases), wired via <code>project.pbxproj</code>; passes automated review. <strong>Kept</strong> (user decision) as a small robustness improvement — this is the milestone's only shipped code change.</li>
+                    <li><strong>Attempted map-side mitigation — reverted (empirically did not help).</strong> At the user's request, tried deferring the <code>MKMapView</code> mount until its card had a non-zero size (a <code>GeometryReader</code> guard in <code>LocationMapView</code>), to avoid the zero-size map/Metal setup. Re-ran the <code>lldb</code> capture afterward: <code>clip: empty path.</code> (same VectorKit <code>renderBalloonToContext</code> backtrace), <code>default.csv</code>, and <code>setDrawableSize width=0</code> <em>all still fired</em>. The backtrace shows the clip originates in MapKit building its <em>default marker style</em> (<code>+[MKMarkerStyle defaultUnselectedMarkerStyleForScale:]</code> → balloon-icon rendering) and the Metal layer during <code>MKMapView</code>/marker init — internal work independent of when or at what size the map is mounted. So no app-side mount/size change reduces them; the deferral was reverted to avoid adding complexity for zero benefit.</li>
+                    <li><strong>📄 External — <code>Failed to locate resource named "default.csv"</code> (<code>[ResourceManifest]</code>).</strong> Logged under the <code>[ResourceManifest]</code> category immediately alongside the map's Metal-layer setup in the same lldb run, and the literal <code>default.csv</code> appears <em>nowhere</em> in the app or any transitive submodule source (SwiftAstro / SwiftPixel / SwiftXISF / SwiftRAW / SwiftUtilities), with no such resource bundled — a system-framework (map/VectorKit) resource lookup. Not app-fixable. Benign.</li>
+                    <li><strong>📄 External/benign — <code>CAMetalLayer ignoring invalid setDrawableSize width=0 height=0</code> (<code>[API]</code>).</strong> Captured in the same run right as the map came up. The app contains no Metal / <code>CAMetalLayer</code> code; this is a Metal-backed layer (the map's) momentarily sized 0×0 during layout, which Metal ignores. Transient and harmless; no clean app-side control.</li>
+                    <li><strong>📄 External — <code>Unable to obtain a task name port right for pid …</code>.</strong> A well-known macOS sandbox/system artifact: a system component (diagnostics / reporting) is denied a task port for another process by the sandbox. Not app-caused and not app-fixable. Benign. (Not observed in this specific run, but a known system artifact.)</li>
+                    <li><strong>Reproduction:</strong> the earlier test-host / sandboxed-launch / <code>log</code>-sweep attempts didn't fire these (they need the main window + an image with location, and stderr/backtraces don't reach a headless capture). The decisive capture was <code>lldb --batch -o "breakpoint set -n CGPostError" -o run -o "thread backtrace"</code> against the app opening the bundled sample — which reproduced <code>default.csv</code>, <code>CAMetalLayer 0×0</code>, and the <code>clip: empty path.</code> backtrace together. The user concurrently confirmed seeing the same three in Xcode.</li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <p>Loop ran on the <code>clip: empty path.</code> fix (the only code change); 1 round, converged with <strong>no Critical/High/Medium findings</strong> — reviewer confirmed the guard prevents both empty-path cases (<code>dividerX == 0</code>, <code>height == 0</code>) with no visual regression, <code>dividerX</code> is never negative so <code>&gt; 0</code> is the correct boundary, the <code>nonisolated static</code> helper is safe, tests cover the contract, and the pbxproj wiring is consistent (<code>plutil -lint</code> OK, correct tests target/group). No code review applies to the three documented-external warnings.</p>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>"I can still see the message" — a warning is still appearing (pending clarification of which of the four, and whether against a rebuilt binary).</li>
+                    <li>Clarified: the persisting warning is <code>clip: empty path.</code>, and it still appears in a <strong>rebuilt</strong> binary <em>on image load, with the before/after comparison NOT active</em> — so the <code>ImageComparisonLayer</code> fix, while a genuine empty-path-clip fix, does not address the observed occurrence. The real source fires in the image-load/display path and must be found. (Subsequently proven via lldb backtrace to be MapKit/VectorKit, not app code.)</li>
+                    <li>Decisions: (1) attempt a map-side mitigation — <em>attempted and reverted after it empirically failed to reduce the warnings</em>; (2) keep the <code>ImageComparisonLayer</code> defensive fix — <em>kept</em>.</li>
+                    <li>Asked whether the overlay <code>Canvas</code> (<code>CanvasOverlayLayer</code>) might also emit an empty-path clip. Verified with per-clip backtraces: both clips are <code>VectorKit`renderBalloonToContext</code>, no app <code>Canvas</code> frame — so no. (An earlier conversational guess that a zero-sized SwiftUI <code>Canvas</code> emits an empty clip was disproven.)</li>
+                    <li>"OK, mark complete" — approved.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 7 -->

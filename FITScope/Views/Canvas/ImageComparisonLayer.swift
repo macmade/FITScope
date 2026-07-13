@@ -111,10 +111,36 @@ public struct ImageComparisonLayer: View
         {
             context, size in
 
+            // At the far-left divider (`dividerX == 0`) or a transient zero-height
+            // layout there is no region to reveal. Clipping to the resulting empty
+            // rect would draw the same nothing but makes Core Graphics log
+            // "clip: empty path.", so skip the clip and draw entirely.
+            guard Self.revealsBeforeImage( dividerX: dividerX, height: size.height )
+            else
+            {
+                return
+            }
+
             context.clip( to: Path( CGRect( x: 0, y: 0, width: dividerX, height: size.height ) ) )
             context.draw( Image( decorative: self.beforeImage, scale: 1, orientation: .up ), in: self.displayedRect )
         }
         .allowsHitTesting( false )
+    }
+
+    /// Whether the before image has any region to reveal at the given divider
+    /// position and canvas height.
+    ///
+    /// False at the far-left divider (`dividerX == 0`) or a transient zero-height
+    /// layout, where the reveal rect would be empty — clipping to it draws nothing
+    /// anyway but makes Core Graphics log "clip: empty path.".
+    ///
+    /// - Parameters:
+    ///   - dividerX: The divider's x position, in points from the left edge.
+    ///   - height:   The canvas height, in points.
+    /// - Returns: `true` when there is a non-empty region to reveal.
+    nonisolated static func revealsBeforeImage( dividerX: CGFloat, height: CGFloat ) -> Bool
+    {
+        dividerX > 0 && height > 0
     }
 
     /// The "Before" / "After" corner labels, marking which side is which.
