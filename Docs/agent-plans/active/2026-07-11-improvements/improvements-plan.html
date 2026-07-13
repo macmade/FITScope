@@ -562,13 +562,26 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
-                <span class="completed-date">Completed: —</span>
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-13</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p><strong>Investigation — the warning is a benign OS artifact, not a bug (no code change).</strong></p>
+                <ul>
+                    <li><strong>Entitlements verified consistent:</strong> all three targets (<code>FITScope.entitlements</code>, <code>FITScopePreviewExtension.entitlements</code>, <code>FITScopeThumbnailExtension.entitlements</code>) are sandboxed and declare <code>com.apple.security.application-groups</code> → <code>group.com.xs-labs.FITScope</code>. No missing/mismatched entitlement.</li>
+                    <li><strong>Trigger:</strong> <code>AutoStretchPreference.sharedDefaults</code> = <code>UserDefaults( suiteName: "group.com.xs-labs.FITScope" )</code>, first read during <code>Preferences.init</code>. Reproduced reliably (the warning appears in the app-host launch of any <code>xcodebuild test</code> run): <em>"Couldn't read values in CFPrefsPlistSource … (Domain: group.com.xs-labs.FITScope, User: kCFPreferencesAnyUser, ByHost: Yes …): Using kCFPreferencesAnyUser with a container is only allowed for System Containers, detaching from cfprefsd"</em>.</li>
+                    <li><strong>Root cause &amp; conclusion:</strong> this is a well-known, benign CFPreferences logging artifact emitted the first time a <em>sandboxed macOS</em> process reads an App Group <code>UserDefaults</code> suite. Apple DTS confirms it is safe to ignore and that the shared preferences are still written/read correctly (CFPrefs "detaches" and reads the group's plist directly). There is no app-side fix while sharing preferences through an App Group <code>UserDefaults</code> suite — eliminating it would require abandoning that mechanism (raw CFPreferences / a group-container file / keychain) across the app and both extensions, with uncertain success. References: Apple Developer Forums <a href="https://developer.apple.com/forums/thread/659448">thread 659448</a> (DTS "safe to ignore") and <a href="https://developer.apple.com/forums/thread/728434">thread 728434</a>.</li>
+                    <li><strong>Decision (user):</strong> accept &amp; document as a known benign OS artifact — no behaviour change. The auto-stretch "previews" toggles continue to round-trip between the app and the sandboxed extensions. Per follow-up user feedback, <em>no source-code comment</em> was added; this plan entry is the documentation of record.</li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div><p>Not applicable — no code change (documentation-only outcome).</p></div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>No source code comment needed (documentation lives in the plan, not in the code).</li>
+                    <li>"Looks good" — approved the accept-and-document outcome.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 5 -->
