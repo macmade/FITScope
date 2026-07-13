@@ -286,6 +286,12 @@ public struct ZoomableImageView: NSViewRepresentable
 
             self.publishZoomOutAvailability()
 
+            // AppKit scales a cached snapshot on magnification without re-running
+            // the image view's draw, so ask it to redraw when the new zoom changes
+            // the interpolation — otherwise crisp "real pixels" only appear once an
+            // unrelated change forces a redraw.
+            ( scrollView.documentView as? HoverImageNSView )?.refreshInterpolation( forMagnification: scrollView.magnification )
+
             // A live magnify (pinch / scroll-wheel zoom) fires outside SwiftUI's
             // update pass, so report synchronously to keep the overlays locked to
             // the image throughout the gesture. When this instead fires from a
@@ -633,6 +639,11 @@ final class HoverImageNSView: NSView
     /// used to pan by exact 1:1 increments while a drag is in progress.
     private var panAnchor: NSPoint?
 
+    /// The magnification the image was last drawn at, so the canvas can force a
+    /// redraw only when a zoom change actually alters the interpolation rather
+    /// than on every pan or zoom step. Updated on each ``draw(_:)``.
+    private var lastDrawnMagnification: CGFloat = 1.0
+
     /// A flipped coordinate system so image row 0 is at the top.
     override var isFlipped: Bool
     {
@@ -654,14 +665,64 @@ final class HoverImageNSView: NSView
 
     override func draw( _ dirtyRect: NSRect )
     {
+        // The enclosing scroll view applies the magnification as a transform on
+        // this drawing context, so at high zoom the image is upscaled as it is
+        // drawn here. Past actual size that upscale is drawn with nearest-neighbor
+        // interpolation so individual pixels read as crisp squares for
+        // inspection, rather than the smooth blur the default interpolation gives.
+        let magnification = self.enclosingScrollView?.magnification ?? 1.0
+
+        self.lastDrawnMagnification = magnification
+
+        Self.drawImage( self.cgImage, into: self.bounds, magnification: magnification )
+    }
+
+    /// Redraws the image if changing the magnification to `magnification` alters
+    /// the interpolation it should be drawn with (see
+    /// ``CanvasGeometry/needsRedrawForInterpolation(previous:current:)``).
+    ///
+    /// The enclosing scroll view scales a cached snapshot on magnification
+    /// without re-running ``draw(_:)``, so the crisp/smooth switch would not
+    /// appear until an unrelated change forced a redraw; the canvas calls this
+    /// as the magnification changes to apply it live.
+    ///
+    /// - Parameter magnification: The scroll view's new magnification.
+    func refreshInterpolation( forMagnification magnification: CGFloat )
+    {
+        guard CanvasGeometry.needsRedrawForInterpolation( previous: self.lastDrawnMagnification, current: magnification )
+        else
+        {
+            return
+        }
+
+        self.needsDisplay = true
+    }
+
+    /// Draws `image` into `rect` in the current graphics context, using
+    /// nearest-neighbor interpolation (crisp, real pixels) once `magnification`
+    /// reaches the ``CanvasGeometry/usesNearestNeighbor(magnification:)``
+    /// threshold and smooth interpolation below it.
+    ///
+    /// Factored out of ``draw(_:)`` so the interpolation behavior can be
+    /// exercised off-screen in tests.
+    ///
+    /// - Parameters:
+    ///   - image:         The image to draw.
+    ///   - rect:          The destination rectangle, in the view's coordinates.
+    ///   - magnification: The enclosing scroll view's magnification.
+    static func drawImage( _ image: CGImage, into rect: NSRect, magnification: CGFloat )
+    {
         // The view is `isFlipped` (top-left origin) so image row 0 is at the top,
         // matching the star overlay and the cursor readout. A raw
         // `CGContext.draw` assumes a bottom-left origin and renders the image
         // upside-down in a flipped view; `NSImage.draw(in:)` honours the view's
-        // coordinate system and draws it upright.
-        let image = NSImage( cgImage: self.cgImage, size: self.bounds.size )
+        // coordinate system and draws it upright. It draws with the current
+        // graphics context's `imageInterpolation`, which is set here per zoom.
+        let nsImage = NSImage( cgImage: image, size: rect.size )
 
-        image.draw( in: self.bounds )
+        NSGraphicsContext.current?.imageInterpolation = CanvasGeometry.usesNearestNeighbor( magnification: magnification ) ? .none : .default
+
+        nsImage.draw( in: rect )
     }
 
     override func updateTrackingAreas()

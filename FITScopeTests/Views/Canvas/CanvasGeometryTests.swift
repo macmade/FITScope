@@ -166,6 +166,63 @@ struct CanvasGeometryTests
         #expect( CanvasGeometry.magnificationAfterResize( currentMagnification: 0.5, fitMagnification: 0.8, wasFitted: false ) == 0.8 )
     }
 
+    // MARK: - Nearest-neighbor threshold
+
+    @Test
+    func usesNearestNeighborAtOrAboveActualSize() throws
+    {
+        // At 100% one image pixel maps to one point; magnifying past it upscales,
+        // so the image is drawn with crisp, real pixels from actual size upward.
+        #expect( CanvasGeometry.usesNearestNeighbor( magnification: 1.0 ) == true )
+        #expect( CanvasGeometry.usesNearestNeighbor( magnification: 2.0 ) == true )
+        #expect( CanvasGeometry.usesNearestNeighbor( magnification: 40.0 ) == true )
+    }
+
+    @Test
+    func usesSmoothInterpolationBelowActualSize() throws
+    {
+        // Below 100% the image is scaled down (or shown fitted), where smooth
+        // interpolation reads better than blocky nearest-neighbor.
+        #expect( CanvasGeometry.usesNearestNeighbor( magnification: 0.99 ) == false )
+        #expect( CanvasGeometry.usesNearestNeighbor( magnification: 0.5  ) == false )
+        #expect( CanvasGeometry.usesNearestNeighbor( magnification: 0.05 ) == false )
+    }
+
+    @Test
+    func needsRedrawWhenZoomCrossesTheThreshold() throws
+    {
+        // Zooming from smooth (below 100%) into crisp (at/above 100%) and back
+        // both change the interpolation, so the image must be redrawn.
+        #expect( CanvasGeometry.needsRedrawForInterpolation( previous: 0.5, current: 2.0 ) == true )
+        #expect( CanvasGeometry.needsRedrawForInterpolation( previous: 2.0, current: 0.5 ) == true )
+    }
+
+    @Test
+    func needsRedrawWhenZoomingWhileCrisp() throws
+    {
+        // Already past 100% and zooming further: AppKit scales a cached snapshot
+        // without re-running the draw, so a fresh nearest-neighbor rasterization
+        // at the new magnification must be forced.
+        #expect( CanvasGeometry.needsRedrawForInterpolation( previous: 2.0, current: 4.0 ) == true )
+    }
+
+    @Test
+    func doesNotRedrawWhenMagnificationIsUnchanged() throws
+    {
+        // A pure pan reports the same magnification; AppKit redraws newly exposed
+        // regions itself, so no forced redraw is needed.
+        #expect( CanvasGeometry.needsRedrawForInterpolation( previous: 2.0, current: 2.0 ) == false )
+        #expect( CanvasGeometry.needsRedrawForInterpolation( previous: 0.5, current: 0.5 ) == false )
+    }
+
+    @Test
+    func doesNotRedrawWhenZoomingWhileSmooth() throws
+    {
+        // Both zoom levels stay below the threshold (smooth): the transient
+        // snapshot scaling AppKit does looks fine, so the cheap path is kept.
+        #expect( CanvasGeometry.needsRedrawForInterpolation( previous: 0.3, current: 0.8 ) == false )
+    }
+
     // MARK: - Overlay coordinate transform
 
     /// The displayed-image rectangle already encodes zoom, pan and centering, so

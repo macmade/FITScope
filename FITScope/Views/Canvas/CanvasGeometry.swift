@@ -165,6 +165,42 @@ public enum CanvasGeometry
         )
     }
 
+    /// The magnification at or above which the displayed image is drawn with
+    /// nearest-neighbor interpolation, so each image pixel reads as a crisp
+    /// square (real pixels) instead of a smooth blur. At 100% one image pixel
+    /// maps to one point, so there is no upscaling to smooth below it.
+    public static let nearestNeighborMagnification: CGFloat = 1.0
+
+    /// Whether the displayed image should be drawn with nearest-neighbor
+    /// interpolation — crisp, real pixels for inspection — at `magnification`.
+    /// True once the image is magnified to at least
+    /// ``nearestNeighborMagnification`` (actual size); below that it is scaled
+    /// down or shown fitted, where smooth interpolation reads better.
+    public static func usesNearestNeighbor( magnification: CGFloat ) -> Bool
+    {
+        magnification >= self.nearestNeighborMagnification
+    }
+
+    /// Whether the image must be redrawn when the magnification changes from
+    /// `previous` to `current`, so its nearest-neighbor / smooth interpolation
+    /// matches the new zoom. An `NSScrollView` scales a cached snapshot on
+    /// magnification without re-running the image draw, so a redraw is forced
+    /// when the zoom actually changed and the image is being (or was just) drawn
+    /// with crisp nearest-neighbor pixels — either side of the threshold, so
+    /// entering, staying within, and leaving crisp mode all refresh. A pure pan
+    /// (unchanged magnification), or zooming while both levels stay below the
+    /// threshold (where the transient snapshot scaling looks fine), needs none.
+    public static func needsRedrawForInterpolation( previous: CGFloat, current: CGFloat ) -> Bool
+    {
+        guard current != previous
+        else
+        {
+            return false
+        }
+
+        return self.usesNearestNeighbor( magnification: current ) || self.usesNearestNeighbor( magnification: previous )
+    }
+
     /// On-screen points per image pixel, i.e. the effective magnification of the
     /// displayed image. Used to keep stroke widths and marker radii constant on
     /// screen regardless of zoom.

@@ -69,6 +69,79 @@ struct ZoomableImageViewTests
         return rep
     }
 
+    /// A 2×2 RGB image split left (white) / right (black), so an up-scaled draw
+    /// has a single vertical edge whose sharpness reveals the interpolation used.
+    private static func leftWhiteRightBlackImage() throws -> CGImage
+    {
+        let width  = 2
+        let height = 2
+        let bytes  = ( 0 ..< ( width * height ) ).flatMap
+        {
+            index -> [ UInt8 ] in
+
+            let x     = index % width
+            let value: UInt8 = x == 0 ? 255 : 0
+
+            return [ value, value, value ]
+        }
+
+        return try PixelBuffer.createCGImage( bytes: bytes, width: width, height: height, channels: 3 )
+    }
+
+    /// Draws `body` into an off-screen `width`×`height` RGBA bitmap with that
+    /// context made current, and returns the bitmap for pixel sampling. The
+    /// CPU-backed context lets the interpolation setting be observed headlessly.
+    private static func renderBitmap( width: Int, height: Int, _ body: () -> Void ) throws -> NSBitmapImageRep
+    {
+        let rep = try #require( NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide:       width,
+            pixelsHigh:       height,
+            bitsPerSample:    8,
+            samplesPerPixel:  4,
+            hasAlpha:         true,
+            isPlanar:         false,
+            colorSpaceName:   .deviceRGB,
+            bytesPerRow:      0,
+            bitsPerPixel:     0
+        ) )
+
+        let context = try #require( NSGraphicsContext( bitmapImageRep: rep ) )
+
+        NSGraphicsContext.saveGraphicsState()
+
+        defer { NSGraphicsContext.restoreGraphicsState() }
+
+        NSGraphicsContext.current = context
+
+        body()
+
+        context.flushGraphics()
+
+        return rep
+    }
+
+    /// Whether the middle row of `rep` contains a blended (grey) column — the
+    /// signature of smooth interpolation across the image's white/black edge.
+    /// Nearest-neighbor leaves every column pure, so this is `false`.
+    private static func hasBlendedColumn( _ rep: NSBitmapImageRep ) -> Bool
+    {
+        let y = rep.pixelsHigh / 2
+
+        return ( 0 ..< rep.pixelsWide ).contains
+        {
+            x in
+
+            guard let colour = rep.colorAt( x: x, y: y )
+            else
+            {
+                return false
+            }
+
+            return colour.redComponent > 0.2 && colour.redComponent < 0.8
+        }
+    }
+
     @Test
     func drawsImageWithRowZeroAtTop() throws
     {
@@ -86,5 +159,41 @@ struct ZoomableImageViewTests
         // to the bottom — so the image lines up with the overlay and readout.
         #expect( top.redComponent    > 0.8 )
         #expect( bottom.redComponent < 0.2 )
+    }
+
+    @Test
+    func drawsCrispPixelsWhenMagnifiedPastActualSize() throws
+    {
+        let image = try Self.leftWhiteRightBlackImage()
+        let size  = 20
+        let rep   = try Self.renderBitmap( width: size, height: size )
+        {
+            HoverImageNSView.drawImage( image, into: NSRect( x: 0, y: 0, width: size, height: size ), magnification: 2.0 )
+        }
+
+        // The 2×2 image is up-scaled into the fixed 20-pt rect; the magnification
+        // argument (2.0, past 100%) is what makes `drawImage` pick nearest-neighbor
+        // interpolation, so the white/black edge stays a hard step with no blended
+        // (grey) transition column — real pixels for inspection.
+        #expect( Self.hasBlendedColumn( rep ) == false )
+    }
+
+    @Test
+    func drawsSmoothPixelsBelowActualSize() throws
+    {
+        let image = try Self.leftWhiteRightBlackImage()
+        let size  = 20
+        let rep   = try Self.renderBitmap( width: size, height: size )
+        {
+            HoverImageNSView.drawImage( image, into: NSRect( x: 0, y: 0, width: size, height: size ), magnification: 0.5 )
+        }
+
+        // Same fixed 20-pt up-scale as the crisp case; only the magnification
+        // argument differs (0.5, below 100%), so `drawImage` selects smooth
+        // interpolation and the edge blends into a grey transition column. Paired
+        // with the crisp case above, this proves `drawImage` picks the
+        // interpolation from the magnification — and that `imageInterpolation` is
+        // the setting that governs the draw.
+        #expect( Self.hasBlendedColumn( rep ) )
     }
 }

@@ -121,8 +121,19 @@ public struct ImageComparisonLayer: View
                 return
             }
 
+            // Match the result image drawn underneath by ``ZoomableImageView``:
+            // past actual size it uses nearest-neighbor interpolation (crisp, real
+            // pixels), so the revealed before image must too — otherwise the two
+            // sides of the wipe would disagree on pixel sharpness exactly where a
+            // pixel-for-pixel comparison matters. The displayed rectangle already
+            // encodes the zoom, so its points-per-image-pixel is the effective
+            // magnification; below the threshold the image keeps its default
+            // (smooth) interpolation, unchanged from before.
+            let image         = Image( decorative: self.beforeImage, scale: 1, orientation: .up )
+            let magnification = CanvasGeometry.displayScale( imageSize: CGSize( width: self.beforeImage.width, height: self.beforeImage.height ), displayedRect: self.displayedRect )
+
             context.clip( to: Path( CGRect( x: 0, y: 0, width: dividerX, height: size.height ) ) )
-            context.draw( Image( decorative: self.beforeImage, scale: 1, orientation: .up ), in: self.displayedRect )
+            context.draw( CanvasGeometry.usesNearestNeighbor( magnification: magnification ) ? image.interpolation( .none ) : image, in: self.displayedRect )
         }
         .allowsHitTesting( false )
     }
