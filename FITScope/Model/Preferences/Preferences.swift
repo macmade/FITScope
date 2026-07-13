@@ -70,6 +70,7 @@ public final class Preferences: ObservableObject
         static let mainWindowWidth      = "mainWindowWidth"
         static let mainWindowHeight     = "mainWindowHeight"
         static let overlayAppearances   = "overlayAppearances"
+        static let starLabelMetric      = "starLabelMetric"
     }
 
     /// The persisted shape of one field setting: the field's stable raw value and
@@ -146,6 +147,14 @@ public final class Preferences: ObservableObject
     @Published public var overlayAppearances: [ String: OverlayAppearance ]
     {
         didSet { self.defaults.set( Self.encode( self.overlayAppearances ), forKey: Key.overlayAppearances ) }
+    }
+
+    /// The per-star measurement the stars overlay labels next to each detected
+    /// star — none, HFR or FWHM. Defaults to ``StarLabelMetric/hfr``. Persisted by
+    /// its stable raw value; an unknown stored value falls back to the default.
+    @Published public var starLabelMetric: StarLabelMetric
+    {
+        didSet { self.defaults.set( self.starLabelMetric.rawValue, forKey: Key.starLabelMetric ) }
     }
 
     /// Whether opening a FITS image in the app auto-stretches it (a Screen
@@ -248,6 +257,7 @@ public final class Preferences: ObservableObject
         self.confirmMoveToTrash      = ( defaults.object( forKey: Key.confirmMoveToTrash ) as? Bool ) ?? true
         self.infoPanelFields         = Self.decodeInfoPanelFields( defaults.data( forKey: Key.infoPanelFields ) )
         self.overlayAppearances      = Self.decodeOverlayAppearances( defaults.data( forKey: Key.overlayAppearances ) )
+        self.starLabelMetric         = ( defaults.string( forKey: Key.starLabelMetric ).flatMap { StarLabelMetric( rawValue: $0 ) } ) ?? Self.defaultStarLabelMetric
         self.weightFormula           = defaults.string( forKey: Key.weightFormula ) ?? WeightFormula.defaultExpression
         self.mainWindowSize          = Self.decodeMainWindowSize( from: defaults )
         self.autoStretchOnOpenFITS   = AutoStretchPreference.autoStretchOnOpen( .fits, in: defaults )
@@ -322,6 +332,25 @@ public final class Preferences: ObservableObject
     public func resetAllOverlayAppearances()
     {
         self.overlayAppearances = [ : ]
+    }
+
+    /// The star-label metric used when nothing is stored, and restored by
+    /// ``resetStarLabelMetric()`` — HFR.
+    public static let defaultStarLabelMetric: StarLabelMetric = .hfr
+
+    /// Restores ``starLabelMetric`` to its default (HFR).
+    public func resetStarLabelMetric()
+    {
+        self.starLabelMetric = Self.defaultStarLabelMetric
+    }
+
+    /// Whether the Overlays tab has anything to restore — a customised overlay
+    /// appearance or a non-default star-label metric. Drives the enabled state of
+    /// the tab's "Restore All Defaults" button, so it also lights up when only the
+    /// label metric was changed.
+    public var hasCustomOverlaySettings: Bool
+    {
+        self.overlayAppearances.isEmpty == false || self.starLabelMetric != Self.defaultStarLabelMetric
     }
 
     /// Encodes a configuration to JSON `Data` for `UserDefaults`.

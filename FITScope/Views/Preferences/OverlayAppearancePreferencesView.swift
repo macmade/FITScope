@@ -78,8 +78,9 @@ public struct OverlayAppearancePreferencesView: View
                 Button( "Restore All Defaults" )
                 {
                     self.preferences.resetAllOverlayAppearances()
+                    self.preferences.resetStarLabelMetric()
                 }
-                .disabled( self.preferences.overlayAppearances.isEmpty )
+                .disabled( self.preferences.hasCustomOverlaySettings == false )
                 .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.overlaysRestoreAllButton )
             }
         }
@@ -87,17 +88,27 @@ public struct OverlayAppearancePreferencesView: View
         .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.overlaysTab )
     }
 
-    /// The overlays in the left column — the even-indexed entries of the catalog,
-    /// so the two columns read left-to-right in catalog order.
-    private static var leftColumn: [ any CanvasOverlay ]
+    /// The index at which the catalog is split into the two columns: the first
+    /// half (rounded up, so the left column takes the extra card when the count is
+    /// odd) fills the left column, the rest the right — so the cards are ordered
+    /// down each column rather than across the rows.
+    private static var columnSplit: Int
     {
-        CanvasOverlayCatalog.all.enumerated().filter { $0.offset.isMultiple( of: 2 ) }.map { $0.element }
+        ( CanvasOverlayCatalog.all.count + 1 ) / 2
     }
 
-    /// The overlays in the right column — the odd-indexed catalog entries.
+    /// The overlays in the left column — the first half of the catalog, so reading
+    /// down the column follows catalog order.
+    private static var leftColumn: [ any CanvasOverlay ]
+    {
+        Array( CanvasOverlayCatalog.all.prefix( Self.columnSplit ) )
+    }
+
+    /// The overlays in the right column — the remaining catalog entries after the
+    /// left column.
     private static var rightColumn: [ any CanvasOverlay ]
     {
-        CanvasOverlayCatalog.all.enumerated().filter { $0.offset.isMultiple( of: 2 ) == false }.map { $0.element }
+        Array( CanvasOverlayCatalog.all.dropFirst( Self.columnSplit ) )
     }
 
     /// A single top-aligned column of overlay cards.
@@ -151,6 +162,16 @@ public struct OverlayAppearancePreferencesView: View
                         self.opacitySlider( appearance[ dynamicMember: channel.keyPath ] )
                     }
                 }
+
+                if overlay.id == StarsOverlay.identifier
+                {
+                    GridRow
+                    {
+                        self.fieldLabel( "Labels" )
+
+                        self.starLabelMetricPicker
+                    }
+                }
             }
             .frame( maxWidth: .infinity, alignment: .leading )
             .padding( .top, 4 )
@@ -176,6 +197,24 @@ public struct OverlayAppearancePreferencesView: View
                 }
             }
         }
+    }
+
+    /// The stars overlay's measurement-label picker — None / HFR / FWHM — bound to
+    /// the shared ``Preferences/starLabelMetric`` so the choice repaints every open
+    /// canvas live and persists across launches. Shown only in the stars card.
+    private var starLabelMetricPicker: some View
+    {
+        Picker( "Labels", selection: self.$preferences.starLabelMetric )
+        {
+            ForEach( StarLabelMetric.allCases )
+            {
+                metric in Text( metric.title ).tag( metric )
+            }
+        }
+        .labelsHidden()
+        .pickerStyle( .menu )
+        .fixedSize()
+        .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.starLabelMetricPicker )
     }
 
     /// A field label — small and grey — for the left column of a card's grid.

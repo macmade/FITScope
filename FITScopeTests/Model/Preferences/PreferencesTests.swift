@@ -109,6 +109,40 @@ struct PreferencesTests
         #expect( reloaded.confirmMoveToTrash == false )
     }
 
+    /// With nothing stored, the stars overlay labels each star with its HFR — the
+    /// chosen default measurement.
+    @Test
+    @MainActor
+    func defaultsToLabellingStarsWithHFR()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.starLabelMetric == .hfr )
+    }
+
+    /// Choosing a different star-label metric is written to the store and read back
+    /// by a fresh instance.
+    @Test
+    @MainActor
+    func persistsStarLabelMetricChangesAcrossInstances()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        preferences.starLabelMetric = .fwhm
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.starLabelMetric == .fwhm )
+    }
+
     /// With nothing stored, every information-panel field is present and visible,
     /// in the canonical order — so the panel looks exactly as it did before the
     /// field configuration existed.
@@ -418,6 +452,55 @@ struct PreferencesTests
         let reloaded = Preferences( defaults: defaults )
 
         #expect( reloaded.overlayAppearances.isEmpty )
+    }
+
+    /// Resetting the star-label metric restores the HFR default, and that persists.
+    @Test
+    @MainActor
+    func resetStarLabelMetricRestoresTheDefault()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        preferences.starLabelMetric = .fwhm
+        preferences.resetStarLabelMetric()
+
+        #expect( preferences.starLabelMetric == .hfr )
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.starLabelMetric == .hfr )
+    }
+
+    /// The Overlays tab reports a customisation to restore when either an overlay
+    /// appearance or the star-label metric differs from its default — so "Restore
+    /// All Defaults" enables even when only the label metric was changed.
+    @Test
+    @MainActor
+    func reportsCustomOverlaySettingsForAppearanceOrMetric()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.hasCustomOverlaySettings == false )
+
+        preferences.starLabelMetric = .fwhm
+
+        #expect( preferences.hasCustomOverlaySettings )
+
+        preferences.starLabelMetric = Preferences.defaultStarLabelMetric
+
+        #expect( preferences.hasCustomOverlaySettings == false )
+
+        preferences.overlayAppearances[ "stars" ] = OverlayAppearance( red: 0.1, green: 0.2, blue: 0.3, opacity: 0.4, secondaryOpacity: 0.5 )
+
+        #expect( preferences.hasCustomOverlaySettings )
     }
 
     /// With nothing stored, every per-format auto-stretch preference — on-open and

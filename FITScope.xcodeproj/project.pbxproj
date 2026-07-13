@@ -322,6 +322,7 @@
 		9749F8C99D4F35496353A6C0 /* ImageInformation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7410133087261AF83595054 /* ImageInformation.swift */; };
 		9A3A3D353F14A85800BD349D /* StatisticsFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0752B6126A583839BB8F8BEF /* StatisticsFormatTests.swift */; };
 		9A6163E1CF83BC9A5A891040 /* OverlayAppearanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9301C5FD2FCFBAC78AAA11 /* OverlayAppearanceTests.swift */; };
+		FE5C0FE00000000000B01D04 /* StarLabelMetricTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5C0FE00000000000F11E04 /* StarLabelMetricTests.swift */; };
 		9B163B795274560E48F04CBF /* WCSProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20678C2224440A7F70B42B87 /* WCSProjectionTests.swift */; };
 		9B95B241926E5EF3B87D243F /* LocationMapRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A660D5D46BE16501558BFAEB /* LocationMapRepresentable.swift */; };
 		9C6AE833088D00380D5EA9F0 /* MoonPhaseSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A76B7A5EE76FA883E623C6 /* MoonPhaseSymbol.swift */; };
@@ -399,6 +400,7 @@
 		E9182FD7FDB7F9E09EF60B15 /* IntegrationSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = B99961EC2EE358190E67BC3B /* IntegrationSummary.swift */; };
 		ECB860D36926656CC0A4D096 /* ImageInformation+RAW.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247E0A382C741B361CD4DB41 /* ImageInformation+RAW.swift */; };
 		ED1C033CCABA70A77F9C6559 /* OverlayAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E43E3296F35E241D872E3E /* OverlayAppearance.swift */; };
+		FE5C0FE00000000000B01D03 /* StarLabelMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5C0FE00000000000F11E03 /* StarLabelMetric.swift */; };
 		EDA8C3FD25FFC3542CACB017 /* FITSMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59AF90C07BCB7472F4490908 /* FITSMetadata.swift */; };
 		F37A83F76AFA969C9F1B6B79 /* CoordinateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F4F3CBDF1AFE1C263EBC98D /* CoordinateTests.swift */; };
 		F5B9D3D10E367E712A2E355B /* SessionMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD872D066E754B666109019 /* SessionMetric.swift */; };
@@ -890,6 +892,7 @@
 		C5ED175000000000000000A1 /* AppCredits.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppCredits.swift; sourceTree = "<group>"; };
 		C7D3D9131B43725B5D03FCFA /* CanvasGeometry.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasGeometry.swift; sourceTree = "<group>"; };
 		C8E43E3296F35E241D872E3E /* OverlayAppearance.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OverlayAppearance.swift; sourceTree = "<group>"; };
+		FE5C0FE00000000000F11E03 /* StarLabelMetric.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarLabelMetric.swift; sourceTree = "<group>"; };
 		C9BD5E1A3FC040B4E14E8824 /* HistogramViewOptions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramViewOptions.swift; sourceTree = "<group>"; };
 		C9BFF85ED213EDE5AA875A74 /* OpenMeteoClientTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoClientTests.swift; sourceTree = "<group>"; };
 		CA1100000000000000000001 /* ImageCarouselView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCarouselView.swift; sourceTree = "<group>"; };
@@ -905,6 +908,7 @@
 		DAA98C89BB0BEA4A64910562 /* ScaleBarOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaleBarOverlay.swift; sourceTree = "<group>"; };
 		DAEE209DF99F410FA6950C91 /* StarsOverlayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarsOverlayTests.swift; sourceTree = "<group>"; };
 		DB9301C5FD2FCFBAC78AAA11 /* OverlayAppearanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OverlayAppearanceTests.swift; sourceTree = "<group>"; };
+		FE5C0FE00000000000F11E04 /* StarLabelMetricTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarLabelMetricTests.swift; sourceTree = "<group>"; };
 		DC1CD2FCA750D764101AF3BE /* PlateSolveObjectsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveObjectsView.swift; sourceTree = "<group>"; };
 		DC8C104322B90E2BD7625C52 /* RAWImageLoader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RAWImageLoader.swift; sourceTree = "<group>"; };
 		DE5E278538EB67DBA2577A14 /* InspectorPlaceholderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InspectorPlaceholderView.swift; sourceTree = "<group>"; };
@@ -1992,6 +1996,7 @@
 			children = (
 				C8E43E3296F35E241D872E3E /* OverlayAppearance.swift */,
 				F5571EB312AB29DEE762AA0D /* OverlayOpacityChannel.swift */,
+				FE5C0FE00000000000F11E03 /* StarLabelMetric.swift */,
 			);
 			path = Overlays;
 			sourceTree = "<group>";
@@ -2044,6 +2049,7 @@
 			isa = PBXGroup;
 			children = (
 				DB9301C5FD2FCFBAC78AAA11 /* OverlayAppearanceTests.swift */,
+				FE5C0FE00000000000F11E04 /* StarLabelMetricTests.swift */,
 			);
 			path = Overlays;
 			sourceTree = "<group>";
@@ -2632,6 +2638,7 @@
 				D68603F1398DE240630D7A92 /* IntegrationReference.swift in Sources */,
 				9D38190C8A02DE18335AF485 /* SessionMetricsSNRCurveView.swift in Sources */,
 				ED1C033CCABA70A77F9C6559 /* OverlayAppearance.swift in Sources */,
+				FE5C0FE00000000000B01D03 /* StarLabelMetric.swift in Sources */,
 				A6EDEEF2AE40A8F0A31679E0 /* OverlayOpacityChannel.swift in Sources */,
 				D38B935A489F6735AC3CFC9A /* CanvasOverlayCatalog.swift in Sources */,
 				8828BEBFFA9146B4FEDCC4DF /* OverlayAppearancePreferencesView.swift in Sources */,
@@ -2743,6 +2750,7 @@
 				9D31C776CA873B3039BDD712 /* SessionMetricSeriesTests.swift in Sources */,
 				8A4A9F1D77101F38D361646B /* IntegrationSummaryTests.swift in Sources */,
 				9A6163E1CF83BC9A5A891040 /* OverlayAppearanceTests.swift in Sources */,
+				FE5C0FE00000000000B01D04 /* StarLabelMetricTests.swift in Sources */,
 				8E10B87816F7510D829FBC6D /* CanvasOverlayAppearanceTests.swift in Sources */,
 				204B29867325C07648F3F77A /* ExternalApplicationTests.swift in Sources */,
 				3AE16A7034FEBC68B255BEFF /* ExternalImageFileTests.swift in Sources */,

@@ -790,6 +790,10 @@ public enum AccessibilityIdentifier
         /// the Overlays tab.
         public static let overlaysRestoreAllButton = "PreferencesView.overlaysRestoreAllButton"
 
+        /// The stars overlay's measurement-label picker (None / HFR / FWHM) in the
+        /// Overlays tab.
+        public static let starLabelMetricPicker = "PreferencesView.starLabelMetricPicker"
+
         /// The colour picker for the overlay with the given identifier, in the
         /// Overlays tab.
         ///

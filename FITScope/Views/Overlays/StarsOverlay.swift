@@ -27,13 +27,15 @@ import SwiftPixel
 import SwiftUI
 
 /// A canvas overlay that marks each detected star with a circle registered to
-/// image space.
+/// image space, optionally labelled with a per-star measurement.
 ///
 /// Each marker is centred on the star's centroid and sized from its half-flux
 /// radius, so the circle hugs the star and grows with zoom; a minimum on-screen
-/// radius keeps even faint, tightly-focused stars visible when zoomed out. The
-/// overlay gates itself through ``isAvailable``, so its toolbar toggle only
-/// appears once detection has found at least one star.
+/// radius keeps even faint, tightly-focused stars visible when zoomed out. When
+/// ``metric`` is not ``StarLabelMetric/none``, the chosen measurement (HFR or
+/// FWHM) is drawn beside each marker. The overlay gates itself through
+/// ``isAvailable``, so its toolbar toggle only appears once detection has found at
+/// least one star.
 ///
 /// Detection runs on the un-reoriented sensor data, so the star centroids are in
 /// *source* pixel coordinates. The overlay maps each one through the current
@@ -58,8 +60,11 @@ public struct StarsOverlay: CanvasOverlay
     /// empty.
     private let hasDetectedStars: Bool
 
-    /// The markers' appearance (colour + opacity).
+    /// The markers' and labels' appearance (colour + opacity).
     private let appearance: OverlayAppearance
+
+    /// The per-star measurement labelled next to each marker — none, HFR or FWHM.
+    private let metric: StarLabelMetric
 
     /// Creates the overlay for the given detected stars.
     ///
@@ -71,13 +76,16 @@ public struct StarsOverlay: CanvasOverlay
     ///                       Defaults to `false`.
     ///   - appearance:       The markers' colour and opacity. Defaults to
     ///                       ``StarsOverlay/defaultAppearance``.
-    public init( stars: [ Star ], orientation: Processors.Orient.Orientation = .identity, isLoading: Bool = false, hasDetectedStars: Bool = false, appearance: OverlayAppearance = StarsOverlay.defaultAppearance )
+    ///   - metric:           The per-star measurement to label next to each marker.
+    ///                       Defaults to ``StarLabelMetric/none`` (no labels).
+    public init( stars: [ Star ], orientation: Processors.Orient.Orientation = .identity, isLoading: Bool = false, hasDetectedStars: Bool = false, appearance: OverlayAppearance = StarsOverlay.defaultAppearance, metric: StarLabelMetric = .none )
     {
         self.stars            = stars
         self.orientation      = orientation
         self.isLoading        = isLoading
         self.hasDetectedStars = hasDetectedStars
         self.appearance       = appearance
+        self.metric           = metric
     }
 
     /// The overlay's stable identifier.
@@ -111,6 +119,13 @@ public struct StarsOverlay: CanvasOverlay
 
     /// The on-screen stroke width, kept constant across zoom.
     private static let lineWidth: CGFloat = 1.5
+
+    /// The measurement label's on-screen font size, in points.
+    private static let labelFontSize: CGFloat = 11
+
+    /// The on-screen gap between a marker's edge and its measurement label, in
+    /// points.
+    private static let labelGap: CGFloat = 4
 
     /// The smallest on-screen marker radius, in points, so a small star at a low
     /// magnification stays visible rather than collapsing to a dot.
@@ -197,6 +212,18 @@ public struct StarsOverlay: CanvasOverlay
             let circle     = Path( ellipseIn: CGRect( x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2 ) )
 
             context.stroke( circle, with: .color( self.appearance.primaryColor ), lineWidth: Self.lineWidth )
+
+            // Label the selected measurement to the right of the marker, mirroring
+            // the objects overlay so the two read as one annotation style.
+            guard let label = self.metric.label( for: star )
+            else
+            {
+                return
+            }
+
+            let text = Text( label ).font( .system( size: Self.labelFontSize, weight: .medium ) ).foregroundStyle( self.appearance.primaryColor )
+
+            context.draw( text, at: CGPoint( x: center.x + radius + Self.labelGap, y: center.y ), anchor: .leading )
         }
     }
 }

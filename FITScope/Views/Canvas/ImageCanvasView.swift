@@ -393,7 +393,7 @@ public struct ImageCanvasView: View
             // than jumping ahead while a rotation is still rendering. `isLoading`
             // surfaces detection progress through the overlay, so the toolbar shows
             // it generically without knowing about star detection.
-            StarsOverlay( stars: self.file.image?.starField?.stars ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, isLoading: self.file.image?.isDetectingStars ?? false, hasDetectedStars: self.file.image?.hasDetectedStars ?? false, appearance: self.overlayAppearance( StarsOverlay.identifier, default: StarsOverlay.defaultAppearance ) ),
+            StarsOverlay( stars: self.file.image?.starField?.stars ?? [], orientation: self.file.image?.renderer.result?.orientation ?? .identity, isLoading: self.file.image?.isDetectingStars ?? false, hasDetectedStars: self.file.image?.hasDetectedStars ?? false, appearance: self.overlayAppearance( StarsOverlay.identifier, default: StarsOverlay.defaultAppearance ), metric: self.preferences.starLabelMetric ),
             // The plate-solved objects, registered to image space through the same
             // committed-render orientation as the stars, so the labels track the
             // image under rotate/flip. Tapped with no objects, it proposes a plate

@@ -490,13 +490,47 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
-                <span class="completed-date">Completed: —</span>
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-13</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p>Implemented with TDD, after confirming three design/UX decisions with the user up front:</p>
+                <ul>
+                    <li><strong>Setting home (deviation from the plan, approved):</strong> the metric does <em>not</em> go into the shared <code>OverlayAppearance</code> struct (which every overlay uses for colour/opacity). Instead a new dedicated <code>StarLabelMetric</code> enum and a <code>Preferences.starLabelMetric</code> property, so the shared appearance model stays clean.</li>
+                    <li><strong>Label format:</strong> value only, one decimal place (e.g. "2.3") — no unit or metric-name prefix.</li>
+                    <li><strong>Clutter:</strong> labels always shown (no zoom/density threshold), per the user's choice.</li>
+                </ul>
+                <p>Changes:</p>
+                <ul>
+                    <li><strong>New <code>FITScope/Model/Overlays/StarLabelMetric.swift</code></strong> — <code>enum StarLabelMetric: String, CaseIterable, Identifiable, Sendable</code> with <code>none/hfr/fwhm</code>, a <code>title</code>, <code>value(for: Star)</code>, <code>label(for: Star)</code> (formatted or <code>nil</code> for <code>none</code>), and a testable <code>format(_:)</code>. <code>Star</code> exposes both <code>hfr</code> and <code>fwhm</code> (SwiftAstro), so no gaps.</li>
+                    <li><strong>Persistence</strong> — <code>Preferences</code> gains <code>starLabelMetric</code> (default <code>.hfr</code>), persisted by raw value; an unknown stored value falls back to the default.</li>
+                    <li><strong>Drawing</strong> — <code>StarsOverlay</code> gains a <code>metric</code> parameter (defaulting to <code>.none</code>) and draws the value to the right of each marker, mirroring <code>ObjectsOverlay</code> exactly (font <code>.system(size:11,weight:.medium)</code>, <code>appearance.primaryColor</code>, <code>anchor: .leading</code>). <code>ImageCanvasView</code> passes <code>preferences.starLabelMetric</code>, so a picker change repaints live.</li>
+                    <li><strong>Preferences UI</strong> — a segmented None/HFR/FWHM <code>Picker</code> added to the <em>Stars</em> card only in <code>OverlayAppearancePreferencesView</code>, bound to the shared preference, with accessibility id <code>PreferencesView.starLabelMetricPicker</code>. The view's existing <code>#Preview</code> now exercises it. (<code>StarsOverlay</code> is a <code>CanvasOverlay</code>, not a <code>View</code>, so it has no preview of its own.)</li>
+                    <li>New file wiring: <code>StarLabelMetric.swift</code> (app target) and <code>StarLabelMetricTests.swift</code> (tests target) added via <code>project.pbxproj</code> (four edits each), in the respective <code>Overlays</code> groups.</li>
+                </ul>
+                <p><strong>Tests (TDD).</strong> New <code>StarLabelMetricTests</code> (6): case order, HFR/FWHM field selection with distinct values (catches a field swap), <code>none</code>→nil for value &amp; label, HFR/FWHM produce a label, and one-decimal rendering (asserted on the trailing digit so it is locale-independent). Two new <code>PreferencesTests</code>: defaults to HFR, and persists across instances. All pass; the app + test target build.</p>
+                <p><strong>Automated review loop:</strong> 1 round; converged with no Critical/High/Medium findings. One Low finding fixed (visibility); one Low UX note surfaced to the user; one Info note (no action).</p>
+                <p><strong>Post-review change (user feedback):</strong> the label-metric picker was changed from a segmented control ("tabs") to a dropdown — <code>.pickerStyle( .menu )</code> with <code>.fixedSize()</code>, matching the app's other dropdown pickers (e.g. Session Metrics reference picker, export format picker). Builds cleanly.</p>
+                <p><strong>Post-review change (user feedback):</strong> the Overlays tab's two-column card layout now orders the cards <em>down each column</em> (column-major) rather than across the rows. The catalog is split at <code>columnSplit</code> (first half, rounded up, to the left column; the rest to the right) instead of the previous even/odd interleave. Builds cleanly.</p>
+                <p><strong>Post-review change (user feedback):</strong> "Restore All Defaults" now also resets the star-label metric (resolving the deferred UX note). Added <code>Preferences.defaultStarLabelMetric</code> (used by the init fallback too), <code>resetStarLabelMetric()</code>, and a <code>hasCustomOverlaySettings</code> computed (true when an overlay appearance <em>or</em> the metric differs from default). The button now calls both resets and its disabled state uses <code>hasCustomOverlaySettings</code>, so it also enables when only the label metric was changed. Two new <code>PreferencesTests</code> cover the reset and the enabled-state logic; all pass.</p>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <ul>
+                    <li><strong>Verdict: clean, faithful to the approved design, no blocking issues.</strong> Reviewer verified: correct hfr/fwhm field selection (no swap); the per-star <code>guard…else{return}</code> skips only the current star's label, not the whole loop; <code>.none</code> draws nothing; persistence round-trips with a <code>.hfr</code> fallback for corrupt values; the picker change repaints via the <code>@EnvironmentObject</code> dependency; the Stars-only card gating is correct; pbxproj passes <code>plutil -lint</code> with both files in the correct targets; and no regression (the <code>.none</code> default keeps existing call sites/tests intact).</li>
+                    <li><strong>Inconsistent access control on <code>format(_:)</code></strong> — Low (style). It was implicitly internal amid otherwise-<code>public</code> members. <em>Resolution: Fixed — made <code>public</code>.</em></li>
+                    <li><strong>Label metric not resettable from the card's reset controls</strong> — Low (UX). Per the approved "keep it out of <code>OverlayAppearance</code>" decision, <code>resetOverlayAppearance</code>/<code>resetAllOverlayAppearances</code> only clear colour/opacity, so a user who changed <em>only</em> the label metric gets no reset affordance. Expected given the design. <em>Resolution: Deferred — surfaced to the user for a conscious decision.</em></li>
+                    <li><strong>No dedicated preview for the picker</strong> — Info. It is a private sub-view of an already-previewed view, so not a real gap. <em>Resolution: Deferred (no change).</em></li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>Use a dropdown instead of tabs (i.e. a menu/pop-up picker for the None/HFR/FWHM label metric, not the segmented control).</li>
+                    <li>Change ordering by column (the Overlays tab's two-column card layout should order the cards down each column rather than across the rows).</li>
+                    <li>"Restore All Defaults" should also reset the star-label metric (in response to the automated-review UX note: yes, it should).</li>
+                    <li>"Looks good" — approved after the dropdown, column-major ordering, and metric-reset changes.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- ================= PHASE B ================= -->
