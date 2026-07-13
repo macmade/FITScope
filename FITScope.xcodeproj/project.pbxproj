@@ -55,6 +55,14 @@
 		05A1B2C30000000000000B02 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8E2DE0C41800550A87 /* ImageProcessor.swift */; };
 		05A1B2C30000000000000B03 /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
 		05A1B2C30000000000000B04 /* FITSPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */; };
+		05DD1000000000000000FB15 /* RenderResultProducing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0D /* RenderResultProducing.swift */; };
+		05DD1000000000000000FB16 /* DecodedRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0E /* DecodedRenderSource.swift */; };
+		05DD1000000000000000FB17 /* FITSDecodedRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0F /* FITSDecodedRenderSource.swift */; };
+		05DD1000000000000000FB18 /* XISFDecodedRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA10 /* XISFDecodedRenderSource.swift */; };
+		05DD1000000000000000FB19 /* RenderResultProducing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0D /* RenderResultProducing.swift */; };
+		05DD1000000000000000FB1A /* DecodedRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0E /* DecodedRenderSource.swift */; };
+		05DD1000000000000000FB1B /* FITSDecodedRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA0F /* FITSDecodedRenderSource.swift */; };
+		05DD1000000000000000FB1C /* XISFDecodedRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA10 /* XISFDecodedRenderSource.swift */; };
 		05A1B2C30000000000000B05 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8E2DE0C41800550A87 /* ImageProcessor.swift */; };
 		05A1B2C30000000000000B06 /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
 		05A1B2C30000000000000B07 /* ImageExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000007 /* ImageExporter.swift */; };
@@ -2840,6 +2848,10 @@
 			files = (
 				05A1B2C30000000000000B08 /* Benchmarking.swift in Sources */,
 				05A1B2C30000000000000B01 /* FITSPreviewRenderer.swift in Sources */,
+				05DD1000000000000000FB15 /* RenderResultProducing.swift in Sources */,
+				05DD1000000000000000FB16 /* DecodedRenderSource.swift in Sources */,
+				05DD1000000000000000FB17 /* FITSDecodedRenderSource.swift in Sources */,
+				05DD1000000000000000FB18 /* XISFDecodedRenderSource.swift in Sources */,
 				05A1B2C30000000000000B02 /* ImageProcessor.swift in Sources */,
 				05F15F0000000000000000AA /* ImageProcessor+FITS.swift in Sources */,
 				05F15F0000000000000000BF /* ImageProcessor+Subsample.swift in Sources */,
@@ -2864,6 +2876,10 @@
 			files = (
 				05A1B2C30000000000000B09 /* Benchmarking.swift in Sources */,
 				05A1B2C30000000000000B04 /* FITSPreviewRenderer.swift in Sources */,
+				05DD1000000000000000FB19 /* RenderResultProducing.swift in Sources */,
+				05DD1000000000000000FB1A /* DecodedRenderSource.swift in Sources */,
+				05DD1000000000000000FB1B /* FITSDecodedRenderSource.swift in Sources */,
+				05DD1000000000000000FB1C /* XISFDecodedRenderSource.swift in Sources */,
 				05A1B2C30000000000000B05 /* ImageProcessor.swift in Sources */,
 				05F15F0000000000000000AB /* ImageProcessor+FITS.swift in Sources */,
 				05F15F0000000000000000C0 /* ImageProcessor+Subsample.swift in Sources */,

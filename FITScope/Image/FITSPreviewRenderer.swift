@@ -89,9 +89,10 @@ public enum FITSPreviewRenderer
             return try ImageProcessor.render( data: hdu.data, properties: hdu.properties, settings: settings ).image
         }
 
-        let settings = Self.previewSettings( decoded: decoded, properties: hdu.properties, maxDimension: maxDimension, previewsDefaults: previewsDefaults )
+        let frame    = FITSDecodedRenderSource( samples: decoded.samples, width: decoded.width, height: decoded.height, bitsPerPixel: decoded.bitsPerPixel, properties: hdu.properties )
+        let settings = Self.previewSettings( frame: frame, maxDimension: maxDimension, previewsDefaults: previewsDefaults )
 
-        return try ImageProcessor.render( rawSamples: decoded.samples, width: decoded.width, height: decoded.height, bitsPerPixel: decoded.bitsPerPixel, properties: hdu.properties, settings: settings ).image
+        return try frame.makeResult( settings: settings ).image
     }
 
     /// Reads and renders the FITS file at the given URL.
@@ -149,28 +150,29 @@ public enum FITSPreviewRenderer
         return settings
     }
 
-    /// The settings a FITS preview renders with, derived from the frame's
-    /// already-decoded raw samples — the decode-once counterpart of
-    /// ``previewSettings(hdu:maxDimension:previewsDefaults:)`` used when the caller
-    /// has decoded the samples to render from, so the statistics reuse that decode.
+    /// The settings a FITS preview renders with, derived from a decode-once
+    /// ``FITSDecodedRenderSource`` — the decode-once counterpart of
+    /// ``previewSettings(hdu:maxDimension:previewsDefaults:)`` used when the caller has
+    /// decoded the frame to render from, so the auto-stretch statistics reuse that
+    /// decode through the frame's own
+    /// ``FITSDecodedRenderSource/autoStretchColorSource(maxDimension:)``.
     ///
     /// - Parameters:
-    ///   - decoded:          The decoded raw samples with their geometry and format.
-    ///   - properties:       The image HDU's header property snapshots.
+    ///   - frame:            The decode-once render source.
     ///   - maxDimension:     The largest dimension the rendered image may take, or
     ///                       `nil`. Carried into the settings, and the auto-stretch
     ///                       statistics are derived from a decimated colour source.
     ///   - previewsDefaults: The store the previews preference is read from, or `nil`.
     /// - Returns: The render settings.
-    static func previewSettings( decoded: ( samples: [ Double ], width: Int, height: Int, bitsPerPixel: BitsPerPixel ), properties: [ FITSPropertySnapshot ], maxDimension: Int? = nil, previewsDefaults: UserDefaults? ) -> ImageProcessor.Settings
+    static func previewSettings( frame: FITSDecodedRenderSource, maxDimension: Int? = nil, previewsDefaults: UserDefaults? ) -> ImageProcessor.Settings
     {
         var settings = ImageProcessor.Settings()
 
         if let defaults = previewsDefaults,
            AutoStretchPreference.autoStretchPreviews( .fits, in: defaults ),
-           let colorSource = ImageProcessor.autoStretchColorSource( fromSamples: decoded.samples, width: decoded.width, height: decoded.height, properties: properties )?.subsampled( maxDimension: maxDimension )
+           let colorSource = frame.autoStretchColorSource( maxDimension: maxDimension )
         {
-            let domain = ImageProcessor.fullScale( forImageHDU: properties ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+            let domain = ImageProcessor.fullScale( forImageHDU: frame.properties ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
 
             if let derived = ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
             {

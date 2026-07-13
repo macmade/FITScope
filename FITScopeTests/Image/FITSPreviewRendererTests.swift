@@ -139,9 +139,10 @@ struct FITSPreviewRendererTests
 
         let hdu     = Self.rampHDU()
         let decoded = try #require( ImageProcessor.decodedImageHDU( data: hdu.data, properties: hdu.properties ) )
+        let frame   = FITSDecodedRenderSource( samples: decoded.samples, width: decoded.width, height: decoded.height, bitsPerPixel: decoded.bitsPerPixel, properties: hdu.properties )
 
         let bytePath    = FITSPreviewRenderer.previewSettings( hdu: hdu, previewsDefaults: defaults )
-        let decodedPath = FITSPreviewRenderer.previewSettings( decoded: decoded, properties: hdu.properties, previewsDefaults: defaults )
+        let decodedPath = FITSPreviewRenderer.previewSettings( frame: frame, previewsDefaults: defaults )
 
         #expect( decodedPath.stretch   == bytePath.stretch )
         #expect( decodedPath.normalize == bytePath.normalize )

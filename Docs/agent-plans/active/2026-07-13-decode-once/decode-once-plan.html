@@ -523,13 +523,37 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
-                <span class="completed-date">Completed: —</span>
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-13</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p>Implemented with TDD. The preview renderers now build the decode-once conformer and route both the auto-stretch stats and the render through it, dropping their bespoke decode-once twins.</p>
+                <p><strong>Design decision (surfaced mid-implementation, approved by the user):</strong> the preview renderers (<code>FITSPreviewRenderer</code>/<code>XISFPreviewRenderer</code>) compile into <em>two QuickLook extension targets</em> (<code>FITScopeThumbnailExtension</code>, <code>FITScopePreviewExtension</code>) that previously compiled only the stateless <code>ImageProcessor</code>, not the Model render-source layer (<code>FITSRenderSource</code> etc. are app-only). Routing the previews through the conformers therefore required adding the conformers + their two protocols to both extensions. The user confirmed this is acceptable. The trade-off: the extensions now compile the decode-once render-source subtype without its base <code>ImageRenderSource</code> concept — a small, deliberate hole in the "extensions use only <code>ImageProcessor</code>" boundary, in exchange for removing the duplication.</p>
+                <ul>
+                    <li><strong><code>FITSPreviewRenderer.render()</code></strong> decode-once branch: builds <code>FITSDecodedRenderSource</code> from <code>decodedImageHDU</code>, derives settings via the new <code>previewSettings(frame:)</code> (uses <code>frame.autoStretchColorSource(maxDimension:)</code>), renders via <code>frame.makeResult(settings:).image</code>. The RGB-plane/cube byte fallback (<code>previewSettings(hdu:)</code> + <code>render(data:)</code>) is untouched.</li>
+                    <li><strong><code>XISFPreviewRenderer.render()</code></strong>: builds <code>XISFDecodedRenderSource</code>, <code>previewSettings(frame:)</code>, <code>frame.makeResult</code>. The display-function branch and previews-preference gating stay in the preview renderer.</li>
+                    <li><strong>Renamed twins</strong> <code>previewSettings(decoded:)</code>→<code>(frame:)</code> (FITS) and <code>previewSettings(planes:)</code>→<code>(frame:)</code> (XISF). The byte-based <code>previewSettings(hdu:)</code>/<code>(data:)</code> stay (FITS fallback + tests).</li>
+                    <li><strong>Deleted</strong> the private <code>XISFPreviewRenderer.previewColorSource(planes:)</code> — the Milestone-2 temporary duplication; its logic now lives solely in <code>XISFDecodedRenderSource.autoStretchColorSource(maxDimension:)</code>.</li>
+                    <li><strong>pbxproj</strong>: added <code>RenderResultProducing</code>, <code>DecodedRenderSource</code>, <code>FITSDecodedRenderSource</code>, <code>XISFDecodedRenderSource</code> to both extension targets (build-file IDs <code>FB15</code>–<code>FB1C</code>, reusing the existing file-refs). No new files or file-refs. All conformer dependencies were already in the extensions. <code>plutil -lint</code> passes.</li>
+                    <li><strong>Tests</strong>: the two <code>decodeOnceSettingsMatchTheBytePath</code> consistency tests now build the conformer and call <code>previewSettings(frame:)</code>, still asserting the decode-once path agrees with the byte path (with the previews preference on, so the auto-stretch branch is exercised).</li>
+                    <li><strong>Build/test</strong>: full build succeeds — both extensions compile and code-sign; 58 tests across the preview/conformer/render suites pass.</li>
+                </ul>
+                <p><strong>Automated review loop:</strong> 1 round; converged with no Critical/High/Medium findings. Verified settings + render byte-identity, safe deletion, correct extension wiring (right two Sources phases, unique IDs), and no dead code. Acted on one Low readability nit.</p>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <ul>
+                    <li><strong>Verdict: correct, in scope, byte-identical invariant holds.</strong> Reviewer confirmed <code>previewSettings(frame:)</code> == the old twin for every branch (same colour source, domain, gating), <code>frame.makeResult</code> == the old inline render, the <code>previewColorSource(planes:)</code> deletion is safe (no callers; logic preserved in the conformer), and the pbxproj adds the 4 files to exactly the two extension Sources phases with collision-free IDs.</li>
+                    <li><strong>Inlined <code>try</code> in the XISF frame initializer</strong> — Low (readability). <code>render()</code> inlined <code>try xisfPlaneSamples(…)</code> into the initializer, dropping the named <code>planes</code> local the comment narrates and the FITS branch keeps. <em>Resolution: Fixed — hoisted <code>planes</code> back into a local for symmetry.</em></li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>Approved pulling the 4 files (conformers + protocols) into both QuickLook extension targets rather than keeping the previews on the stateless <code>ImageProcessor</code> layer only.</li>
+                    <li>Asked to confirm both extensions now include the files. Confirmed via a <code>project.pbxproj</code> parse (all four present in each extension's Sources phase) and the full build code-signing both <code>.appex</code>es.</li>
+                    <li>"Looks good" — approved as implemented.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 6 -->

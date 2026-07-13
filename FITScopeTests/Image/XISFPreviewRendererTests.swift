@@ -160,9 +160,10 @@ struct XISFPreviewRendererTests
         let properties = XISFImageProperties( width: 4, height: 4, channelCount: 1, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .gray, colorFilterArrayPattern: "RGGB" )
         let data       = Data( XISFTestData.uInt16LE( ( 0 ..< 16 ).map { $0 * 100 } ) )
         let planes     = try ImageProcessor.xisfPlaneSamples( data: data, properties: properties )
+        let frame      = XISFDecodedRenderSource( planes: planes, properties: properties )
 
         let bytePath    = XISFPreviewRenderer.previewSettings( data: data, properties: properties, previewsDefaults: defaults )
-        let decodedPath = XISFPreviewRenderer.previewSettings( planes: planes, properties: properties, previewsDefaults: defaults )
+        let decodedPath = XISFPreviewRenderer.previewSettings( frame: frame, previewsDefaults: defaults )
 
         #expect( decodedPath.stretch   == bytePath.stretch )
         #expect( decodedPath.normalize == bytePath.normalize )
