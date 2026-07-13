@@ -153,6 +153,14 @@ public enum ImageProcessor
         /// rendered image. Defaults to the captured orientation.
         public var orientation: Processors.Orient.Orientation
 
+        /// The largest dimension the rendered image may take, or `nil` to render
+        /// at full resolution. This is a render-target cap, not a user-tunable
+        /// adjustment: only the preview/thumbnail renderers set it, so a Finder
+        /// thumbnail is produced from a downsampled image (a box-averaging pass
+        /// runs after channel-forming). The app's interactive render leaves it
+        /// `nil`.
+        public var maxDimension: Int?
+
         /// Creates a settings snapshot. The defaults render the file as
         /// captured: linear normalization only, with no stretch or white balance.
         ///
@@ -172,7 +180,8 @@ public enum ImageProcessor
         ///   - debayerMode:  The demosaic algorithm used when debayering.
         ///   - cosmeticCorrection: The hot/cold pixel repair applied to the raw samples (a disabled value is omitted from the configuration).
         ///   - orientation:  The net orientation applied to the rendered image.
-        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.STFParameters? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), colorBalance: Processors.ColorBalance.Ranges = .identity, hue: Double = 0, saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, cosmeticCorrection: Processors.CosmeticCorrection.Parameters = .default, orientation: Processors.Orient.Orientation = .identity )
+        ///   - maxDimension: The largest dimension the rendered image may take, or `nil` for a full-resolution render (the preview/thumbnail renderers set it).
+        public init( normalize: Processors.Normalize.Mode? = .minMax, stretch: Processors.Stretch.STFParameters? = nil, whiteBalance: Processors.WhiteBalance.Mode? = nil, invert: Bool = false, brightness: Double = 0, contrast: Double = 1, levels: Processors.Levels.Channels = .uniform( .identity ), curves: Processors.Curves.Channels = .uniform( .identity ), colorBalance: Processors.ColorBalance.Ranges = .identity, hue: Double = 0, saturation: Double = 1, debayer: DebayerSelection = .auto, debayerMode: Processors.Debayer.Mode = .bilinear, cosmeticCorrection: Processors.CosmeticCorrection.Parameters = .default, orientation: Processors.Orient.Orientation = .identity, maxDimension: Int? = nil )
         {
             self.normalize          = normalize
             self.stretch            = stretch
@@ -189,6 +198,7 @@ public enum ImageProcessor
             self.debayerMode        = debayerMode
             self.cosmeticCorrection = cosmeticCorrection
             self.orientation        = orientation
+            self.maxDimension       = maxDimension
         }
 
         /// Builds the pipeline configuration, combining these tunables with the
@@ -199,8 +209,11 @@ public enum ImageProcessor
         ///   - offset:        The additive offset from `BZERO`.
         ///   - headerPattern: The Bayer pattern from `BAYERPAT`, or `nil`. Used
         ///                    only when the debayer selection is `.auto`.
+        ///   - binFactor:     The factor to bin the mosaic before the demosaic.
+        ///                    Defaults to one (no binning); set above one only for a
+        ///                    heavily downsampled mosaic preview.
         /// - Returns: The configured `PixelPipeline.Config`.
-        public func config( scale: Double, offset: Double, headerPattern: Processors.Debayer.Pattern? ) -> PixelPipeline.Config
+        public func config( scale: Double, offset: Double, headerPattern: Processors.Debayer.Pattern?, binFactor: Int = 1 ) -> PixelPipeline.Config
         {
             let pattern: Processors.Debayer.Pattern? = switch self.debayer
             {
@@ -213,7 +226,7 @@ public enum ImageProcessor
             // demosaic; its absence means a monochrome source expanded to RGB.
             let inputFormat: PixelPipeline.Config.InputFormat = pattern.map { .cfa( pattern: $0, mode: self.debayerMode ) } ?? .mono
 
-            return self.config( scale: scale, offset: offset, inputFormat: inputFormat )
+            return self.config( scale: scale, offset: offset, inputFormat: inputFormat, binFactor: binFactor )
         }
 
         /// Builds the pipeline configuration for an explicit input layout, combining
@@ -228,12 +241,15 @@ public enum ImageProcessor
         ///   - scale:       The multiplicative scale from `BSCALE`.
         ///   - offset:      The additive offset from `BZERO`.
         ///   - inputFormat: The channel layout of the samples fed to the pipeline.
+        ///   - binFactor:   The factor to bin a single-channel mosaic before the demosaic. Defaults to one (no binning); set above one only for a heavily downsampled mosaic preview.
         /// - Returns: The configured `PixelPipeline.Config`.
-        public func config( scale: Double, offset: Double, inputFormat: PixelPipeline.Config.InputFormat ) -> PixelPipeline.Config
+        public func config( scale: Double, offset: Double, inputFormat: PixelPipeline.Config.InputFormat, binFactor: Int = 1 ) -> PixelPipeline.Config
         {
             PixelPipeline.Config(
                 scale:              ( scale, offset ),
                 inputFormat:        inputFormat,
+                maxDimension:       self.maxDimension,
+                binFactor:          binFactor,
                 cosmeticCorrection: self.cosmeticCorrection.isEnabled ? self.cosmeticCorrection : nil,
                 normalize:          self.normalize,
                 stretch:            self.stretch,
@@ -481,6 +497,37 @@ public enum ImageProcessor
         }
     }
 
+    /// Renders already-decoded raw samples through the configured pixel pipeline —
+    /// the counterpart of ``render(data:width:height:bitsPerPixel:config:)`` that
+    /// skips the decode, so a caller that has already decoded the raw samples (e.g.
+    /// to derive the auto-stretch statistics) can render from them without decoding
+    /// the frame a second time.
+    ///
+    /// The samples are the raw, unscaled values in the same layout
+    /// ``render(data:width:height:bitsPerPixel:config:)`` would decode; the pipeline
+    /// applies the configured affine scaling itself, so the two entries produce
+    /// identical results for the same bytes.
+    ///
+    /// - Parameters:
+    ///   - pixels:       The already-decoded raw samples, in row-major order.
+    ///   - width:        The image width in pixels.
+    ///   - height:       The image height in pixels.
+    ///   - bitsPerPixel: The original sample format (informational).
+    ///   - config:       The configured pipeline stages.
+    /// - Returns: The ``RenderResult``.
+    /// - Throws: Any error thrown by the pixel pipeline.
+    public static func render( pixels: [ Double ], width: Int, height: Int, bitsPerPixel: BitsPerPixel, config: PixelPipeline.Config ) throws -> RenderResult
+    {
+        let pipeline = PixelPipeline( config: config )
+
+        return try Benchmark.run( label: "Rendering Image", output: Benchmarking.log )
+        {
+            let buffer = try pipeline.run( pixels: pixels, width: width, height: height, bitsPerPixel: bitsPerPixel )
+
+            return try Self.result( from: buffer, config: config )
+        }
+    }
+
     /// Renders already-decoded channel planes through the configured pixel
     /// pipeline — the counterpart of ``render(data:width:height:bitsPerPixel:config:)``
     /// for formats that decode their own channels into separate planes (e.g. the
@@ -559,6 +606,33 @@ public enum ImageProcessor
             case "GBRG": return .gbrg
             default:     throw RuntimeError( message: "Unsupported colour-filter-array pattern \( name )" )
         }
+    }
+
+    /// The factor to bin a colour-filter-array mosaic before the demosaic when
+    /// rendering a downsampled preview, or `nil` to skip binning.
+    ///
+    /// Binning halves the mosaic (averaging same-colour sites), so it is applied
+    /// only when the source is a mosaic being downsampled to at most half its size:
+    /// then the half-resolution binned mosaic still exceeds the target — the final
+    /// downsample discards that resolution anyway — while the expensive debayer runs
+    /// on a quarter of the samples, with no visible loss. A full-resolution render
+    /// (no `maxDimension`), a non-mosaic source, or a smaller reduction returns `1`
+    /// (the identity — no binning).
+    ///
+    /// - Parameters:
+    ///   - maxSide:      The source's larger dimension, in pixels.
+    ///   - maxDimension: The rendered image's dimension cap, or `nil` for full resolution.
+    ///   - isMosaic:     Whether the source is a colour-filter-array mosaic.
+    /// - Returns: The bin factor (`2`), or `1` when binning does not apply.
+    public static func previewBinFactor( maxSide: Int, maxDimension: Int?, isMosaic: Bool ) -> Int
+    {
+        guard isMosaic, let maxDimension, maxDimension > 0, maxSide >= 2 * maxDimension
+        else
+        {
+            return 1
+        }
+
+        return 2
     }
 
     /// A decoded pixel sample: the scaled raw value and its fraction of the

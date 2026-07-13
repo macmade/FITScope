@@ -134,14 +134,113 @@ public extension ImageProcessor
             throw RuntimeError( message: "Data too small: \( data.count ) < \( size )" )
         }
 
+        let raw = try PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel )
+
+        return try Self.render( rawSamples: raw, width: width, height: height, bitsPerPixel: bitsPerPixel, properties: properties, settings: settings )
+    }
+
+    /// Renders a 2-D image HDU from its already-decoded raw samples — the decode-free
+    /// core the byte-based ``render(data:properties:settings:)`` delegates to after
+    /// decoding, and which the preview renderer calls directly so a one-shot preview
+    /// decodes the frame only once (sharing the samples with the auto-stretch
+    /// statistics).
+    ///
+    /// - Parameters:
+    ///   - rawSamples:   The image HDU's raw, unscaled samples, in row-major order.
+    ///   - width:        The image width in pixels.
+    ///   - height:       The image height in pixels.
+    ///   - bitsPerPixel: The sample format the samples were decoded from.
+    ///   - properties:   The owning header's property snapshots (scaling, `BAYERPAT`).
+    ///   - settings:     The render settings.
+    /// - Returns: The render result.
+    /// - Throws: Any error building the configuration or running the pipeline.
+    static func render( rawSamples: [ Double ], width: Int, height: Int, bitsPerPixel: BitsPerPixel, properties: [ FITSPropertySnapshot ], settings: Settings ) throws -> RenderResult
+    {
         let bayerPattern = try Self.bayerPattern( from: properties )
 
         let ( scale, offset ) = ImageProcessor.scaling( from: properties )
         let fullScale         = Self.fullScaleScaling( scale: scale, offset: offset, bitsPerPixel: bitsPerPixel )
 
-        let config = settings.config( scale: fullScale.scale, offset: fullScale.offset, headerPattern: bayerPattern )
+        // Bin the mosaic before the demosaic when heavily downsampling a colour-
+        // filter-array preview, so the expensive debayer runs on a smaller mosaic.
+        let binFactor = ImageProcessor.previewBinFactor( maxSide: Swift.max( width, height ), maxDimension: settings.maxDimension, isMosaic: bayerPattern != nil )
+        let config    = settings.config( scale: fullScale.scale, offset: fullScale.offset, headerPattern: bayerPattern, binFactor: binFactor )
 
-        return try Self.render( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel, config: config )
+        return try Self.render( pixels: rawSamples, width: width, height: height, bitsPerPixel: bitsPerPixel, config: config )
+    }
+
+    /// Decodes a 2-D image HDU's raw, unscaled samples once, for a caller that will
+    /// feed them to both the auto-stretch statistics and ``render(rawSamples:width:height:bitsPerPixel:properties:settings:)``.
+    ///
+    /// Returns `nil` for anything that is not a directly-decodable 2-D image (an RGB
+    /// colour-plane frame, a data cube, or a truncated / unsupported HDU); the caller
+    /// then falls back to the byte-based path.
+    ///
+    /// - Parameters:
+    ///   - data:       The image HDU's raw pixel bytes.
+    ///   - properties: The owning header's property snapshots.
+    /// - Returns: The raw samples with their geometry and sample format, or `nil`.
+    static func decodedImageHDU( data: Data, properties: [ FITSPropertySnapshot ] ) -> ( samples: [ Double ], width: Int, height: Int, bitsPerPixel: BitsPerPixel )?
+    {
+        guard let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
+              let bitsPerPixel = BitsPerPixel.from( value: bitPix ),
+              let nAxis        = properties.first( where: { $0.name == "NAXIS" } )?.value.integer,
+              nAxis == 2,
+              Self.isRGBPlanes( properties: properties ) == false,
+              let ( width, height ) = Self.imageDimensions( from: properties )
+        else
+        {
+            return nil
+        }
+
+        let size      = bitsPerPixel.size( numberOfPixels: width * height )
+        let pixelData = Data( data.prefix( size ) )
+
+        guard pixelData.count == size,
+              let raw = try? PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel )
+        else
+        {
+            return nil
+        }
+
+        return ( samples: raw, width: width, height: height, bitsPerPixel: bitsPerPixel )
+    }
+
+    /// The auto-stretch colour source for a 2-D image HDU built from already-decoded
+    /// raw samples, so the statistics reuse the render's decode instead of decoding a
+    /// second time.
+    ///
+    /// Applies the header's affine scaling and tags the single channel by its layout:
+    /// a colour-filter-array frame becomes a ``AutoStretchColorSource/mosaic(_:pattern:)``
+    /// (split per channel by the derivation), any other 2-D frame a
+    /// ``AutoStretchColorSource/mono(_:)``. Matches the byte-based
+    /// ``autoStretchColorSource(forImageHDU:properties:)`` / mono-luminance fallback
+    /// for the same bytes.
+    ///
+    /// - Parameters:
+    ///   - samples:    The raw, unscaled samples.
+    ///   - width:      The image width in pixels.
+    ///   - height:     The image height in pixels.
+    ///   - properties: The owning header's property snapshots.
+    /// - Returns: The colour source, or `nil` when it cannot be built or the pattern
+    ///   is unsupported.
+    static func autoStretchColorSource( fromSamples samples: [ Double ], width: Int, height: Int, properties: [ FITSPropertySnapshot ] ) -> AutoStretchColorSource?
+    {
+        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
+        let scaled            = samples.map { $0 * scale + offset }
+
+        guard let buffer = try? PixelBuffer( width: width, height: height, channels: 1, pixels: scaled, isNormalized: false )
+        else
+        {
+            return nil
+        }
+
+        if let pattern = ( try? Self.bayerPattern( from: properties ) ) ?? nil
+        {
+            return .mosaic( buffer, pattern: pattern )
+        }
+
+        return .mono( buffer )
     }
 
     /// Whether the header describes a three-dimensional HDU whose third axis holds

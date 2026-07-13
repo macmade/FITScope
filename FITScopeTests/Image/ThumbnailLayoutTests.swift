@@ -77,4 +77,30 @@ struct ThumbnailLayoutTests
         #expect( ThumbnailLayout.fittedSize( imageWidth: 0,   imageHeight: 100, within: maximumSize ) == maximumSize )
         #expect( ThumbnailLayout.fittedSize( imageWidth: 100, imageHeight: 0,   within: maximumSize ) == maximumSize )
     }
+
+    @Test
+    func renderMaxDimensionTakesTheLongerSideToDevicePixelsWithHeadroom() throws
+    {
+        // 512×384 points at scale 2 → 1024 device px on the long side, ×2 supersample.
+        let dimension = ThumbnailLayout.renderMaxDimension( maximumSize: CGSize( width: 512, height: 384 ), scale: 2 )
+
+        #expect( dimension == Int( 512 * 2 * ThumbnailLayout.renderSupersample ) )
+    }
+
+    @Test
+    func renderMaxDimensionUsesTheHeightWhenItBinds() throws
+    {
+        let dimension = ThumbnailLayout.renderMaxDimension( maximumSize: CGSize( width: 200, height: 800 ), scale: 1 )
+
+        #expect( dimension == Int( 800 * ThumbnailLayout.renderSupersample ) )
+    }
+
+    @Test
+    func renderMaxDimensionTreatsAnUnsetScaleAsOne() throws
+    {
+        // A zero/sub-1 scale must not collapse the cap to zero.
+        let dimension = ThumbnailLayout.renderMaxDimension( maximumSize: CGSize( width: 256, height: 256 ), scale: 0 )
+
+        #expect( dimension == Int( 256 * ThumbnailLayout.renderSupersample ) )
+    }
 }

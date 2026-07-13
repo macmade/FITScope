@@ -148,6 +148,26 @@ struct XISFPreviewRendererTests
         #expect( settings.stretch == app.stretch )
     }
 
+    /// Decode-once must not change the result: deriving the preview settings from the
+    /// image's already-decoded planes matches deriving them from the raw bytes.
+    @Test
+    func decodeOnceSettingsMatchTheBytePath() throws
+    {
+        let ( defaults, name ) = Self.isolatedSuite( xisfPreviews: true )
+
+        defer { defaults.removePersistentDomain( forName: name ) }
+
+        let properties = XISFImageProperties( width: 4, height: 4, channelCount: 1, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .gray, colorFilterArrayPattern: "RGGB" )
+        let data       = Data( XISFTestData.uInt16LE( ( 0 ..< 16 ).map { $0 * 100 } ) )
+        let planes     = try ImageProcessor.xisfPlaneSamples( data: data, properties: properties )
+
+        let bytePath    = XISFPreviewRenderer.previewSettings( data: data, properties: properties, previewsDefaults: defaults )
+        let decodedPath = XISFPreviewRenderer.previewSettings( planes: planes, properties: properties, previewsDefaults: defaults )
+
+        #expect( decodedPath.stretch   == bytePath.stretch )
+        #expect( decodedPath.normalize == bytePath.normalize )
+    }
+
     /// With the XISF previews preference off, an image with no display function
     /// previews linear (min/max), with no stretch.
     @Test

@@ -53,7 +53,24 @@ public extension ImageProcessor
     ///   invalid dimensions, or truncated data.
     static func render( data: Data, xisf properties: XISFImageProperties, settings: Settings = Settings() ) throws -> RenderResult
     {
-        let planes       = try Self.xisfPlaneSamples( data: data, properties: properties )
+        let planes = try Self.xisfPlaneSamples( data: data, properties: properties )
+
+        return try Self.render( planes: planes, xisf: properties, settings: settings )
+    }
+
+    /// Renders an XISF image from its already-decoded channel planes — the decode-free
+    /// core the byte-based ``render(data:xisf:settings:)`` delegates to after decoding,
+    /// and which the preview renderer calls directly so a one-shot preview decodes the
+    /// image only once (sharing the planes with the auto-stretch statistics).
+    ///
+    /// - Parameters:
+    ///   - planes:     The image's already-decoded raw channel planes.
+    ///   - properties: The image's pixel layout.
+    ///   - settings:   The render settings.
+    /// - Returns: The render result.
+    /// - Throws: Any error building the configuration or running the pipeline.
+    static func render( planes: [ [ Double ] ], xisf properties: XISFImageProperties, settings: Settings ) throws -> RenderResult
+    {
         let config       = try Self.xisfConfig( properties: properties, settings: settings )
         let bitsPerPixel = Self.xisfBitsPerPixel( properties.sampleFormat )
 
@@ -100,7 +117,12 @@ public extension ImageProcessor
                 {
                     let bayer = try ImageProcessor.debayerPattern( named: pattern )
 
-                    return settings.config( scale: scale, offset: 0, headerPattern: bayer )
+                    // Bin the mosaic before the demosaic when heavily downsampling a
+                    // colour-filter-array preview, exactly as the FITS path does, so the
+                    // expensive debayer runs on a smaller mosaic.
+                    let binFactor = ImageProcessor.previewBinFactor( maxSide: Swift.max( properties.width, properties.height ), maxDimension: settings.maxDimension, isMosaic: true )
+
+                    return settings.config( scale: scale, offset: 0, headerPattern: bayer, binFactor: binFactor )
                 }
 
                 return settings.config( scale: scale, offset: 0, inputFormat: .mono )
@@ -135,7 +157,10 @@ public extension ImageProcessor
     /// - Returns: One plane per channel, each `width × height` samples.
     /// - Throws: ``RuntimeError`` for an invalid geometry, an unsupported sample
     ///   format or storage model, or truncated data.
-    private static func xisfPlaneSamples( data: Data, properties: XISFImageProperties ) throws -> [ [ Double ] ]
+    ///
+    /// Exposed (not private) so the preview renderer can decode the planes once and
+    /// share them between the auto-stretch statistics and the render.
+    static func xisfPlaneSamples( data: Data, properties: XISFImageProperties ) throws -> [ [ Double ] ]
     {
         guard properties.width > 0, properties.height > 0, properties.channelCount > 0
         else
@@ -340,7 +365,26 @@ public extension ImageProcessor
     ///   when the planes cannot be decoded.
     static func xisfLinearLuminance( data: Data, properties: XISFImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
     {
-        guard let planes = try? Self.xisfPlaneSamples( data: data, properties: properties ), let first = planes.first
+        guard let planes = try? Self.xisfPlaneSamples( data: data, properties: properties )
+        else
+        {
+            return nil
+        }
+
+        return Self.xisfLinearLuminance( fromPlanes: planes, properties: properties )
+    }
+
+    /// The single-channel luminance for an XISF image built from its already-decoded
+    /// channel planes — the decode-free counterpart of ``xisfLinearLuminance(data:properties:)``,
+    /// so the statistics reuse the render's decode.
+    ///
+    /// - Parameters:
+    ///   - planes:     The image's already-decoded raw channel planes.
+    ///   - properties: The image's pixel layout.
+    /// - Returns: The dimensions and averaged luminance samples, or `nil` when empty.
+    static func xisfLinearLuminance( fromPlanes planes: [ [ Double ] ], properties: XISFImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
+    {
+        guard let first = planes.first
         else
         {
             return nil
@@ -377,17 +421,35 @@ public extension ImageProcessor
     /// - Returns: The per-channel colour input, or `nil` for a mono / non-RGB frame.
     static func xisfAutoStretchColorSource( data: Data, properties: XISFImageProperties ) -> AutoStretchColorSource?
     {
+        guard let planes = try? Self.xisfPlaneSamples( data: data, properties: properties )
+        else
+        {
+            return nil
+        }
+
+        return Self.xisfAutoStretchColorSource( fromPlanes: planes, properties: properties )
+    }
+
+    /// The per-channel auto-stretch colour input for an XISF image built from its
+    /// already-decoded channel planes — the decode-free counterpart of
+    /// ``xisfAutoStretchColorSource(data:properties:)``, so the statistics reuse the
+    /// render's decode. Produces the identical colour source for the same bytes.
+    ///
+    /// - Parameters:
+    ///   - planes:     The image's already-decoded raw channel planes.
+    ///   - properties: The image's pixel layout.
+    /// - Returns: The per-channel colour input, or `nil` for a mono / non-RGB frame.
+    static func xisfAutoStretchColorSource( fromPlanes planes: [ [ Double ] ], properties: XISFImageProperties ) -> AutoStretchColorSource?
+    {
         if let cfaPattern = properties.colorFilterArrayPattern,
            let pattern    = try? ImageProcessor.debayerPattern( named: cfaPattern ),
-           let planes     = try? Self.xisfPlaneSamples( data: data, properties: properties ),
            let mosaic     = planes.first,
            let buffer     = try? PixelBuffer( width: properties.width, height: properties.height, channels: 1, pixels: mosaic, isNormalized: false )
         {
             return .mosaic( buffer, pattern: pattern )
         }
 
-        if properties.colorSpace == .rgb, properties.channelCount == 3,
-           let planes      = try? Self.xisfPlaneSamples( data: data, properties: properties ), planes.count == 3,
+        if properties.colorSpace == .rgb, properties.channelCount == 3, planes.count == 3,
            let interleaved = try? PixelUtilities.interleave( planes: planes ),
            let buffer      = try? PixelBuffer( width: properties.width, height: properties.height, channels: 3, pixels: interleaved, isNormalized: false )
         {

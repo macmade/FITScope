@@ -128,6 +128,25 @@ struct FITSPreviewRendererTests
         #expect( settings.normalize == .minMax )
     }
 
+    /// Decode-once must not change the result: deriving the preview settings from the
+    /// frame's already-decoded samples matches deriving them from the raw bytes.
+    @Test
+    func decodeOnceSettingsMatchTheBytePath() throws
+    {
+        let ( defaults, name ) = Self.isolatedSuite( fitsPreviews: true )
+
+        defer { defaults.removePersistentDomain( forName: name ) }
+
+        let hdu     = Self.rampHDU()
+        let decoded = try #require( ImageProcessor.decodedImageHDU( data: hdu.data, properties: hdu.properties ) )
+
+        let bytePath    = FITSPreviewRenderer.previewSettings( hdu: hdu, previewsDefaults: defaults )
+        let decodedPath = FITSPreviewRenderer.previewSettings( decoded: decoded, properties: hdu.properties, previewsDefaults: defaults )
+
+        #expect( decodedPath.stretch   == bytePath.stretch )
+        #expect( decodedPath.normalize == bytePath.normalize )
+    }
+
     /// An RGB colour-planes image previews with a per-channel (unlinked) auto Screen
     /// Transfer when the preference is on, and — crucially — the preview matches the
     /// app: it derives from the same colour source over the same full-scale domain.

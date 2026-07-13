@@ -44,13 +44,16 @@ public enum XISFPreviewRenderer
     ///
     /// - Parameters:
     ///   - data:             The raw XISF file bytes.
+    ///   - maxDimension:     The largest dimension the rendered image may take, or
+    ///                       `nil` for a full-resolution render (the thumbnail
+    ///                       extension passes the requested size).
     ///   - previewsDefaults: The shared App Group store the previews preference is
     ///                       read from; defaults to ``AutoStretchPreference/sharedDefaults``.
     ///                       `nil` (an unopenable suite) renders linear.
     /// - Returns: The rendered, display-ready image.
     /// - Throws: ``RuntimeError`` when the file contains no image, or any error
     ///   parsing the file or rendering the image.
-    public static func render( data: Data, previewsDefaults: UserDefaults? = AutoStretchPreference.sharedDefaults ) throws -> CGImage
+    public static func render( data: Data, maxDimension: Int? = nil, previewsDefaults: UserDefaults? = AutoStretchPreference.sharedDefaults ) throws -> CGImage
     {
         let file = try XISFFile( data: data, options: .lenient )
 
@@ -62,22 +65,29 @@ public enum XISFPreviewRenderer
 
         let properties = XISFImageProperties( image: image )
         let bytes      = try image.data
-        let settings   = Self.previewSettings( data: bytes, properties: properties, previewsDefaults: previewsDefaults )
 
-        return try ImageProcessor.render( data: bytes, xisf: properties, settings: settings ).image
+        // Decode the channel planes once and share them between the auto-stretch
+        // statistics and the render, so a one-shot preview decodes the image a single
+        // time (every XISF layout decodes to planes, so there is no fallback path).
+        let planes   = try ImageProcessor.xisfPlaneSamples( data: bytes, properties: properties )
+        let settings = Self.previewSettings( planes: planes, properties: properties, maxDimension: maxDimension, previewsDefaults: previewsDefaults )
+
+        return try ImageProcessor.render( planes: planes, xisf: properties, settings: settings ).image
     }
 
     /// Reads and renders the XISF file at the given URL.
     ///
     /// - Parameters:
     ///   - url:              The XISF file to read and render.
+    ///   - maxDimension:     The largest dimension the rendered image may take, or
+    ///                       `nil` for a full-resolution render.
     ///   - previewsDefaults: The shared App Group store the previews preference is
     ///                       read from; defaults to ``AutoStretchPreference/sharedDefaults``.
     /// - Returns: The rendered, display-ready image.
     /// - Throws: Any error reading, parsing, or rendering the file.
-    public static func render( contentsOf url: URL, previewsDefaults: UserDefaults? = AutoStretchPreference.sharedDefaults ) throws -> CGImage
+    public static func render( contentsOf url: URL, maxDimension: Int? = nil, previewsDefaults: UserDefaults? = AutoStretchPreference.sharedDefaults ) throws -> CGImage
     {
-        try self.render( data: try Data( contentsOf: url ), previewsDefaults: previewsDefaults )
+        try self.render( data: try Data( contentsOf: url ), maxDimension: maxDimension, previewsDefaults: previewsDefaults )
     }
 
     /// The settings an XISF preview renders with, using the same priority as the app
@@ -91,16 +101,23 @@ public enum XISFPreviewRenderer
     /// - Parameters:
     ///   - data:             The image's decoded pixel bytes.
     ///   - properties:       The image's pixel layout (carrying any display function).
+    ///   - maxDimension:     The largest dimension the rendered image may take, or
+    ///                       `nil` for a full-resolution render. When set, the
+    ///                       returned settings carry it (so the render downsamples)
+    ///                       and the auto-stretch statistics are derived from a
+    ///                       decimated colour source.
     ///   - previewsDefaults: The store the previews preference is read from, or `nil`.
     /// - Returns: The render settings.
-    static func previewSettings( data: Data, properties: XISFImageProperties, previewsDefaults: UserDefaults? ) -> ImageProcessor.Settings
+    static func previewSettings( data: Data, properties: XISFImageProperties, maxDimension: Int? = nil, previewsDefaults: UserDefaults? ) -> ImageProcessor.Settings
     {
+        var settings = ImageProcessor.Settings()
+
         // A stored display function is the image "as authored"; it always applies,
         // regardless of the previews preference (matching the app on open).
         if let displayFunction = properties.displayFunction,
            let stf             = Processors.Stretch.STFParameters( displayFunction: displayFunction, colorSpace: properties.colorSpace )
         {
-            return ImageProcessor.Settings( normalize: .identity, stretch: stf )
+            settings = ImageProcessor.Settings( normalize: .identity, stretch: stf )
         }
 
         // Otherwise auto-stretch only when the shared previews preference is on (an
@@ -111,21 +128,56 @@ public enum XISFPreviewRenderer
         // channel luminance for a uniform stretch. It is derived over the format's own
         // domain: full-scale for an integer sample format, min/max for a floating-point
         // one.
-        guard let defaults = previewsDefaults,
-              AutoStretchPreference.autoStretchPreviews( .xisf, in: defaults ),
-              let colorSource = Self.previewColorSource( data: data, properties: properties )
-        else
+        else if let defaults = previewsDefaults,
+                AutoStretchPreference.autoStretchPreviews( .xisf, in: defaults ),
+                let colorSource = Self.previewColorSource( data: data, properties: properties, maxDimension: maxDimension )
         {
-            return ImageProcessor.Settings()
+            let domain = ImageProcessor.xisfFullScale( properties.sampleFormat ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+
+            if let derived = ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
+            {
+                settings = derived
+            }
         }
 
-        let domain = ImageProcessor.xisfFullScale( properties.sampleFormat ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+        settings.maxDimension = maxDimension
 
-        guard let settings = ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
-        else
+        return settings
+    }
+
+    /// The settings an XISF preview renders with, derived from the image's
+    /// already-decoded channel planes — the decode-once counterpart of
+    /// ``previewSettings(data:properties:maxDimension:previewsDefaults:)`` used when the
+    /// caller has decoded the planes to render from, so the statistics reuse that decode.
+    ///
+    /// - Parameters:
+    ///   - planes:           The image's already-decoded raw channel planes.
+    ///   - properties:       The image's pixel layout (carrying any display function).
+    ///   - maxDimension:     The largest dimension the rendered image may take, or `nil`.
+    ///   - previewsDefaults: The store the previews preference is read from, or `nil`.
+    /// - Returns: The render settings.
+    static func previewSettings( planes: [ [ Double ] ], properties: XISFImageProperties, maxDimension: Int? = nil, previewsDefaults: UserDefaults? ) -> ImageProcessor.Settings
+    {
+        var settings = ImageProcessor.Settings()
+
+        if let displayFunction = properties.displayFunction,
+           let stf             = Processors.Stretch.STFParameters( displayFunction: displayFunction, colorSpace: properties.colorSpace )
         {
-            return ImageProcessor.Settings()
+            settings = ImageProcessor.Settings( normalize: .identity, stretch: stf )
         }
+        else if let defaults = previewsDefaults,
+                AutoStretchPreference.autoStretchPreviews( .xisf, in: defaults ),
+                let colorSource = Self.previewColorSource( planes: planes, properties: properties, maxDimension: maxDimension )
+        {
+            let domain = ImageProcessor.xisfFullScale( properties.sampleFormat ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+
+            if let derived = ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
+            {
+                settings = derived
+            }
+        }
+
+        settings.maxDimension = maxDimension
 
         return settings
     }
@@ -137,15 +189,17 @@ public enum XISFPreviewRenderer
     /// stretch.
     ///
     /// - Parameters:
-    ///   - data:       The image's decoded pixel bytes.
-    ///   - properties: The image's pixel layout.
+    ///   - data:         The image's decoded pixel bytes.
+    ///   - properties:   The image's pixel layout.
+    ///   - maxDimension: The largest dimension the derivation's colour source may
+    ///                   take, or `nil` to derive from the full-resolution source.
     /// - Returns: The colour input, or `nil` when it cannot be built (the caller then
     ///   renders linear).
-    private static func previewColorSource( data: Data, properties: XISFImageProperties ) -> ImageProcessor.AutoStretchColorSource?
+    private static func previewColorSource( data: Data, properties: XISFImageProperties, maxDimension: Int? ) -> ImageProcessor.AutoStretchColorSource?
     {
         if let colour = ImageProcessor.xisfAutoStretchColorSource( data: data, properties: properties )
         {
-            return colour
+            return colour.subsampled( maxDimension: maxDimension )
         }
 
         guard let luminance = ImageProcessor.xisfLinearLuminance( data: data, properties: properties ),
@@ -155,6 +209,32 @@ public enum XISFPreviewRenderer
             return nil
         }
 
-        return .mono( buffer )
+        return ImageProcessor.AutoStretchColorSource.mono( buffer ).subsampled( maxDimension: maxDimension )
+    }
+
+    /// The colour input built from the image's already-decoded channel planes — the
+    /// decode-once counterpart of ``previewColorSource(data:properties:maxDimension:)``.
+    ///
+    /// - Parameters:
+    ///   - planes:       The image's already-decoded raw channel planes.
+    ///   - properties:   The image's pixel layout.
+    ///   - maxDimension: The largest dimension the derivation's colour source may
+    ///                   take, or `nil` to derive from the full-resolution source.
+    /// - Returns: The colour input, or `nil` when it cannot be built.
+    private static func previewColorSource( planes: [ [ Double ] ], properties: XISFImageProperties, maxDimension: Int? ) -> ImageProcessor.AutoStretchColorSource?
+    {
+        if let colour = ImageProcessor.xisfAutoStretchColorSource( fromPlanes: planes, properties: properties )
+        {
+            return colour.subsampled( maxDimension: maxDimension )
+        }
+
+        guard let luminance = ImageProcessor.xisfLinearLuminance( fromPlanes: planes, properties: properties ),
+              let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false )
+        else
+        {
+            return nil
+        }
+
+        return ImageProcessor.AutoStretchColorSource.mono( buffer ).subsampled( maxDimension: maxDimension )
     }
 }

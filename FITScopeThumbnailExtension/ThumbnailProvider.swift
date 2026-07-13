@@ -23,45 +23,61 @@
  ******************************************************************************/
 
 import CoreGraphics
+import Foundation
 import QuickLookThumbnailing
 
 /// Provides Finder thumbnails for the supported formats (FITS, XISF) by rendering
 /// them with the app's default settings (no user adjustments) via the shared
 /// ``PreviewRenderer`` and drawing the result scaled to fit the requested size.
+///
+/// The render is downsampled to the requested thumbnail size (rather than run at
+/// the source's full resolution) and dispatched off the calling context at a
+/// utility quality of service.
 class ThumbnailProvider: QLThumbnailProvider
 {
     override func provideThumbnail( for request: QLFileThumbnailRequest, _ handler: @escaping ( QLThumbnailReply?, Error? ) -> Void )
     {
-        do
+        let fileURL      = request.fileURL
+        let maximumSize  = request.maximumSize
+        let maxDimension = ThumbnailLayout.renderMaxDimension( maximumSize: maximumSize, scale: request.scale )
+
+        // QuickLook's completion handler is not `Sendable`, but it is invoked
+        // exactly once, from the queue below; capture it as such.
+        nonisolated( unsafe ) let handler = handler
+
+        DispatchQueue.global( qos: .utility ).async
         {
-            let image = try PreviewRenderer.render( contentsOf: request.fileURL )
-            let size  = ThumbnailLayout.fittedSize( imageWidth: image.width, imageHeight: image.height, within: request.maximumSize )
+            do
+            {
+                let image = try PreviewRenderer.render( contentsOf: fileURL, maxDimension: maxDimension )
+                let size  = ThumbnailLayout.fittedSize( imageWidth: image.width, imageHeight: image.height, within: maximumSize )
 
-            handler(
-                QLThumbnailReply( contextSize: size )
-                {
-                    ( context: CGContext ) -> Bool in
+                handler(
+                    QLThumbnailReply( contextSize: size )
+                    {
+                        ( context: CGContext ) -> Bool in
 
-                    // The context's backing store is `size × displayScale` pixels
-                    // and is handed to us unscaled — its coordinate space is that
-                    // full pixel extent — so fill `context.width × context.height`
-                    // rather than the point-sized `size`. Drawing into `size`
-                    // would place the image in the bottom-left corner at a
-                    // fraction of the context and leave white margins on the top
-                    // and right. Because `size` is aspect-fitted to the image,
-                    // filling the whole context does not distort it.
-                    let bounds = CGRect( x: 0, y: 0, width: context.width, height: context.height )
+                        // The context's backing store is `size × displayScale` pixels
+                        // and is handed to us unscaled — its coordinate space is that
+                        // full pixel extent — so fill `context.width × context.height`
+                        // rather than the point-sized `size`. Drawing into `size`
+                        // would place the image in the bottom-left corner at a
+                        // fraction of the context and leave white margins on the top
+                        // and right. Because `size` is aspect-fitted to the image,
+                        // filling the whole context does not distort it.
+                        let bounds = CGRect( x: 0, y: 0, width: context.width, height: context.height )
 
-                    context.draw( image, in: bounds )
+                        context.draw( image, in: bounds )
 
-                    return true
-                },
-                nil
-            )
-        }
-        catch
-        {
-            handler( nil, error )
+                        return true
+                    },
+                    nil
+                )
+            }
+            catch
+            {
+                handler( nil, error )
+            }
         }
     }
 }

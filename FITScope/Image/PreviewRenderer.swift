@@ -44,24 +44,29 @@ public enum PreviewRenderer
     ///
     /// - Parameters:
     ///   - url:              The file to read and render.
+    ///   - maxDimension:     The largest dimension the rendered image may take, or
+    ///                       `nil` to render at full resolution. The thumbnail
+    ///                       extension passes the requested thumbnail size so the
+    ///                       image is produced from a downsampled render; the
+    ///                       preview extension leaves it `nil`.
     ///   - previewsDefaults: The shared App Group store the per-format previews
     ///                       preference is read from; defaults to
     ///                       ``AutoStretchPreference/sharedDefaults``.
     /// - Returns: The rendered, display-ready image.
     /// - Throws: ``RuntimeError`` when the file's type is neither FITS nor XISF, or
     ///   any error reading, parsing, or rendering the file.
-    public static func render( contentsOf url: URL, previewsDefaults: UserDefaults? = AutoStretchPreference.sharedDefaults ) throws -> CGImage
+    public static func render( contentsOf url: URL, maxDimension: Int? = nil, previewsDefaults: UserDefaults? = AutoStretchPreference.sharedDefaults ) throws -> CGImage
     {
         let type = UTType( filenameExtension: url.pathExtension )
 
         if type?.conforms( to: .xisf ) == true
         {
-            return try XISFPreviewRenderer.render( contentsOf: url, previewsDefaults: previewsDefaults )
+            return try XISFPreviewRenderer.render( contentsOf: url, maxDimension: maxDimension, previewsDefaults: previewsDefaults )
         }
 
         if type?.conforms( to: .fits ) == true
         {
-            return try FITSPreviewRenderer.render( contentsOf: url, previewsDefaults: previewsDefaults )
+            return try FITSPreviewRenderer.render( contentsOf: url, maxDimension: maxDimension, previewsDefaults: previewsDefaults )
         }
 
         throw RuntimeError( message: "Unsupported file type for preview: \( url.lastPathComponent )" )
