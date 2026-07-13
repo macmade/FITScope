@@ -360,8 +360,18 @@ public class ImageRenderer: ObservableObject
                         var originalSettings         = baseline
                         originalSettings.orientation = settings.orientation
 
-                        let result   = try Self.makeResult( from: source, settings: settings )
-                        let original = needsOriginal ? try Self.makeResult( from: source, settings: originalSettings ) : nil
+                        // Decode the frame once and render both the displayed result and
+                        // the before/after original from it, so the same bytes are not
+                        // decoded twice in a pass that needs both. A source that cannot
+                        // decode ahead (``ImageRenderSource/decoded()`` is `nil` — e.g. an
+                        // RGB colour-plane FITS frame) renders through the source itself,
+                        // decoding on each call exactly as before. The decoded frame lives
+                        // only for this pass and is dropped when it returns, so the
+                        // steady-state memory footprint is unchanged.
+                        let renderable: any RenderResultProducing = ( try? source.decoded() ) ?? source
+
+                        let result   = try Self.makeResult( from: renderable, settings: settings )
+                        let original = needsOriginal ? try Self.makeResult( from: renderable, settings: originalSettings ) : nil
 
                         continuation.resume( returning: ( result, original ) )
                     }

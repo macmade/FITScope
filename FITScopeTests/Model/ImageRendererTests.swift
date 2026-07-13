@@ -59,6 +59,31 @@ struct ImageRendererTests
         #expect( message.contains( "no image HDU" ), "expected a typed no-image-HDU error, got: \"\( message )\"" )
     }
 
+    /// A source that cannot decode ahead — an RGB colour-plane FITS frame, whose
+    /// ``ImageRenderSource/decoded()`` returns `nil` — still renders: the render pass
+    /// falls back to the source (decoding on each call, as before) and commits a
+    /// result with its before/after original. This exercises the `?? source` fallback
+    /// the decode-once render path relies on for the frames it cannot decode ahead.
+    @Test
+    @MainActor
+    func aColourPlaneFrameRendersThroughTheByteFallback() async throws
+    {
+        let ( data, properties ) = FITSTestData.rgbPlanes( width: 4, height: 3 )
+        let source               = FITSRenderSource( data: data, properties: properties )
+
+        // The fallback precondition: this frame cannot decode ahead.
+        #expect( try source.decoded() == nil )
+
+        let renderer = ImageRenderer( source: source )
+
+        await renderer.render()
+
+        #expect( renderer.error == nil )
+        #expect( renderer.result != nil )
+        #expect( renderer.original != nil )
+        #expect( renderer.originalImage != nil )
+    }
+
     /// A source without a known full scale (no integer `BITPIX`) derives its auto
     /// Screen Transfer over the min/max domain: the settings carry a uniform STF and
     /// `.minMax` normalization, and the cheap `canAutoScreenTransfer` flag agrees.

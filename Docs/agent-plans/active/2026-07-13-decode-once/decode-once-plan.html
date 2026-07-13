@@ -472,13 +472,34 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
-                <span class="completed-date">Completed: —</span>
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-13</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p>Implemented with TDD. The payoff milestone — a single, focused edit to <code>ImageRenderer.render()</code>; no behaviour change.</p>
+                <ul>
+                    <li><strong><code>ImageRenderer.render()</code></strong> — inside the off-main-actor render block, replaced the two <code>makeResult(from: source, …)</code> calls with one decode-ahead: <code>let renderable: any RenderResultProducing = ( try? source.decoded() ) ?? source</code>, then <code>result</code> and (when needed) <code>original</code> are rendered from <code>renderable</code>. A decodable source now decodes once and renders both from the same frame; a source that cannot decode ahead (<code>decoded()</code> nil or throwing — e.g. an RGB colour-plane FITS) falls back to the source and decodes per call, exactly as before.</li>
+                    <li><strong>Decode-count:</strong> a <code>needsOriginal</code> pass (first render / orientation change) drops from 2 decodes to 1; a normal re-render (<code>needsOriginal == false</code>) stays at exactly 1. Fallback frames are unchanged.</li>
+                    <li><strong>Memory:</strong> <code>renderable</code> is a local in the <code>DispatchQueue.global</code> block, dropped when it returns — no decoded pixels retained across renders, so the steady-state footprint is unchanged.</li>
+                    <li><strong>Test</strong> — new <code>aColourPlaneFrameRendersThroughTheByteFallback</code> in <code>ImageRendererTests</code>: pins the fallback precondition (<code>source.decoded() == nil</code> for an RGB colour-plane frame) and confirms <code>render()</code> still commits <code>result</code>, the histogram <code>original</code>, and the before/after <code>originalImage</code> with no error. The decode-once path itself is exercised by every other test in the suite (all use decodable mono/colour sources) plus the milestone 2–3 byte-identity guarantees.</li>
+                    <li><strong>Build/test</strong> — build succeeds; all 33 <code>ImageRendererTests</code> pass (32 pre-existing, now running through the decode-once path, + the new fallback test).</li>
+                </ul>
+                <p><strong>Automated review loop:</strong> 1 round; converged with no Critical/High/Medium findings. Two Info notes; acted on one (test assertion), deferred the other. Reviewer independently verified dedup correctness, error-propagation equivalence, decode-count parity, untouched generation/commit bookkeeping, and memory-neutrality.</p>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <ul>
+                    <li><strong>Verdict: correct, in scope, behaviour-preserving; no blocking issues.</strong> Confirmed the decoded frame is settings-independent (raw samples + geometry; settings/orientation applied downstream), so one decode legitimately serves both <code>result</code> and <code>original</code>; that <code>( try? source.decoded() ) ?? source</code> falls back on both nil and throw (SE-0230 <code>try?</code> flattening) and surfaces the same error the old path did; decode-count parity in all three cases; and <code>renderable</code> cannot outlive the render block.</li>
+                    <li><strong>Double decode on the malformed-file error path</strong> — Info. When <code>decoded()</code> throws (corrupt file), the bytes are decoded once and discarded, then decoded again by the <code>source</code> fallback. Negligible, error-path only. <em>Resolution: Deferred — no change.</em></li>
+                    <li><strong>Test could also assert the histogram <code>original</code></strong> — Info. <em>Resolution: Fixed — added <code>#expect( renderer.original != nil )</code>, fully covering the <code>needsHistogram</code> write.</em></li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>Asked for an explanation of the <code>?? source</code> fallback. Explained: it is the nil-coalescing fallback so a source that cannot decode ahead — <code>decoded()</code> returning <code>nil</code> (RGB colour-plane FITS) or throwing (corrupt bytes, swallowed by <code>try?</code>) — renders through the <code>source</code> itself, which also conforms to <code>RenderResultProducing</code> and decodes per call as before; a thrown decode error is surfaced unchanged at the later <code>source.makeResult</code> call. No code change requested.</li>
+                    <li>"Looks good" — approved as implemented.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 5 -->
