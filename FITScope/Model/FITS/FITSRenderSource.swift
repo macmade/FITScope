@@ -102,6 +102,19 @@ public struct FITSRenderSource: ImageRenderSource
         try ImageProcessor.render( data: self.data, properties: self.properties, settings: settings )
     }
 
+    /// Decodes the image HDU's raw samples once into a ``FITSDecodedRenderSource``,
+    /// so the renderer can render the displayed result and the before/after original
+    /// from the one decode. Returns `nil` for an RGB colour-plane frame or a data
+    /// cube — anything ``ImageProcessor/decodedImageHDU(data:properties:)`` cannot
+    /// decode as a 2-D image — so the caller falls back to the byte path.
+    public func decoded() throws -> ( any DecodedRenderSource )?
+    {
+        ImageProcessor.decodedImageHDU( data: self.data, properties: self.properties ).map
+        {
+            FITSDecodedRenderSource( samples: $0.samples, width: $0.width, height: $0.height, bitsPerPixel: $0.bitsPerPixel, properties: self.properties )
+        }
+    }
+
     /// The decoded sample(s) at image coordinates `(x, y)`: three per-channel values
     /// for an RGB colour-planes image, a single value otherwise, or `nil` when the
     /// coordinate or geometry is unavailable.

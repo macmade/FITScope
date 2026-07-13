@@ -80,6 +80,16 @@ public struct XISFRenderSource: ImageRenderSource
         try ImageProcessor.render( data: self.data, xisf: self.properties, settings: settings )
     }
 
+    /// Decodes the image's channel planes once into an ``XISFDecodedRenderSource``,
+    /// so the renderer can render the displayed result and the before/after original
+    /// from the one decode. Every XISF layout decodes to planes, so this never
+    /// returns `nil`; it throws only when the bytes cannot be decoded, and the caller
+    /// then falls back to the byte path.
+    public func decoded() throws -> ( any DecodedRenderSource )?
+    {
+        XISFDecodedRenderSource( planes: try ImageProcessor.xisfPlaneSamples( data: self.data, properties: self.properties ), properties: self.properties )
+    }
+
     /// The decoded sample(s) at image coordinates `(x, y)`: three per-channel values
     /// for an RGB image, a single value otherwise, or `nil` when the coordinate or
     /// geometry is unavailable.

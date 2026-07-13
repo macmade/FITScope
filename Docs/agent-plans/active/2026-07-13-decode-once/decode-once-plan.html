@@ -367,13 +367,35 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
-                <span class="completed-date">Completed: —</span>
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-13</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p>Implemented with TDD. Both conformers reuse the existing decode-free render cores, so rendering through them is byte-identical to the byte path.</p>
+                <ul>
+                    <li><strong>New <code>FITScope/Model/FITS/FITSDecodedRenderSource.swift</code></strong> — a <code>public struct</code> wrapping <code>(samples, width, height, bitsPerPixel, properties)</code>. <code>makeResult</code> → <code>ImageProcessor.render(rawSamples:…)</code>; <code>autoStretchColorSource(maxDimension:)</code> → <code>ImageProcessor.autoStretchColorSource(fromSamples:…)?.subsampled(…)</code> (the exact expression the FITS preview's <code>previewSettings(decoded:)</code> uses).</li>
+                    <li><strong>New <code>FITScope/Model/XISF/XISFDecodedRenderSource.swift</code></strong> — wraps <code>(planes, properties)</code>. <code>makeResult</code> → <code>ImageProcessor.render(planes:xisf:…)</code>; <code>autoStretchColorSource(maxDimension:)</code> reproduces the XISF preview's colour-source logic: per-channel via <code>xisfAutoStretchColorSource(fromPlanes:)</code>, else a <code>.mono</code> luminance from <code>xisfLinearLuminance(fromPlanes:)</code>, subsampled. This duplicates the private <code>XISFPreviewRenderer.previewColorSource(planes:)</code> — a deliberate, documented temporary duplication removed in milestone 5.</li>
+                    <li><strong><code>FITSRenderSource.decoded()</code></strong> builds the FITS conformer from <code>ImageProcessor.decodedImageHDU(…)</code>, returning <code>nil</code> for RGB colour-plane frames / cubes (byte fallback preserved). <strong><code>XISFRenderSource.decoded()</code></strong> builds the XISF conformer from <code>ImageProcessor.xisfPlaneSamples(…)</code>, propagating that call's <code>throws</code> (never returns <code>nil</code>).</li>
+                    <li><strong>Tests</strong> — new <code>FITSDecodedRenderSourceTests</code> (3) and <code>XISFDecodedRenderSourceTests</code> (4): byte-identity of <code>bytes</code> + input/output pixel formats between the decoded frame and the byte path (mono for FITS; mono + RGB for XISF, over default and <code>.identity</code> settings), the RGB-plane FITS → <code>decoded() == nil</code> fallback, and the decoded colour-source kind (<code>.mono</code> / <code>.channels</code>).</li>
+                    <li><strong>pbxproj</strong> — 4 files wired (2 app: <code>FA0F</code>/<code>FB11</code>, <code>FA10</code>/<code>FB12</code>; 2 test: <code>A00F</code>/<code>B00F</code>, <code>A010</code>/<code>B010</code>). One fix mid-way: the XISF test file-ref was first placed in the <code>Image</code> test group (which resolves to <code>FITScopeTests/Image/</code>) but the file lives in <code>FITScopeTests/Model/XISF/</code>; moved its group membership to the <code>Model/XISF</code> test group. <code>plutil -lint</code> passes.</li>
+                    <li><strong>Build/test</strong> — build succeeds; the 9 new tests pass, and 64 preview/processor regression tests (FITS/XISF preview + ImageProcessor) plus <code>ImageRendererTests</code> stay green — no behaviour change.</li>
+                </ul>
+                <p><strong>Automated review loop:</strong> 1 round; converged with no Critical/High/Medium findings. The reviewer verified byte-identity holds by construction for both formats (same decode + same render core), the auto-stretch colour sources are equivalent to the previews', and the pbxproj wiring is correct. Three Info/Low notes, no action.</p>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <ul>
+                    <li><strong>Verdict: clean, faithful dedup; no correctness/byte-identity/integrity defects.</strong> Independently traced <code>decodedImageHDU</code>/<code>xisfPlaneSamples</code> against the byte paths (identical <code>Data(prefix)</code> re-wrap, <code>bitsPerPixel</code>, scaling) and the two auto-stretch colour sources against the previews'; confirmed group/path and Sources-phase membership and collision-free IDs.</li>
+                    <li><strong><code>decoded()</code> has no production caller yet</strong> — Info. <code>ImageRenderer</code> still renders twice through the source; <code>decoded()</code> is exercised only by tests until the render-path wiring in milestone 4. <em>Resolution: Deferred — expected for this milestone.</em></li>
+                    <li><strong>XISF colour-source duplication</strong> — Low. Faithful copy of the private <code>previewColorSource(planes:)</code>, slated for removal in milestone 5. <em>Resolution: Deferred — intentional, documented.</em></li>
+                    <li><strong>Vestigial <code>throws</code> on <code>FITSRenderSource.decoded()</code></strong> — Info. Never throws (<code>decodedImageHDU</code> is non-throwing) but required to satisfy the protocol signature. <em>Resolution: Deferred — no change.</em></li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>"Looks good" — approved as implemented, including the three deferred Info/Low notes.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 3 -->
