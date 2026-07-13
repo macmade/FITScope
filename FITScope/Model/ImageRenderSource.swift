@@ -32,17 +32,14 @@ import SwiftPixel
 ///
 /// A `Sendable` value so it can cross the render concurrency boundary without
 /// sharing a format's non-`Sendable` parsed file.
-public protocol ImageRenderSource: Sendable
+///
+/// Conforms to ``RenderResultProducing``: a source renders by decoding its bytes
+/// on every ``RenderResultProducing/makeResult(settings:)`` call. A format that
+/// can decode its pixels ahead of time overrides ``decoded()`` to return a
+/// ``DecodedRenderSource`` that renders the same frame repeatedly without
+/// re-decoding.
+public protocol ImageRenderSource: RenderResultProducing
 {
-    /// Renders the source with the given user settings, producing the display
-    /// image plus the bytes and pixel formats the histogram stages consume. Pure,
-    /// so it runs off the main actor.
-    ///
-    /// - Parameter settings: The user-tunable render settings to apply.
-    /// - Returns: The render result.
-    /// - Throws: Any error thrown while decoding or running the pipeline.
-    func makeResult( settings: ImageProcessor.Settings ) throws -> ImageProcessor.RenderResult
-
     /// The decoded sample value(s) at source-image coordinates `(x, y)`, for the
     /// cursor read-out: one value for a single-channel source, or one per channel
     /// (red, green, blue) for a colour source, or `nil` for out-of-bounds
@@ -85,10 +82,33 @@ public protocol ImageRenderSource: Sendable
     /// (``ImageProcessor/autoStretchSettings(colorSource:fullScale:shadowClipFactor:targetBackground:)``)
     /// produces a per-channel STF for it.
     var autoStretchColorSource: ImageProcessor.AutoStretchColorSource? { get }
+
+    /// Decodes the source's pixels once into a value that renders them repeatedly
+    /// without re-decoding, or `nil` when the source cannot decode ahead — the
+    /// caller then renders through the source itself, decoding on each
+    /// ``RenderResultProducing/makeResult(settings:)`` call.
+    ///
+    /// Lets ``ImageRenderer`` decode a frame a single time and render both the
+    /// displayed result and the before/after original from it. The returned value
+    /// is used within one render pass and dropped, so no decoded pixels are
+    /// retained across renders.
+    ///
+    /// - Returns: A pre-decoded render source, or `nil` to render through the
+    ///   source directly.
+    /// - Throws: Any error thrown while decoding.
+    func decoded() throws -> ( any DecodedRenderSource )?
 }
 
 public extension ImageRenderSource
 {
+    /// The default: the source cannot decode ahead, so the caller renders through
+    /// it directly, decoding on each ``RenderResultProducing/makeResult(settings:)``.
+    /// A format that can decode its pixels once overrides this.
+    func decoded() throws -> ( any DecodedRenderSource )?
+    {
+        nil
+    }
+
     /// The default derivation input: the source's single-channel ``detectionImage``
     /// reduced to a uniform (linked) STF. A colour source overrides this to expose
     /// its per-channel input.

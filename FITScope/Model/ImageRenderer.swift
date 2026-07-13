@@ -360,8 +360,8 @@ public class ImageRenderer: ObservableObject
                         var originalSettings         = baseline
                         originalSettings.orientation = settings.orientation
 
-                        let result   = try Self.makeResult( source: source, settings: settings )
-                        let original = needsOriginal ? try Self.makeResult( source: source, settings: originalSettings ) : nil
+                        let result   = try Self.makeResult( from: source, settings: settings )
+                        let original = needsOriginal ? try Self.makeResult( from: source, settings: originalSettings ) : nil
 
                         continuation.resume( returning: ( result, original ) )
                     }
@@ -399,13 +399,13 @@ public class ImageRenderer: ObservableObject
     /// statistics. Pure and `nonisolated` so it can run off the main actor.
     ///
     /// - Parameters:
-    ///   - source:   The render source to render.
+    ///   - producer: The source or pre-decoded frame to render.
     ///   - settings: The render settings to apply.
     /// - Returns: The rendered image with its histograms and statistics.
     /// - Throws: Any error thrown by the pixel pipeline.
-    private nonisolated static func makeResult( source: any ImageRenderSource, settings: ImageProcessor.Settings ) throws -> Result
+    private nonisolated static func makeResult( from producer: any RenderResultProducing, settings: ImageProcessor.Settings ) throws -> Result
     {
-        let render             = try source.makeResult( settings: settings )
+        let render             = try producer.makeResult( settings: settings )
         let channels           = render.outputPixelFormat.channels
         let rgbHistogram       = Benchmark.run( label: "Histogram (RGB)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .rgb ) }
         let luminanceHistogram = Benchmark.run( label: "Histogram (L)",   output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .luminance ) }

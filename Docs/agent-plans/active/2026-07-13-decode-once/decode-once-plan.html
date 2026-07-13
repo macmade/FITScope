@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decode Once, Render Many — Implementation Plan</title>
+    <style>
+        :root {
+            --bg:         #0f1117;
+            --bg-card:    #181b24;
+            --bg-card-2:  #1d212c;
+            --border:     #2a2f3c;
+            --text:       #e6e9ef;
+            --text-dim:   #9aa3b2;
+            --accent:     #5aa9ff;
+            --accent-dim: #2d3b52;
+
+            --status-notstarted-bg:   #33384a;
+            --status-notstarted-text: #b7c0d2;
+            --status-inprogress-bg:   #4a3a12;
+            --status-inprogress-text: #ffcf6b;
+            --status-completed-bg:    #16482c;
+            --status-completed-text:  #6ee7a0;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 36px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 2.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .meta code { font-size: 0.85em; }
+
+        .overview {
+            color: var(--text-dim);
+            margin: 24px 0 8px;
+            font-size: 1.02rem;
+        }
+
+        h2 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 48px 0 20px;
+            font-weight: 600;
+        }
+
+        .qa, .notes, .appendix {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 24px;
+            margin-bottom: 18px;
+        }
+
+        .qa dt, .notes h3 {
+            font-weight: 700;
+            color: var(--text);
+            margin-top: 16px;
+        }
+
+        .qa dd {
+            margin: 4px 0 16px;
+            color: var(--text-dim);
+        }
+
+        .qa dd::before {
+            content: "→ ";
+            color: var(--accent);
+        }
+
+        .notes ul, .appendix ul {
+            padding-left: 20px;
+            color: var(--text-dim);
+        }
+
+        .notes li, .appendix li { margin-bottom: 8px; }
+
+        .milestone {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 24px 8px;
+            margin-bottom: 18px;
+        }
+
+        .milestone-header {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+
+        .milestone-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 26px;
+            height: 26px;
+            padding: 0 8px;
+            border-radius: 6px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-size: 0.85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .milestone-header h3 {
+            margin: 0;
+            font-size: 1.15rem;
+            letter-spacing: -0.01em;
+            flex: 1;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .status.notstarted { background: var(--status-notstarted-bg); color: var(--status-notstarted-text); }
+        .status.inprogress { background: var(--status-inprogress-bg); color: var(--status-inprogress-text); }
+        .status.completed  { background: var(--status-completed-bg);  color: var(--status-completed-text); }
+
+        .field { margin: 16px 0; }
+
+        .field-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-dim);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .field p { margin: 0; color: var(--text-dim); }
+
+        .field ul {
+            margin: 0;
+            padding-left: 22px;
+            color: var(--text);
+        }
+
+        .field ul li { margin-bottom: 6px; }
+
+        .field.placeholder p {
+            color: #6b7383;
+            font-style: italic;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+
+        .status-row .completed-date {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        code {
+            background: var(--bg-card-2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.86em;
+            color: var(--text);
+        }
+
+        hr.sep {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 16px 0 0;
+        }
+
+        a { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Decode Once, Render Many — Implementation Plan</h1>
+            <div class="meta">
+                Generated 2026-07-13<br>
+                Source: <code>Docs/agent-plans/active/2026-07-13-decode-once/decode-once.html</code>
+            </div>
+        </header>
+
+        <p class="overview">
+            This plan removes the redundant per-render pixel decoding on the interactive
+            render path and unifies it with the thumbnail decode-once special-case,
+            without raising steady-state memory. A small cross-format
+            <code>DecodedRenderSource</code> abstraction lets a source decode its pixels
+            once and render them repeatedly; <code>ImageRenderer.render()</code> then
+            decodes a frame a single time and renders both the displayed <code>result</code>
+            and the <code>original</code> / before-image from the same samples, and the
+            preview renderers share the very same seam.
+        </p>
+        <p class="overview">
+            The milestones are ordered by dependency: first the abstraction and the
+            per-format conformers (FITS + XISF, which already expose the decode-once core;
+            then RAW + ImageIO, which need a small public decode-free render entry added),
+            then the render-path dedup that lands the win, then the thumbnail fold-in, and
+            finally a verification pass. Each milestone is independently reviewable and
+            committable, and carries its own status, completion date, implementation notes,
+            automated-review findings, and human review comments so it can be updated in
+            place as work proceeds.
+        </p>
+
+        <h2>Questions &amp; answers</h2>
+        <div class="qa">
+            <dl>
+                <dt>What is driving this investigation — measured memory pressure, or the redundant decoding?</dt>
+                <dd>Mainly the double-decode (CPU / latency). Releasing <code>detectionImage</code> is secondary; the focus is the render / thumbnail decode paths.</dd>
+
+                <dt>Which decoding redundancy should be eliminated?</dt>
+                <dd>The within-pass double decode — <code>result</code> + <code>original</code> being decoded twice in one render pass — done in a memory-neutral way. Not a persistent decoded-pixel cache (which would reintroduce held memory).</dd>
+
+                <dt>How deep should the change go?</dt>
+                <dd>Full: the render-path dedup <em>and</em> the thumbnail fold-in (the preview renderers share the seam, dropping their bespoke decode-once <code>previewSettings</code> twins).</dd>
+
+                <dt>Which formats are in scope?</dt>
+                <dd>All four — FITS, XISF, RAW, and ImageIO. RAW and ImageIO get a small new public decode-free render entry so no format is left re-decoding.</dd>
+            </dl>
+        </div>
+
+        <h2>Notes</h2>
+        <div class="notes">
+            <h3>Guiding constraint</h3>
+            <ul>
+                <li><strong>Steady-state memory must not increase.</strong> A <code>DecodedRenderSource</code> is created inside a single <code>render()</code> call (or one preview render) and dropped when it returns. It must never be retained across renders — that would reintroduce the held-pixel memory the current design deliberately avoids.</li>
+                <li><strong>Behaviour is unchanged.</strong> Decoding is deterministic, so the shared samples are byte-identical to today's independent decodes; rendered output is identical. This is a pure dedup / refactor, and each milestone's tests should assert that equivalence.</li>
+            </ul>
+
+            <h3>Build &amp; test</h3>
+            <ul>
+                <li>An <code>.xcodeproj</code> exists (<code>FITScope.xcodeproj</code>) — build and test through Xcode (<code>xcodebuild</code>, scheme <code>FITScope</code>, macOS), not <code>swift build</code>/<code>swift test</code>. Test plan: <code>FITScope.xctestplan</code>.</li>
+                <li>New source / test files must be wired into their targets through <code>project.pbxproj</code> (build file, file reference, group, Sources phase), mirroring the existing entries; validate with <code>plutil -lint</code>.</li>
+                <li>The decode-free render cores already live in the submodules (SwiftPixel / SwiftAstro); the new seams are app-side. No submodule change is expected — raise one before making it if it proves necessary.</li>
+            </ul>
+
+            <h3>Key files</h3>
+            <ul>
+                <li><strong>Render orchestration</strong>: <code>FITScope/Model/ImageRenderer.swift</code> (<code>render()</code> at <code>:321</code>, <code>makeResult(source:settings:)</code> at <code>:406</code>).</li>
+                <li><strong>Source protocol</strong>: <code>FITScope/Model/ImageRenderSource.swift</code> (<code>makeResult(settings:)</code>, <code>detectionImage</code>, <code>autoStretchColorSource</code> default).</li>
+                <li><strong>Format sources</strong>: <code>FITScope/Model/{FITS/FITSRenderSource, XISF/XISFRenderSource, RAW/RAWRenderSource, ImageIO/ImageIORenderSource}.swift</code>.</li>
+                <li><strong>Processor entries</strong>: <code>FITScope/Image/ImageProcessor+{FITS,XISF,RAW,ImageIO}.swift</code> — decode-free cores (<code>render(rawSamples:…)</code>, <code>render(planes:…)</code>), decode helpers (<code>decodedImageHDU</code>, <code>xisfPlaneSamples</code>, <code>rawImageSamples</code>, <code>imageIOPlaneSamples</code>), and <code>autoStretchColorSource(fromSamples:/fromPlanes:)</code>.</li>
+                <li><strong>Preview path</strong>: <code>FITScope/Image/{FITSPreviewRenderer, XISFPreviewRenderer}.swift</code> (the inline decode-once + <code>previewSettings(decoded:)</code> / <code>(planes:)</code> twins to fold in).</li>
+            </ul>
+
+            <h3>Context: what is <em>not</em> changing</h3>
+            <ul>
+                <li><code>detectionImage</code> stays held for the source's lifetime. Beyond the one-shot star detection and background analysis (<code>LoadedImage.detectStars()</code>), it is also a live consumer of the interactive auto Screen Transfer — <code>ImageRenderer.canAutoScreenTransfer</code> (<code>:229</code>, called every render) and <code>autoScreenTransferSettings(.uniform)</code> (<code>:306-310</code>), plus the mono <code>autoStretchColorSource</code> default. So it cannot simply be released after detection; releasing it is explicitly out of scope here.</li>
+                <li>FITS RGB colour-plane frames and data cubes keep the byte path (their <code>decoded()</code> returns <code>nil</code>), matching today's preview behaviour.</li>
+            </ul>
+        </div>
+
+        <!-- Milestone 1 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">1</span>
+                <h3>Introduce the <code>DecodedRenderSource</code> abstraction</h3>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Add the cross-format seam and retarget the renderer's per-result helper onto it, with no behavioural change (every source still decodes per render via the default <code>decoded()</code> returning <code>nil</code>). Everything compiles and existing tests pass.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Define a <code>Sendable</code> protocol exposing <code>makeResult(settings:) throws -&gt; ImageProcessor.RenderResult</code> and <code>autoStretchColorSource(maxDimension:) -&gt; ImageProcessor.AutoStretchColorSource?</code> (new file under <code>FITScope/Model/</code>, one type per file).</li>
+                    <li>Give <code>makeResult(settings:)</code> a shared home so both a decoded frame and an <code>ImageRenderSource</code> satisfy it — either a common supertype protocol both refine, or have <code>ImageRenderSource</code> conform to the render-producing protocol. Keep <code>ImageRenderSource</code>'s existing method signature intact for all callers.</li>
+                    <li>Add <code>func decoded() throws -&gt; (any DecodedRenderSource)?</code> to <code>ImageRenderSource</code> with a default implementation returning <code>nil</code>.</li>
+                    <li>Retarget <code>ImageRenderer.makeResult(source:settings:)</code> (<code>:406</code>) to accept the shared render-producing type rather than <code>any ImageRenderSource</code>; call sites unchanged for now (still pass the source).</li>
+                    <li>Build via <code>xcodebuild</code>; wire the new file(s) into the app target; confirm the existing render/preview tests still pass (no behaviour change).</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-13</span>
+            </div>
+            <hr class="sep">
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p>Implemented with TDD. Pure scaffolding — no behavioural change; every source still decodes per render.</p>
+                <ul>
+                    <li><strong>New <code>FITScope/Model/RenderResultProducing.swift</code></strong> — a <code>public protocol RenderResultProducing: Sendable</code> holding the single <code>makeResult(settings:) throws -&gt; ImageProcessor.RenderResult</code> requirement (moved up from <code>ImageRenderSource</code>). This is the shared render-producing capability of both a raw source and a pre-decoded frame.</li>
+                    <li><strong>New <code>FITScope/Model/DecodedRenderSource.swift</code></strong> — a <code>public protocol DecodedRenderSource: RenderResultProducing</code> adding <code>autoStretchColorSource(maxDimension:) -&gt; ImageProcessor.AutoStretchColorSource?</code> (the decode-once auto-stretch input, subsampled for previews). No conformers yet — those arrive in milestones 2–3.</li>
+                    <li><strong><code>ImageRenderSource.swift</code></strong> — the protocol now refines <code>RenderResultProducing</code> (was <code>: Sendable</code>) instead of declaring <code>makeResult</code> itself, so the requirement is inherited and all four conformers still satisfy it unchanged. Added the <code>decoded() throws -&gt; (any DecodedRenderSource)?</code> requirement plus a default extension returning <code>nil</code> ("cannot decode ahead").</li>
+                    <li><strong><code>ImageRenderer.swift</code></strong> — <code>makeResult(source: any ImageRenderSource, …)</code> retargeted to <code>makeResult(from producer: any RenderResultProducing, …)</code>; the two call sites in <code>render()</code> updated (<code>source:</code> → <code>from:</code>), still passing the source. Same dispatch target, identical result.</li>
+                    <li><strong>Tests</strong> — new <code>FITScopeTests/Model/DecodedRenderSourceTests.swift</code> with a minimal stub source (does not override <code>decoded()</code>): asserts the default <code>decoded()</code> returns <code>nil</code>, and that an <code>ImageRenderSource</code> is usable as a <code>RenderResultProducing</code>.</li>
+                    <li><strong>pbxproj</strong> — the 3 new files wired into their targets (2 app, 1 test) with fresh structured IDs; <code>plutil -lint</code> passes.</li>
+                    <li><strong>Build/test</strong> — <code>xcodebuild build</code> succeeds; <code>DecodedRenderSourceTests</code> + <code>ImageRendererTests</code> run green (34 tests, 2 suites, 0 failures), confirming no behaviour change.</li>
+                </ul>
+                <p><strong>Automated review loop:</strong> 1 round; converged with no Critical/High/Medium findings. Three Info-level observations, no action taken (see below).</p>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <ul>
+                    <li><strong>Verdict: clean scaffolding, no behavioural change, no correctness regressions.</strong> Reviewer independently verified: the <code>makeResult</code> requirement move keeps all four conformers and every external caller (<code>PlateSolveSession</code>, tests) resolving via inheritance; the call-site retarget is behaviourally identical; the <code>decoded()</code> default is inert; <code>Sendable</code> is preserved; DocC symbol references resolve; and the pbxproj wiring is collision-free with correct target/phase membership.</li>
+                    <li><strong>Tautological test assertion</strong> — Info. <code>aSourceIsARenderResultProducer</code>'s runtime <code>#expect(producer is any ImageRenderSource)</code> only re-checks what the compile-time type annotation already guarantees. <em>Resolution: Deferred — harmless; surfaced to the user.</em></li>
+                    <li><strong>Forward-looking doc prose</strong> — Info. <code>DecodedRenderSource</code>'s doc describes not-yet-wired preview behaviour (the intended contract for future conformers). <em>Resolution: Deferred — acceptable for a scaffolding protocol.</em></li>
+                    <li><strong>Naming overlap</strong> — Info. <code>DecodedRenderSource.autoStretchColorSource(maxDimension:)</code> (method) vs <code>ImageRenderSource.autoStretchColorSource</code> (property). Intentional — the decoded side needs the subsample dimension. <em>Resolution: Deferred — no change.</em></li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>"Looks good" — approved as implemented, including the three deferred Info observations.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Milestone 2 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">2</span>
+                <h3>FITS &amp; XISF conformers</h3>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Provide <code>DecodedRenderSource</code> conformers for the two formats that already expose a decode-once core, and implement <code>decoded()</code> on their sources — reusing the existing decode helpers and decode-free render entries.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li><strong>FITS:</strong> a value type wrapping <code>(samples, width, height, bitsPerPixel, properties)</code> whose <code>makeResult</code> calls <code>ImageProcessor.render(rawSamples:…)</code> and whose <code>autoStretchColorSource(maxDimension:)</code> calls <code>ImageProcessor.autoStretchColorSource(fromSamples:…)</code> (subsampled). <code>FITSRenderSource.decoded()</code> builds it via <code>decodedImageHDU(data:properties:)</code>, returning <code>nil</code> for RGB-plane / cube frames (byte fallback preserved).</li>
+                    <li><strong>XISF:</strong> a value type wrapping <code>(planes, properties)</code> whose <code>makeResult</code> calls <code>ImageProcessor.render(planes:xisf:…)</code> and whose <code>autoStretchColorSource(maxDimension:)</code> calls <code>ImageProcessor.xisfAutoStretchColorSource(fromPlanes:…)</code>. <code>XISFRenderSource.decoded()</code> builds it via <code>xisfPlaneSamples(data:properties:)</code> (always non-nil).</li>
+                    <li>Add equivalence unit tests: for representative fixtures, <code>source.decoded()?.makeResult(settings:)</code> produces byte-identical output (image bytes + pixel formats) to <code>source.makeResult(settings:)</code>, and the derived <code>autoStretchColorSource</code> matches the <code>data</code>-based one.</li>
+                    <li>Wire new files into the app + test targets; build and run tests.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 3 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">3</span>
+                <h3>RAW &amp; ImageIO decode-free entries + conformers</h3>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Bring RAW and ImageIO up to parity by exposing a public decode-free render entry (the machinery already exists privately), then add their <code>DecodedRenderSource</code> conformers and <code>decoded()</code>, so no format re-decodes.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li><strong>RAW:</strong> in <code>ImageProcessor+RAW.swift</code>, expose the sample decode (<code>rawImageSamples</code>, currently private) and add a decode-free <code>render(plane:raw:settings:)</code> that the byte-based <code>render(data:raw:settings:)</code> then delegates to — mirroring FITS/XISF. Add the conformer wrapping <code>(plane, properties)</code> and <code>RAWRenderSource.decoded()</code>. Reuse <code>rawAutoStretchColorSource</code> for the colour source (from the decoded mosaic).</li>
+                    <li><strong>ImageIO:</strong> in <code>ImageProcessor+ImageIO.swift</code>, expose the plane decode (<code>imageIOPlaneSamples</code>, currently private) and add a decode-free <code>render(planes:imageIO:settings:)</code> that <code>render(data:imageIO:settings:)</code> delegates to. Add the conformer wrapping <code>(planes, properties)</code> and <code>ImageIORenderSource.decoded()</code>. Provide the matching <code>autoStretchColorSource</code> (ImageIO has no per-channel auto source today — resolve to the appropriate mono/none, consistent with the source's current <code>autoStretchColorSource</code>).</li>
+                    <li>Confirm the refactor of each byte path to route through its new decode-free entry produces identical output (delegation, not reimplementation).</li>
+                    <li>Add the same equivalence tests as milestone 2 for RAW and ImageIO fixtures. Wire files into targets; build and test.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 4 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">4</span>
+                <h3>Render-path dedup in <code>ImageRenderer.render()</code></h3>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Land the actual win: decode a frame once per render pass and render both <code>result</code> and <code>original</code> from the same samples, falling back to the source (per-render decode) when <code>decoded()</code> returns <code>nil</code>.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>In <code>ImageRenderer.render()</code> (around <code>:352-366</code>), inside the background work, obtain <code>let decoded = (try? source.decoded()) ?? source</code> once, then call the retargeted <code>makeResult(decoded, settings)</code> for <code>result</code> and <code>makeResult(decoded, originalSettings)</code> for <code>original</code>.</li>
+                    <li>Confirm the shared decode is valid for both: samples are orientation-independent (orientation is a pipeline step) and both renders use the same <code>maxDimension</code>, so full-resolution samples serve both; binning happens post-decode.</li>
+                    <li>Keep the fallback path intact for FITS RGB / cube frames (<code>decoded()</code> → <code>nil</code> → render from the source, decoding per call, exactly as today).</li>
+                    <li>Preserve the render-generation / commit semantics unchanged (this only affects how many times bytes are decoded within one pass).</li>
+                    <li>Add a regression test asserting the committed <code>result</code> and <code>original</code> images are unchanged versus the pre-refactor output for a first render and after an orientation change.</li>
+                    <li>Build &amp; run the app; verify open, adjust, and rotate/flip all render correctly.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 5 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">5</span>
+                <h3>Thumbnail fold-in</h3>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Refactor the preview renderers onto the shared <code>DecodedRenderSource</code> so the decode-once logic lives in one place, dropping the bespoke <code>previewSettings(decoded:)</code> / <code>previewSettings(planes:)</code> twins.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li><strong>FITS preview</strong> (<code>FITSPreviewRenderer.render</code>, <code>:74-95</code>): build the FITS decoded frame once, derive the auto-stretch settings from <code>frame.autoStretchColorSource(maxDimension:)</code>, and render via <code>frame.makeResult(settings:)</code>. Keep the byte fallback for the <code>nil</code> (RGB / cube) case. Remove the now-unused <code>previewSettings(decoded:)</code> twin, keeping the <code>hdu</code>-based variant for the fallback.</li>
+                    <li><strong>XISF preview</strong> (<code>XISFPreviewRenderer.render</code>, <code>:56-76</code>): same shape, building the XISF decoded frame; keep the display-function branch and the previews-preference gating in the preview renderer. Remove the now-unused <code>previewSettings(planes:)</code> twin.</li>
+                    <li>Ensure the preview-only concerns (previews preference, <code>maxDimension</code> subsampling of the colour source, XISF display function) are preserved exactly — the fold-in changes only where the decode/stat/render primitives come from.</li>
+                    <li>Keep the existing preview unit tests green (they exercise the priority logic); add coverage if a twin removal leaves a gap.</li>
+                    <li>Build &amp; verify a thumbnail renders identically (QuickLook / the thumbnail extension) for FITS and XISF fixtures.</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <!-- Milestone 6 -->
+        <div class="milestone">
+            <div class="milestone-header">
+                <span class="milestone-number">6</span>
+                <h3>Verification &amp; cleanup</h3>
+            </div>
+            <div class="field">
+                <div class="field-label">Goal</div>
+                <p>Confirm the change is behaviour-preserving end to end, that the decode really happens once, and that no dead code or stray double-decode remains.</p>
+            </div>
+            <div class="field">
+                <div class="field-label">Tasks</div>
+                <ul>
+                    <li>Full <code>xcodebuild test</code> pass (scheme <code>FITScope</code>, macOS); all render, preview, and equivalence tests green.</li>
+                    <li>Manually confirm the decode-count drop for the render pass (e.g. via <code>Benchmark</code> / logging around the decode, or a temporary counter) on a first render and an orientation change — one decode where there were two.</li>
+                    <li>Confirm steady-state memory is unchanged: no <code>DecodedRenderSource</code> is retained beyond the render / preview call that created it.</li>
+                    <li>Sweep for leftover per-render byte decoding that should now route through <code>decoded()</code>, and remove any now-dead <code>previewSettings</code> twins or helpers.</li>
+                    <li>Verify the interactive auto Screen Transfer, star detection, background analysis, and the before/after comparison all still behave (untouched, but confirm no regression from the <code>makeResult</code> retarget).</li>
+                </ul>
+            </div>
+            <div class="status-row">
+                <span class="status notstarted">Not started</span>
+                <span class="completed-date">Completed: —</span>
+            </div>
+            <hr class="sep">
+            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
+            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+        </div>
+
+        <h2>Appendix</h2>
+        <div class="appendix">
+            <h3>Milestone dependency order</h3>
+            <ul>
+                <li><strong>1 → 2, 3</strong>: the abstraction must exist before any conformer.</li>
+                <li><strong>2 &amp; 3 → 4</strong>: the render-path dedup benefits every format that implements <code>decoded()</code>; wiring it after both conformer milestones lets it land complete (a format without <code>decoded()</code> would simply fall back, so ordering is for cleanliness, not correctness).</li>
+                <li><strong>2 → 5</strong>: the thumbnail fold-in reuses the FITS/XISF conformers from milestone 2; it does not depend on RAW/ImageIO (the preview path is FITS + XISF only).</li>
+                <li><strong>6</strong>: verification after all code changes.</li>
+            </ul>
+            <h3>Equivalence-test shape (shared by milestones 2 &amp; 3)</h3>
+            <p>
+                For each format fixture and a few representative settings (linear default,
+                an auto-stretch, an orientation): assert
+                <code>source.decoded()?.makeResult(settings:)</code> equals
+                <code>source.makeResult(settings:)</code> on <code>image</code> bytes,
+                <code>inputPixelFormat</code>, and <code>outputPixelFormat</code>; and that the
+                decoded-frame <code>autoStretchColorSource</code> matches the source's
+                <code>data</code>-derived one. This nails down the "byte-identical, pure dedup"
+                guarantee at the unit level.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

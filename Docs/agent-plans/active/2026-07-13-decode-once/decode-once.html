@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decode Once, Render Many — Design</title>
+    <style>
+        :root {
+            --bg:         #0f1117;
+            --bg-card:    #181b24;
+            --bg-card-2:  #1d212c;
+            --border:     #2a2f3c;
+            --text:       #e6e9ef;
+            --text-dim:   #9aa3b2;
+            --accent:     #5aa9ff;
+            --accent-dim: #2d3b52;
+            --good:       #6ee7a0;
+            --warn:       #ffcf6b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 36px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 2.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        h2 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 48px 0 20px;
+            font-weight: 600;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            letter-spacing: -0.01em;
+            margin: 24px 0 8px;
+        }
+
+        p { color: var(--text-dim); margin: 12px 0; }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 24px 16px;
+            margin-bottom: 18px;
+        }
+
+        ul { padding-left: 22px; color: var(--text-dim); }
+        li { margin-bottom: 8px; }
+
+        strong { color: var(--text); }
+        em.good { color: var(--good); font-style: normal; font-weight: 600; }
+        em.warn { color: var(--warn); font-style: normal; font-weight: 600; }
+
+        code {
+            background: var(--bg-card-2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.86em;
+            color: var(--text);
+        }
+
+        pre {
+            background: var(--bg-card-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            overflow-x: auto;
+            color: var(--text);
+        }
+
+        pre code { background: none; border: none; padding: 0; font-size: 0.85em; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 0.92rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        th { color: var(--text); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+        td { color: var(--text-dim); }
+        td code { white-space: nowrap; }
+
+        a { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Decode Once, Render Many</h1>
+            <div class="meta">
+                Design note — 2026-07-13<br>
+                Reduce redundant per-render pixel decoding on the interactive render path, and unify the thumbnail decode-once special-case, without raising steady-state memory.
+            </div>
+        </header>
+
+        <h2>Motivation</h2>
+        <div class="card">
+            <p>
+                The image renderer decodes a frame's pixels from raw <code>Data</code> on every
+                render, and keeps no decoded pixels — a deliberate choice to hold memory low.
+                The cost of that choice is redundant decoding. This work targets the
+                <strong>redundant decoding on the render path</strong> (CPU / latency), not the
+                held <code>detectionImage</code> buffer. The guiding constraint is unchanged:
+                <em class="good">steady-state memory must not increase</em>.
+            </p>
+            <p>
+                Concretely, <code>ImageRenderer.render()</code> runs the pixel pipeline twice per
+                pass — once for the displayed <code>result</code> and once for the unstretched
+                <code>original</code> / before-image — and each call re-decodes the same bytes
+                independently (<code>ImageRenderer.swift:363-364</code>). The two decodes are of
+                <em>identical</em> samples (orientation is a pipeline step applied after decode), so
+                one of them is pure waste. It happens on the first render of every image and on
+                every orientation change (rotate / flip).
+            </p>
+            <p>
+                The thumbnail / QuickLook path already avoids this: it decodes once and shares the
+                samples between the auto-stretch statistics and the single render
+                (<code>FITSPreviewRenderer.swift:78-94</code>, <code>XISFPreviewRenderer.swift:69-76</code>).
+                The main render path simply does not reuse that machinery.
+            </p>
+        </div>
+
+        <h2>Scope</h2>
+        <div class="card">
+            <ul>
+                <li><strong>In scope:</strong> the render-pass dedup (decode once, render <code>result</code> + <code>original</code> from the same samples) and the thumbnail fold-in (the preview renderers share the same decode-once seam), for <strong>all four formats</strong>: FITS, XISF, RAW, ImageIO.</li>
+                <li><strong>Out of scope:</strong> releasing <code>detectionImage</code> after star detection / background analysis, and any persistent decoded-pixel cache that survives across renders (a session-scoped cache would trade the low-memory design for per-adjustment CPU — a separate, opt-in decision, not taken here).</li>
+                <li><strong>Behaviour:</strong> unchanged. Decoding is deterministic, so the shared samples are byte-identical to today's independent decodes; the rendered output is identical. This is a pure dedup / refactor.</li>
+            </ul>
+        </div>
+
+        <h2>Current per-format decode seams</h2>
+        <div class="card">
+            <p>Feasibility hinges on each format having a <strong>decode-once → render-from-decoded</strong> pair. Two formats already expose it (the preview path uses them); two need a small public entry added.</p>
+            <table>
+                <thead>
+                    <tr><th>Format</th><th>Byte render path</th><th>Decode-once core exposed?</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>FITS</strong></td>
+                        <td><code>render(data:properties:settings:)</code> → <code>readRawPixels</code> → <code>render(rawSamples:…)</code></td>
+                        <td><em class="good">Yes</em> — <code>decodedImageHDU(data:properties:)</code> + <code>render(rawSamples:…)</code>. Returns <code>nil</code> for RGB colour-plane frames / data cubes, which keep the byte path.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>XISF</strong></td>
+                        <td><code>render(data:xisf:settings:)</code> → <code>xisfPlaneSamples</code> → <code>render(planes:xisf:…)</code></td>
+                        <td><em class="good">Yes</em> — <code>xisfPlaneSamples(data:properties:)</code> + <code>render(planes:xisf:…)</code>. No fallback; every layout decodes to planes.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RAW</strong></td>
+                        <td><code>render(data:raw:settings:)</code> → <code>rawImageSamples</code> <em>(private)</em> → <code>render(planes:…)</code></td>
+                        <td><em class="warn">Needs a public entry</em> — decode + plane-render machinery exist; expose a decode-free <code>render(plane:raw:…)</code> (and the sample decode), mirroring FITS/XISF.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ImageIO</strong></td>
+                        <td><code>render(data:imageIO:settings:)</code> → <code>imageIOPlaneSamples</code> <em>(private)</em> → <code>render(planes:…)</code></td>
+                        <td><em class="warn">Needs a public entry</em> — same as RAW; expose a decode-free <code>render(planes:imageIO:…)</code> (and the plane decode).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2>Design</h2>
+        <div class="card">
+            <h3>1 — A "decoded once" abstraction</h3>
+            <p>
+                A <code>Sendable</code> protocol representing a source whose pixels are already
+                decoded and can be rendered repeatedly and have their auto-stretch input derived,
+                all without touching bytes again:
+            </p>
+<pre><code>protocol DecodedRenderSource: Sendable
+{
+    func makeResult( settings: ImageProcessor.Settings ) throws -&gt; ImageProcessor.RenderResult
+    func autoStretchColorSource( maxDimension: Int? ) -&gt; ImageProcessor.AutoStretchColorSource?
+}</code></pre>
+            <p>
+                Each format has a small value-type conformer wrapping its decoded representation —
+                FITS: <code>samples</code> + <code>bitsPerPixel</code> + <code>properties</code>;
+                XISF / ImageIO: <code>planes</code> + <code>properties</code>; RAW:
+                <code>plane</code> + <code>properties</code>. <code>makeResult</code> delegates to
+                the existing decode-free <code>render(rawSamples:/planes:…)</code>;
+                <code>autoStretchColorSource</code> delegates to the existing
+                <code>autoStretchColorSource(fromSamples:/fromPlanes:…)</code>.
+            </p>
+
+            <h3>2 — <code>ImageRenderSource</code> gains a decode-ahead entry</h3>
+<pre><code>func decoded() throws -&gt; ( any DecodedRenderSource )?   // default: nil</code></pre>
+            <p>
+                FITS returns <code>nil</code> for the RGB-plane / cube case (keeping the byte
+                fallback exactly as <code>decodedImageHDU</code> does today); XISF / RAW / ImageIO
+                always return a decoded frame. A default implementation returns <code>nil</code>, so
+                a source that opts out simply keeps decoding per render.
+            </p>
+
+            <h3>3 — Render path dedup (the win)</h3>
+            <p><code>ImageRenderer.render()</code> decodes once, renders twice:</p>
+<pre><code>let decoded  = ( try? source.decoded() ) ?? source   // decoded frame, or the source itself
+let result   = try makeResult( decoded, settings )
+let original = needsOriginal ? try makeResult( decoded, originalSettings ) : nil</code></pre>
+            <p>
+                <code>ImageRenderer.makeResult</code> is retargeted from
+                <code>any ImageRenderSource</code> to the shared <code>makeResult(settings:)</code>
+                method both the decoded frame and the source provide (a small shared protocol, or a
+                common supertype). The decoded samples live only for the duration of the
+                <code>render()</code> call, so <em class="good">steady-state memory is unchanged</em>
+                — the two <code>result</code> / <code>original</code> decodes collapse into one.
+            </p>
+
+            <h3>4 — Thumbnail fold-in</h3>
+            <p>
+                <code>FITSPreviewRenderer</code> / <code>XISFPreviewRenderer</code> currently inline
+                <code>decodedImageHDU</code> / <code>xisfPlaneSamples</code> plus a
+                <code>previewSettings(decoded:)</code> / <code>previewSettings(planes:)</code> twin
+                plus <code>render(rawSamples:/planes:…)</code>. With the shared
+                <code>DecodedRenderSource</code>, each preview renderer builds the decoded frame once
+                and calls <code>frame.autoStretchColorSource(maxDimension:)</code> for the stats and
+                <code>frame.makeResult(settings:)</code> for the render — letting each drop its
+                bespoke decode-once <code>previewSettings</code> twin. The XISF display-function
+                branch and the previews-preference gating stay in the preview renderer.
+            </p>
+        </div>
+
+        <h2>Risks &amp; notes</h2>
+        <div class="card">
+            <ul>
+                <li><strong>Non-goal drift:</strong> resist turning <code>DecodedRenderSource</code> into a persistent cache. Its instances are created inside <code>render()</code> / a single preview call and dropped immediately. Holding one across renders reintroduces the memory the design avoids.</li>
+                <li><strong>FITS RGB / cube frames</strong> stay on the byte path (double decode) — matching today's preview behaviour. Extending decode-once to those is possible but out of scope.</li>
+                <li><strong>Auto Screen Transfer</strong> (the interactive "Auto" button) is a separate consumer of <code>detectionImage</code> / the source's <code>data</code>-derived colour source; it is intentionally untouched here.</li>
+                <li><strong>Build &amp; test through Xcode</strong> (<code>xcodebuild</code>, scheme <code>FITScope</code>) — an <code>.xcodeproj</code> exists; keep it and any package manifests in sync. New files must be wired into the target via <code>project.pbxproj</code>.</li>
+                <li><strong>Submodules</strong> (SwiftPixel / SwiftAstro) are not expected to change: the decode-free render cores already exist there; the new seams are app-side. Any submodule change surfaced during implementation must be raised first.</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
