@@ -577,13 +577,32 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
-                <span class="completed-date">Completed: —</span>
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-13</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p>Verification pass. The one code addition is a permanent decode-count test (replacing the plan's "temporary counter" idea with a real regression guard).</p>
+                <ul>
+                    <li><strong>Full suite:</strong> <code>xcodebuild test</code> over <code>FITScopeTests</code> — <strong>783 tests in 97 suites, 0 failures</strong>. Covers auto Screen Transfer, star detection, background analysis, before/after, and every render / preview / processor / conformer path, confirming no regression from any milestone (including the <code>makeResult</code> retarget).</li>
+                    <li><strong>Decode-count drop (proven, not asserted):</strong> two new <code>ImageRendererTests</code> using a counting render source. <code>aDecodableSourceDecodesOncePerPassAndRendersBothFromIt</code> asserts a first render does <code>decoded == 1</code>, <code>byteRenders == 0</code> — one decode serving both the result and the before/after original. <code>aSourceThatCannotDecodeAheadRendersBothThroughTheBytePath</code> asserts the fallback does <code>byteRenders == 2</code>, the pre-refactor behaviour. Against the old code the decodable test would have failed (<code>decoded == 0</code>, <code>byteRenders == 2</code>), so it genuinely pins the payoff.</li>
+                    <li><strong>Memory neutrality:</strong> confirmed by inspection — <code>renderable</code> is a <code>let</code> local to the <code>DispatchQueue.global</code> block in <code>render()</code>, dropped when it returns; the decoded frame is never stored on the renderer or captured by an escaping closure. Nothing retains decoded pixels across renders.</li>
+                    <li><strong>Leftover sweep (clean):</strong> no orphaned helpers — every <code>fromSamples</code>/<code>fromPlanes</code>/<code>render(rawSamples:/plane:/planes:)</code> entry still has callers (the conformers plus the byte-path delegations); no stray double-decode. The only direct <code>source.makeResult</code> caller is <code>PlateSolveSession</code> (a one-shot render — one decode either way, nothing to change). Only <code>ImageRenderer</code> calls <code>decoded()</code>; the previews build the conformer directly.</li>
+                </ul>
+                <p><strong>Automated review loop:</strong> 1 round; converged with no Critical/High/Medium findings. Verified the counter is race-free (<code>NSLock</code>, matching the project's own <code>OutputCollector</code> idiom), the assertions are correct against <code>render()</code> and non-tautological, and the wrapper delegates faithfully. Acted on one Low and one Info note.</p>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <ul>
+                    <li><strong>Verdict: correct, meaningful, thread-safe, no bugs.</strong> Reviewer traced <code>render()</code> to confirm <code>decoded == 1</code>/<code>byteRenders == 0</code> (decodable) and <code>byteRenders == 2</code> (fallback) are exactly right, that the decoded frame bypasses the wrapper's byte <code>makeResult</code>, and that the tests would fail against the pre-refactor code.</li>
+                    <li><strong><code>CountingRenderSource</code> did not delegate <code>autoStretchColorSource</code></strong> — Low (test fidelity). It inherited the protocol default (detection-image mono) instead of forwarding to <code>wrapped</code>; harmless for the mono fixtures but a latent gap if reused for a colour auto-stretch test. <em>Resolution: Fixed — added the delegating override.</em></li>
+                    <li><strong>New tests omitted the <code>error == nil</code> assertion</strong> the sibling fallback test has — Info. <em>Resolution: Fixed — added to both, for symmetry and clearer diagnostics.</em></li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>"Looks good" — approved as implemented, including the decode-count regression tests and the two review fixes.</li>
+                </ul>
+            </div>
         </div>
 
         <h2>Appendix</h2>

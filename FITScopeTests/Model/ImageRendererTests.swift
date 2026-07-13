@@ -84,6 +84,130 @@ struct ImageRendererTests
         #expect( renderer.originalImage != nil )
     }
 
+    /// A monochrome 4×4 ramp FITS render source, whose ``ImageRenderSource/decoded()``
+    /// is non-nil (a directly-decodable 2-D frame).
+    private static func monoSource() -> FITSRenderSource
+    {
+        let properties =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 4 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 4 ) ),
+            ]
+
+        return FITSRenderSource( data: Data( ( 0 ..< 16 ).map { UInt8( $0 * 10 ) } ), properties: properties )
+    }
+
+    /// A thread-safe tally of how often a source is asked to decode ahead and to
+    /// render through its byte path, for asserting the render pass's decode count.
+    private final class DecodeCallCounter: @unchecked
+    Sendable
+    {
+        private let lock            = NSLock()
+        private var decodedCount    = 0
+        private var byteRenderCount = 0
+
+        func countDecoded()
+        { self.lock.lock()
+            self.decodedCount    += 1
+            self.lock.unlock()
+        }
+
+        func countByteRender()
+        { self.lock.lock()
+            self.byteRenderCount += 1
+            self.lock.unlock()
+        }
+
+        var decoded: Int
+        { self.lock.lock()
+            defer { self.lock.unlock() }
+            return self.decodedCount
+        }
+
+        var byteRenders: Int
+        { self.lock.lock()
+            defer { self.lock.unlock() }
+            return self.byteRenderCount
+        }
+    }
+
+    /// A render source wrapping a real one, counting how often the renderer decodes
+    /// ahead (``decoded()``) versus renders through the byte path (``makeResult(settings:)``).
+    /// When `decodesAhead` is `false` it reports it cannot decode ahead, forcing the
+    /// fallback — so the two paths' decode counts can be compared.
+    private struct CountingRenderSource: ImageRenderSource
+    {
+        let wrapped:      FITSRenderSource
+        let counter:      DecodeCallCounter
+        let decodesAhead: Bool
+
+        var detectionImage:         PixelBuffer?                        { self.wrapped.detectionImage }
+        var fullScale:              Double?                             { self.wrapped.fullScale }
+        var dimensions:             ( width: Int, height: Int )?        { self.wrapped.dimensions }
+        var autoStretchColorSource: ImageProcessor.AutoStretchColorSource? { self.wrapped.autoStretchColorSource }
+
+        func makeResult( settings: ImageProcessor.Settings ) throws -> ImageProcessor.RenderResult
+        {
+            self.counter.countByteRender()
+
+            return try self.wrapped.makeResult( settings: settings )
+        }
+
+        func pixelValues( atX x: Int, y: Int ) -> [ ImageProcessor.PixelValue ]?
+        {
+            self.wrapped.pixelValues( atX: x, y: y )
+        }
+
+        func decoded() throws -> ( any DecodedRenderSource )?
+        {
+            self.counter.countDecoded()
+
+            return self.decodesAhead ? try self.wrapped.decoded() : nil
+        }
+    }
+
+    /// A decodable source is decoded once per pass, and both the displayed result and
+    /// the before/after original are rendered from that one decode — never through the
+    /// byte path. This is the decode-once payoff: one decode where there were two.
+    @Test
+    @MainActor
+    func aDecodableSourceDecodesOncePerPassAndRendersBothFromIt() async throws
+    {
+        let counter  = DecodeCallCounter()
+        let source   = CountingRenderSource( wrapped: Self.monoSource(), counter: counter, decodesAhead: true )
+        let renderer = ImageRenderer( source: source )
+
+        await renderer.render()
+
+        #expect( renderer.error == nil )
+        #expect( renderer.result != nil )
+        #expect( renderer.originalImage != nil )
+        #expect( counter.decoded == 1, "the frame must be decoded exactly once" )
+        #expect( counter.byteRenders == 0, "neither the result nor the original may decode through the byte path" )
+    }
+
+    /// A source that cannot decode ahead renders the result and the original through
+    /// the byte path — two decodes — exactly as before the decode-once change, with no
+    /// behavioural difference beyond the decode count.
+    @Test
+    @MainActor
+    func aSourceThatCannotDecodeAheadRendersBothThroughTheBytePath() async throws
+    {
+        let counter  = DecodeCallCounter()
+        let source   = CountingRenderSource( wrapped: Self.monoSource(), counter: counter, decodesAhead: false )
+        let renderer = ImageRenderer( source: source )
+
+        await renderer.render()
+
+        #expect( renderer.error == nil )
+        #expect( renderer.result != nil )
+        #expect( renderer.originalImage != nil )
+        #expect( counter.decoded == 1, "decode-ahead is attempted once" )
+        #expect( counter.byteRenders == 2, "the result and the original each render through the byte path" )
+    }
+
     /// A source without a known full scale (no integer `BITPIX`) derives its auto
     /// Screen Transfer over the min/max domain: the settings carry a uniform STF and
     /// `.minMax` normalization, and the cheap `canAutoScreenTransfer` flag agrees.
