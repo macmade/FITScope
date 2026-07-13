@@ -52,7 +52,22 @@ public extension ImageProcessor
     ///   unsupported colour-filter-array pattern.
     static func render( data: Data, raw properties: RAWImageProperties, settings: Settings = Settings() ) throws -> RenderResult
     {
-        let plane  = try Self.rawImageSamples( data: data, properties: properties )
+        try Self.render( plane: Self.rawImageSamples( data: data, properties: properties ), raw: properties, settings: settings )
+    }
+
+    /// Renders a camera-RAW image from its already-decoded mosaic plane — the
+    /// decode-free core the byte-based ``render(data:raw:settings:)`` delegates to
+    /// after decoding, and which the decode-once render path calls directly so the
+    /// mosaic is decoded only once.
+    ///
+    /// - Parameters:
+    ///   - plane:      The already-decoded raw mosaic samples, in row-major order.
+    ///   - properties: The image's pixel layout.
+    ///   - settings:   The render settings.
+    /// - Returns: The render result.
+    /// - Throws: Any error building the configuration or running the pipeline.
+    static func render( plane: [ Double ], raw properties: RAWImageProperties, settings: Settings ) throws -> RenderResult
+    {
         let config = try Self.rawImageConfig( properties: properties, settings: settings )
 
         return try Self.render( planes: [ plane ], width: properties.width, height: properties.height, bitsPerPixel: .int16, config: config )
@@ -96,7 +111,10 @@ public extension ImageProcessor
     ///   - properties: The image's pixel layout.
     /// - Returns: The `width × height` samples, in row-major order.
     /// - Throws: ``RuntimeError`` for an invalid geometry or truncated data.
-    private static func rawImageSamples( data: Data, properties: RAWImageProperties ) throws -> [ Double ]
+    ///
+    /// Exposed (not private) so ``RAWRenderSource/decoded()`` can decode the mosaic
+    /// once and render it without decoding the bytes a second time.
+    static func rawImageSamples( data: Data, properties: RAWImageProperties ) throws -> [ Double ]
     {
         guard properties.width > 0, properties.height > 0
         else
@@ -203,10 +221,37 @@ public extension ImageProcessor
     /// - Returns: The per-channel colour input, or `nil` for a monochrome sensor.
     static func rawAutoStretchColorSource( data: Data, properties: RAWImageProperties ) -> AutoStretchColorSource?
     {
+        // Short-circuit on the CFA pattern before decoding: a monochrome sensor has no
+        // per-channel colour input, so it returns nil without decoding the mosaic,
+        // matching the fast path the caller relied on before the fromPlane split.
+        guard let cfaPattern = properties.colorFilterArrayPattern,
+              ( try? ImageProcessor.debayerPattern( named: cfaPattern ) ) != nil,
+              let mosaic      = Self.rawImageLinearLuminance( data: data, properties: properties )
+        else
+        {
+            return nil
+        }
+
+        return Self.rawAutoStretchColorSource( fromPlane: mosaic.samples, properties: properties )
+    }
+
+    /// The per-channel auto-stretch colour input for a camera-RAW image built from its
+    /// already-decoded mosaic plane — the decode-free counterpart of
+    /// ``rawAutoStretchColorSource(data:properties:)``, so the statistics reuse the
+    /// render's decode. Produces the identical colour source for the same samples:
+    /// a colour-filter-array sensor yields ``AutoStretchColorSource/mosaic(_:pattern:)``,
+    /// while a monochrome sensor (no CFA pattern) returns `nil` so the caller falls
+    /// back to the mono luminance.
+    ///
+    /// - Parameters:
+    ///   - plane:      The already-decoded raw mosaic samples.
+    ///   - properties: The image's pixel layout.
+    /// - Returns: The per-channel colour input, or `nil` for a monochrome sensor.
+    static func rawAutoStretchColorSource( fromPlane plane: [ Double ], properties: RAWImageProperties ) -> AutoStretchColorSource?
+    {
         guard let cfaPattern = properties.colorFilterArrayPattern,
               let pattern     = try? ImageProcessor.debayerPattern( named: cfaPattern ),
-              let mosaic      = Self.rawImageLinearLuminance( data: data, properties: properties ),
-              let buffer      = try? PixelBuffer( width: mosaic.width, height: mosaic.height, channels: 1, pixels: mosaic.samples, isNormalized: false )
+              let buffer      = try? PixelBuffer( width: properties.width, height: properties.height, channels: 1, pixels: plane, isNormalized: false )
         else
         {
             return nil

@@ -83,6 +83,16 @@ public struct RAWRenderSource: ImageRenderSource
         try ImageProcessor.render( data: self.data, raw: self.properties, settings: settings )
     }
 
+    /// Decodes the sensor mosaic once into a ``RAWDecodedRenderSource``, so the
+    /// renderer can render the displayed result and the before/after original from the
+    /// one decode. A RAW frame is always a single mosaic, so this never returns `nil`;
+    /// it throws only when the bytes cannot be decoded, and the caller then falls back
+    /// to the byte path.
+    public func decoded() throws -> ( any DecodedRenderSource )?
+    {
+        RAWDecodedRenderSource( plane: try ImageProcessor.rawImageSamples( data: self.data, properties: self.properties ), properties: self.properties )
+    }
+
     /// The decoded sample at image coordinates `(x, y)` as a single-element array (a
     /// RAW mosaic is single-channel), or `nil` when the coordinate or geometry is
     /// unavailable.

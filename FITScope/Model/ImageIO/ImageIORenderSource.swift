@@ -69,6 +69,16 @@ public struct ImageIORenderSource: ImageRenderSource
         try ImageProcessor.render( data: self.data, imageIO: self.properties, settings: settings )
     }
 
+    /// Decodes the image's channel planes once into an ``ImageIODecodedRenderSource``,
+    /// so the renderer can render the displayed result and the before/after original
+    /// from the one decode. A photographic image always decodes to planes, so this
+    /// never returns `nil`; it throws only when the bytes cannot be decoded, and the
+    /// caller then falls back to the byte path.
+    public func decoded() throws -> ( any DecodedRenderSource )?
+    {
+        ImageIODecodedRenderSource( planes: try ImageProcessor.imageIOPlaneSamples( data: self.data, properties: self.properties ), properties: self.properties )
+    }
+
     /// The decoded sample(s) at image coordinates `(x, y)`: three per-channel values
     /// for a colour image, a single value for grayscale, or `nil` when the coordinate
     /// or geometry is unavailable.

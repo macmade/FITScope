@@ -58,7 +58,22 @@ public extension ImageProcessor
     ///   dimensions, or truncated data.
     static func render( data: Data, imageIO properties: ImageIOImageProperties, settings: Settings = Settings() ) throws -> RenderResult
     {
-        let planes = try Self.imageIOPlaneSamples( data: data, properties: properties )
+        try Self.render( planes: Self.imageIOPlaneSamples( data: data, properties: properties ), imageIO: properties, settings: settings )
+    }
+
+    /// Renders a photographic image from its already-decoded channel planes — the
+    /// decode-free core the byte-based ``render(data:imageIO:settings:)`` delegates to
+    /// after decoding, and which the decode-once render path calls directly so the
+    /// image is decoded only once.
+    ///
+    /// - Parameters:
+    ///   - planes:     The already-decoded channel planes.
+    ///   - properties: The image's pixel layout.
+    ///   - settings:   The render settings.
+    /// - Returns: The render result.
+    /// - Throws: Any error building the configuration or running the pipeline.
+    static func render( planes: [ [ Double ] ], imageIO properties: ImageIOImageProperties, settings: Settings ) throws -> RenderResult
+    {
         let config = try Self.imageIOConfig( properties: properties, settings: settings )
 
         // The plane render path consumes decoded Doubles, so the bit depth is passed
@@ -99,7 +114,10 @@ public extension ImageProcessor
     ///   - properties: The image's pixel layout.
     /// - Returns: One plane per channel, each `width × height` samples.
     /// - Throws: ``RuntimeError`` for an invalid geometry or truncated data.
-    private static func imageIOPlaneSamples( data: Data, properties: ImageIOImageProperties ) throws -> [ [ Double ] ]
+    ///
+    /// Exposed (not private) so ``ImageIORenderSource/decoded()`` can decode the
+    /// planes once and render them without decoding the bytes a second time.
+    static func imageIOPlaneSamples( data: Data, properties: ImageIOImageProperties ) throws -> [ [ Double ] ]
     {
         guard properties.width > 0, properties.height > 0, properties.channelCount > 0,
               properties.componentsPerPixel >= properties.channelCount, properties.bytesPerComponent > 0
@@ -215,7 +233,27 @@ public extension ImageProcessor
     ///   when the planes cannot be decoded.
     static func imageIOLinearLuminance( data: Data, properties: ImageIOImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
     {
-        guard let planes = try? Self.imageIOPlaneSamples( data: data, properties: properties ), let first = planes.first
+        guard let planes = try? Self.imageIOPlaneSamples( data: data, properties: properties )
+        else
+        {
+            return nil
+        }
+
+        return Self.imageIOLinearLuminance( fromPlanes: planes, properties: properties )
+    }
+
+    /// The per-pixel luminance (mean of the channels) built from a photographic
+    /// image's already-decoded channel planes — the decode-free counterpart of
+    /// ``imageIOLinearLuminance(data:properties:)``, so the statistics reuse the
+    /// render's decode. A grayscale image yields its single channel unchanged.
+    ///
+    /// - Parameters:
+    ///   - planes:     The already-decoded channel planes.
+    ///   - properties: The image's pixel layout.
+    /// - Returns: The dimensions and averaged luminance samples, or `nil` when empty.
+    static func imageIOLinearLuminance( fromPlanes planes: [ [ Double ] ], properties: ImageIOImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
+    {
+        guard let first = planes.first
         else
         {
             return nil

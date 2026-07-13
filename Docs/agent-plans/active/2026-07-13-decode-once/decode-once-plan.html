@@ -418,13 +418,36 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
-                <span class="completed-date">Completed: —</span>
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-13</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p>Implemented with TDD. RAW and ImageIO now reach parity with FITS/XISF; the byte paths were refactored to delegate to new decode-free cores, so they stay behaviour-preserving.</p>
+                <ul>
+                    <li><strong><code>ImageProcessor+RAW.swift</code></strong> — exposed <code>rawImageSamples</code> (was private); added decode-free <code>render(plane:raw:settings:)</code> and refactored <code>render(data:raw:)</code> to delegate; added <code>rawAutoStretchColorSource(fromPlane:)</code> and refactored the <code>data</code> version to delegate.</li>
+                    <li><strong><code>ImageProcessor+ImageIO.swift</code></strong> — exposed <code>imageIOPlaneSamples</code>; added decode-free <code>render(planes:imageIO:settings:)</code> and refactored <code>render(data:imageIO:)</code> to delegate; added <code>imageIOLinearLuminance(fromPlanes:)</code> and refactored the <code>data</code> version to delegate.</li>
+                    <li><strong>New <code>RAWDecodedRenderSource.swift</code></strong> — wraps <code>(plane, properties)</code>; <code>makeResult</code> → <code>render(plane:raw:)</code>; colour source → <code>.mosaic</code> for a CFA sensor, else <code>.mono</code> from the plane (the mono mosaic <em>is</em> the detection image). <strong>New <code>ImageIODecodedRenderSource.swift</code></strong> — wraps <code>(planes, properties)</code>; <code>makeResult</code> → <code>render(planes:imageIO:)</code>; colour source → <code>.mono</code> from the mean-of-planes luminance (ImageIO has no per-channel input).</li>
+                    <li><strong><code>RAWRenderSource.decoded()</code></strong> (via <code>rawImageSamples</code>) and <strong><code>ImageIORenderSource.decoded()</code></strong> (via <code>imageIOPlaneSamples</code>), both propagating the decode <code>throws</code>, never <code>nil</code>.</li>
+                    <li><strong>Tests</strong> — <code>RAWDecodedRenderSourceTests</code> (3: CFA+mono byte-identity, mosaic and mono colour sources) and <code>ImageIODecodedRenderSourceTests</code> (3: mono+RGB byte-identity, mono luminance colour source).</li>
+                    <li><strong>pbxproj</strong> — 4 files wired (2 app: <code>FA11</code>/<code>FB13</code>, <code>FA12</code>/<code>FB14</code>; 2 test: <code>A011</code>/<code>B011</code>, <code>A012</code>/<code>B012</code>) into the app/test <code>Model/RAW</code> and <code>Model/ImageIO</code> groups; <code>plutil -lint</code> passes.</li>
+                    <li><strong>Build/test</strong> — build succeeds; 6 new tests pass, and the <code>ImageProcessor+RAW</code>/<code>ImageProcessor+ImageIO</code> regression suites (27 across 4 suites) stay green, confirming the byte-path refactors are behaviour-preserving.</li>
+                </ul>
+                <p><strong>Automated review loop:</strong> 1 round; converged with no Critical/High/Medium findings. Acted on one Low finding (below) and one Info test-symmetry suggestion, then re-ran the suites green.</p>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <ul>
+                    <li><strong>Verdict: clean, correct, behaviour-preserving.</strong> Reviewer traced both byte-path refactors as exact extractions, confirmed decode-once byte-identity, and verified the decoded colour sources match the load-time detection images (RAW mono mosaic; ImageIO mean-of-channels) and the pbxproj wiring.</li>
+                    <li><strong>RAW mono colour source did an unnecessary full-mosaic decode</strong> — Low (perf/behaviour). The refactored <code>rawAutoStretchColorSource(data:)</code> called <code>rawImageLinearLuminance</code> unconditionally, so a mono sensor decoded the mosaic before returning <code>nil</code>, where the original short-circuited on the missing CFA pattern first. <em>Resolution: Fixed — restored the CFA-pattern short-circuit (guard the pattern's presence + validity before decoding).</em></li>
+                    <li><strong>RGB byte-identity test covered only one settings variant</strong> — Info. <em>Resolution: Fixed — the ImageIO RGB test now loops both <code>Settings()</code> and <code>.identity</code>, matching the RAW suite.</em></li>
+                    <li><strong>New pbxproj entries inserted out of the section's sort order</strong> — Info (cosmetic; ordering is irrelevant, Xcode re-sorts on save). <em>Resolution: Deferred — no change.</em></li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>"Looks good" — approved as implemented, including the Low-finding fix (RAW mono short-circuit) and the test-symmetry improvement.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 4 -->
