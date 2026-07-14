@@ -133,6 +133,57 @@ struct AstrometryClientTests
         #expect( bodyString.contains( "FITSDATA" ) )
     }
 
+    /// `requestObject` maps the present hints to the service's parameter names and
+    /// omits absent ones, always carrying the session.
+    @Test
+    func requestObjectMapsHintsAndOmitsAbsentOnes() throws
+    {
+        let full = AstrometryClient.requestObject( session: "s", hints: PlateSolveHints( centerRA: 10, centerDec: 20, radius: 1.5, scaleEstimate: 2 ) )
+
+        #expect( full[ "session" ]     as? String == "s" )
+        #expect( full[ "center_ra" ]   as? Double == 10 )
+        #expect( full[ "center_dec" ]  as? Double == 20 )
+        #expect( full[ "radius" ]      as? Double == 1.5 )
+        #expect( full[ "scale_est" ]   as? Double == 2 )
+        #expect( full[ "scale_units" ] as? String == "arcsecperpix" )
+        #expect( full[ "scale_type" ]  as? String == "ev" )
+        #expect( full[ "scale_err" ]   != nil )
+
+        // Scale-only hints carry no position keys.
+        let scaleOnly = AstrometryClient.requestObject( session: "s", hints: PlateSolveHints( scaleEstimate: 3 ) )
+
+        #expect( scaleOnly[ "scale_est" ] as? Double == 3 )
+        #expect( scaleOnly[ "center_ra" ] == nil )
+        #expect( scaleOnly[ "radius" ]    == nil )
+
+        // Empty hints carry only the session, so the solve stays blind.
+        let empty = AstrometryClient.requestObject( session: "s", hints: PlateSolveHints() )
+
+        #expect( empty.count == 1 )
+        #expect( empty[ "session" ] as? String == "s" )
+    }
+
+    /// The upload's `request-json` carries the hints alongside the session and file.
+    @Test
+    func uploadIncludesHintsInTheRequestJSON() async throws
+    {
+        let transport = MockAstrometryTransport { _, _ in ( 200, AstrometryFixtures.uploadSuccess ) }
+        let client    = AstrometryClient( transport: transport, pollInterval: .zero )
+        let hints     = PlateSolveHints( centerRA: 83.8, centerDec: -5.4, radius: 2, scaleEstimate: 1.5 )
+
+        _ = try await client.upload( imageData: Data( "IMG".utf8 ), fileName: "image.png", session: "sess-1", hints: hints )
+
+        let request    = try #require( await transport.requests.first )
+        let body       = try #require( request.httpBody )
+        let bodyString = try #require( String( data: body, encoding: .utf8 ) )
+
+        #expect( bodyString.contains( "center_ra" ) )
+        #expect( bodyString.contains( "center_dec" ) )
+        #expect( bodyString.contains( "radius" ) )
+        #expect( bodyString.contains( "scale_est" ) )
+        #expect( bodyString.contains( "arcsecperpix" ) )
+    }
+
     /// The full solve flow logs in, uploads, polls the submission until a job
     /// appears, polls the job until it succeeds, and returns the calibration, the
     /// objects in field, and the parsed WCS — reporting each phase along the way.

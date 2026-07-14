@@ -35,7 +35,7 @@ import SwiftFITS
 /// Transport Security.
 public actor AstrometryClient
 {
-    /// A coarse phase of a plate solve, reported as ``solve(imageData:fileName:apiKey:onProgress:)``
+    /// A coarse phase of a plate solve, reported as ``solve(imageData:fileName:apiKey:hints:onProgress:)``
     /// progresses, so the UI can show what the long-running operation is doing.
     public enum Progress: Sendable, Equatable
     {
@@ -86,14 +86,16 @@ public actor AstrometryClient
     /// fail the solve, since the calibration alone is a useful result.
     ///
     /// - Parameters:
-    ///   - imageData:  The image bytes to upload (the original source file bytes).
+    ///   - imageData:  The image bytes to upload.
     ///   - fileName:   The file name to label the upload with.
     ///   - apiKey:     The Astrometry.net API key.
+    ///   - hints:      The optional position and scale hints to steer the solve;
+    ///                 empty by default, which runs a blind solve.
     ///   - onProgress: Called as each coarse phase begins.
     /// - Returns: The solved result.
     /// - Throws: ``AstrometryError`` on authentication, upload, or solve failure,
     ///   or `CancellationError` if the task is cancelled.
-    public func solve( imageData: Data, fileName: String, apiKey: String, onProgress: ( @Sendable ( Progress ) async -> Void )? = nil ) async throws -> PlateSolveResult
+    public func solve( imageData: Data, fileName: String, apiKey: String, hints: PlateSolveHints = PlateSolveHints(), onProgress: ( @Sendable ( Progress ) async -> Void )? = nil ) async throws -> PlateSolveResult
     {
         guard apiKey.trimmingCharacters( in: .whitespacesAndNewlines ).isEmpty == false
         else
@@ -108,7 +110,7 @@ public actor AstrometryClient
         try Task.checkCancellation()
         await onProgress?( .uploading )
 
-        let submissionID = try await self.upload( imageData: imageData, fileName: fileName, session: session )
+        let submissionID = try await self.upload( imageData: imageData, fileName: fileName, session: session, hints: hints )
 
         try Task.checkCancellation()
         await onProgress?( .solving )
@@ -143,7 +145,16 @@ public actor AstrometryClient
     }
 
     /// Uploads the image as multipart form data and returns the submission id.
-    public func upload( imageData: Data, fileName: String, session: String ) async throws -> Int
+    ///
+    /// - Parameters:
+    ///   - imageData: The image bytes to upload.
+    ///   - fileName:  The file name to label the upload with.
+    ///   - session:   The authenticated session key.
+    ///   - hints:     The optional position and scale hints, merged into the
+    ///                `request-json`; empty by default.
+    /// - Returns: The submission id.
+    /// - Throws: ``AstrometryError`` if the endpoint is invalid or the upload fails.
+    public func upload( imageData: Data, fileName: String, session: String, hints: PlateSolveHints = PlateSolveHints() ) async throws -> Int
     {
         guard let url = self.apiEndpoint( "upload" )
         else
@@ -152,7 +163,7 @@ public actor AstrometryClient
         }
 
         let boundary    = "Boundary-\( UUID().uuidString )"
-        let requestJSON = try Self.jsonString( from: [ "session": session ] )
+        let requestJSON = try Self.jsonString( from: Self.requestObject( session: session, hints: hints ) )
 
         var request = URLRequest( url: url )
 
@@ -362,8 +373,57 @@ public actor AstrometryClient
 
     // MARK: - Helpers
 
+    /// The tolerance, in percent, put on an estimated plate scale (the `scale_err`
+    /// of a `scale_type` `"ev"` hint) — generous enough to absorb rounding in the
+    /// header-derived scale while still bounding the solve.
+    private static let scaleErrorPercent = 20.0
+
+    /// Builds the `request-json` object for an upload: the session key plus any
+    /// available position and scale hints, mapped to the service's parameter names.
+    ///
+    /// The scale hint (`scale_est` in `arcsecperpix`, as an estimate with a
+    /// percentage error) is added whenever a plate scale is known; the position
+    /// hint (`center_ra`/`center_dec`/`radius`) is added only when all three are
+    /// present. With no hints the object carries just the session, so the solve
+    /// runs blind exactly as before.
+    ///
+    /// - Parameters:
+    ///   - session: The authenticated session key.
+    ///   - hints:   The hints to include.
+    /// - Returns: The `request-json` object.
+    static func requestObject( session: String, hints: PlateSolveHints ) -> [ String: Any ]
+    {
+        var object: [ String: Any ] = [ "session": session ]
+
+        if let scale = hints.scaleEstimate
+        {
+            object[ "scale_units" ] = "arcsecperpix"
+            object[ "scale_type" ]  = "ev"
+            object[ "scale_est" ]   = scale
+            object[ "scale_err" ]   = Self.scaleErrorPercent
+        }
+
+        if let ra = hints.centerRA, let dec = hints.centerDec, let radius = hints.radius
+        {
+            object[ "center_ra" ]  = ra
+            object[ "center_dec" ] = dec
+            object[ "radius" ]     = radius
+        }
+
+        return object
+    }
+
     /// Serializes a string dictionary to a compact JSON string.
     private static func jsonString( from object: [ String: String ] ) throws -> String
+    {
+        let data = try JSONSerialization.data( withJSONObject: object )
+
+        return String( decoding: data, as: UTF8.self )
+    }
+
+    /// Serializes a heterogeneous JSON object (string and numeric values) to a
+    /// compact JSON string, for the upload's mixed-type `request-json`.
+    private static func jsonString( from object: [ String: Any ] ) throws -> String
     {
         let data = try JSONSerialization.data( withJSONObject: object )
 

@@ -75,8 +75,7 @@ struct PlateSolveSessionTests
     {
         let frame   = try await self.makeFrame()
         let client  = AstrometryClient( transport: self.successTransport(), pollInterval: .zero )
-        // A multi-frame file (frameCount 2) uploads a rendered PNG.
-        let session = PlateSolveSession( frame: frame, fileName: "mono", fileURL: TestFixtures.monoImage, frameCount: 2, apiKey: "key", client: client )
+        let session = PlateSolveSession( frame: frame, fileName: "mono", apiKey: "key", client: client )
 
         await session.run()
 
@@ -111,7 +110,7 @@ struct PlateSolveSessionTests
 
         let frame   = try await self.makeFrame()
         let client  = AstrometryClient( transport: transport, pollInterval: .zero )
-        let session = PlateSolveSession( frame: frame, fileName: "mono", fileURL: TestFixtures.monoImage, frameCount: 1, apiKey: "key", client: client )
+        let session = PlateSolveSession( frame: frame, fileName: "mono", apiKey: "key", client: client )
 
         await session.run()
 
@@ -135,7 +134,7 @@ struct PlateSolveSessionTests
         let target  = try await self.makeFrame()
         let other   = try await self.makeFrame()
         let client  = AstrometryClient( transport: self.successTransport(), pollInterval: .zero )
-        let session = PlateSolveSession( frame: target, fileName: "mono", fileURL: TestFixtures.monoImage, frameCount: 1, apiKey: "key", client: client )
+        let session = PlateSolveSession( frame: target, fileName: "mono", apiKey: "key", client: client )
 
         await session.run()
 
@@ -143,30 +142,16 @@ struct PlateSolveSessionTests
         #expect( other.plateSolve == nil, "another frame is not affected by a different frame's solve" )
     }
 
-    /// A single-image FITS file (frameCount 1) uploads the original file's bytes
-    /// as-is and still solves end to end — exercising the original-file upload path
-    /// rather than the rendered-PNG path.
+    /// The uploaded image is always a rendered PNG, so its upload file name carries
+    /// a `.png` extension built from the source's base name (a generic base when the
+    /// source has none) rather than the source format's extension.
     @Test
-    func uploadsTheOriginalFileForASingleImageFITS() async throws
+    func uploadFileNameUsesAPNGExtension() throws
     {
-        let frame   = try await self.makeFrame()
-        let client  = AstrometryClient( transport: self.successTransport(), pollInterval: .zero )
-        let session = PlateSolveSession( frame: frame, fileName: "mono", fileURL: TestFixtures.monoImage, frameCount: 1, apiKey: "key", client: client )
-
-        await session.run()
-
-        #expect( session.phase == .succeeded )
-        #expect( frame.plateSolve != nil )
-    }
-
-    /// The upload-strategy decision: only a single-image FITS file uploads its
-    /// original bytes; a multi-image cube and non-FITS formats upload a rendered PNG.
-    @Test
-    func onlyASingleImageFITSUploadsItsOriginalFile()
-    {
-        #expect( PlateSolveSession.shouldUploadOriginalFile( url: TestFixtures.monoImage, frameCount: 1 ) )
-        #expect( PlateSolveSession.shouldUploadOriginalFile( url: TestFixtures.monoImage, frameCount: 4 ) == false, "a multi-image cube cannot be uploaded whole" )
-        #expect( PlateSolveSession.shouldUploadOriginalFile( url: URL( fileURLWithPath: "/tmp/photo.png" ), frameCount: 1 ) == false, "a non-FITS format uploads a PNG" )
+        #expect( PlateSolveSession.uploadFileName( for: "M42.xisf" ) == "M42.png" )
+        #expect( PlateSolveSession.uploadFileName( for: "M42.fits" ) == "M42.png" )
+        #expect( PlateSolveSession.uploadFileName( for: "M42" )      == "M42.png" )
+        #expect( PlateSolveSession.uploadFileName( for: "" )         == "image.png" )
     }
 
     /// After a solve has finished, `restart` re-runs it from scratch — resetting
@@ -176,7 +161,7 @@ struct PlateSolveSessionTests
     {
         let frame   = try await self.makeFrame()
         let client  = AstrometryClient( transport: self.successTransport(), pollInterval: .zero )
-        let session = PlateSolveSession( frame: frame, fileName: "mono", fileURL: TestFixtures.monoImage, frameCount: 1, apiKey: "key", client: client )
+        let session = PlateSolveSession( frame: frame, fileName: "mono", apiKey: "key", client: client )
 
         await session.run()
 

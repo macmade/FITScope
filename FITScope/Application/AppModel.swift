@@ -135,7 +135,7 @@ public final class AppModel: ObservableObject
         }
 
         let target  = self.target( for: file )
-        let session = PlateSolveSession( frame: frame, fileName: file.displayName, fileURL: file.url, frameCount: file.frames.count, apiKey: apiKey, client: client )
+        let session = PlateSolveSession( frame: frame, fileName: file.displayName, apiKey: apiKey, client: client )
 
         self.plateSolveSessions[ target ] = session
 

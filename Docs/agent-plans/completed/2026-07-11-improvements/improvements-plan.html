@@ -957,13 +957,19 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
+                <span class="status" style="background: #3a2630; color: #f0a0b8;">Won't do</span>
                 <span class="completed-date">Completed: —</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p><strong>Dropped by the user — not implemented (no code written).</strong> At the design-decision stage, before any implementation, the maintainer decided FITS should not be offered as an export format. Investigation had established the feature was feasible app-side with no submodule change (SwiftFITS' write API — <code>FITSFile.init(bitpix:axes:data:)</code> / <code>serializedData</code> / <code>write</code> — is available), and that the current export path (<code>AppModel.exportImage(of:)</code> → <code>ImageExporter</code>) exports the rendered display pixels while the original bytes are already exportable via "Save a Copy" (<code>OpenFile.copyOriginalFile</code>). The open design questions (rendered display pixels vs. underlying data, and which header keywords) were never resolved because the feature was dropped.</p>
+            </div>
+            <div class="field placeholder"><div class="field-label">Automated review</div><p>Not applicable — dropped, no code change.</p></div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>"Actually, I don't think this should be implemented." — decided not to implement FITS export (raised at the design-decision stage, before any code was written).</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Milestone 12 -->
@@ -989,13 +995,40 @@
                 </ul>
             </div>
             <div class="status-row">
-                <span class="status notstarted">Not started</span>
-                <span class="completed-date">Completed: —</span>
+                <span class="status completed">Completed</span>
+                <span class="completed-date">Completed: 2026-07-14</span>
             </div>
             <hr class="sep">
-            <div class="field placeholder"><div class="field-label">Implementation notes</div><p>To be filled in during implementation.</p></div>
-            <div class="field placeholder"><div class="field-label">Automated review</div><p>Findings from the automated review loop go here.</p></div>
-            <div class="field placeholder"><div class="field-label">Review comments</div><p>Human review feedback goes here.</p></div>
+            <div class="field"><div class="field-label">Implementation notes</div>
+                <p>Implemented with TDD, after an investigation that <strong>reframed the milestone</strong> and a design decision confirmed with the user.</p>
+                <p><strong>Investigation — the premise was wrong.</strong> Verified against the nova.astrometry.net API docs that the service accepts solve hints <em>only</em> as request-json parameters (<code>center_ra</code>, <code>center_dec</code>, <code>radius</code>, <code>scale_est</code>, <code>scale_units</code>, …); there is <strong>no documented behavior</strong> where it reads hints from an uploaded FITS header. The current upload sent only <code>{ "session": … }</code> — no hints at all — so every solve was effectively blind, and the old <code>shouldUploadOriginalFile</code> rationale ("a single-image FITS lets the service use its header hints") was an unverified, incorrect assumption. Consequently the milestone's literal approach (generate &amp; upload a FITS) would <em>not</em> avoid a blind solve. The app already has the hint data: <code>LoadedImage.target</code> (RA/Dec°), <code>LoadedImage.pixelScale</code> (arcsec/px), and <code>source.dimensions</code>.</p>
+                <p><strong>Design decision (approved).</strong> Implement request-json <em>hints</em> for <strong>all</strong> sources with usable metadata — effective, format-agnostic, no FITS generation — rather than the FITS-generation approach. The user also asked whether, with hints, the FITS-specific "upload the original file" path could be dropped in favour of always uploading a PNG. Checked and confirmed sound: that path's only justification was the (disproven) header-hint behavior, uploading raw FITS vs a rendered PNG makes no difference to hinting, non-FITS/multi-frame already use the PNG path successfully, and the PNG is rendered at identity orientation so the solved WCS stays in native pixel space — so it is a safe simplification.</p>
+                <p>Changes:</p>
+                <ul>
+                    <li><strong>New <code>FITScope/Network/PlateSolveHints.swift</code></strong> — a <code>Sendable</code>, <code>Equatable</code> value type deriving <code>centerRA</code>/<code>centerDec</code>/<code>radius</code>/<code>scaleEstimate</code> from <code>(coordinate, pixelScale, dimensions)</code>. RA is wrapped into <code>0 ..&lt; 360</code>; declination validated to <code>-90 ... 90</code>; the scale hint is included whenever the plate scale is positive; the position hint (centre + radius) only when RA, Dec, scale <em>and</em> dimensions are all present, with <code>radius = pixelScale · max(width, height) / 3600</code> (the field's longest angular extent — a generous search radius covering the field and pointing error).</li>
+                    <li><strong><code>AstrometryClient</code></strong> — <code>solve(…, hints:)</code> and <code>upload(…, hints:)</code> gained a defaulted <code>hints</code> parameter; a new internal <code>requestObject(session:hints:)</code> maps the present hints to the service's parameter names (<code>scale_est</code>/<code>scale_units="arcsecperpix"</code>/<code>scale_type="ev"</code>/<code>scale_err</code>, and <code>center_ra</code>/<code>center_dec</code>/<code>radius</code>) and merges them into the multipart <code>request-json</code>; a <code>jsonString(from: [String: Any])</code> overload serializes the mixed-type object. Empty hints yield <code>{ "session": … }</code> only, so a metadata-less image still solves blind exactly as before.</li>
+                    <li><strong><code>PlateSolveSession</code></strong> — derives the hints from the frame's metadata at init and passes them to <code>solve</code>. <strong>Removed the FITS-original-upload path entirely</strong> (always uploads a rendered PNG now): deleted <code>shouldUploadOriginalFile</code>, <code>uploadFileURL</code>, <code>uploadData</code>, <code>readData</code>, the <code>fileURL</code>/<code>frameCount</code> init parameters and the now-unused <code>import UniformTypeIdentifiers</code>; updated the class doc. <code>AppModel</code>'s call site was updated to the simpler initializer.</li>
+                </ul>
+                <p><strong>Tests (TDD).</strong> New <code>PlateSolveHintsTests</code> (8) pin every derivation branch (full derivation, scale-only, missing scale/dimensions, non-positive scale dropped, out-of-range declination dropping only the position, RA wrap both directions, empty). New <code>AstrometryClientTests</code> cases assert the hint→request-json mapping (<code>requestObject</code>) and that the upload body carries the hints. <code>PlateSolveSessionTests</code> had its two obsolete original-upload tests removed and its constructions updated to the new initializer. Two new files wired into the app/test targets via <code>project.pbxproj</code> (four entries each).</p>
+                <p><strong>Build/test.</strong> App builds; the three Network suites (<code>PlateSolveHints</code>, <code>AstrometryClient</code>, <code>PlateSolveSession</code>) pass — 21 tests. <code>plutil -lint</code> clean.</p>
+                <p><strong>Live verification pending (user).</strong> An end-to-end solve against nova.astrometry.net (real API key, real XISF, live network, and a solve-time comparison vs. the old blind path) <em>cannot run in this environment</em>; the hint derivation and request encoding are unit-tested, but the live solve needs to be run by the user.</p>
+                <p><strong>Automated review loop:</strong> 1 round; converged with <strong>no Critical/High/Medium findings</strong>. One Info (a stale DocC symbol link) was fixed.</p>
+                <p><strong>Post-completion fix (user feedback) — upload file name.</strong> Since the upload is now always a rendered PNG, labelling it with the source's display name gave it the source format's extension (e.g. <code>M42.xisf</code>) even though the bytes are a PNG — which the service could misread. Added a tested <code>nonisolated static</code> helper <code>PlateSolveSession.uploadFileName( for: )</code> that builds the upload name from the source's base name with a <code>.png</code> extension (falling back to <code>image.png</code> when the source name has none), and <code>run()</code> now passes it to <code>solve</code> instead of the raw display name. The window title/header still use the unchanged display name. New <code>uploadFileNameUsesAPNGExtension</code> test; the Network suites pass (22 tests).</p>
+            </div>
+            <div class="field"><div class="field-label">Automated review</div>
+                <ul>
+                    <li><strong>Verdict: correct, cleanly implemented, well-tested, no blocking issues.</strong> The fresh-context reviewer independently verified: the hint derivation (RA wrap for negative/&gt;360, the radius formula and its orientation-invariance, the all-or-nothing position coupling, non-positive-scale drop, out-of-range-declination keeping the scale); the request-json key mapping and the <code>"ev"</code>/<code>scale_est</code>/<code>scale_err</code> pairing, with absent hints omitted so an empty set is a valid blind-solve request; that the <code>[String: Any]</code> overload does not collide at either call site and serializes correctly; that <code>init</code> sets every stored property and <code>source?.dimensions ?? nil</code> flattens correctly, with main-actor reads passing a <code>Sendable</code> hints value into the async solve; that the FITS-original-upload removal is complete (no dangling references, the removed import was unused, the always-PNG path preserves identity-orientation native pixel space); and that the pbxproj wiring is minimal and correct (<code>plutil -lint</code> OK, unique IDs, right targets/groups).</li>
+                    <li><strong>Stale DocC symbol link for <code>solve</code></strong> — Info (documentation). The <code>Progress</code> enum doc linked <code>solve(imageData:fileName:apiKey:onProgress:)</code>, which no longer resolves after the <code>hints:</code> parameter was added. <em>Resolution: Fixed — updated to <code>solve(imageData:fileName:apiKey:hints:onProgress:)</code>.</em></li>
+                </ul>
+            </div>
+            <div class="field"><div class="field-label">Review comments</div>
+                <ul>
+                    <li>Implement hints for all sources with metadata (not just XISF).</li>
+                    <li>Since hints now steer the solve, check whether the FITS-specific "upload the original file" path can be dropped so every source uploads a PNG. — Checked: confirmed sound and done (the path's only rationale was the disproven header-hint behavior).</li>
+                    <li>"Looks good" — approved the request-json hints for all sources and the always-upload-a-PNG simplification.</li>
+                    <li>Post-completion follow-up: when uploading, the original file extension is used — the upload is now always a PNG, but it is still labelled with the source file's name (and extension), so the uploaded file's name should reflect the PNG it actually is.</li>
+                </ul>
+            </div>
         </div>
 
         <!-- ================= APPENDIX ================= -->

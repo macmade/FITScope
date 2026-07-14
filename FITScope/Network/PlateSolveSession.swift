@@ -26,7 +26,6 @@ import Combine
 import CoreGraphics
 import Foundation
 import SwiftUtilities
-import UniformTypeIdentifiers
 
 /// Drives one plate solve for a file and publishes its progress, so the results
 /// window can show a live status and then the solved WCS.
@@ -36,9 +35,13 @@ import UniformTypeIdentifiers
 /// ``PlateSolveResult`` and writes it onto the originating image (frame) for the
 /// overlays to read. Plate solving is per-frame, so the session targets a single
 /// ``LoadedImage``, held weakly so a closed file's frames are not pinned by a
-/// lingering session. The image uploaded is a PNG of the frame rendered at its
-/// native orientation — the universal format Astrometry.net accepts for any source
-/// format (including those it cannot ingest directly, e.g. XISF).
+/// lingering session. The image uploaded is always a PNG of the frame rendered at
+/// its native orientation — the universal format Astrometry.net accepts for any
+/// source format (including those it cannot ingest directly, e.g. XISF). The
+/// frame's metadata-derived ``PlateSolveHints`` (approximate coordinates and plate
+/// scale) are sent with it so the service can steer the solve rather than solve
+/// blindly — Astrometry.net takes hints only as request parameters, not from a
+/// file header, so the image format is irrelevant to hinting.
 @MainActor
 public final class PlateSolveSession: ObservableObject
 {
@@ -100,13 +103,9 @@ public final class PlateSolveSession: ObservableObject
     /// when the frame exposed no renderable source.
     private let source: ( any ImageRenderSource )?
 
-    /// The owning file's URL, uploaded as-is when it is a single-image FITS file (see
-    /// ``shouldUploadOriginalFile(url:frameCount:)``).
-    private let fileURL: URL
-
-    /// The number of frames the owning file decoded into, used to decide the upload
-    /// strategy — the original file is only uploaded for a single-image file.
-    private let frameCount: Int
+    /// The position and scale hints sent with the upload to steer the solve,
+    /// derived from the frame's metadata when the session is created.
+    private let hints: PlateSolveHints
 
     /// The API key used to authenticate.
     private let apiKey: String
@@ -122,21 +121,20 @@ public final class PlateSolveSession: ObservableObject
     /// - Parameters:
     ///   - frame:      The image to solve and write the result back onto.
     ///   - fileName:   The owning file's display name, for the window title and header.
-    ///   - fileURL:    The owning file's URL, uploaded as-is for a single-image FITS file.
-    ///   - frameCount: The number of frames the owning file decoded into.
     ///   - apiKey:     The Astrometry.net API key.
     ///   - client:     The client to run the solve. Defaults to a live client; tests
     ///                 inject one backed by a scripted transport.
-    public init( frame: LoadedImage, fileName: String, fileURL: URL, frameCount: Int, apiKey: String, client: AstrometryClient = AstrometryClient() )
+    public init( frame: LoadedImage, fileName: String, apiKey: String, client: AstrometryClient = AstrometryClient() )
     {
+        let source = try? frame.renderer.renderSourceSnapshot()
+
         self.frame        = frame
-        self.source       = try? frame.renderer.renderSourceSnapshot()
+        self.source       = source
         self.fileName     = fileName
-        self.fileURL      = fileURL
-        self.frameCount   = frameCount
         self.previewImage = frame.renderer.result?.image
         self.apiKey       = apiKey
         self.client       = client
+        self.hints        = PlateSolveHints( coordinate: frame.target, pixelScale: frame.pixelScale, dimensions: source?.dimensions ?? nil )
     }
 
     /// Starts the solve in a session-owned task. Idempotent: a second call while
@@ -195,8 +193,8 @@ public final class PlateSolveSession: ObservableObject
 
         do
         {
-            let data   = try await Self.uploadData( from: self.source, originalFileURL: self.uploadFileURL )
-            let result = try await self.client.solve( imageData: data, fileName: self.fileName, apiKey: self.apiKey )
+            let data   = try await Self.renderedPNG( from: self.source )
+            let result = try await self.client.solve( imageData: data, fileName: Self.uploadFileName( for: self.fileName ), apiKey: self.apiKey, hints: self.hints )
             {
                 [ weak self ] progress in await self?.apply( progress )
             }
@@ -233,48 +231,18 @@ public final class PlateSolveSession: ObservableObject
         }
     }
 
-    /// The file URL to upload as-is, or `nil` to upload a rendered PNG — the original
-    /// file only for a single-image FITS file (see ``shouldUploadOriginalFile(url:frameCount:)``).
-    private var uploadFileURL: URL?
-    {
-        Self.shouldUploadOriginalFile( url: self.fileURL, frameCount: self.frameCount ) ? self.fileURL : nil
-    }
-
-    /// Whether the owning file should upload its original bytes for the solve, rather
-    /// than a rendered PNG.
+    /// The file name to label the uploaded PNG with: the source's base name with a
+    /// `.png` extension, so the upload is named for the PNG it actually is rather
+    /// than carrying the source format's extension (which the service could
+    /// misread). A generic base is used when the source name has none.
     ///
-    /// True only for a single-image FITS file: Astrometry.net reads FITS directly and
-    /// uses its header hints (approximate coordinates, pixel scale) to seed and speed
-    /// up the solve. A multi-image cube (which cannot be uploaded whole to pick a
-    /// single frame) and any non-FITS format (some of which Astrometry.net cannot
-    /// ingest at all) upload a rendered PNG instead.
-    ///
-    /// - Parameters:
-    ///   - url:        The file's URL.
-    ///   - frameCount: The number of frames the file decoded into.
-    /// - Returns: `true` to upload the original file, `false` to upload a PNG.
-    public nonisolated static func shouldUploadOriginalFile( url: URL, frameCount: Int ) -> Bool
+    /// - Parameter displayName: The source file's display name.
+    /// - Returns: The upload file name, ending in `.png`.
+    nonisolated static func uploadFileName( for displayName: String ) -> String
     {
-        frameCount == 1 && UTType( filenameExtension: url.pathExtension )?.conforms( to: .fits ) == true
-    }
+        let base = ( displayName as NSString ).deletingPathExtension
 
-    /// The bytes to upload for the solve: the original file's bytes when
-    /// `originalFileURL` is set (a single-image FITS file, whose header hints speed up
-    /// the solve), otherwise a rendered PNG of the frame.
-    ///
-    /// - Parameters:
-    ///   - source:          The frame's render source (for the PNG path), or `nil`.
-    ///   - originalFileURL: The file to upload as-is, or `nil` to render a PNG.
-    /// - Returns: The bytes to upload.
-    /// - Throws: ``RuntimeError`` or an I/O error when the bytes cannot be produced.
-    private nonisolated static func uploadData( from source: ( any ImageRenderSource )?, originalFileURL: URL? ) async throws -> Data
-    {
-        if let originalFileURL
-        {
-            return try await Self.readData( at: originalFileURL )
-        }
-
-        return try await Self.renderedPNG( from: source )
+        return "\( base.isEmpty ? "image" : base ).png"
     }
 
     /// Renders the frame's as-captured image at its native orientation and encodes it
@@ -310,39 +278,6 @@ public final class PlateSolveSession: ObservableObject
                     let data   = try ImageExporter.data( for: result.image, format: .png )
 
                     continuation.resume( returning: data )
-                }
-                catch
-                {
-                    continuation.resume( throwing: error )
-                }
-            }
-        }
-    }
-
-    /// Reads a file's bytes off the main actor, honouring the security-scoped access
-    /// the file was opened under. Used to upload a single-image FITS file as-is.
-    ///
-    /// - Parameter url: The file to read.
-    /// - Returns: The file's bytes.
-    private nonisolated static func readData( at url: URL ) async throws -> Data
-    {
-        try await withCheckedThrowingContinuation
-        {
-            continuation in DispatchQueue.global( qos: .userInitiated ).async
-            {
-                let didAccess = url.startAccessingSecurityScopedResource()
-
-                defer
-                {
-                    if didAccess
-                    {
-                        url.stopAccessingSecurityScopedResource()
-                    }
-                }
-
-                do
-                {
-                    continuation.resume( returning: try Data( contentsOf: url ) )
                 }
                 catch
                 {

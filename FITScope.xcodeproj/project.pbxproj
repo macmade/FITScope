@@ -238,6 +238,7 @@
 		12D1CA8C4330A87062BA764E /* StarDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002C1D9E4346F9D0ADBFF793 /* StarDetectionTests.swift */; };
 		14B77DB0AE541FDDF44D92ED /* Array.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B2EAF3AA7FFF8258530A42 /* Array.swift */; };
 		16A94F1D0484478989461CEA /* PlateSolveSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18478C6716CEEB19F032F3F /* PlateSolveSessionTests.swift */; };
+		16A94F1D0484478989461CB1 /* PlateSolveHintsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18478C6716CEEB19F032FB1 /* PlateSolveHintsTests.swift */; };
 		16CA5451FED9C5F34706C016 /* HistogramMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 209B69186583B9C65F810C23 /* HistogramMode.swift */; };
 		175D7C30B76F9C7B98B34F11 /* AstrometryError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082A59467A862DA1F2AF7566 /* AstrometryError.swift */; };
 		17B516B64E1F38ED6ECAE45F /* FITSMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D5C2CDF6BE5D61F992E63B /* FITSMetadataTests.swift */; };
@@ -355,6 +356,7 @@
 		A043D5D47F28AF202E84461C /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF3765F1937F36620A92317F /* MainWindowView.swift */; };
 		A3A4243F6B062C0617771CCE /* OpenFileGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D3B1E5D795A567DB27F4F31 /* OpenFileGraphTests.swift */; };
 		A4B7F72827EB5946B7D329AC /* PlateSolveResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B503A40CF3A57D863C1304 /* PlateSolveResult.swift */; };
+		A4B7F72827EB5946B7D329B1 /* PlateSolveHints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B503A40CF3A57D863C13B1 /* PlateSolveHints.swift */; };
 		A57EE4574D095C50C23B497A /* ThumbnailLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81685BD1A3B59CF94FAA4347 /* ThumbnailLayout.swift */; };
 		A6EDEEF2AE40A8F0A31679E0 /* OverlayOpacityChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5571EB312AB29DEE762AA0D /* OverlayOpacityChannel.swift */; };
 		A77E039CE95232CF3DAD4969 /* FITSImageLoaderGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 175A64B30C566653D8539B3F /* FITSImageLoaderGraphTests.swift */; };
@@ -885,6 +887,7 @@
 		8AE099AFB1D8E2318FF1E09B /* MoonPhaseDiscTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseDiscTests.swift; sourceTree = "<group>"; };
 		8B200D70A22309B7AA0E0383 /* ImageProcessor+RAW.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ImageProcessor+RAW.swift"; sourceTree = "<group>"; };
 		91B503A40CF3A57D863C1304 /* PlateSolveResult.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveResult.swift; sourceTree = "<group>"; };
+		91B503A40CF3A57D863C13B1 /* PlateSolveHints.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveHints.swift; sourceTree = "<group>"; };
 		924BC59850D445E764B72DC7 /* ImageIOImageLoader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageIOImageLoader.swift; sourceTree = "<group>"; };
 		92EEE3EEA80B1B8809982F35 /* WindowModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowModel.swift; sourceTree = "<group>"; };
 		9478E5443F0419FE8102A162 /* PlateSolveResultView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveResultView.swift; sourceTree = "<group>"; };
@@ -897,6 +900,7 @@
 		9E05613CB155AD97D3D27620 /* CanvasOverlayAppearanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanvasOverlayAppearanceTests.swift; sourceTree = "<group>"; };
 		A0750384B9B00F3AF15C9AFC /* StatusBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatusBarView.swift; sourceTree = "<group>"; };
 		A18478C6716CEEB19F032F3F /* PlateSolveSessionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveSessionTests.swift; sourceTree = "<group>"; };
+		A18478C6716CEEB19F032FB1 /* PlateSolveHintsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveHintsTests.swift; sourceTree = "<group>"; };
 		A4DF9AFDBE4943238872A2C7 /* RenderThrottle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RenderThrottle.swift; sourceTree = "<group>"; };
 		A660D5D46BE16501558BFAEB /* LocationMapRepresentable.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LocationMapRepresentable.swift; sourceTree = "<group>"; };
 		A78D7CBE758186E62FCA898A /* HistogramPlaceholderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramPlaceholderView.swift; sourceTree = "<group>"; };
@@ -1789,6 +1793,7 @@
 				86ADBDCAF1E7598A4CC5DEDD /* AstrometryTestSupport.swift */,
 				2DF5F41CCB06024918FD83D1 /* AstrometryClientTests.swift */,
 				A18478C6716CEEB19F032F3F /* PlateSolveSessionTests.swift */,
+				A18478C6716CEEB19F032FB1 /* PlateSolveHintsTests.swift */,
 				37A6023D1148AA3BC889366A /* WeatherConditionsTests.swift */,
 				557C23367A8D2C87E82A3696 /* OpenMeteoTestSupport.swift */,
 				C9BFF85ED213EDE5AA875A74 /* OpenMeteoClientTests.swift */,
@@ -1971,6 +1976,7 @@
 				1C38E95C136002F0B9047230 /* AstrometryResponses.swift */,
 				847C8768478977166B540620 /* AstrometryTransport.swift */,
 				91B503A40CF3A57D863C1304 /* PlateSolveResult.swift */,
+				91B503A40CF3A57D863C13B1 /* PlateSolveHints.swift */,
 				46FF085F9376167DDD0A9FD7 /* AstrometryClient.swift */,
 				CBC493C1AF9D9DEA5E9D32E5 /* PlateSolveSession.swift */,
 				528DA0DAD40D590B75B90AA3 /* WeatherConditions.swift */,
@@ -2641,6 +2647,7 @@
 				8744872E66793145935DFB12 /* AstrometryResponses.swift in Sources */,
 				7B543E85E898ADF392FE8ACB /* AstrometryTransport.swift in Sources */,
 				A4B7F72827EB5946B7D329AC /* PlateSolveResult.swift in Sources */,
+				A4B7F72827EB5946B7D329B1 /* PlateSolveHints.swift in Sources */,
 				3247F84189D2AF56CCDECE73 /* AstrometryClient.swift in Sources */,
 				2E7A93F657C7AEF7849F52EE /* PlateSolveSession.swift in Sources */,
 				00649C8C9961B5EC56B19669 /* PlateSolveWindowView.swift in Sources */,
@@ -2791,6 +2798,7 @@
 				7D9F3B0B9F33E7D25CEB613F /* AstrometryTestSupport.swift in Sources */,
 				6EF419627CCE3666D397E62D /* AstrometryClientTests.swift in Sources */,
 				16A94F1D0484478989461CEA /* PlateSolveSessionTests.swift in Sources */,
+				16A94F1D0484478989461CB1 /* PlateSolveHintsTests.swift in Sources */,
 				7EBA7A151826541146E7EFF5 /* ObjectsOverlayTests.swift in Sources */,
 				428DF3B93E22083E09214995 /* NorthOverlayTests.swift in Sources */,
 				8AEE515A0E32E0AEE6F7CF6A /* EquatorialGridOverlayTests.swift in Sources */,
