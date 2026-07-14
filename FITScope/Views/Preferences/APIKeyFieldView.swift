@@ -63,42 +63,35 @@ public struct APIKeyFieldView: View
     /// The view's content.
     public var body: some View
     {
-        VStack( alignment: .leading, spacing: 4 )
+        LabeledContent
         {
-            LabeledContent
+            HStack( spacing: 6 )
             {
-                HStack( spacing: 6 )
-                {
-                    TextField( "", text: self.$key, prompt: Text( "<enter key here>" ) )
-                        .font( .body.monospaced() )
-                        .foregroundStyle( .secondary )
-                        .accessibilityIdentifier( self.identifier )
-                        .help( self.help )
+                TextField( "", text: self.$key, prompt: Text( "<enter key here>" ) )
+                    .font( .body.monospaced() )
+                    .foregroundStyle( .secondary )
+                    .accessibilityIdentifier( self.identifier )
+                    .help( self.help )
 
-                    if self.key.isEmpty == false
+                if self.key.isEmpty == false
+                {
+                    Button
                     {
-                        Button
-                        {
-                            self.key = ""
-                        }
-                        label:
-                        {
-                            Image( systemName: "xmark.circle.fill" )
-                                .foregroundStyle( .secondary )
-                        }
-                        .buttonStyle( .plain )
-                        .help( "Clear" )
+                        self.key = ""
                     }
+                    label:
+                    {
+                        Image( systemName: "xmark.circle.fill" )
+                            .foregroundStyle( .secondary )
+                    }
+                    .buttonStyle( .plain )
+                    .help( "Clear" )
                 }
             }
-            label:
-            {
-                Label( self.title, systemImage: self.systemImage )
-            }
-
-            Text( self.help )
-                .font( .caption )
-                .foregroundStyle( .secondary )
+        }
+        label:
+        {
+            Label( self.title, systemImage: self.systemImage )
         }
     }
 }

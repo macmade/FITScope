@@ -202,14 +202,14 @@ public struct MainWindowView: View
         // commands (Save As / Export) target and validate against it.
         .focusedSceneObject( self.model.selectedFile )
         // The "no API key" alert, with an action that opens Settings (the native
-        // SwiftUI way) straight to the API Keys tab. Bound directly to the shared
+        // SwiftUI way) straight to the Plate Solving tab. Bound directly to the shared
         // flag — a single source of truth, so SwiftUI never writes a derived value
         // back during an update ("publishing changes from within view updates").
         .alert( "No Astrometry.net API Key", isPresented: self.$appModel.isMissingAPIKeyAlertPresented )
         {
             Button( "Open Preferences\u{2026}" )
             {
-                self.appModel.selectedPreferencesTab = .apiKeys
+                self.appModel.selectedPreferencesTab = .plateSolving
 
                 self.openSettings()
             }
@@ -218,7 +218,7 @@ public struct MainWindowView: View
         }
         message:
         {
-            Text( "Add your free Astrometry.net API key in Preferences \u{25B8} API Keys, then try plate solving again." )
+            Text( "Add your free Astrometry.net API key in Preferences \u{25B8} Plate Solving, then try plate solving again." )
         }
         // The shared "Plate Solve" prompt, raised by the app model when a
         // solve-dependent overlay is tapped with nothing to reveal. Bound to the

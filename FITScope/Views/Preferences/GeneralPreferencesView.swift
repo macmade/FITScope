@@ -47,21 +47,38 @@ public struct GeneralPreferencesView: View
     {
         Form
         {
-            Toggle( "Automatically hide the floating toolbars", isOn: self.$preferences.autoHideFloatingBars )
-                .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.autoHideFloatingBarsToggle )
+            Toggle( isOn: self.$preferences.autoHideFloatingBars )
+            {
+                Label( "Automatically hide the floating toolbars", systemImage: "dock.rectangle" )
+            }
+            .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.autoHideFloatingBarsToggle )
 
             Text( "When on, the canvas's zoom toolbar and status pill fade out after a moment of inactivity and reappear when you move the pointer. When off, they stay visible." )
                 .font( .caption )
                 .foregroundStyle( .secondary )
 
-            Toggle( "Confirm before moving files to the Trash", isOn: self.$preferences.confirmMoveToTrash )
-                .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.confirmMoveToTrashToggle )
+            Toggle( isOn: self.$preferences.confirmMoveToTrash )
+            {
+                Label( "Confirm before moving files to the Trash", systemImage: "trash" )
+            }
+            .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.confirmMoveToTrashToggle )
 
             Text( "When on, moving a file to the Trash from the file list asks you to confirm first. When off, the file is moved without asking." )
                 .font( .caption )
                 .foregroundStyle( .secondary )
+
+            Toggle( isOn: self.$preferences.automaticallyCheckForUpdates )
+            {
+                Label( "Automatically check for updates", systemImage: "arrow.triangle.2.circlepath" )
+            }
+            .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.automaticallyCheckForUpdatesToggle )
+
+            Text( "When on, the app checks for a newer version shortly after launch and tells you only if one is available. You can always check manually from the app menu." )
+                .font( .caption )
+                .foregroundStyle( .secondary )
         }
         .formStyle( .grouped )
+        .scrollIndicators( .never )
         .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.generalTab )
     }
 }

@@ -63,14 +63,15 @@ public final class Preferences: ObservableObject
     /// The keys under which settings are persisted in `UserDefaults`.
     private enum Key
     {
-        static let autoHideFloatingBars = "autoHideFloatingBars"
-        static let confirmMoveToTrash   = "confirmMoveToTrash"
-        static let infoPanelFields      = "infoPanelFields"
-        static let weightFormula        = "weightFormula"
-        static let mainWindowWidth      = "mainWindowWidth"
-        static let mainWindowHeight     = "mainWindowHeight"
-        static let overlayAppearances   = "overlayAppearances"
-        static let starLabelMetric      = "starLabelMetric"
+        static let autoHideFloatingBars         = "autoHideFloatingBars"
+        static let confirmMoveToTrash           = "confirmMoveToTrash"
+        static let automaticallyCheckForUpdates = "automaticallyCheckForUpdates"
+        static let infoPanelFields              = "infoPanelFields"
+        static let weightFormula                = "weightFormula"
+        static let mainWindowWidth              = "mainWindowWidth"
+        static let mainWindowHeight             = "mainWindowHeight"
+        static let overlayAppearances           = "overlayAppearances"
+        static let starLabelMetric              = "starLabelMetric"
     }
 
     /// The persisted shape of one field setting: the field's stable raw value and
@@ -121,6 +122,15 @@ public final class Preferences: ObservableObject
     @Published public var confirmMoveToTrash: Bool
     {
         didSet { self.defaults.set( self.confirmMoveToTrash, forKey: Key.confirmMoveToTrash ) }
+    }
+
+    /// Whether the app checks for a newer version automatically, shortly after
+    /// launch. On by default; when off, only the manual *Check for Updates…* menu
+    /// command looks for an update. Gates the launch-time background check in
+    /// ``AppDelegate``.
+    @Published public var automaticallyCheckForUpdates: Bool
+    {
+        didSet { self.defaults.set( self.automaticallyCheckForUpdates, forKey: Key.automaticallyCheckForUpdates ) }
     }
 
     /// The information-panel fields, in display order, each flagged visible or
@@ -253,18 +263,19 @@ public final class Preferences: ObservableObject
 
         // `object(forKey:)` distinguishes "never set" (nil → the default) from a
         // stored `false`, which a plain `bool(forKey:)` could not.
-        self.autoHideFloatingBars    = ( defaults.object( forKey: Key.autoHideFloatingBars ) as? Bool ) ?? true
-        self.confirmMoveToTrash      = ( defaults.object( forKey: Key.confirmMoveToTrash ) as? Bool ) ?? true
-        self.infoPanelFields         = Self.decodeInfoPanelFields( defaults.data( forKey: Key.infoPanelFields ) )
-        self.overlayAppearances      = Self.decodeOverlayAppearances( defaults.data( forKey: Key.overlayAppearances ) )
-        self.starLabelMetric         = ( defaults.string( forKey: Key.starLabelMetric ).flatMap { StarLabelMetric( rawValue: $0 ) } ) ?? Self.defaultStarLabelMetric
-        self.weightFormula           = defaults.string( forKey: Key.weightFormula ) ?? WeightFormula.defaultExpression
-        self.mainWindowSize          = Self.decodeMainWindowSize( from: defaults )
-        self.autoStretchOnOpenFITS   = AutoStretchPreference.autoStretchOnOpen( .fits, in: defaults )
-        self.autoStretchOnOpenXISF   = AutoStretchPreference.autoStretchOnOpen( .xisf, in: defaults )
-        self.autoStretchOnOpenRAW    = AutoStretchPreference.autoStretchOnOpen( .raw, in: defaults )
-        self.autoStretchPreviewsFITS = AutoStretchPreference.autoStretchPreviews( .fits, in: sharedDefaults )
-        self.autoStretchPreviewsXISF = AutoStretchPreference.autoStretchPreviews( .xisf, in: sharedDefaults )
+        self.autoHideFloatingBars         = ( defaults.object( forKey: Key.autoHideFloatingBars ) as? Bool ) ?? true
+        self.confirmMoveToTrash           = ( defaults.object( forKey: Key.confirmMoveToTrash ) as? Bool ) ?? true
+        self.automaticallyCheckForUpdates = ( defaults.object( forKey: Key.automaticallyCheckForUpdates ) as? Bool ) ?? true
+        self.infoPanelFields              = Self.decodeInfoPanelFields( defaults.data( forKey: Key.infoPanelFields ) )
+        self.overlayAppearances           = Self.decodeOverlayAppearances( defaults.data( forKey: Key.overlayAppearances ) )
+        self.starLabelMetric              = ( defaults.string( forKey: Key.starLabelMetric ).flatMap { StarLabelMetric( rawValue: $0 ) } ) ?? Self.defaultStarLabelMetric
+        self.weightFormula                = defaults.string( forKey: Key.weightFormula ) ?? WeightFormula.defaultExpression
+        self.mainWindowSize               = Self.decodeMainWindowSize( from: defaults )
+        self.autoStretchOnOpenFITS        = AutoStretchPreference.autoStretchOnOpen( .fits, in: defaults )
+        self.autoStretchOnOpenXISF        = AutoStretchPreference.autoStretchOnOpen( .xisf, in: defaults )
+        self.autoStretchOnOpenRAW         = AutoStretchPreference.autoStretchOnOpen( .raw, in: defaults )
+        self.autoStretchPreviewsFITS      = AutoStretchPreference.autoStretchPreviews( .fits, in: sharedDefaults )
+        self.autoStretchPreviewsXISF      = AutoStretchPreference.autoStretchPreviews( .xisf, in: sharedDefaults )
     }
 
     /// Reads the persisted main-window size, if any.

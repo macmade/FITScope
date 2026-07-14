@@ -188,9 +188,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate
 
         #endif
 
-        DispatchQueue.main.asyncAfter( deadline: .now() + Self.backgroundUpdateCheckDelay )
+        // Only when the user has left automatic update checks on (the default).
+        // The manual Check for Updates… command is always available regardless.
+        if self.preferences.automaticallyCheckForUpdates
         {
-            AppUpdater().checkForUpdatesInBackground()
+            DispatchQueue.main.asyncAfter( deadline: .now() + Self.backgroundUpdateCheckDelay )
+            {
+                AppUpdater().checkForUpdatesInBackground()
+            }
         }
 
         DispatchQueue.main.async

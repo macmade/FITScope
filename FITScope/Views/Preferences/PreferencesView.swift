@@ -86,12 +86,6 @@ public struct PreferencesView: View
                 .tabItem { Label( "Auto-Stretch", systemImage: "wand.and.stars" ) }
                 .tag( PreferencesTab.autoStretch )
 
-            APIKeysPreferencesView( apiKeyStore: self.apiKeyStore )
-                .frame( width: Self.standardWidth )
-                .fixedSize( horizontal: false, vertical: true )
-                .tabItem { Label( "API Keys", systemImage: "key" ) }
-                .tag( PreferencesTab.apiKeys )
-
             InformationPanelPreferencesView( preferences: self.preferences )
                 .frame( width: Self.informationPanelSize.width, height: Self.informationPanelSize.height )
                 .tabItem { Label( "Information Panel", systemImage: "list.bullet.rectangle" ) }
@@ -102,6 +96,12 @@ public struct PreferencesView: View
                 .fixedSize( horizontal: false, vertical: true )
                 .tabItem { Label( "Overlays", systemImage: "square.stack.3d.up" ) }
                 .tag( PreferencesTab.overlays )
+
+            PlateSolvingPreferencesView( apiKeyStore: self.apiKeyStore )
+                .frame( width: Self.standardWidth )
+                .fixedSize( horizontal: false, vertical: true )
+                .tabItem { Label( "Plate Solving", systemImage: "point.3.connected.trianglepath.dotted" ) }
+                .tag( PreferencesTab.plateSolving )
 
             WeightingPreferencesView( preferences: self.preferences )
                 .frame( width: Self.weightingWidth )

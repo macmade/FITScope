@@ -236,7 +236,7 @@ public final class AppModel: ObservableObject
     public var plateSolvePromptMessage: String
     {
         self.plateSolvePromptFile?.image?.plateSolve == nil
-            ? "This image hasn’t been plate-solved yet. Plate solve it to map its field — labelling the objects in view and showing the sky orientation."
+            ? "This image hasn’t been plate-solved yet. Plate-solve it to map its field — labelling the objects in view and showing the sky orientation."
             : "The plate solve didn’t provide what this overlay needs. You can run the plate solve again from the results window."
     }
 

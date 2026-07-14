@@ -109,6 +109,40 @@ struct PreferencesTests
         #expect( reloaded.confirmMoveToTrash == false )
     }
 
+    /// With nothing stored, the app checks for updates automatically — so a fresh
+    /// install keeps itself up to date without the user opting in.
+    @Test
+    @MainActor
+    func defaultsToAutomaticUpdateChecks()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        #expect( preferences.automaticallyCheckForUpdates == true )
+    }
+
+    /// Turning automatic update checks off is written to the store and read back
+    /// by a fresh instance — the round-trip that proves it survives across launches.
+    @Test
+    @MainActor
+    func persistsAutomaticUpdateCheckChangesAcrossInstances()
+    {
+        let ( defaults, suiteName ) = self.makeIsolatedDefaults()
+
+        defer { defaults.removePersistentDomain( forName: suiteName ) }
+
+        let preferences = Preferences( defaults: defaults )
+
+        preferences.automaticallyCheckForUpdates = false
+
+        let reloaded = Preferences( defaults: defaults )
+
+        #expect( reloaded.automaticallyCheckForUpdates == false )
+    }
+
     /// With nothing stored, the stars overlay labels each star with its HFR — the
     /// chosen default measurement.
     @Test

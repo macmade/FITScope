@@ -732,6 +732,9 @@ public enum AccessibilityIdentifier
         /// The "confirm before moving files to the Trash" toggle in the General tab.
         public static let confirmMoveToTrashToggle = "PreferencesView.confirmMoveToTrashToggle"
 
+        /// The "automatically check for updates" toggle in the General tab.
+        public static let automaticallyCheckForUpdatesToggle = "PreferencesView.automaticallyCheckForUpdatesToggle"
+
         /// The Auto-Stretch tab's content.
         public static let autoStretchTab = "PreferencesView.autoStretchTab"
 
@@ -753,10 +756,10 @@ public enum AccessibilityIdentifier
             "PreferencesView.autoStretchPreviewsToggle.\( format.rawValue )"
         }
 
-        /// The API Keys tab's content.
-        public static let apiKeysTab = "PreferencesView.apiKeysTab"
+        /// The Plate Solving tab's content.
+        public static let plateSolvingTab = "PreferencesView.plateSolvingTab"
 
-        /// The Astrometry.net API-key secure field in the API Keys tab.
+        /// The Astrometry.net API-key secure field in the Plate Solving tab.
         public static let astrometryNetKeyField = "PreferencesView.astrometryNetKeyField"
 
         /// The Information Panel tab's content.

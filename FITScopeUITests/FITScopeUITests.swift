@@ -1312,7 +1312,8 @@ final class FITScopeUITests: XCTestCase
     // MARK: - Preferences
 
     /// The Preferences window renders its tabs with no file open: the General
-    /// tab's toggle and the API Keys tab's two key fields are all reachable. It is
+    /// tab's toggle and the Plate Solving tab's Astrometry.net key field are both
+    /// reachable. It is
     /// driven the right way — by cancelling the launch Open panel rather than
     /// loading an image, since Preferences has nothing to do with a loaded file.
     @MainActor
@@ -1336,11 +1337,11 @@ final class FITScopeUITests: XCTestCase
 
         XCTAssertTrue( toggle.waitForExistence( timeout: 10 ), "The General tab's auto-hide toggle did not appear in Preferences." )
 
-        app.buttons[ "API Keys" ].click()
+        app.buttons[ "Plate Solving" ].click()
 
         let astrometry = UITestSupport.element( app, AccessibilityIdentifier.PreferencesView.astrometryNetKeyField )
 
-        XCTAssertTrue( astrometry.waitForExistence( timeout: 10 ), "The Astrometry.net key field did not appear on the API Keys tab." )
+        XCTAssertTrue( astrometry.waitForExistence( timeout: 10 ), "The Astrometry.net key field did not appear on the Plate Solving tab." )
 
         app.typeKey( "w", modifierFlags: .command )
     }

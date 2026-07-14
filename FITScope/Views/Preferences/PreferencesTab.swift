@@ -26,7 +26,7 @@
 ///
 /// Selecting a tab is driven by a shared binding (``AppModel/selectedPreferencesTab``),
 /// so a call site outside the window — such as the "no API key" alert pointing the
-/// user at the API&nbsp;Keys tab — can open Preferences to a specific tab.
+/// user at the Plate&nbsp;Solving tab — can open Preferences to a specific tab.
 public enum PreferencesTab: Hashable, CaseIterable
 {
     /// The General tab.
@@ -36,15 +36,16 @@ public enum PreferencesTab: Hashable, CaseIterable
     /// preferences.
     case autoStretch
 
-    /// The API Keys tab.
-    case apiKeys
-
     /// The Information Panel tab.
     case informationPanel
 
     /// The Overlays tab, for customising the canvas annotation overlays' colours
     /// and opacities.
     case overlays
+
+    /// The Plate Solving tab, for the plate-solving settings and the
+    /// Astrometry.net API key.
+    case plateSolving
 
     /// The Weighting tab.
     case weighting

@@ -85,6 +85,7 @@ public struct AutoStretchPreferencesView: View
             }
         }
         .formStyle( .grouped )
+        .scrollIndicators( .never )
         .accessibilityIdentifier( AccessibilityIdentifier.PreferencesView.autoStretchTab )
     }
 }
