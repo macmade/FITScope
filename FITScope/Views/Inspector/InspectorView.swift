@@ -118,7 +118,7 @@ public struct InspectorView: View
 
                     // From here down the sections follow the order the pipeline
                     // applies them (see ImageProcessor / PixelPipeline): debayer,
-                    // white balance, brightness/contrast, stretch, gamma, then
+                    // white balance, stretch, then brightness/contrast, gamma,
                     // levels & curves, saturation and invert.
                     //
                     // The debayer controls only apply to a colour-filter-array
@@ -153,13 +153,6 @@ public struct InspectorView: View
 
                     Divider()
 
-                    InspectorSectionView( "Brightness & Contrast", identifier: AccessibilityIdentifier.InspectorView.Section.brightnessContrast )
-                    {
-                        BrightnessContrastControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
-                    }
-
-                    Divider()
-
                     InspectorSectionView(
                         "Stretch",
                         identifier:      AccessibilityIdentifier.InspectorView.Section.stretch,
@@ -169,6 +162,13 @@ public struct InspectorView: View
                     )
                     {
                         StretchControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender, canAutoScreenTransfer: { self.image.renderer.canAutoScreenTransfer } )
+                    }
+
+                    Divider()
+
+                    InspectorSectionView( "Brightness & Contrast", identifier: AccessibilityIdentifier.InspectorView.Section.brightnessContrast )
+                    {
+                        BrightnessContrastControlView( adjustments: self.image.renderer.adjustments, reRender: self.reRender )
                     }
 
                     Divider()

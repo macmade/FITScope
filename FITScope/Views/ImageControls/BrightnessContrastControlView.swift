@@ -28,13 +28,18 @@ import SwiftUI
 /// and a contrast slider, both centred on their neutral value.
 public struct BrightnessContrastControlView: View
 {
-    /// The brightness slider bounds (neutral at `0`).
-    static let minimumBrightness = -1.0
-    static let maximumBrightness =  1.0
+    /// The brightness slider bounds (neutral at `0`). Kept deliberately gentle:
+    /// brightness/contrast run on the display-referred (post-stretch) image, where
+    /// the tones already span the display range, so a narrow offset is enough for
+    /// a controllable adjustment.
+    static let minimumBrightness = -0.5
+    static let maximumBrightness =  0.5
 
-    /// The contrast slider bounds (neutral at `1`, `0` flattens to mid-gray).
-    static let minimumContrast = 0.0
-    static let maximumContrast = 2.0
+    /// The contrast slider bounds (neutral at `1`). Kept deliberately gentle for
+    /// the same reason as the brightness bounds; the lower bound stays above `0`
+    /// so contrast eases the image toward mid-gray without fully flattening it.
+    static let minimumContrast = 0.25
+    static let maximumContrast = 1.75
 
     /// The shared adjustment values this control observes and writes to.
     @ObservedObject private var adjustments: ImageAdjustments
