@@ -52,7 +52,7 @@ public extension ImageMetadataProperty
     /// SwiftXISF exposes the *raw* FITS value string, so a string card keeps its
     /// enclosing single quotes (e.g. `'M 42'`, `'2026-01-01T22:47:49.936'`). Rather
     /// than re-implement FITS string parsing, the value is unquoted by SwiftFITS'
-    /// own card parser (see ``fitsValue(name:rawValue:)``), so it displays cleanly
+    /// own value parser (see ``fitsValue(name:rawValue:)``), so it displays cleanly
     /// and ``FITSMetadata`` parses it for the astrometry fields exactly as for a
     /// genuine FITS header.
     ///
@@ -73,18 +73,15 @@ public extension ImageMetadataProperty
     }
 
     /// Interprets an embedded XISF FITS keyword's *raw* value field by reusing
-    /// SwiftFITS' own card parser, so FITS string parsing (quote stripping, doubled
+    /// SwiftFITS' own value parser, so FITS string parsing (quote stripping, doubled
     /// `''` unescaping, the significant-space rule) is never re-implemented here.
     ///
-    /// SwiftFITS' value-field parser is not public, and its public entry
-    /// `FITSProperty(string:)` needs a full 80-character card, so a card is
-    /// reconstructed from the 8-character name and the raw value field (no comment —
-    /// the keyword's own comment is kept separately). The reconstruction is
-    /// best-effort: a value field that would overflow the 80-character card, is not
-    /// ASCII, or fails to parse falls back to the raw value unchanged (such
-    /// over-length fields are free text — `HISTORY`/`COMMENT`/long strings — that
-    /// never feed the astrometry accessors). Only a *string* card is taken from the
-    /// parser (its unquoted text); a numeric or logical field keeps its raw spelling
+    /// The raw field is parsed directly through ``FITSProperty/init(name:rawValue:comment:options:)``
+    /// — no 80-character card is reconstructed, so there is no length or truncation
+    /// limit and a non-ASCII string is interpreted rather than shown raw. A field
+    /// that still cannot be parsed (a malformed value, or a non-standard name) falls
+    /// back to the raw value unchanged. Only a *string* card is taken from the parser
+    /// (its unquoted text); a numeric or logical field keeps its raw spelling
     /// verbatim, so high-precision values are not rounded by display formatting.
     ///
     /// - Parameters:
@@ -99,13 +96,7 @@ public extension ImageMetadataProperty
             return ( "", "String" )
         }
 
-        let paddedName = name.padding( toLength: 8, withPad: " ", startingAt: 0 )
-        let card       = "\( paddedName )= \( rawValue )"
-
-        // Guard the length *before* padding: `padding(toLength:)` truncates an
-        // over-length card, which would silently misparse.
-        guard card.count <= 80, card.unicodeScalars.allSatisfy( \.isASCII ),
-              let property = try? FITSProperty( string: card.padding( toLength: 80, withPad: " ", startingAt: 0 ), options: .lenient )
+        guard let property = try? FITSProperty( name: name, rawValue: rawValue, options: .lenient )
         else
         {
             return ( rawValue, "String" )
