@@ -68,16 +68,17 @@ enum UITestSupport
     /// The identifier of the path field inside the "Go to Folder" sheet.
     private static let goToFolderField = "PathTextField"
 
-    /// The UI-test `Fixtures` directory, resolved relative to this source file so
-    /// the suite works regardless of the test bundle's on-disk layout. The
-    /// fixtures are checked into this repository (not borrowed from a submodule),
-    /// so their geometry is fixed and the tests cannot break under an upstream
-    /// change.
+    /// The UI-test `Fixtures` directory (`Test Files/Fixtures` at the repository
+    /// root), resolved relative to this source file so the suite works regardless
+    /// of the test bundle's on-disk layout. The fixtures are checked into this
+    /// repository (not borrowed from a submodule), so their geometry is fixed and
+    /// the tests cannot break under an upstream change.
     static var fixturesDirectory: URL
     {
         URL( fileURLWithPath: #filePath )
             .deletingLastPathComponent() // FITScopeUITests/
-            .appendingPathComponent( "Fixtures" )
+            .deletingLastPathComponent() // repo root
+            .appendingPathComponent( "Test Files/Fixtures" )
     }
 
     /// Resolves a fixture by its file name within the `Fixtures` directory.

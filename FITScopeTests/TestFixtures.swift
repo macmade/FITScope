@@ -26,21 +26,28 @@ import Foundation
 
 /// Locates the FITS fixtures checked into this repository.
 ///
-/// The fixtures live in `FITScopeUITests/Fixtures` — shared with the UI-test
-/// suite — and are resolved by path rather than bundled, so tests open real
-/// files exactly as the app does. They are deliberately part of this repository
-/// rather than borrowed from the SwiftFITS submodule's sample files, whose
-/// contents can change and silently break these tests.
+/// The fixtures live in `Test Files/Fixtures` — shared with the UI-test suite —
+/// and are resolved by path rather than bundled, so tests open real files exactly
+/// as the app does. They are deliberately part of this repository rather than
+/// borrowed from the SwiftFITS submodule's sample files, whose contents can change
+/// and silently break these tests.
 enum TestFixtures
 {
-    /// The `Fixtures` directory, resolved relative to this source file so the
-    /// suite works regardless of bundle layout or working directory.
-    static var directory: URL
+    /// The `Test Files` directory at the repository root, resolved relative to this
+    /// source file so the suite works regardless of bundle layout or working
+    /// directory.
+    static var testFilesDirectory: URL
     {
         URL( fileURLWithPath: #filePath )
             .deletingLastPathComponent() // FITScopeTests/
             .deletingLastPathComponent() // repo root
-            .appendingPathComponent( "FITScopeUITests/Fixtures" )
+            .appendingPathComponent( "Test Files" )
+    }
+
+    /// The `Fixtures` directory, holding the small synthetic test fixtures.
+    static var directory: URL
+    {
+        self.testFilesDirectory.appendingPathComponent( "Fixtures" )
     }
 
     /// Resolves a fixture by its file name within the `Fixtures` directory.
@@ -158,12 +165,15 @@ enum TestFixtures
         self.url( "PhotoExif.jpeg" )
     }
 
-    /// A real Canon camera RAW file (`.CR3`): a linear, undemosaiced colour-filter-array
+    /// A real Canon camera RAW file (`.cr3`): a linear, undemosaiced colour-filter-array
     /// sensor mosaic decoded through SwiftRAW (LibRAW), so tests can assert the RAW load,
     /// the debayered colour render, and the camera/exposure metadata end to end.
+    ///
+    /// It lives in the `Test Files` root alongside the other full-frame captures,
+    /// not in the `Fixtures` subdirectory of small synthetic images.
     static var cameraRAW: URL
     {
-        self.url( "0H8A2223.CR3" )
+        self.testFilesDirectory.appendingPathComponent( "C6-R7-M42-Light.cr3" )
     }
 
     /// A real single-image HEIC (`8 × 8`, RGB) carrying an EXIF capture date, so tests
