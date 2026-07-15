@@ -1,0 +1,145 @@
+<meta charset="utf-8">
+<title>Image Processing — Roadmap</title>
+<style>
+    :root {
+        --bg:        #0d1117;
+        --panel:     #161b22;
+        --border:    #2b3440;
+        --text:      #e6edf3;
+        --muted:     #9da7b3;
+        --accent:    #58a6ff;
+        --accent-2:  #7ee787;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin:           0;
+        padding:          2.5rem 1.25rem 4rem;
+        background:       var(--bg);
+        color:            var(--text);
+        font-family:      -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        line-height:      1.6;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+        max-width: 860px;
+        margin:    0 auto;
+    }
+
+    header.doc {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.5rem;
+        margin-bottom:  2rem;
+    }
+
+    h1 {
+        font-size:   2.25rem;
+        margin:      0 0 .35rem;
+        letter-spacing: -0.02em;
+    }
+
+    .meta {
+        color:       var(--muted);
+        font-size:   .9rem;
+    }
+
+    .overview {
+        color:       var(--muted);
+        font-size:   1.02rem;
+        margin:      0 0 2.5rem;
+    }
+
+    h2.section {
+        font-size:    1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color:        var(--accent-2);
+        margin:       0 0 1.25rem;
+    }
+
+    ol.roadmap {
+        list-style:  none;
+        counter-reset: pt;
+        margin:      0;
+        padding:     0;
+    }
+
+    li.point {
+        counter-increment: pt;
+        position:    relative;
+        background:  var(--panel);
+        border:      1px solid var(--border);
+        border-radius: 10px;
+        padding:     1.15rem 1.25rem 1.15rem 3.6rem;
+        margin-bottom: 1rem;
+    }
+
+    li.point::before {
+        content:     counter(pt);
+        position:    absolute;
+        left:        1.1rem;
+        top:         1.15rem;
+        width:       1.7rem;
+        height:      1.7rem;
+        display:     flex;
+        align-items: center;
+        justify-content: center;
+        background:  var(--bg);
+        border:      1px solid var(--accent);
+        color:       var(--accent);
+        border-radius: 50%;
+        font-size:   .85rem;
+        font-weight: 600;
+    }
+
+    li.point h3 {
+        margin:      0 0 .35rem;
+        font-size:   1.12rem;
+        color:       var(--text);
+    }
+
+    li.point p {
+        margin:      0;
+        color:       var(--muted);
+    }
+</style>
+
+<div class="wrap">
+    <header class="doc">
+        <h1>Image Processing</h1>
+        <div class="meta">Generated 2026-07-15</div>
+    </header>
+
+    <p class="overview">
+        Additional image-processing adjustments for FITScope: denoise, sharpen, and a
+        DBE/ABE-class background extraction with gradient correction. This work will touch the
+        <a href="https://github.com/macmade/SwiftPixel">SwiftPixel</a> submodule &mdash; which
+        lives within <a href="https://github.com/macmade/SwiftAstro">SwiftAstro</a> &mdash; and
+        possibly SwiftAstro itself; both are in scope to modify for this work.
+    </p>
+
+    <h2 class="section">Roadmap</h2>
+
+    <ol class="roadmap">
+        <li class="point">
+            <h3>Denoise</h3>
+            <p>Add a denoise image-processing adjustment.</p>
+        </li>
+        <li class="point">
+            <h3>Sharpen</h3>
+            <p>Add a sharpen image-processing adjustment.</p>
+        </li>
+        <li class="point">
+            <h3>Background extraction (DBE/ABE-class)</h3>
+            <p>Model the sky background with a low-order polynomial/spline over star-masked sample regions and subtract it, to flatten an uneven background &mdash; a DBE/ABE-class background extraction.</p>
+        </li>
+        <li class="point">
+            <h3>Gradient correction</h3>
+            <p>Remove large-scale gradients across the frame &mdash; such as those from light pollution, moonlight, or vignetting &mdash; to even out the illumination.</p>
+        </li>
+    </ol>
+</div>

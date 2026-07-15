@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Features</title>
+    <title>Batch Processing</title>
     <style>
         :root {
             --bg:        #0f1117;
@@ -129,36 +129,20 @@
 <body>
     <div class="container">
         <header>
-            <h1>New Features</h1>
-            <div class="meta">Generated &mdash; 2026-06-30 &middot; Updated &mdash; 2026-07-04</div>
+            <h1>Batch Processing</h1>
+            <div class="meta">Generated &mdash; 2026-06-30 &middot; Updated &mdash; 2026-07-15</div>
         </header>
 
         <p class="overview">
-            New features planned for FITScope, the macOS FITS image viewer.
-            These span additional image-processing adjustments, an offline
-            plate-solving path, and the integration of several standalone
-            astrophotography tools into FITScope.
+            Bringing batch-processing tools into FITScope, the macOS FITS image
+            viewer. These integrate several standalone apps for organizing,
+            converting, culling, and assembling images into batch workflows
+            within FITScope.
         </p>
 
         <h2>Roadmap</h2>
 
         <ol class="roadmap">
-            <li>
-                <h3>Denoise</h3>
-                <p>Add a denoise image-processing adjustment.</p>
-            </li>
-            <li>
-                <h3>Sharpen</h3>
-                <p>Add a sharpen image-processing adjustment.</p>
-            </li>
-            <li>
-                <h3>Local plate solving with GAIA data</h3>
-                <p>Add an offline plate-solving path backed by a GAIA-derived star catalog that can be downloaded from Preferences. When the catalog is installed, solve locally against it; when it is not, keep using nova.astrometry.net as today. If the local GAIA solve fails, fall back to nova as well.</p>
-            </li>
-            <li>
-                <h3>Include AstroTools</h3>
-                <p>Bring the astrophotography computation tools from the standalone <a href="https://github.com/macmade/AstroTools">AstroTools</a> app &mdash; HFR to arc seconds, exposure-time equivalence, magnification, and similar calculations &mdash; into FITScope as an extra tool/window.</p>
-            </li>
             <li>
                 <h3>Include GroupPictures</h3>
                 <p>Import the standalone <a href="https://github.com/macmade/GroupPictures">GroupPictures</a> app to organize pictures on the filesystem, grouping them by date, exposure, ISO, or other keywords, as a separate tool/window.</p>
@@ -174,10 +158,6 @@
             <li>
                 <h3>Include YouplaBoum</h3>
                 <p>Import the standalone <a href="https://github.com/macmade/YouplaBoum">YouplaBoum</a> app for quickly culling and rejecting pictures &mdash; similar to Blink in PixInsight &mdash; as a separate tool/window.</p>
-            </li>
-            <li>
-                <h3>Background / gradient extraction (DBE/ABE-class)</h3>
-                <p>Model the sky background with a low-order polynomial/spline over star-masked sample regions and subtract it, to remove gradients and uneven background &mdash; a DBE/ABE-class background extraction.</p>
             </li>
         </ol>
 
