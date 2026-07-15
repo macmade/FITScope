@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithms &mdash; Implementation Plan</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --bg-card:   #181b24;
+            --bg-card-2: #1d212c;
+            --border:    #2a2f3c;
+            --text:      #e6e9ef;
+            --text-dim:  #9aa3b2;
+            --accent:    #5aa9ff;
+            --accent-dim:#2d3b52;
+            --code-bg:   #11141b;
+
+            --status-notstarted-bg:   #2a2f3c;
+            --status-notstarted-text: #b7c0d0;
+            --status-inprogress-bg:   #4a3b12;
+            --status-inprogress-text: #ffd15a;
+            --status-completed-bg:    #143d24;
+            --status-completed-text:  #5ad67f;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px 96px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 2.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .meta strong { color: var(--text); font-weight: 600; }
+
+        .meta a { color: var(--accent); text-decoration: none; }
+        .meta a:hover { text-decoration: underline; }
+
+        h2.section {
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 44px 0 18px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .overview, .prose {
+            color: var(--text-dim);
+            font-size: 1.0rem;
+        }
+
+        .prose p { margin: 0 0 14px; }
+
+        .qa {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .qa li {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+        }
+        .qa .q { color: var(--text); font-weight: 600; margin: 0 0 4px; }
+        .qa .a { color: var(--text-dim); margin: 0; }
+        .qa .a::before { content: "\2192\00a0"; color: var(--accent); }
+
+        .phase-label {
+            display: inline-block;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            background: var(--accent-dim);
+            border-radius: 6px;
+            padding: 3px 10px;
+            margin: 34px 0 4px;
+        }
+
+        .milestone {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px 24px;
+            margin-bottom: 18px;
+        }
+
+        .milestone h3 {
+            margin: 0 0 6px;
+            font-size: 1.18rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .m-num {
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .capsule {
+            display: inline-block;
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 3px 12px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+        .capsule.notstarted { background: var(--status-notstarted-bg); color: var(--status-notstarted-text); }
+        .capsule.inprogress { background: var(--status-inprogress-bg); color: var(--status-inprogress-text); }
+        .capsule.completed  { background: var(--status-completed-bg);  color: var(--status-completed-text); }
+
+        .field-label {
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 16px 0 6px;
+            font-weight: 700;
+        }
+
+        .goal { color: var(--text-dim); margin: 4px 0 0; }
+
+        ul.tasks {
+            list-style: none;
+            margin: 6px 0 0;
+            padding: 0;
+        }
+        ul.tasks li {
+            position: relative;
+            padding: 3px 0 3px 28px;
+            color: var(--text);
+        }
+        ul.tasks li::before {
+            content: "\2610";
+            position: absolute;
+            left: 0;
+            top: 2px;
+            color: var(--text-dim);
+            font-size: 1.05rem;
+        }
+        ul.tasks li.done::before { content: "\2611"; color: var(--status-completed-text); }
+
+        .placeholder {
+            color: var(--text-dim);
+            font-style: italic;
+            margin: 4px 0 0;
+        }
+
+        .completed-date { color: var(--text-dim); font-size: 0.9rem; }
+
+        .note-block {
+            background: var(--bg-card-2);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: var(--text-dim);
+            margin: 6px 0 0;
+        }
+
+        code {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 1px 6px;
+            font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.86em;
+            color: var(--text);
+        }
+
+        .prose ul { color: var(--text-dim); }
+        .prose li { margin: 4px 0; }
+
+        footer {
+            margin-top: 56px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .legend { margin-top: 8px; }
+        .legend .capsule { margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Algorithms &mdash; Implementation Plan</h1>
+            <div class="meta">
+                <div><strong>Generated</strong> &mdash; 2026-07-15</div>
+                <div><strong>Source</strong> &mdash; <a href="algorithms.html">Docs/agent-plans/active/2026-07-04-algorithms/algorithms.html</a></div>
+                <div class="legend">
+                    <span class="capsule notstarted">Not started</span>
+                    <span class="capsule inprogress">In progress</span>
+                    <span class="capsule completed">Completed</span>
+                </div>
+            </div>
+        </header>
+
+        <h2 class="section">Overview</h2>
+        <div class="prose overview">
+            <p>
+                This plan audits and improves the image-processing and astronomy
+                algorithms behind FITScope, which live in two nested submodules:
+                <code>SwiftPixel</code> (pixel processors and core imaging primitives)
+                and <code>SwiftAstro</code> (star detection, signal-to-noise,
+                preprocessing, and ephemeris math). <code>SwiftPixel</code> is itself a
+                submodule of <code>SwiftAstro</code>
+                (<code>Submodules/SwiftAstro/Submodules/SwiftPixel</code>).
+            </p>
+            <p>
+                The approach is <strong>audit-first</strong>: we build a repeatable
+                benchmark and profiling harness, then produce a written correctness
+                audit of every algorithm before touching code. Confirmed issues are
+                triaged and appended to this plan as concrete fix milestones. Only then
+                do we tackle performance &mdash; profiling to identify the hot processors,
+                moving those to Metal kernels (SwiftPixel has none today), and optimizing
+                the remaining CPU processors with Accelerate and fewer allocations. Every
+                performance change is measured against the harness baseline, and every
+                behavioural change is guarded by the existing per-algorithm unit tests.
+            </p>
+        </div>
+
+        <h2 class="section">Questions &amp; answers</h2>
+        <ul class="qa">
+            <li>
+                <p class="q">How should the open-ended correctness audit (backlog item 1) be structured?</p>
+                <p class="a"><strong>Audit-first, then fix.</strong> Dedicated audit milestones produce a written findings report; confirmed issues become their own fix milestones appended to this plan, keeping review separable from changes.</p>
+            </li>
+            <li>
+                <p class="q">How should the plan decide which processors move to Metal (backlog item 2)?</p>
+                <p class="a"><strong>Profile-driven.</strong> An early milestone profiles the processors on representative FITS images and selects the hot ones from measured data, before any Metal kernel is written.</p>
+            </li>
+            <li>
+                <p class="q">Should the plan build a benchmark harness for the optimization work (items 2 and 3)?</p>
+                <p class="a"><strong>Yes &mdash; a dedicated harness.</strong> A repeatable benchmark harness with representative FITS images gives every optimization a measured baseline and a regression guard.</p>
+            </li>
+            <li>
+                <p class="q">What is in scope for the audit?</p>
+                <p class="a"><strong>Everything in both submodules.</strong> All of SwiftPixel (processors + core primitives) and all of SwiftAstro, including the Ephemeris positional-astronomy math.</p>
+            </li>
+        </ul>
+
+        <h2 class="section">Notes</h2>
+        <div class="prose">
+            <p><strong>Algorithm surface (as of 2026-07-15).</strong></p>
+            <ul>
+                <li><strong>SwiftPixel &mdash; Processors (~22):</strong> Bin, BrightnessContrast, ColorBalance, CorrectGamma, CosmeticCorrection, Curves, Debayer (+ Bilinear / Deinterleave / VNG), Hue, Invert, Levels, MonoToRGB, Normalize, Orient, Resample, Saturation, Scale, STFParameters, Stretch, WhiteBalance.</li>
+                <li><strong>SwiftPixel &mdash; Core primitives:</strong> Convolution, GaussianFit, GaussianKernel, Histogram, HistogramStatistics, PixelBuffer, PixelPipeline, PixelProcessor, PixelUtilities, BitsPerPixel.</li>
+                <li><strong>SwiftAstro:</strong> StarDetection (MatchedFilterStarDetector, GaussianFit+StarMoments, StarMoments, StarField, Star, StarDetecting), SignalToNoise (SignalToNoise, SkyBackground), Preprocessing (BayerGrayscaleConverter, FITSImageDecoder), Ephemeris (11 files: planet/lunar/solar positions, twilight, moon phase, coordinate systems).</li>
+            </ul>
+            <p><strong>Current state.</strong></p>
+            <ul>
+                <li>SwiftPixel uses <strong>no Metal</strong> today &mdash; all processors are pure CPU, ~15 files already lean on Accelerate (<code>vDSP</code> / <code>vImage</code>). Adding a GPU path is a new architectural capability, not a refactor.</li>
+                <li>Both submodules have strong unit-test coverage: roughly one test file per processor and per algorithm. These tests are the correctness safety-net for every change; a few already use XCTest <code>measure()</code> blocks.</li>
+                <li>There is no dedicated, reusable benchmark harness yet &mdash; Milestone&nbsp;1 creates one.</li>
+            </ul>
+            <p><strong>Working conventions.</strong></p>
+            <ul>
+                <li>All work happens inside the submodule repositories (<code>SwiftAstro</code> and the nested <code>SwiftPixel</code>), not in the FITScope app target. Per the working agreement, <strong>each submodule change is approved case by case</strong>, and commits/pushes/submodule-pointer bumps are left to the maintainer &mdash; this plan never performs them on its own.</li>
+                <li>Each submodule has both an <code>.xcodeproj</code> and a <code>Package.swift</code>; keep them in sync and prefer building/testing through <code>xcodebuild</code>.</li>
+                <li>Never weaken, skip, or delete a unit test to make a change pass. When a fix legitimately changes expected output, update the test deliberately and record why in the milestone's implementation notes.</li>
+            </ul>
+        </div>
+
+        <h2 class="section">Milestones</h2>
+
+        <!-- ============ PHASE 1 ============ -->
+        <div class="phase-label">Phase 1 &middot; Groundwork &amp; audit</div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M1.</span> Benchmark &amp; profiling harness <span class="capsule completed">Completed</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">Create a repeatable, reusable harness that measures per-processor and per-algorithm runtime on representative FITS images, so every later optimization has a measured baseline and a regression guard, and so processor "hotness" can be ranked from data rather than intuition.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li class="done">Assemble a small, representative set of input frames (mono + Bayer, a few bit depths and sizes) drawn from the existing test fixtures; document each frame's characteristics.</li>
+                <li class="done">Build a benchmark entry point (XCTest performance target and/or a small executable) that runs each processor / core primitive over the frame set and reports wall-clock time and, where relevant, peak allocations.</li>
+                <li class="done">Capture a baseline result set and store it in the repo (or under <code>Docs</code>) so before/after comparisons are reproducible.</li>
+                <li class="done">Document how to run the harness and interpret its output.</li>
+                <li class="done">Confirm the harness builds and runs green via <code>xcodebuild</code> in both submodules.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span> &nbsp; <span class="completed-date">Completed: 2026-07-15</span></p>
+            <div class="field-label">Implementation notes</div>
+            <div class="note-block">
+                <p><strong>Approach.</strong> Per the interactive design decisions, the harness is an <strong>env-gated Swift Testing benchmark</strong> (both submodules use Swift Testing, not XCTest) living in each submodule's <em>test</em> target under <code>Benchmarks/</code>. It runs only when <code>RUN_BENCHMARKS</code> is set, so normal runs skip it entirely; no new build targets were added, so <code>Package.swift</code> stays in sync automatically and the <code>.xcodeproj</code> was kept in sync by adding the files programmatically with the <code>xcodeproj</code> Ruby gem (idempotent script). Built with <strong>TDD</strong>: the pure harness logic has fast unit tests that run in the normal suite; only the heavy capture is gated. <strong>No production source was changed</strong> &mdash; everything is additive under <code>Benchmarks/</code>.</p>
+                <p><strong>Metrics.</strong> Min/median/max wall-clock (monotonic <code>DispatchTime</code>) over N iterations, plus a best-effort <strong>peak allocation</strong>. The allocation meter samples <code>malloc_zone_statistics</code>'s <code>size_in_use</code> from a background thread (an <code>NSLock</code>-guarded <code>@unchecked Sendable</code> tracker); an earlier <code>phys_footprint</code> approach was discarded because it read ~0 after allocator warmup. Every measured result flows through a <code>withExtendedLifetime</code> guard so an optimized build can't elide it as dead code.</p>
+                <p><strong>Frames.</strong> SwiftPixel ships no fixtures, so it synthesizes deterministic mono / RGB / raw-mono / RGGB-mosaic frames (gradient + noise, never constant); a <code>tiny()</code> variant drives the fast smoke test. SwiftAstro reuses the committed FITS fixtures via <code>FITSTestImage</code> (an ESA&nbsp;M35 centre crop for detection/SNR, the real RGGB light frame for Bayer/decode) and a small synthetic set for its smoke test.</p>
+                <p><strong>Baseline &amp; layout.</strong> Each run writes a machine-diffable JSON plus a deterministic Markdown table to that submodule's own <code>Docs/Benchmarks/</code> (self-contained; <code>FITSCOPE_BENCH_OUT</code> can redirect it). The generic <code>Core/</code> timing/reporting code is <strong>intentionally duplicated</strong> across the two independent submodule repos (test-target code can't be shared without adding a library target). Each submodule's main <code>README.md</code> gains a &ldquo;Benchmarks&rdquo; section documenting how to run and interpret the output.</p>
+                <p><strong>Capture caveat.</strong> <code>xcodebuild test</code> does not forward the shell environment to the test host, so the gated capture is driven via SwiftPM: <code>RUN_BENCHMARKS=1 swift test -c release --filter Test_&lt;Module&gt;Benchmarks</code>.</p>
+                <p><strong>Verification.</strong> Both submodules build and run green via <code>xcodebuild</code> with the benchmark correctly skipped; full normal suites pass (SwiftPixel 419 tests, SwiftAstro 128 tests) with no regressions. Baselines captured in Release: <strong>SwiftPixel 29 measurements</strong> (star of the show for later phases: <code>PixelUtilities.median</code>/<code>medianAbsoluteDeviation</code> ~245&nbsp;ms, <code>CosmeticCorrection</code> ~205&nbsp;ms, <code>MonoToRGB</code>/<code>Orient</code> ~185&nbsp;ms on 2048&sup2;), <strong>SwiftAstro 11 measurements</strong> (star detection dominates at ~1.7&nbsp;s on a 1024&sup2; crop; ephemeris is nanoseconds).</p>
+                <p><strong>Automated review loop.</strong> 2 iterations with fresh-context reviewers. Round&nbsp;1 found one Medium (misleading SwiftPixel capture docs) and one Low (normal-suite tests building full-size frames), both fixed; round&nbsp;2 verified the fixes and found no Critical/High/Medium issues &mdash; converged.</p>
+                <p><strong>Post-review change.</strong> On maintainer feedback, the SwiftAstro benchmarks no longer identify as "SwiftPixel": the duplicated <code>Core</code> doc examples and <code>CoreTests</code> fixture strings now use "SwiftAstro", and the SwiftAstro <code>README</code> was made self-contained (no longer deferring to the SwiftPixel README). Only the genuine <code>import SwiftPixel</code> and the <code>SwiftPixel/PixelBuffer</code> type reference remain, since SwiftAstro depends on that module.</p>
+                <p><strong>Post-review change (2).</strong> On further feedback, the separate <code>Benchmarks/README.md</code> in each submodule was removed and its content folded into that submodule's main <code>README.md</code> as a &ldquo;Benchmarks&rdquo; section; the gated entry-point doc comments and the generated-report footer now point there instead. Both <code>.xcodeproj</code> files were re-synced accordingly, and both submodules still build and test green via <code>xcodebuild</code>.</p>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="note-block">
+                <p><strong>Round 1</strong> (fresh-context reviewer, with build + runtime verification):</p>
+                <ul>
+                    <li><strong>Medium &mdash; Misleading SwiftPixel capture docs.</strong> The SwiftPixel README and entry-point doc-comment led with an <code>xcodebuild</code> capture command that silently no-ops (env not forwarded), contradicting the correct SwiftAstro docs. <strong>Fixed</strong> &mdash; both now document the SwiftPM capture and the caveat.</li>
+                    <li><strong>Low &mdash; Full-size frames rebuilt in normal-suite tests.</strong> Three <code>BenchmarkFramesTests</code> built the full 2048&sup2; representative set for pure descriptor/name assertions. <strong>Fixed</strong> &mdash; the two size-independent checks now use the <code>tiny()</code> set; only the layout-comparison test still builds <code>representative()</code>, which it must.</li>
+                    <li><strong>Low/Info &mdash; Duplicated Core tests hard-code "SwiftPixel" strings.</strong> SwiftAstro's verbatim-copied Core tests use "SwiftPixel" fixture data. <strong>Deferred</strong> &mdash; harmless; localizing would break the byte-identical duplication the review verified as a positive.</li>
+                    <li><strong>Info &mdash; <code>malloc_zone_statistics(nil,&hellip;)</code> "all zones" semantics.</strong> Documented as process-wide; empirically sound (peak figures match expected buffer sizes). <strong>Deferred</strong> &mdash; no action.</li>
+                </ul>
+                <p><strong>Round 2</strong> (fresh-context reviewer): verified the Medium and Low fixes are correct and complete; consistency of SwiftPixel/SwiftAstro docs confirmed; <strong>no new Critical/High/Medium issues</strong>. Loop converged.</p>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="note-block">
+                <p><strong>Maintainer:</strong> SwiftAstro benchmarks shouldn't say "SwiftPixel".</p>
+                <p><strong>Maintainer:</strong> There should be no additional README in either submodule's <code>Benchmarks</code> folder &mdash; this content belongs in the main README files.</p>
+            </div>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M2.</span> Correctness audit &mdash; SwiftPixel <span class="capsule completed">Completed</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">Review every SwiftPixel processor and core primitive for correctness, produce a written findings report, and flag anything that is wrong, questionable, or worth replacing with a better algorithm. No production code changes in this milestone &mdash; findings only.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li class="done">Audit the core primitives: Convolution, GaussianFit, GaussianKernel, Histogram, HistogramStatistics, PixelUtilities (median, interleave, MTF, percentile bounds, raw-pixel reads), PixelBuffer, PixelPipeline.</li>
+                <li class="done">Audit the processors, grouping related ones: Debayer family (Bilinear / Deinterleave / VNG), tone/levels (Levels, Curves, Stretch, STFParameters, BrightnessContrast, CorrectGamma, Normalize), colour (ColorBalance, WhiteBalance, Hue, Saturation, MonoToRGB), geometry (Bin, Scale, Resample, Orient), and CosmeticCorrection / Invert.</li>
+                <li class="done">For each: verify numerical correctness against the algorithm's definition, check edge cases (bit depth, channel count, boundaries, clipping, NaN/Inf), and note better algorithms or implementations where they exist.</li>
+                <li class="done">Cross-check each finding against existing unit tests &mdash; does a test already cover it, is a test missing, or does a test encode the wrong expectation?</li>
+                <li class="done">Record findings with severity (bug / correctness-risk / improvement / cosmetic) in the report captured in M4.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span> &nbsp; <span class="completed-date">Completed: 2026-07-15</span></p>
+            <div class="field-label">Implementation notes</div>
+            <div class="note-block">
+                <p><strong>Deliverable.</strong> A findings-only audit &mdash; <strong>no production code was changed</strong>. The findings live in a dedicated report, <a href="swiftpixel-audit.html">swiftpixel-audit.html</a>, in this plan folder (styled like the plan, per the maintainer's choice), which M4 will consolidate with the SwiftAstro audit (M3). Scope: all 33 SwiftPixel source files (11 core primitives + 22 processors) and their 36 test files, at <code>HEAD</code> <code>13fa1ac</code>.</p>
+                <p><strong>Method.</strong> The 33 files were audited by <strong>8 independent, fresh-context sub-agents</strong>, one per coherent file-group, each with a findings-only mandate and told to verify formulas and Accelerate/vDSP semantics against authoritative sources (Apple SDK headers &amp; docs, algorithm references) rather than memory, consult git history for rationale, and cross-check every finding against the existing tests. Every finding was then <strong>reviewed by the lead</strong>, with the load-bearing items <strong>independently re-verified against the source</strong>: BUG-1 was reproduced with a throwaway Accelerate program; the seven GaussianFit analytic-Jacobian partials were hand-verified; and the <code>.rgbg</code> tile geometry, the STF raw-MAD usage, the <code>GaussianKernel</code> non-finite-&sigma; trap, the guard-order pattern, the mis-wired <code>MonoToRGB</code> test, and the small-total histogram statistics were each confirmed by reading the cited code.</p>
+                <p><strong>Result.</strong> <strong>1 bug, 17 correctness-risks, 12 improvements, 8 cosmetics.</strong> The headline is reassuring &mdash; the mathematically heavy routines are correct (2D convolution, the Levenberg&ndash;Marquardt Gaussian fit, tone/levels/stretch, the four <em>standard</em> Bayer demosaics, and the colour/geometry/cosmetic stages). The defects cluster into a few themes: one true output-corruption bug (<strong>BUG-1</strong> &mdash; <code>Normalize</code> corrupts NaN/Inf input and flags it normalized, realistic for FITS float frames); a recurring <strong>NaN-handling gap</strong> (also <code>median</code>/<code>percentileBounds</code> and <code>CosmeticCorrection</code>); a systemic <strong>guard-order</strong> mistake in <code>MonoToRGB</code> and <code>Debayer</code> that hides the accurate error; the non-standard <strong><code>.rgbg</code></strong> Bayer pattern that demosaics incorrectly; the <strong>STF shadow clip</strong> using raw MAD where its cited PixInsight constant assumes normalized MAD; and unenforced <strong>public-API preconditions</strong> (one a hard crash on non-finite &sigma;). Several items are as much test fixes as code fixes (a negative-path test that exercises the wrong processor entirely; the new rotated/elliptical Jacobian left unguarded).</p>
+                <p><strong>Automated review loop.</strong> 2 rounds with fresh-context reviewers, converged. Round&nbsp;1 (thorough &mdash; the reviewer independently re-derived the GaussianFit Jacobian and empirically reproduced BUG-1) found <strong>no false positives</strong> and confirmed every priority finding; it flagged one Medium (an internal count typo), one Low (a missed finding), and one Info (a test-file miscount), all fixed. Round&nbsp;2 verified the fixes and the report's internal consistency and reported <strong>no Critical/High/Medium</strong> issues &mdash; converged.</p>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="note-block">
+                <p><strong>Round 1</strong> (fresh-context reviewer; independently re-derived the GaussianFit Jacobian, empirically reproduced BUG-1, and spot-checked every priority finding against the source): <strong>no false positives</strong> &mdash; all findings confirmed accurate and well-evidenced. Report defects found and addressed:</p>
+                <ul>
+                    <li><strong>Medium &mdash; Improvement count inconsistent.</strong> The overview counted 18 improvements but only IMP-1&hellip;IMP-12 exist. <strong>Fixed</strong> &mdash; corrected to 12.</li>
+                    <li><strong>Low &mdash; Missed finding.</strong> <code>GaussianFit</code>'s docstrings still describe a stale &ldquo;finite-difference Jacobian,&rdquo; but the code has used the analytic Jacobian since commit <code>131d928</code>. <strong>Fixed</strong> &mdash; added to the report as COS-8 (cosmetic count &rarr; 8).</li>
+                    <li><strong>Info &mdash; Test-file miscount.</strong> The scope said 35 test files; the actual count is 36. <strong>Fixed</strong>.</li>
+                </ul>
+                <p><strong>Round 2</strong> (fresh-context convergence check): verified the three fixes, confirmed the counts now match the numbered IDs, re-verified COS-8's claim against <code>GaussianFit.swift</code>, and checked internal consistency (per-file table, the &ldquo;For M4&rdquo; note) &mdash; <strong>no Critical/High/Medium issues; converged.</strong> One <strong>Deferred</strong> Info note: the per-file table's grouped &ldquo;Debayer.swift&nbsp;(+3)&rdquo; row also breaks <code>Debayer+Deinterleave</code> out into its own row (a defensible presentation; left as-is, and no file is left uncovered).</p>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="note-block">
+                <p><strong>Maintainer:</strong> &ldquo;Looks good&rdquo; &mdash; reviewed and approved the SwiftPixel audit report and its findings.</p>
+            </div>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M3.</span> Correctness audit &mdash; SwiftAstro <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">Review every SwiftAstro algorithm &mdash; star detection, signal-to-noise, preprocessing, and ephemeris &mdash; for correctness, and produce a written findings report on the same basis as M2.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Audit StarDetection: MatchedFilterStarDetector (+ BrightStars), GaussianFit+StarMoments, StarMoments, StarField, Star, StarDetecting &mdash; verify detection math, centroiding, moment/PSF fitting, and thresholds against real-frame validation tests.</li>
+                <li>Audit SignalToNoise: SignalToNoise and SkyBackground &mdash; verify the SNR and background-estimation formulas and their statistical assumptions.</li>
+                <li>Audit Preprocessing: BayerGrayscaleConverter and FITSImageDecoder &mdash; verify Bayer handling and decode correctness against SwiftPixel's debayering.</li>
+                <li>Audit Ephemeris (11 files): planet/lunar/solar position models, twilight events, moon phase, and coordinate conversions &mdash; sanity-check against known reference values and documented precision.</li>
+                <li>Record findings with severity into the M4 report; note overlaps with SwiftPixel primitives (e.g. shared Gaussian-fit code) to avoid duplicated fixes.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M4.</span> Triage findings &amp; derive fix milestones <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">Consolidate the M2 and M3 findings into a single prioritized report, then translate the confirmed, actionable ones into concrete fix milestones appended to Phase&nbsp;2 of this plan.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Merge M2 + M3 findings into one report, de-duplicating shared issues.</li>
+                <li>Confirm each finding is real (reproduce it, ideally with a failing test) before promoting it to a fix.</li>
+                <li>Rank by severity and effort; group related fixes so each becomes an individually reviewable, committable milestone.</li>
+                <li>Append the derived fix milestones to Phase&nbsp;2 below, each with its own goal, tasks, and status fields.</li>
+                <li>Review the prioritized report with the maintainer before starting any fixes.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <!-- ============ PHASE 2 ============ -->
+        <div class="phase-label">Phase 2 &middot; Correctness fixes (derived from M4)</div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5+.</span> Correctness fixes <span class="capsule notstarted">Not started</span></h3>
+            <div class="note-block">
+                This phase is intentionally empty until the audit completes. Milestone&nbsp;4
+                appends one fix milestone per confirmed issue (or per tightly-related group),
+                using the template below. Each fix is test-guarded and independently
+                reviewable/committable.
+            </div>
+            <div class="field-label">Per-fix template</div>
+            <ul class="tasks">
+                <li><strong>Goal</strong> &mdash; the defect being corrected and the expected behaviour after the fix.</li>
+                <li><strong>Tasks</strong> &mdash; add/adjust a failing test that reproduces the issue; implement the fix; keep the Xcode project and Package.swift in sync; run the full submodule test suite green; re-run the M1 harness to confirm no performance regression.</li>
+                <li><strong>Status / Completed / Implementation notes / Automated review / Review comments</strong> &mdash; standard per-milestone fields.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; fix milestones appended here by M4 &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <!-- ============ PHASE 3 ============ -->
+        <div class="phase-label">Phase 3 &middot; Metal acceleration of hot processors</div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M6.</span> Profile &amp; rank the hot processors <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">Use the M1 harness to profile the SwiftPixel processors on representative frames and produce a ranked, evidence-backed list of the performance-critical ones &mdash; the candidates for Metal &mdash; distinguishing GPU-friendly (per-pixel, parallel) work from work that stays on the CPU.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Run the harness across all processors; rank by runtime on realistic image sizes.</li>
+                <li>For each hot processor, classify its workload (embarrassingly parallel per-pixel, neighbourhood/convolution, reduction, or inherently sequential) to judge Metal suitability.</li>
+                <li>Estimate expected speedup and note data-transfer overhead (CPU&harr;GPU copies) that could erode gains.</li>
+                <li>Produce the target list for M7 and the "stays on CPU" list feeding Phase&nbsp;4; review it with the maintainer before building Metal infrastructure.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M7.</span> Metal infrastructure in SwiftPixel <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">Introduce the GPU foundation SwiftPixel currently lacks: device/command-queue/library management, a shader-loading path packaged with the module, buffer&harr;texture bridging with <code>PixelBuffer</code>, and a clean way for a processor to offer a Metal path with a CPU fallback &mdash; without changing any processor's observable behaviour yet.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Add Metal device/queue/library plumbing and decide how <code>.metal</code> shaders are compiled and bundled for both the Xcode project and SwiftPM targets.</li>
+                <li>Define the GPU/CPU dispatch seam in <code>PixelProcessor</code> / <code>PixelPipeline</code> so a processor can run on Metal when available and fall back to CPU otherwise (headless/no-GPU environments included).</li>
+                <li>Add <code>PixelBuffer</code>&harr;<code>MTLBuffer</code>/<code>MTLTexture</code> conversion helpers that respect bit depth and channel layout.</li>
+                <li>Prove the seam end-to-end with one trivial kernel (e.g. Invert), asserting the GPU and CPU paths produce identical output within tolerance.</li>
+                <li>Keep the Xcode project and Package.swift in sync; ensure CI/tests still pass with and without a usable GPU.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M8+.</span> Port hot processors to Metal <span class="capsule notstarted">Not started</span></h3>
+            <div class="note-block">
+                One milestone per hot processor (or per tightly-related group) identified in
+                M6, built on the M7 infrastructure. Ordered by the profiled payoff. The
+                concrete list is filled in after M6.
+            </div>
+            <div class="field-label">Per-processor template</div>
+            <ul class="tasks">
+                <li><strong>Goal</strong> &mdash; move processor X to a Metal kernel while preserving its output.</li>
+                <li><strong>Tasks</strong> &mdash; write the <code>.metal</code> kernel; wire it through the M7 dispatch seam with CPU fallback; assert GPU vs CPU parity within tolerance using existing unit tests; benchmark against the M1 baseline and record the speedup; keep Xcode project and Package.swift in sync.</li>
+                <li><strong>Status / Completed / Implementation notes / Automated review / Review comments</strong> &mdash; standard per-milestone fields.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; per-processor milestones appended here after M6 &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <!-- ============ PHASE 4 ============ -->
+        <div class="phase-label">Phase 4 &middot; CPU optimization of the remainder</div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M9.</span> Optimize the remaining CPU processors <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">For processors and primitives that stay on the CPU (per M6), verify their performance and optimize where the harness shows it matters: lean on Accelerate (<code>vDSP</code>/<code>vImage</code>) wherever applicable, and cut allocations, intermediate buffers, and copies &mdash; all without changing observable output.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>From the M6 "stays on CPU" list, rank the remaining processors by measured cost.</li>
+                <li>Replace hand-rolled loops with Accelerate primitives where a correct equivalent exists; measure each change against the M1 baseline.</li>
+                <li>Reduce allocations and copies: reuse buffers, process in place where safe, avoid redundant format conversions.</li>
+                <li>Guard every change with the existing unit tests; record before/after numbers in the implementation notes.</li>
+                <li>Split into several committable milestones if the volume of work warrants it.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <!-- ============ PHASE 5 ============ -->
+        <div class="phase-label">Phase 5 &middot; Validation &amp; integration</div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M10.</span> Full validation &amp; FITScope integration <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">Confirm the combined correctness and performance work is sound end to end, then integrate the updated submodules back into FITScope so the app benefits from the changes.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Run the full SwiftPixel and SwiftAstro test suites green via <code>xcodebuild</code>.</li>
+                <li>Re-run the M1 harness end to end and compile a before/after performance summary across all changed processors.</li>
+                <li>Sanity-check the pipeline on real frames in FITScope (visual diff of debayered/stretched output vs. the pre-change baseline).</li>
+                <li>Prepare the submodule-pointer bumps in FITScope for the maintainer to review and commit (this plan does not commit or push).</li>
+                <li>Note any remaining findings deferred as future work.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <footer>
+            FITScope &mdash; FITS Image Viewer for macOS. &nbsp;&middot;&nbsp;
+            Living document: milestones M2&ndash;M10 update their Status, Implementation
+            notes, Automated review, and Review comments in place as work proceeds, and
+            Phases&nbsp;2 and&nbsp;3 gain concrete milestones after the audit (M4) and
+            profiling (M6).
+        </footer>
+    </div>
+</body>
+</html>

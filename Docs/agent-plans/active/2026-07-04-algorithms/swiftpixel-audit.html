@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftPixel &mdash; Correctness Audit</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --bg-card:   #181b24;
+            --bg-card-2: #1d212c;
+            --border:    #2a2f3c;
+            --text:      #e6e9ef;
+            --text-dim:  #9aa3b2;
+            --accent:    #5aa9ff;
+            --accent-dim:#2d3b52;
+            --code-bg:   #11141b;
+
+            --sev-bug-bg:    #4a1414;
+            --sev-bug-text:  #ff7b7b;
+            --sev-risk-bg:   #4a3b12;
+            --sev-risk-text: #ffd15a;
+            --sev-imp-bg:    #123a4a;
+            --sev-imp-text:  #5ac8ff;
+            --sev-cos-bg:    #2a2f3c;
+            --sev-cos-text:  #b7c0d0;
+            --clean-text:    #5ad67f;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 940px;
+            margin: 0 auto;
+            padding: 48px 24px 96px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 2.2rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta { color: var(--text-dim); font-size: 0.9rem; }
+        .meta strong { color: var(--text); font-weight: 600; }
+        .meta a { color: var(--accent); text-decoration: none; }
+        .meta a:hover { text-decoration: underline; }
+
+        h2.section {
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 44px 0 18px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .prose { color: var(--text-dim); font-size: 1.0rem; }
+        .prose p { margin: 0 0 14px; }
+        .prose ul { color: var(--text-dim); }
+        .prose li { margin: 6px 0; }
+        .prose strong { color: var(--text); }
+
+        .legend { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .capsule {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 3px 12px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+        .capsule.bug  { background: var(--sev-bug-bg);  color: var(--sev-bug-text);  }
+        .capsule.risk { background: var(--sev-risk-bg); color: var(--sev-risk-text); }
+        .capsule.imp  { background: var(--sev-imp-bg);  color: var(--sev-imp-text);  }
+        .capsule.cos  { background: var(--sev-cos-bg);  color: var(--sev-cos-text);  }
+
+        .counts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 8px 0 0;
+        }
+        .count-card {
+            flex: 1 1 150px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        .count-card .n { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+        .count-card .l { color: var(--text-dim); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 6px; }
+
+        .finding {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 22px;
+            margin-bottom: 16px;
+        }
+        .finding h3 {
+            margin: 0 0 10px;
+            font-size: 1.1rem;
+            color: var(--text);
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .finding h3 .fid { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 0.9rem; }
+        .finding .field { margin: 10px 0 0; }
+        .finding .field .label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            font-weight: 700;
+            margin-right: 8px;
+        }
+        .finding p { margin: 6px 0 0; }
+        .loc { color: var(--text-dim); font-size: 0.9rem; }
+
+        code {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 1px 6px;
+            font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.84em;
+            color: var(--text);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 0.92rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        th { color: var(--text-dim); text-transform: uppercase; font-size: 0.74rem; letter-spacing: 0.06em; }
+        td.clean { color: var(--clean-text); font-weight: 600; }
+        .table-wrap { overflow-x: auto; }
+
+        .note-block {
+            background: var(--bg-card-2);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: var(--text-dim);
+            margin: 12px 0 0;
+        }
+
+        footer {
+            margin-top: 56px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SwiftPixel &mdash; Correctness Audit</h1>
+            <div class="meta">
+                <div><strong>Milestone</strong> &mdash; M2 (Correctness audit &mdash; SwiftPixel), from <a href="algorithms-plan.html">algorithms-plan.html</a></div>
+                <div><strong>Generated</strong> &mdash; 2026-07-15</div>
+                <div><strong>Scope</strong> &mdash; all 33 SwiftPixel source files (11 core primitives + 22 processors) and their 36 test files, at <code>Submodules/SwiftAstro/Submodules/SwiftPixel</code> (<code>HEAD</code> <code>13fa1ac</code>)</div>
+                <div><strong>Nature</strong> &mdash; findings only; no production code was changed in this milestone.</div>
+                <div class="legend">
+                    <span class="capsule bug">Bug</span>
+                    <span class="capsule risk">Correctness-risk</span>
+                    <span class="capsule imp">Improvement</span>
+                    <span class="capsule cos">Cosmetic</span>
+                </div>
+            </div>
+        </header>
+
+        <h2 class="section">Overview</h2>
+        <div class="prose">
+            <p>
+                This report audits every SwiftPixel processor and core primitive for
+                numerical correctness, edge-case handling, and test coverage. The
+                <strong>headline is reassuring</strong>: the mathematically heavy routines are
+                correct. The 2D convolution pad/convolve/crop pipeline, the Gaussian
+                kernel, the Levenberg&ndash;Marquardt Gaussian fit (all seven analytic
+                Jacobian partials hand-verified), the tone/levels/stretch vector paths,
+                the four <em>standard</em> Bayer demosaics (bilinear and VNG), and the
+                colour, geometry and cosmetic-correction stages all produce correct
+                output and are, for the most part, well tested.
+            </p>
+            <p>
+                The defects that exist cluster into a small number of themes:
+                <strong>one true output-corruption bug</strong> (non-finite input to
+                <code>Normalize</code>), a recurring <strong>NaN-handling gap</strong> across
+                several statistics routines, a systemic <strong>guard-order</strong> mistake
+                that hides the accurate error and leaves a guard effectively dead, a
+                <strong>non-standard Bayer pattern</strong> that demosaics incorrectly, a
+                <strong>Screen-Transfer constant</strong> that deviates from the algorithm it
+                cites, and a set of unenforced <strong>public-API preconditions</strong> (one a
+                hard crash). The remainder are test-coverage gaps and cosmetic notes.
+            </p>
+            <div class="counts">
+                <div class="count-card"><div class="n" style="color:var(--sev-bug-text)">1</div><div class="l">Bug</div></div>
+                <div class="count-card"><div class="n" style="color:var(--sev-risk-text)">17</div><div class="l">Correctness-risk</div></div>
+                <div class="count-card"><div class="n" style="color:var(--sev-imp-text)">12</div><div class="l">Improvement</div></div>
+                <div class="count-card"><div class="n" style="color:var(--sev-cos-text)">8</div><div class="l">Cosmetic</div></div>
+            </div>
+        </div>
+
+        <h2 class="section">Method &amp; verification</h2>
+        <div class="prose">
+            <p>
+                The 33 files were audited by eight independent, fresh-context reviewers,
+                one per coherent file-group, each with a findings-only mandate and
+                instructed to verify formulas and Accelerate/vDSP semantics against
+                authoritative sources (Apple SDK headers &amp; docs, and algorithm
+                references) rather than from memory, to consult git history for
+                rationale, and to cross-check every finding against the existing tests.
+            </p>
+            <p>
+                Every finding below was then <strong>reviewed by the lead</strong>, and the
+                load-bearing items were <strong>independently re-verified against the
+                source</strong>. In particular: the <code>Normalize</code> NaN/Inf corruption
+                (BUG-1) was reproduced with a throwaway Accelerate program; the
+                <code>.rgbg</code> tile geometry, the STF raw-MAD usage, the
+                <code>GaussianKernel</code> non-finite-&sigma; trap, the guard-order pattern,
+                the mis-wired <code>MonoToRGB</code> test, and the small-total histogram
+                statistics were each confirmed by reading the cited code; the
+                <code>vDSP_mmovD</code>, <code>vDSP_vdiv</code> operand-swap, and
+                <code>vvpow</code> semantics were confirmed against the Xcode SDK headers by
+                the auditors. Confidence levels are carried on each finding.
+            </p>
+        </div>
+
+        <h2 class="section">Cross-cutting themes</h2>
+        <div class="prose">
+            <ul>
+                <li><strong>Non-finite (NaN/Inf) samples are not sanitized.</strong> FITS
+                    <code>float32</code>/<code>float64</code> frames legitimately carry NaN blank
+                    pixels, and <code>readRawPixels</code> decodes them at face value. Several
+                    routines then misbehave: <code>Normalize</code> corrupts the whole buffer
+                    (BUG-1), <code>PixelUtilities.median</code>/<code>percentileBounds</code> have
+                    undefined sort order (CR-8), and <code>CosmeticCorrection</code> can leave a
+                    real hot pixel next to a NaN uncorrected (CR-9). A single decode-time or
+                    stage-level sanitization policy would close all three.</li>
+                <li><strong>Guard order hides the accurate error.</strong> <code>MonoToRGB</code>
+                    (CR-4) and <code>Debayer</code> (CR-5) both run a sample-count guard computed
+                    for <code>channels: 1</code> <em>before</em> the <code>channels == 1</code>
+                    guard, so a multi-channel buffer reports <code>dataSizeMismatch</code> and the
+                    accurate <code>unsupportedChannelCount</code> is effectively unreachable. The
+                    same shape of mistake, in two files.</li>
+                <li><strong>Public-API preconditions are unenforced.</strong> Unlike
+                    <code>PixelBuffer.init</code>/<code>checkedSampleCount</code> (which throw),
+                    several public entry points trust their inputs: <code>Convolution.convolve</code>
+                    (CR-11), <code>zeroSumResponse</code> (CR-12), <code>Curves.value(at:)</code>
+                    (CR-13), and <code>GaussianKernel(sigma:)</code> (CR-3, a hard crash). The main
+                    pipeline always feeds them valid data, so these are external-surface risks.</li>
+                <li><strong>Negative-path tests that pass for the wrong reason.</strong>
+                    <code>invalidNormalize</code> exercises the wrong processor entirely (CR-6),
+                    and several <code>invalidChannels</code> tests assert only
+                    <code>throws PixelBufferError.self</code>, so they pass on the guard-order
+                    error path (CR-4/CR-5) rather than the guard they name. Broadly, many
+                    value tests assert only range/finiteness, not the defining formula.</li>
+            </ul>
+        </div>
+
+        <!-- ===================== BUG ===================== -->
+        <h2 class="section">Bug</h2>
+
+        <div class="finding">
+            <h3><span class="fid">BUG-1</span> <code>Normalize</code> corrupts NaN/Inf input and flags it normalized <span class="capsule bug">Bug</span></h3>
+            <p class="loc"><code>Processors/Normalize.swift:110&ndash;186</code> (<code>.minMax</code>; the same root reaches <code>.percentile</code> and <code>.identity</code>) &middot; Confidence: <strong>high (lead-reproduced empirically)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>Normalize</code> runs on <em>raw</em> (non-normalized) buffers, so NaN/Inf FITS blanks reach it. The constant-image guard <code>guard minValue != maxValue</code> (<code>:118</code>) does not catch NaN because <code>NaN != NaN</code> is <code>true</code>, so a NaN sample falls through to the divide path: <code>vDSP_minvD</code>/<code>maxvD</code> return NaN &rarr; <code>range/scale/offset</code> are NaN &rarr; the entire buffer becomes NaN and is marked <code>isNormalized = true</code>. Reproduced: <code>[NaN,10,20,30]</code> &rarr; all-NaN; <code>[+Inf,10,20,30]</code> &rarr; <code>[NaN,0,0,0]</code>. Downstream, <code>convertTo8Bits</code> maps NaN &rarr; <code>0</code> silently, so one blank pixel can blacken or NaN-poison the whole frame.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Sanitize non-finite samples (treat as missing when computing min/max/percentile; replace with <code>0</code> or the low bound), or reject non-finite input explicitly. Note the <code>min != max</code> guard cannot double as a NaN guard.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing &mdash; no NaN/Inf test in <code>Processors-Normalize.swift</code>; random tests use finite <code>0&hellip;5000</code> values only. <em>(If non-finite input is deemed out-of-contract, this is a documented correctness-risk rather than a bug &mdash; but there is currently neither a guard nor a doc note, and the trigger is realistic for this library's domain.)</em></p>
+            </div>
+        </div>
+
+        <!-- ===================== CORRECTNESS-RISK ===================== -->
+        <h2 class="section">Correctness-risk</h2>
+
+        <div class="finding">
+            <h3><span class="fid">CR-1</span> <code>.rgbg</code> is not a valid Bayer CFA and demosaics to wrong colours <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Processors/Debayer.swift:46, 242&ndash;250</code> (and both interpolators) &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>.rgbg</code> is implemented as the tile <code>R,G / B,G</code>, which tiles to greens on <em>every odd column of every row</em> (vertical stripes), not the diagonal quincunx that the four valid patterns (<code>rggb</code>, <code>bggr</code>, <code>grbg</code>, <code>gbrg</code>) and every demosaic algorithm assume. Both <code>bilinear</code> and <code>vng</code> therefore fabricate the missing colours from wrong-colour neighbours (e.g. blue at a green site averaged from greens). <code>deinterleave</code> (partition-only, no interpolation) is unaffected. This is the non-standard &ldquo;RGBG&rdquo; entry advertised in the README.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Remove <code>.rgbg</code> from the public <code>Pattern</code> enum, or, if a striped RGBG sensor must be supported, document it as non-Bayer and give it its own path. Do not present it as a peer of the four valid CFAs.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Not caught &mdash; the RGBG tests assert only the present colour / positivity; there is no VNG RGBG test.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-2</span> STF shadow clip uses raw MAD, not the normalized MAD its cited constant assumes <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Processors/STFParameters.swift:228</code> &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>shadows = median &minus; shadowClipFactor &middot; mad</code> uses the <em>raw</em> MAD from <code>PixelUtilities.medianAbsoluteDeviation</code> (no <code>1.4826</code> factor). The type documents &ldquo;the PixInsight / XISF display function model&rdquo; with a default <code>shadowClipFactor = 2.8</code> &mdash; but PixInsight's <code>&minus;2.8</code> multiplies the <em>normalized</em> MAD (<code>MADN = 1.4826 &middot; MAD</code>), so the shadow clip lands &asymp;1.48&times; too shallow versus the referenced algorithm. Tellingly, <code>CosmeticCorrection.swift:162</code> already defines and applies <code>robustScaleFactor = 1.4826</code> &mdash; the STF path is the outlier. The stretch still lands the median on the target background (that depends only on <code>m0</code> and the MTF), so results look plausible &mdash; only the black-point depth deviates.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>If PixInsight parity is intended, normalize the MAD (<code>median &minus; shadowClipFactor &middot; (1.4826 &middot; mad)</code>, reusing the existing constant). Otherwise correct the docstring to state the raw-MAD convention and that <code>2.8</code> is not PixInsight's <code>&minus;2.8</code> semantics.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Wrong-expectation &mdash; <code>computedFromStatsClipsShadowsBelowTheMedian</code> asserts <code>shadows == median &minus; 2.8&middot;mad</code> (raw), codifying the deviation; the median&rarr;target tests hold regardless of clip depth and cannot catch it.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-3</span> <code>GaussianKernel(sigma:)</code> hard-crashes on NaN/Inf &sigma; <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>GaussianKernel.swift:71&ndash;72</code> &middot; Confidence: <strong>high (lead-verified; auditor-reproduced)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>Swift.max(sigma, 1e-6)</code> does not sanitize a non-finite first argument &mdash; <code>Swift.max(.nan, 1e-6) == .nan</code> (all NaN comparisons are false, so <code>max</code> returns its first arg). Then <code>Int((safeSigma * radiusInSigmas).rounded(.up))</code> traps: <em>&ldquo;Double value cannot be converted to Int because it is either infinite or NaN.&rdquo;</em> The clamp defends only against small/negative &sigma;. A public initializer that hard-crashes on a <code>Double</code> input is out of step with the library's throw-not-trap style.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p><code>let safeSigma = sigma.isFinite ? Swift.max(sigma, 1e-6) : 1e-6</code>, or fail via a thrown error.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing &mdash; no NaN/Inf test; the negative/zero-&sigma; clamp path is also untested.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-4 &amp; CR-5</span> Guard order makes the channel guard dead and reports a misleading error (<code>MonoToRGB</code>, <code>Debayer</code>) <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Processors/MonoToRGB.swift:55&ndash;67</code>, <code>Processors/Debayer.swift:126&ndash;138</code> &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>Both compute <code>checkedSampleCount(&hellip;, channels: 1)</code> and throw <code>dataSizeMismatch</code> <em>before</em> the <code>channels == 1</code> guard. Because <code>PixelBuffer</code> enforces <code>pixels.count == width&middot;height&middot;channels</code>, the count guard passes only when <code>channels == 1</code> or the image is empty &mdash; so for any non-empty multi-channel buffer the caller gets <code>dataSizeMismatch</code>, and the accurate <code>unsupportedChannelCount</code> is reachable only for a zero-area buffer. Functionally the input is still rejected; the reported reason is wrong and the documented channel error is effectively dead.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Check <code>channels == 1</code> first, then the sample-count/geometry guard.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Wrong-expectation &mdash; both <code>invalidChannels</code> tests pass but exercise the <code>dataSizeMismatch</code> path, not the channel guard they are named for (they assert only <code>throws PixelBufferError.self</code>).</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-6</span> <code>MonoToRGB</code>'s <code>invalidNormalize</code> test exercises <code>Debayer</code>, not <code>MonoToRGB</code> <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>SwiftPixelTests/Processors-MonoToRGB.swift:102</code> &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>The test is named <code>invalidNormalize</code> and builds a normalized mono buffer, then instantiates and runs <code>Processors.Debayer(mode:.bilinear, pattern:.bggr)</code> instead of <code>Processors.MonoToRGB()</code>. It validates Debayer; <code>MonoToRGB</code>'s <code>mustNotBeNormalized</code> guard has <strong>no coverage</strong> (a copy-paste defect).</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Replace the <code>Debayer</code> call with <code>Processors.MonoToRGB()</code> and assert the specific error case.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing/wrong-expectation &mdash; as written.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-7</span> Histogram percentiles/median collapse to bin 0 for small sample totals <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>HistogramStatistics.swift:170, 180, 113</code> &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>t1 = Int(Double(total) * 0.01)</code> truncates to <code>0</code> for every <code>total &lt; 100</code>; the scan then matches at the first bin because <code>cumulative &gt;= 0</code> is always true, so <code>percentile1</code> is reported as bin <code>0</code> regardless of where the data lie. For <code>total == 1</code>, <code>percentile99</code> and the <code>total / 2</code> median crossing collapse to <code>0</code> too, while <code>min == max</code> are computed correctly &mdash; an internally inconsistent result. Correct for <code>total &ge; 100</code>, which is why the real (million-sample) image histogram never triggers it &mdash; but <code>init(data:)</code> and <code>percentiles(&hellip;)</code> are <code>public</code>.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Clamp the thresholds to <code>&ge; 1</code> (or use <code>ceil</code> and require <code>cumulative &gt; 0</code>); apply the same to the <code>total / 2</code> median crossing for <code>total == 1</code>.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing &mdash; <code>singlePeak</code>/<code>linearSpread</code> use <code>total == 100</code> (the exact boundary that hides it); nothing exercises <code>total &lt; 100</code>.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-8</span> Sort-based median/percentiles are undefined for NaN, and the two <code>median</code> overloads can diverge <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>PixelUtilities.swift:269, 306, 327</code> &middot; Confidence: <strong>medium</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>median(_: [Double])</code> sorts via <code>vDSP.sort</code> while the generic <code>median&lt;T&gt;(_:)</code> uses <code>Array.sorted()</code>. For finite input the two paths are provably identical (verified for all counts), so the documented equivalence holds. But neither <code>vDSP.sort</code> nor <code>sorted()</code> defines NaN ordering, so with NaN input the percentile/median value is undefined and the two overloads can disagree. FITS float frames can contain NaN.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Document that inputs must be NaN-free, or drop/guard NaN before sorting in <code>median</code>/<code>percentileBounds</code>. Part of the NaN theme (see BUG-1, CR-9).</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing &mdash; no NaN test for either overload.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-9</span> <code>CosmeticCorrection</code> mishandles NaN neighbours <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Processors/CosmeticCorrection.swift:425&ndash;443, 402&ndash;410</code> &middot; Confidence: <strong>medium</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>The insertion sort orders via <code>buffer[j] &gt; key</code>; a NaN compares <code>false</code> against everything, acting as a &ldquo;wall&rdquo; that leaves the neighbour buffer partially unsorted, so the neighbour <code>median</code>/<code>min</code>/<code>max</code> become unreliable when any neighbour is NaN. Consequences are bounded &mdash; no crash, and a flagged replacement can't emit NaN &mdash; but a genuine hot/cold pixel adjacent to a NaN may be silently left uncorrected, and a NaN sample passes through unrepaired. <code>&plusmn;Inf</code> is handled acceptably.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Treat non-finite neighbours as absent during the gather, or document that the stage assumes finite samples.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing &mdash; no NaN/Inf test.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-10</span> STF <code>computed</code> collapses to a hard threshold when <code>median &le; shadows</code> <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Processors/STFParameters.swift:237&ndash;238</code> &middot; Confidence: <strong>medium</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>If the normalized <code>median</code> is 0 with <code>mad &gt; 0</code> (a frame whose background dominates &ge;50% of pixels), then <code>shadows = 0</code>, <code>m0 = 0</code>, <code>midtones = mtf(0.25, 0) = 0</code>. A channel with <code>midtones = 0</code> validates but takes the scalar fallback where <code>mtf(0, x)</code> is a binary step (<code>x&gt;0 &rarr; 1</code>) rather than a smooth stretch. This is an inherent limit of the MTF auto-stretch (PixInsight degenerates similarly), but it is silent here.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Optionally clamp <code>m0</code> away from the exact endpoints, or document the degenerate-midtones behaviour. Low priority unless median-0 frames are expected.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-11</span> Public <code>Convolution.convolve</code> validates no preconditions <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Convolution.swift:69, 83&ndash;93</code> &middot; Confidence: <strong>high</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>convolve(_:width:height:kernel:radius:)</code> is <code>public</code> but never checks <code>values.count == width&middot;height</code>, <code>kernel.count == (2&middot;radius+1)&sup2;</code>, or <code>radius &ge; 0</code>. A short <code>values</code> traps out-of-bounds; a short <code>kernel</code> makes <code>vDSP.convolve</code> over-read. Inconsistent with the library's defensive style. The sole in-repo caller (<code>zeroSumResponse</code>) always passes consistent arguments, so this is an external-surface risk.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Guard the three preconditions (return <code>[]</code> / throw), or document them as hard preconditions.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing &mdash; no direct test of the public <code>convolve</code>.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-12</span> <code>zeroSumResponse</code> ignores <code>image.channels</code> &rarr; silent garbage on multi-channel input <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Convolution.swift:49&ndash;52</code> &middot; Confidence: <strong>high</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>It forwards <code>pixels</code>/<code>width</code>/<code>height</code> but not <code>channels</code>, and <code>convolve</code> treats the data as single-channel. For a multi-channel buffer it reads the first <code>width&middot;height</code> interleaved samples &mdash; a geometrically incoherent channel mix &mdash; and returns in-bounds garbage. The doc says &ldquo;single-channel&rdquo; but nothing enforces it.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Guard <code>image.channels == 1</code> (throw/precondition), or document loudly.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-13</span> Public <code>Curves.value(at:)</code> trusts its precondition &rarr; Inf/NaN on a malformed curve <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Processors/Curves.swift:157, 232</code> &middot; Confidence: <strong>medium</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>Curve.init</code> is <code>public</code> and does not sort/dedup/validate; <code>validate()</code> is only called inside <code>process(buffer:)</code>. <code>value(at:)</code> (also <code>public</code>) calls <code>tangents()</code>, which divides by <code>&Delta;x</code>. A consumer that builds a curve with duplicate or non-increasing <code>x</code> and calls <code>value(at:)</code> directly gets a <code>&plusmn;Inf</code>/<code>NaN</code> secant that can propagate (the final <code>min/max</code> clamp does not reliably sanitize NaN). The main pipeline is safe because <code>process</code> validates first.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Guard <code>&Delta;x &le; 0</code> in <code>value(at:)</code>/<code>lookupTable()</code>, or have them validate / document the precondition prominently.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing &mdash; <code>nonIncreasingXThrows</code> only covers the <code>process</code> path.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-14</span> 4-channel <code>createCGImage</code> assumes premultiplied alpha, unenforced and untested <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>PixelBuffer.swift:240&ndash;243</code> &middot; Confidence: <strong>medium</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>For 4 channels the bitmap info is <code>premultipliedLast</code>, so CoreGraphics reads the RGB samples as already multiplied by alpha. A consumer supplying <em>straight</em> RGBA gets wrong colours wherever alpha &lt; 1. Documented, and the pipeline only ever emits 3-channel RGB, so it is reachable only via direct 4-channel construction &mdash; but nothing enforces or converts it.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Keep if the premultiplied contract is intended; add a test exercising alpha &lt; 1 to pin the semantics, and optionally note the straight-alpha alternative (<code>noneSkipLast</code>).</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing &mdash; <code>createCGImageWith4Channels</code> uses alpha <code>1.0</code>, where premultiplied &equiv; straight.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-15</span> <code>GaussianFit</code> singularity threshold is absolute, not scaled <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>GaussianFit.swift:391</code> &middot; Confidence: <strong>low</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>The pivot floor <code>abs(matrix[c][pivot]) &gt; 1e-12</code> is absolute, but <code>J&#7488;J</code> entries scale with <code>amplitude&sup2;&middot;N</code> and can be very large, so an ill-conditioned system may be treated as solvable, yielding a poor step. In practice masked by Marquardt diagonal damping and the strict <code>candidateCost &lt; currentCost</code> acceptance gate, so an actually-accepted wrong step is unlikely.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Consider a relative threshold (scaled by the max diagonal), or rely on the damped system explicitly. Low priority given the mitigations.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing &mdash; no singular/degenerate-geometry input test.</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-16</span> The new rotated/elliptical Gaussian-fit Jacobian is effectively untested <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>SwiftPixelTests/GaussianFit.swift:55&ndash;69, 104&ndash;109</code> &middot; Confidence: <strong>high on the gap (math verified correct)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>The analytic Jacobian was newly hand-derived (commit <code>131d928</code>) and is <em>correct</em> (all seven partials hand-verified), but no test recovers parameters from a <strong>rotated</strong> (&theta;&ne;0) or <strong>truly elliptical</strong> (&sigma;x&ne;&sigma;y) truth: the only recovery test uses a round Gaussian (&theta;=0, &sigma;x=&sigma;y), so the <code>&theta;</code> column sees no signal, and <code>modelPeaksAtTheCenter</code> evaluates at the centre where <code>exp(0)=1</code> regardless of &theta;/&sigma;. The paths most likely to harbour a hand-derivation error have no regression guard.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Add a recovery test with &theta;&asymp;0.5&ndash;0.7 and &sigma;x&ne;&sigma;y, asserting &theta; (modulo the &pi; degeneracy) and both widths; and a fixed-seed noisy-recovery test (the doc sells noise robustness, but every test is noiseless).</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing (rotation/ellipticity recovery, and noisy data).</p>
+            </div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-17</span> By-design correctness-risks worth a conscious decision <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc">various &middot; Confidence: <strong>high (behaviour), design judgment</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <ul style="margin:6px 0 0;">
+                    <li><strong>Debayer edge-replicate contamination</strong> (<code>Debayer+Bilinear.swift:88&ndash;144</code>, <code>Debayer+VNG.swift:319&ndash;356</code>): border pixels average in edge-clamped <em>wrong-colour</em> samples, mixing e.g. red into the green plane on the 1-pixel border (dominates tiny images). Locked by golden tests; inherent to edge-clamp demosaicing.</li>
+                    <li><strong><code>Invert</code>/<code>BrightnessContrast</code>/<code>CorrectGamma</code> transform the alpha channel</strong> (<code>Invert.swift:73</code> et al.): <code>1&minus;x</code> etc. run over the whole interleaved buffer, inverting alpha on a 4-channel buffer. Documented as &ldquo;uniform to every channel&rdquo;; RGBA rarely reaches these stages.</li>
+                    <li><strong><code>Bin</code> hardcodes a 2&times;2 CFA cell</strong> (<code>Bin.swift:30&ndash;48, 213&ndash;234</code>): single-channel input is always averaged as a Bayer mosaic (same-parity sites two apart), not a plain 2&times;2 box; misuse on a plain luminance image aliases silently. Documented, wired pre-demosaic.</li>
+                    <li><strong><code>HistogramStatistics.median</code> is the lower-median bin</strong> (<code>:109&ndash;118</code>): first bin reaching <code>total/2</code>, biased low vs an interpolated median. Documented and <code>Int</code>-typed.</li>
+                </ul>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>No code change required; each is documented. Flagged so the trade-offs are conscious, and (for the Debayer border) as an option if border fidelity ever matters.</p>
+            </div>
+        </div>
+
+        <!-- ===================== IMPROVEMENT ===================== -->
+        <h2 class="section">Improvement</h2>
+        <div class="prose">
+            <p>Correct today, but a better algorithm, a tighter contract, or (mostly) a missing test would strengthen them.</p>
+            <ul>
+                <li><strong>IMP-1 &mdash; VNG gradients mix unlike-coloured samples</strong> (<code>Debayer+VNG.swift:287&ndash;299</code>): the 1-step gradient term compares the centre against a different-coloured mosaic sample, so gradients are not the like-coloured differences true Chang/Cok VNG uses, weakening edge selectivity in high-chroma content. The threshold constants <code>k1=1.5, k2=0.5</code> are correct; the &ldquo;VNG&rdquo; label overstates fidelity. Either compute like-coloured gradients or soften the doc to &ldquo;gradient-directed (VNG-style)&rdquo;.</li>
+                <li><strong>IMP-2 &mdash; <code>Normalize</code> is global across channels</strong> (<code>Normalize.swift:115&ndash;116, 144</code>): min/max &amp; percentile span all channels (preserving colour ratios), a legitimate default but undocumented and untested on multi-channel buffers.</li>
+                <li><strong>IMP-3 &mdash; <code>Levels</code> does not validate <code>outputBlack &gt; outputWhite</code></strong> (<code>Levels.swift:123</code>): an inverted output range is silently accepted despite the &ldquo;darkest/brightest&rdquo; docs (contrast with the enforced <code>inputWhite &gt; inputBlack</code>).</li>
+                <li><strong>IMP-4 &mdash; No-op <code>correctGamma: 1.0</code> still forces auto-normalization</strong> (<code>PixelPipeline.swift:477</code> vs the no-op filters at <code>:404&ndash;475</code>): unlike <code>brightnessContrast</code>/<code>levels</code>/<code>curves</code>/&hellip; (rebound to <code>nil</code> when neutral), a no-op gamma inserts a <code>Normalize(.minMax)</code> and flips a raw result to a min-max-normalized one. Filter <code>correctGamma == 1.0</code>, or document the asymmetry (<code>stretch</code>, <code>whiteBalance</code>, <code>invert</code> are likewise unfiltered but harder to detect).</li>
+                <li><strong>IMP-5 &mdash; <code>binFactor</code> silently ignored for <code>.rgb</code> input</strong> (<code>PixelPipeline.swift:369</code>): an invalid <code>binFactor</code> (0/negative) throws for mono/CFA but is dropped for <code>.rgb</code> &mdash; inconsistent validation. Consider validating <code>binFactor &ge; 1</code> in <code>Config.init</code>.</li>
+                <li><strong>IMP-6 &mdash; <code>Bin</code>/<code>Resample</code> pipeline wiring is untested</strong> (<code>PixelPipeline.swift:369&ndash;372, 397&ndash;400</code>): no pipeline test sets <code>binFactor</code> or <code>maxDimension</code>; the insertion, the <code>channels == 1</code> Bin guard, and the <code>Resample</code>-after-channel-forming ordering are unverified (the processors are tested only in isolation).</li>
+                <li><strong>IMP-7 &mdash; <code>BitsPerPixel.size</code> traps on overflow</strong> (<code>BitsPerPixel.swift:89&ndash;99</code>): <code>numberOfPixels * 8</code> traps on <code>Int</code> overflow, unlike the throwing geometry path (<code>checkedSampleCount</code>). Theoretical (&sim;10&sup1;&#8312; samples) but contradicts the throw-not-trap philosophy.</li>
+                <li><strong>IMP-8 &mdash; <code>Convolution</code> depends on undocumented vDSP border width</strong> (<code>Convolution.swift:93&ndash;105</code>): correctness hinges on <code>vDSP.convolve</code> zeroing exactly a <code>radius</code>-wide ring; add a pinning comment and an output-edge regression test.</li>
+                <li><strong>IMP-9 &mdash; <code>MonoToRGB</code> requires non-normalized input for a structural op</strong> (<code>MonoToRGB.swift:69&ndash;73</code>): channel replication is range-independent; the guard likely enforces pipeline ordering &mdash; keep if intentional, else relax.</li>
+                <li><strong>IMP-10 &mdash; <code>Scale</code> clears the normalized flag for range-preserving transforms</strong> (<code>Scale.swift:69&ndash;70</code>): a conservative, always-safe false-negative; documented. No action needed.</li>
+                <li><strong>IMP-11 &mdash; Test-coverage gaps</strong> across otherwise-correct code: <code>PixelBuffer</code> <code>Equatable</code> (dimensions/flag) &amp; the throwing-body flag-preservation contract; all four error enums' <code>errorDescription</code> strings; <code>ColorBalance</code> non-pivot smoothstep, <code>WhiteBalance</code> gray-world gains &amp; guards, <code>Hue</code> arbitrary-angle round-trip, <code>Saturation</code>; bilinear <em>interior</em> (only 2&times;2 goldens = all border) and per-pixel non-RGGB colour; <code>Bin</code> odd/non-divisible dims &amp; factor&nbsp;&ge;&nbsp;3; <code>Resample</code> non-square/partial-cell; <code>Orient</code> composition from a mirrored+rotated state; <code>GaussianKernel</code> absolute-weight &amp; clamp path.</li>
+                <li><strong>IMP-12 &mdash; <code>Histogram</code> allocates unused bin arrays</strong> (<code>Histogram.swift:76&ndash;80</code>): all five accumulators are allocated regardless of mode (per-iteration compute is already mode-specific); &sim;5&nbsp;KB, negligible.</li>
+            </ul>
+        </div>
+
+        <!-- ===================== COSMETIC ===================== -->
+        <h2 class="section">Cosmetic</h2>
+        <div class="prose">
+            <ul>
+                <li><strong>COS-1 &mdash; <code>vDSP_mmovD</code> comment transposes M and N</strong> (<code>PixelUtilities.swift:234&ndash;238</code>): the code is correct (verified against Apple's SDK header), but the comment labels <code>N=1</code> as &ldquo;column&rdquo; and <code>M=count</code> as &ldquo;row&rdquo;, backwards versus both the header's parameter names and the same line's argument order. Reword to &ldquo;M=1 column, N=count rows&rdquo;.</li>
+                <li><strong>COS-2 &mdash; <code>mtf</code>'s <code>m == 0.5</code> branch is redundant</strong> (<code>PixelUtilities.swift:405&ndash;408</code>): the general formula already returns exactly <code>x</code> there (exact power-of-two arithmetic); the branch is a harmless explicit identity. The no-divide-by-zero claim was verified.</li>
+                <li><strong>COS-3 &mdash; &ldquo;luminance&rdquo; vs &ldquo;luma&rdquo; naming</strong> (<code>Saturation.swift</code>, <code>ColorBalance.swift</code>): the Rec.&nbsp;709 coefficients are applied to gamma-encoded samples, which BT.709 terms <em>luma (Y&prime;)</em>, not <em>luminance (Y)</em>. Coefficients are correct; naming only.</li>
+                <li><strong>COS-4 &mdash; zero-sample <code>readRawPixels</code> throws instead of returning <code>[]</code></strong> (<code>PixelUtilities.swift:126&ndash;130</code>): empty <code>Data</code> yields a nil <code>baseAddress</code> &rarr; <code>bufferAccessFailed</code>. Likely unreachable if callers reject zero-area geometry; optional <code>guard count &gt; 0 else { return [] }</code>.</li>
+                <li><strong>COS-5 &mdash; <code>Bin.outputSize</code> returns <code>(0,0)</code> for a factor <code>process</code> rejects</strong> (<code>Bin.swift:108&ndash;120</code>): a consumer pre-sizing gets <code>(0,0)</code> then a throw; <code>process</code>'s throw is the safety net.</li>
+                <li><strong>COS-6 &mdash; <code>Debayer+Deinterleave</code> doc says dimensions &ldquo;must be positive&rdquo;</strong> but <code>0</code> is accepted and returns empty sets; no behavioural impact.</li>
+                <li><strong>COS-7 &mdash; <code>GaussianFit</code> tests are model-self-consistent</strong>: samples are generated and fit by the same model, so an off-centre/rotated value is never checked against an external ground truth (only the centre value is). Add one hand-computed off-centre assertion.</li>
+                <li><strong>COS-8 &mdash; <code>GaussianFit</code> docstrings describe a stale &ldquo;finite-difference Jacobian&rdquo;</strong> (<code>GaussianFit.swift:36&ndash;40, 229&ndash;230</code>): the type doc says the fit &ldquo;uses a numerical (finite-difference) Jacobian rather than analytic derivatives &hellip; hand-coded derivatives error-prone,&rdquo; and <code>modelResiduals</code> refers to &ldquo;every finite-difference Jacobian column&rdquo; &mdash; but since commit <code>131d928</code> the fit uses the (verified-correct) <em>analytic</em> Jacobian at <code>:341&ndash;349</code>, with <code>modelResiduals</code> now used only for cost evaluation. Update both docstrings to say &ldquo;analytic Jacobian.&rdquo; (Notable: the stale text warns against the very hand-coded derivatives the code now correctly uses.)</li>
+            </ul>
+        </div>
+
+        <!-- ===================== PER-FILE ===================== -->
+        <h2 class="section">Per-file verdicts</h2>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>File</th><th>Verdict</th><th>Highest-severity finding</th></tr></thead>
+            <tbody>
+                <tr><td><code>PixelBuffer.swift</code></td><td class="clean">Clean</td><td>CR-14 premultiplied-alpha (untested)</td></tr>
+                <tr><td><code>PixelPipeline.swift</code></td><td class="clean">Clean</td><td>IMP-4 no-op gamma forces normalize</td></tr>
+                <tr><td><code>PixelProcessor.swift</code></td><td class="clean">Clean</td><td>&mdash;</td></tr>
+                <tr><td><code>BitsPerPixel.swift</code></td><td class="clean">Clean</td><td>IMP-7 overflow traps</td></tr>
+                <tr><td><code>PixelBufferError.swift</code></td><td class="clean">Clean</td><td>IMP-11 / COS grammar</td></tr>
+                <tr><td><code>PixelUtilities.swift</code></td><td class="clean">Clean</td><td>CR-8 NaN ordering</td></tr>
+                <tr><td><code>Histogram.swift</code></td><td class="clean">Clean</td><td>IMP-12 unused arrays</td></tr>
+                <tr><td><code>HistogramStatistics.swift</code></td><td>1 correctness-risk</td><td>CR-7 small-total &rarr; bin 0</td></tr>
+                <tr><td><code>Convolution.swift</code></td><td>Core clean; API gaps</td><td>CR-11/CR-12 unvalidated public API</td></tr>
+                <tr><td><code>GaussianKernel.swift</code></td><td>Formula clean</td><td>CR-3 NaN/Inf &sigma; crash</td></tr>
+                <tr><td><code>GaussianFit.swift</code></td><td>Math clean (Jacobian verified)</td><td>CR-16 rotated/elliptical untested</td></tr>
+                <tr><td><code>Debayer.swift</code> (+3)</td><td>4 CFAs correct</td><td>CR-1 <code>.rgbg</code> invalid CFA</td></tr>
+                <tr><td><code>Debayer+Deinterleave.swift</code></td><td class="clean">Clean</td><td>COS-6 doc nit</td></tr>
+                <tr><td><code>Levels.swift</code></td><td class="clean">Clean</td><td>IMP-3 output inversion</td></tr>
+                <tr><td><code>Curves.swift</code></td><td class="clean">Clean</td><td>CR-13 <code>value(at:)</code> unvalidated</td></tr>
+                <tr><td><code>Stretch.swift</code></td><td class="clean">Clean</td><td>&mdash;</td></tr>
+                <tr><td><code>STFParameters.swift</code></td><td>2 correctness-risk</td><td>CR-2 raw MAD vs MADN</td></tr>
+                <tr><td><code>Normalize.swift</code></td><td>1 bug</td><td>BUG-1 NaN/Inf corruption</td></tr>
+                <tr><td><code>MonoToRGB.swift</code></td><td>Correct; guard/test defects</td><td>CR-4/CR-6</td></tr>
+                <tr><td><code>Invert.swift</code></td><td class="clean">Clean</td><td>CR-17 alpha (documented)</td></tr>
+                <tr><td><code>BrightnessContrast.swift</code></td><td class="clean">Clean</td><td>CR-17 alpha (documented)</td></tr>
+                <tr><td><code>CorrectGamma.swift</code></td><td class="clean">Clean</td><td>CR-17 alpha (documented)</td></tr>
+                <tr><td><code>ColorBalance.swift</code></td><td class="clean">Clean</td><td>IMP-11 non-pivot test</td></tr>
+                <tr><td><code>WhiteBalance.swift</code></td><td class="clean">Clean</td><td>IMP-11 gains/guards test</td></tr>
+                <tr><td><code>Hue.swift</code></td><td class="clean">Clean</td><td>IMP-11 round-trip test</td></tr>
+                <tr><td><code>Saturation.swift</code></td><td class="clean">Clean</td><td>COS-3 luma naming</td></tr>
+                <tr><td><code>Bin.swift</code></td><td class="clean">Clean</td><td>CR-17 CFA hardcode (documented)</td></tr>
+                <tr><td><code>Scale.swift</code></td><td class="clean">Clean</td><td>IMP-10 flag clearing</td></tr>
+                <tr><td><code>Resample.swift</code></td><td class="clean">Clean</td><td>IMP-11 coverage gaps</td></tr>
+                <tr><td><code>Orient.swift</code></td><td class="clean">Clean (best-tested)</td><td>IMP-11 composition test</td></tr>
+                <tr><td><code>CosmeticCorrection.swift</code></td><td class="clean">Clean</td><td>CR-9 NaN neighbours</td></tr>
+            </tbody>
+        </table>
+        </div>
+
+        <div class="note-block">
+            <strong>For M4 (triage).</strong> The confirmed, actionable items to weigh first:
+            <strong>BUG-1</strong> (Normalize NaN/Inf) and the NaN theme (CR-8, CR-9);
+            <strong>CR-1</strong> (<code>.rgbg</code>); <strong>CR-2</strong> (STF raw MAD);
+            <strong>CR-3</strong> (GaussianKernel crash); the guard-order pair
+            <strong>CR-4/CR-5</strong> and the mis-wired test <strong>CR-6</strong>;
+            <strong>CR-7</strong> (small-total stats). Each is reproducible and small; several
+            (CR-6, CR-4/CR-5, CR-16) are as much test fixes as code fixes.
+        </div>
+
+        <footer>
+            SwiftPixel correctness audit &mdash; milestone M2 of the FITScope algorithms plan.
+            Findings only; no production code was changed. Consolidated with the SwiftAstro
+            audit (M3) and triaged into fix milestones by M4.
+        </footer>
+    </div>
+</body>
+</html>
