@@ -170,24 +170,29 @@ public struct StarsOverlay: CanvasOverlay
             return .zero
         }
 
-        let sourceX = min( max( Int( x.rounded() ), 0 ), sourceWidth  - 1 )
-        let sourceY = min( max( Int( y.rounded() ), 0 ), sourceHeight - 1 )
+        // Keep the sub-pixel centroid — rounding it to a whole pixel would shift the
+        // marker off the star — and clamp it into range as a continuous coordinate.
+        let sourceX = min( max( x, 0 ), Double( sourceWidth  - 1 ) )
+        let sourceY = min( max( y, 0 ), Double( sourceHeight - 1 ) )
 
-        // Forward map a source pixel into the displayed frame: the mirror is
+        // Forward map the source point into the displayed frame: the mirror is
         // applied first (across the source width), then the quarter-turn rotation,
         // matching the renderer's pixel transform so a marker tracks its star.
-        let mirroredX = orientation.mirroredHorizontally ? sourceWidth - 1 - sourceX : sourceX
+        let mirroredX = orientation.mirroredHorizontally ? Double( sourceWidth - 1 ) - sourceX : sourceX
 
-        let display: ( x: Int, y: Int ) = switch orientation.rotation
+        let display: ( x: Double, y: Double ) = switch orientation.rotation
         {
             case .none:               ( mirroredX, sourceY )
-            case .clockwise90:        ( sourceHeight - 1 - sourceY, mirroredX )
-            case .rotate180:          ( sourceWidth - 1 - mirroredX, sourceHeight - 1 - sourceY )
-            case .counterClockwise90: ( sourceY, sourceWidth - 1 - mirroredX )
+            case .clockwise90:        ( Double( sourceHeight - 1 ) - sourceY, mirroredX )
+            case .rotate180:          ( Double( sourceWidth - 1 ) - mirroredX, Double( sourceHeight - 1 ) - sourceY )
+            case .counterClockwise90: ( sourceY, Double( sourceWidth - 1 ) - mirroredX )
             @unknown default:         ( mirroredX, sourceY )
         }
 
-        return CGPoint( x: display.x, y: display.y )
+        // Offset to the pixel centre: ``CanvasGeometry/viewPoint`` maps an image
+        // coordinate to a pixel's top-left edge, so a pixel-index centroid would
+        // otherwise land half a pixel high and to the left of the star.
+        return CGPoint( x: display.x + 0.5, y: display.y + 0.5 )
     }
 
     public func draw( in context: inout GraphicsContext, canvasSize: CGSize, imageSize: CGSize, displayedRect: CGRect )

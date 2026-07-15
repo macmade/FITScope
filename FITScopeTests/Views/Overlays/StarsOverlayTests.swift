@@ -126,12 +126,25 @@ struct StarsOverlayTests
     }
 
     @Test
-    func displayedImagePointPassesThroughForIdentity() throws
+    func displayedImagePointMapsToThePixelCentreForIdentity() throws
     {
-        // With no orientation, a source centroid keeps its coordinates.
+        // With no orientation, a source centroid maps to its pixel *centre* — half a
+        // pixel past the index — because the renderer draws pixel `i` spanning
+        // `[i, i+1]`. Without this the marker lands half a pixel up and to the left.
         let point = StarsOverlay.displayedImagePoint( x: 10, y: 20, displayedImageSize: CGSize( width: 100, height: 80 ), orientation: .identity )
 
-        #expect( point == CGPoint( x: 10, y: 20 ) )
+        #expect( point == CGPoint( x: 10.5, y: 20.5 ) )
+    }
+
+    @Test
+    func displayedImagePointPreservesSubPixelPosition() throws
+    {
+        // The sub-pixel centroid is kept, not rounded to a whole pixel, so the
+        // marker tracks the star's true position.
+        let point = StarsOverlay.displayedImagePoint( x: 10.3, y: 20.7, displayedImageSize: CGSize( width: 100, height: 80 ), orientation: .identity )
+
+        #expect( abs( point.x - 10.8 ) < 0.0001 )
+        #expect( abs( point.y - 21.2 ) < 0.0001 )
     }
 
     @Test
@@ -139,19 +152,19 @@ struct StarsOverlayTests
     {
         // A 4×2 source rotated 90° clockwise displays as 2×4. The source corner
         // (0,0) — top-left — must land at the displayed top-right column (1,0),
-        // matching the pixel transform, so the marker follows the rotation.
+        // matching the pixel transform, at its pixel centre (1.5, 0.5).
         let point = StarsOverlay.displayedImagePoint( x: 0, y: 0, displayedImageSize: CGSize( width: 2, height: 4 ), orientation: .init( rotation: .clockwise90, mirroredHorizontally: false ) )
 
-        #expect( point == CGPoint( x: 1, y: 0 ) )
+        #expect( point == CGPoint( x: 1.5, y: 0.5 ) )
     }
 
     @Test
     func displayedImagePointClampsOutOfRangeCentroids() throws
     {
         // A centroid past the image bounds is clamped into range rather than
-        // mapped out of the frame.
+        // mapped out of the frame (then centred within its pixel).
         let point = StarsOverlay.displayedImagePoint( x: 200, y: -5, displayedImageSize: CGSize( width: 100, height: 80 ), orientation: .identity )
 
-        #expect( point == CGPoint( x: 99, y: 0 ) )
+        #expect( point == CGPoint( x: 99.5, y: 0.5 ) )
     }
 }
