@@ -422,17 +422,80 @@
         </div>
 
         <div class="milestone">
-            <h3><span class="m-num">M4.</span> Triage findings &amp; derive fix milestones <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M4.</span> Triage findings &amp; derive fix milestones <span class="capsule completed">Completed</span></h3>
             <div class="field-label">Goal</div>
             <p class="goal">Consolidate the M2 and M3 findings into a single prioritized report, then translate the confirmed, actionable ones into concrete fix milestones appended to Phase&nbsp;2 of this plan.</p>
             <div class="field-label">Tasks</div>
             <ul class="tasks">
-                <li>Merge M2 + M3 findings into one report, de-duplicating shared issues.</li>
-                <li>Confirm each finding is real (reproduce it, ideally with a failing test) before promoting it to a fix.</li>
-                <li>Rank by severity and effort; group related fixes so each becomes an individually reviewable, committable milestone.</li>
-                <li>Append the derived fix milestones to Phase&nbsp;2 below, each with its own goal, tasks, and status fields.</li>
+                <li class="done">Merge M2 + M3 findings into one report, de-duplicating shared issues.</li>
+                <li class="done">Confirm each finding is real (reproduce it, ideally with a failing test) before promoting it to a fix.</li>
+                <li class="done">Rank by severity and effort; group related fixes so each becomes an individually reviewable, committable milestone.</li>
+                <li class="done">Append the derived fix milestones to Phase&nbsp;2 below, each with its own goal, tasks, and status fields.</li>
                 <li>Review the prioritized report with the maintainer before starting any fixes.</li>
             </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule completed">Completed</span> &nbsp; <span class="completed-date">Completed: 2026-07-16</span></p>
+            <div class="field-label">Implementation notes</div>
+            <div class="note-block">
+                <p><strong>Deliverable.</strong> The 69 audit findings (M2's 38 + M3's 31) are consolidated in <a href="triage.html">triage.html</a> &mdash; a prioritized crosswalk mapping <strong>every</strong> finding to one of <strong>17 Phase-2 fix milestones</strong> (<code>M5.1</code>&ndash;<code>M5.17</code>), with a full-coverage index so none is lost. The two cross-submodule themes are merged: non-finite (NaN/Inf) handling (&rarr; M5.1 SwiftPixel, M5.12 SwiftAstro) and the Bayer <code>.rgbg</code>/<code>GBRG</code> tangle (&rarr; M5.2, M5.11). Per the maintainer, <strong>nothing is deferred</strong> &mdash; every finding, down to the cosmetics, is fixed.</p>
+                <p><strong>Confirmation.</strong> Each finding was already verified real against the source during the M2/M3 lead reviews; the failing-test reproduction happens inside each fix milestone (per the template). One reported finding was <em>refuted</em> in M3 (the bright-pass <code>+Inf</code> crash) and excluded.</p>
+                <p><strong>Milestones.</strong> The Phase-2 placeholder is replaced by <code>M5.1</code>&ndash;<code>M5.10</code> (SwiftPixel) and <code>M5.11</code>&ndash;<code>M5.17</code> (SwiftAstro), each scoped to one subsystem within one submodule so it stays independently reviewable and committable, and each implemented one at a time with the usual pause-and-review.</p>
+                <p><strong>Decisions.</strong> Nine findings hinge on a maintainer decision (<strong>D1&ndash;D9</strong>: non-finite policy; <code>.rgbg</code> fate; STF raw-MAD vs MADN; histogram median; alpha/per-channel normalize; VNG fidelity/edges; HFR meaning &amp; FWHM basis; SNR noise estimator; horizon convention &amp; outer-planet accuracy). Each carries a recommendation in the triage and is resolved before its milestone is implemented.</p>
+                <p><strong>Automated review loop.</strong> 1 round, converged. The fresh-context reviewer set-diffed all 69 finding IDs against the crosswalk &mdash; complete coverage, zero duplicates, no phantom IDs, triage&harr;plan consistent across all 17 milestones, counts and decision links correct. <strong>Pending:</strong> maintainer review of the prioritization and the nine decisions (task 5) before Phase 2 begins.</p>
+            </div>
+            <div class="field-label">Automated review</div>
+            <div class="note-block">
+                <p><strong>Round 1</strong> (fresh-context reviewer, completeness/consistency focus): <strong>converged</strong> &mdash; no Critical/High/Medium defects. It enumerated all 69 finding IDs from both audits and confirmed each appears <strong>exactly once</strong> in the triage full-coverage index and is assigned to a real milestone; the triage &ldquo;Covers&rdquo; lists match the plan &ldquo;Fixes&rdquo; lists for all 17 milestones (<code>M5.1</code>&ndash;<code>M5.17</code>, no gaps); no milestone references a non-existent finding; counts (2 bugs / 26 correctness-risks / 24 improvements / 17 cosmetics) and the D1&ndash;D9 decision links are all correct. One <strong>Info</strong> note (no change): SP&nbsp;CR-17 is a composite by-design finding whose four sub-items are intentionally worked across M5.5/M5.7/M5.8, counted once toward the 69 &mdash; handled cleanly.</p>
+            </div>
+            <div class="field-label">Review comments</div>
+            <div class="note-block">
+                <p><strong>Maintainer:</strong> Wants to discuss <strong>D9</strong> (horizon convention &amp; outer-planet accuracy) before deciding. Asked for the code-change scope of adding the outer-planet perturbations; answered: ~17 Schlyter terms (Jupiter 7, Saturn 5+2, Uranus 3), ~50&ndash;80 lines of production Swift plus reference-value tests (which also close CR-9), the one wrinkle being that the current code jumps straight from the Kepler solution to rectangular coordinates and must first expose the ecliptic lon/lat where the corrections apply.</p>
+                <p><strong>Maintainer &mdash; decisions (D1&ndash;D9):</strong></p>
+                <ul>
+                    <li><strong>D1:</strong> Filter &mdash; sanitize non-finite samples in the statistical helpers and guard <code>Normalize</code>/<code>GaussianKernel</code>.</li>
+                    <li><strong>D2:</strong> Remove <code>RGBG</code> and add <code>GBRG</code>.</li>
+                    <li><strong>D3:</strong> Normalize the MAD (MADN, &times;1.4826) for PixInsight parity.</li>
+                    <li><strong>D4:</strong> Keep the lower-median convention and document it.</li>
+                    <li><strong>D5:</strong> Skip the alpha channel and document.</li>
+                    <li><strong>D6:</strong> Implement true VNG &mdash; like-coloured gradients and same-colour-only border handling.</li>
+                    <li><strong>D7:</strong> Use the true HFR that matches other software like NINA (the flux-weighted mean radius, HFD/2).</li>
+                    <li><strong>D8:</strong> Keep the whole-image MAD noise estimator and document.</li>
+                    <li><strong>D9:</strong> Horizon &mdash; document and add the refraction-aware variant. Outer planets &mdash; add Schlyter's perturbation terms.</li>
+                </ul>
+                <p><strong>D7 clarifications (confirmed).</strong> FWHM &mdash; geometric mean across both paths. HFR &mdash; &ldquo;match NINA&rdquo; means the Weber&ndash;Brady <em>flux-weighted mean distance</em> <code>&Sigma;(V&middot;d)/&Sigma;(V)</code> (&asymp;1.253&sigma; for a Gaussian), not the code's current encircled-50% radius (&asymp;1.177&sigma;); the two share the name but differ ~6%. M5.13 switches to the flux-weighted-mean formula.</p>
+            </div>
+        </div>
+
+        <!-- ============ PHASE 2 ============ -->
+        <div class="phase-label">Phase 2 &middot; Correctness fixes (derived from M4)</div>
+
+        <div class="milestone">
+            <h3>Phase 2 overview</h3>
+            <div class="note-block">
+                M4 mapped <strong>all 69 audit findings to the 17 fix milestones below</strong>
+                (<code>M5.1</code>&ndash;<code>M5.17</code>) &mdash; see the
+                <a href="triage.html">triage &amp; fix plan</a> for the full crosswalk and the
+                nine pending decisions (D1&ndash;D9). Per the maintainer, nothing is deferred.
+                Each milestone is scoped to one subsystem within one submodule (so it stays
+                independently reviewable and committable) and is implemented one at a time with
+                the usual pause-and-review. Milestones tagged <em>Decision</em> are gated on a
+                maintainer decision from the triage.
+            </div>
+            <div class="field-label">Per-fix template (applies to every M5.x)</div>
+            <ul class="tasks">
+                <li>Add/adjust a failing test that reproduces the issue (per the chosen TDD approach).</li>
+                <li>Implement the fix; keep the Xcode project and <code>Package.swift</code> in sync.</li>
+                <li>Run the full submodule suite green via <code>xcodebuild</code>; re-run the M1 harness to confirm no performance regression.</li>
+                <li>Fill the standard per-milestone fields: Status / Completed / Implementation notes / Automated review / Review comments.</li>
+            </ul>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.1</span> SwiftPixel &mdash; Non-finite (NaN/Inf) sample handling <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SP&nbsp;BUG-1, CR-3, CR-8, CR-9. &nbsp;<strong>Decision:</strong> D1 (sanitization policy).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Stop non-finite FITS blanks from corrupting output or crashing: the <code>Normalize</code> guard that misses NaN (BUG-1), the <code>GaussianKernel(sigma:)</code> <code>Int(NaN)</code> trap (CR-3), and the undefined NaN order in <code>median</code>/<code>percentileBounds</code> (CR-8) and <code>CosmeticCorrection</code>'s neighbour sort (CR-9), applying the D1 policy consistently.</p>
             <div class="field-label">Status</div>
             <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
             <div class="field-label">Implementation notes</div>
@@ -443,27 +506,256 @@
             <p class="placeholder">&mdash; human review feedback &mdash;</p>
         </div>
 
-        <!-- ============ PHASE 2 ============ -->
-        <div class="phase-label">Phase 2 &middot; Correctness fixes (derived from M4)</div>
-
         <div class="milestone">
-            <h3><span class="m-num">M5+.</span> Correctness fixes <span class="capsule notstarted">Not started</span></h3>
-            <div class="note-block">
-                This phase is intentionally empty until the audit completes. Milestone&nbsp;4
-                appends one fix milestone per confirmed issue (or per tightly-related group),
-                using the template below. Each fix is test-guarded and independently
-                reviewable/committable.
-            </div>
-            <div class="field-label">Per-fix template</div>
-            <ul class="tasks">
-                <li><strong>Goal</strong> &mdash; the defect being corrected and the expected behaviour after the fix.</li>
-                <li><strong>Tasks</strong> &mdash; add/adjust a failing test that reproduces the issue; implement the fix; keep the Xcode project and Package.swift in sync; run the full submodule test suite green; re-run the M1 harness to confirm no performance regression.</li>
-                <li><strong>Status / Completed / Implementation notes / Automated review / Review comments</strong> &mdash; standard per-milestone fields.</li>
-            </ul>
+            <h3><span class="m-num">M5.2</span> SwiftPixel &mdash; Debayer <code>.rgbg</code> pattern <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SP&nbsp;CR-1. &nbsp;<strong>Decision:</strong> D2 (remove vs document), with M5.11.</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Resolve the invalid <code>.rgbg</code> CFA that demosaics to wrong colours &mdash; remove it (and add <code>GBRG</code> support with M5.11) or give it a documented non-Bayer path, per D2.</p>
             <div class="field-label">Status</div>
             <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">&mdash; fix milestones appended here by M4 &mdash;</p>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.3</span> SwiftPixel &mdash; Channel-count guard order <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SP&nbsp;CR-4, CR-5.</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Reorder the channel-count guards in <code>MonoToRGB</code> and <code>Debayer</code> so a multi-channel buffer reports the accurate <code>unsupportedChannelCount</code> rather than a misleading <code>dataSizeMismatch</code>, and fix the tests that currently pass on the wrong path.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.4</span> SwiftPixel &mdash; Screen Transfer Function (STF) <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SP&nbsp;CR-2, CR-10. &nbsp;<strong>Decision:</strong> D3 (raw MAD vs MADN).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Resolve the shadow-clip raw-MAD-vs-MADN question (CR-2, D3) and handle the degenerate <code>median &le; shadows</code> case so a median-0 frame doesn't collapse to a hard threshold (CR-10).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.5</span> SwiftPixel &mdash; HistogramStatistics small-sample robustness <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SP&nbsp;CR-7, CR-17 (lower-median). &nbsp;<strong>Decision:</strong> D4 (median convention).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Fix the percentiles/median collapsing to bin 0 for totals below 100 (CR-7), and settle the lower-median convention (D4).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.6</span> SwiftPixel &mdash; Public-API precondition validation <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SP&nbsp;CR-11, CR-12, CR-13, CR-14, CR-15, IMP-7.</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Enforce or document the unvalidated public entry points: <code>Convolution.convolve</code> sizes (CR-11), <code>zeroSumResponse</code> channels (CR-12), <code>Curves.value(at:)</code> malformed curves (CR-13), the 4-channel premultiplied-alpha contract (CR-14), <code>GaussianFit</code>'s absolute singularity threshold (CR-15), and <code>BitsPerPixel.size</code> overflow (IMP-7).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.7</span> SwiftPixel &mdash; Pipeline &amp; processor semantics <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SP&nbsp;IMP-2, IMP-3, IMP-4, IMP-5, IMP-9, IMP-10, CR-17 (alpha, Bin). &nbsp;<strong>Decision:</strong> D5 (alpha / per-channel normalize).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Skip alpha in <code>Invert</code>/<code>BrightnessContrast</code>/<code>CorrectGamma</code> and settle per-channel normalize (D5); validate <code>Levels</code> output inversion (IMP-3); filter no-op <code>correctGamma:1.0</code> (IMP-4); validate/handle <code>binFactor</code> for <code>.rgb</code> (IMP-5); and document the <code>MonoToRGB</code> non-normalized requirement (IMP-9), the <code>Scale</code> flag clearing (IMP-10), and the <code>Bin</code> CFA-only assumption (CR-17).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.8</span> SwiftPixel &mdash; Demosaic quality (VNG &amp; edges) <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SP&nbsp;IMP-1, CR-17 (Debayer edges). &nbsp;<strong>Decision:</strong> D6 (VNG fidelity / edges).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Per D6: VNG like-coloured gradients or an honest &ldquo;VNG-style&rdquo; relabel (IMP-1), and the demosaic border edge-replicate contamination (CR-17).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.9</span> SwiftPixel &mdash; Test-coverage hardening <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SP&nbsp;CR-6, CR-16, IMP-6, IMP-8, IMP-11, COS-7.</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Close the audited-but-untested holes: the mis-wired <code>invalidNormalize</code> test (CR-6), a rotated/elliptical + noisy <code>GaussianFit</code> recovery and external-value check (CR-16, COS-7), <code>Bin</code>/<code>Resample</code> pipeline integration (IMP-6), a <code>Convolution</code> output-edge regression (IMP-8), and the <code>PixelBuffer</code>/colour assertions (IMP-11).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.10</span> SwiftPixel &mdash; Docs, cosmetics &amp; minor cleanups <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SP&nbsp;COS-1, COS-2, COS-3, COS-4, COS-5, COS-6, COS-8, IMP-12.</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">The <code>vDSP_mmovD</code> comment M/N swap (COS-1), the stale <code>GaussianFit</code> finite-difference-Jacobian docstrings (COS-8), luma-vs-luminance naming (COS-3), the redundant <code>mtf</code> branch (COS-2), <code>readRawPixels</code> zero-sample return (COS-4), <code>Bin.outputSize</code> for a rejected factor (COS-5), the <code>Deinterleave</code> doc (COS-6), and the unused <code>Histogram</code> bin arrays (IMP-12).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.11</span> SwiftAstro &mdash; FITS Bayer pattern support (<code>GBRG</code>) <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SA&nbsp;BUG-1. &nbsp;<strong>Decision:</strong> D2 (with M5.2).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Add the valid <code>GBRG</code> mapping the decoder is missing, resolve the <code>RGBG</code> mapping in step with M5.2 (D2), and add decoder Bayer-pattern tests.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.12</span> SwiftAstro &mdash; Non-finite handling (SNR &amp; sky background) <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SA&nbsp;CR-2. &nbsp;<strong>Decision:</strong> D1 (with M5.1).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Apply the D1 non-finite policy to <code>SignalToNoise</code> and <code>SkyBackground</code> so a float-FITS blank no longer yields NaN statistics or discards a good frame.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.13</span> SwiftAstro &mdash; Star-metric conventions <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SA&nbsp;CR-3, CR-4, CR-5, IMP-1, COS-3, COS-6. &nbsp;<strong>Decision:</strong> D7 (HFR meaning; FWHM basis).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Resolve the HFR meaning and FWHM basis (D7) and apply the chosen FWHM consistently across the moment and fit paths (CR-3, CR-4); clamp eccentricity to <code>[0,1]</code> (IMP-1); report the roundness-gated eccentricity (CR-5); and tidy the half-flux dead branch (COS-3) and bright-pass comparability doc (COS-6).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.14</span> SwiftAstro &mdash; Detector config, robustness &amp; performance <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SA&nbsp;CR-6, IMP-5, IMP-6, IMP-12, COS-8, COS-9.</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Reconcile <code>saturationLevel</code> with the default-on bright pass (CR-6); bound the <code>sampleWidth</code> fit window (IMP-5); give <code>footprintWidth</code> the annulus-sky read or note the backstop (IMP-12); and add the config-knob (IMP-6), bright-threshold (COS-9) and <code>SyntheticStarGrid</code> recall (COS-8) tests.</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.15</span> SwiftAstro &mdash; FITS decoder robustness <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SA&nbsp;CR-1, IMP-2, IMP-3.</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Reject or handle <code>NAXIS &ge; 3</code> cubes instead of silently keeping plane 1 (CR-1); read the header once to drop the double data-segment materialization (IMP-2); mask integer <code>BLANK</code> pixels (IMP-3).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.16</span> SwiftAstro &mdash; SNR / sky-background estimator <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SA&nbsp;CR-8, IMP-4, IMP-7, COS-1, COS-2. &nbsp;<strong>Decision:</strong> D8 (noise estimator).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Per D8: document or refine the whole-image-MAD noise estimator and the CFA smoothing bias (CR-8, IMP-4); validate <code>SignalToNoise.init(noise:)</code> (IMP-7); de-duplicate the <code>1.4826</code> constant (COS-1); and tidy the <code>channels</code>-stride/<code>/3</code> grayscale combine (COS-2).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M5.17</span> SwiftAstro &mdash; Ephemeris (conventions, coverage, cleanups) <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal">SA&nbsp;CR-7, CR-9, IMP-8, IMP-9, IMP-10, IMP-11, COS-4, COS-5, COS-7. &nbsp;<strong>Decision:</strong> D9 (horizon; outer-planet accuracy).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Per D9: horizon convention and outer-planet accuracy (CR-7, IMP-8); add Jupiter/Saturn position tests (CR-9), an <code>Ephemeris</code>-facade test (IMP-9) and the moment-seed test (IMP-11); de-tautologize the <code>isAboveHorizon</code> tests (IMP-10); guard the zenith <code>asin</code> (COS-5); note the <code>e &ge; 1</code> Kepler limit (COS-4); align the stray <code>=</code> (COS-7).</p>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
             <div class="field-label">Automated review</div>
             <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
             <div class="field-label">Review comments</div>

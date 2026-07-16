@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithms Audit &mdash; Triage &amp; Fix Plan</title>
+    <style>
+        :root {
+            --bg:#0f1117; --bg-card:#181b24; --bg-card-2:#1d212c; --border:#2a2f3c;
+            --text:#e6e9ef; --text-dim:#9aa3b2; --accent:#5aa9ff; --accent-dim:#2d3b52; --code-bg:#11141b;
+            --sev-bug-bg:#4a1414; --sev-bug-text:#ff7b7b; --sev-risk-bg:#4a3b12; --sev-risk-text:#ffd15a;
+            --sev-imp-bg:#123a4a; --sev-imp-text:#5ac8ff; --sev-cos-bg:#2a2f3c; --sev-cos-text:#b7c0d0;
+            --decide-bg:#3a1f4a; --decide-text:#d79bff; --clean-text:#5ad67f;
+        }
+        * { box-sizing:border-box; }
+        body { margin:0; padding:0; background:var(--bg); color:var(--text);
+            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.6; font-size:16px; }
+        .container { max-width:960px; margin:0 auto; padding:48px 24px 96px; }
+        header { border-bottom:1px solid var(--border); padding-bottom:24px; margin-bottom:12px; }
+        h1 { margin:0 0 12px; font-size:2.1rem; letter-spacing:-0.02em; }
+        .meta { color:var(--text-dim); font-size:0.9rem; }
+        .meta strong { color:var(--text); font-weight:600; }
+        .meta a { color:var(--accent); text-decoration:none; }
+        .meta a:hover { text-decoration:underline; }
+        h2.section { font-size:1.05rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim);
+            margin:44px 0 18px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+        h3.sub { font-size:0.95rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent); margin:28px 0 10px; }
+        .prose { color:var(--text-dim); }
+        .prose p { margin:0 0 14px; }
+        .prose ul { color:var(--text-dim); }
+        .prose li { margin:6px 0; }
+        .prose strong { color:var(--text); }
+        .capsule { display:inline-block; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;
+            padding:2px 10px; border-radius:999px; white-space:nowrap; }
+        .capsule.bug{background:var(--sev-bug-bg);color:var(--sev-bug-text);}
+        .capsule.risk{background:var(--sev-risk-bg);color:var(--sev-risk-text);}
+        .capsule.imp{background:var(--sev-imp-bg);color:var(--sev-imp-text);}
+        .capsule.cos{background:var(--sev-cos-bg);color:var(--sev-cos-text);}
+        .capsule.decide{background:var(--decide-bg);color:var(--decide-text);}
+        .counts { display:flex; flex-wrap:wrap; gap:12px; margin:8px 0 0; }
+        .count-card { flex:1 1 130px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+        .count-card .n { font-size:1.7rem; font-weight:700; line-height:1; }
+        .count-card .l { color:var(--text-dim); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.06em; margin-top:6px; }
+        code { background:var(--code-bg); border:1px solid var(--border); border-radius:5px; padding:1px 6px;
+            font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:0.84em; color:var(--text); }
+        table { width:100%; border-collapse:collapse; margin-top:8px; font-size:0.9rem; }
+        th,td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+        th { color:var(--text-dim); text-transform:uppercase; font-size:0.72rem; letter-spacing:0.06em; }
+        .table-wrap { overflow-x:auto; }
+        tr td.mid { font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--accent); }
+        .milestone { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:14px; }
+        .milestone h4 { margin:0 0 8px; font-size:1.05rem; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+        .milestone h4 .mid { color:var(--accent); font-variant-numeric:tabular-nums; }
+        .milestone p { margin:6px 0 0; color:var(--text-dim); }
+        .milestone .covers { font-size:0.85rem; color:var(--text-dim); margin-top:8px; }
+        .milestone .covers code { font-size:0.8em; }
+        .decision { background:var(--bg-card); border:1px solid var(--decide-text); border-radius:12px; padding:18px 20px; margin-bottom:14px; }
+        .decision h4 { margin:0 0 8px; font-size:1.05rem; color:var(--decide-text); }
+        .decision p { margin:6px 0 0; color:var(--text-dim); }
+        .decision .rec { color:var(--text); }
+        .note-block { background:var(--bg-card-2); border:1px dashed var(--border); border-radius:8px; padding:12px 16px; color:var(--text-dim); margin:12px 0 0; }
+        footer { margin-top:56px; padding-top:24px; border-top:1px solid var(--border); color:var(--text-dim); font-size:0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Algorithms Audit &mdash; Triage &amp; Fix Plan</h1>
+            <div class="meta">
+                <div><strong>Milestone</strong> &mdash; M4 (Triage findings &amp; derive fix milestones), from <a href="algorithms-plan.html">algorithms-plan.html</a></div>
+                <div><strong>Generated</strong> &mdash; 2026-07-16</div>
+                <div><strong>Sources</strong> &mdash; <a href="swiftpixel-audit.html">swiftpixel-audit.html</a> (M2) &middot; <a href="swiftastro-audit.html">swiftastro-audit.html</a> (M3)</div>
+                <div><strong>Direction</strong> &mdash; per the maintainer, <strong>every</strong> finding is fixed (down to the cosmetics); nothing is deferred. Genuine judgment calls are raised as <span class="capsule decide">Decision</span> items for the maintainer.</div>
+            </div>
+        </header>
+
+        <h2 class="section">Overview</h2>
+        <div class="prose">
+            <p>
+                This consolidates the <strong>69 findings</strong> from the SwiftPixel (M2) and
+                SwiftAstro (M3) audits into a single prioritized plan, merges the two
+                cross-submodule themes, and maps <strong>every finding</strong> to one of
+                <strong>17 Phase-2 fix milestones</strong> (<code>M5.1</code>&ndash;<code>M5.17</code>).
+                Nothing is deferred; the full-coverage index at the end lists all 69 findings
+                against their milestone so none is lost.
+            </p>
+            <p>
+                Each fix milestone is scoped to a coherent subsystem within a single submodule
+                (so each stays independently reviewable and committable), follows the plan's
+                per-fix template (add a failing test, implement, keep the Xcode project and
+                <code>Package.swift</code> in sync, run the suite green, re-run the M1 benchmark),
+                and will be implemented one at a time in Phase 2 with the usual pause-and-review.
+                <strong>Nine findings hinge on a decision the maintainer must make</strong>
+                (below) &mdash; those milestones carry the decision and a recommendation, to be
+                resolved before that milestone is implemented.
+            </p>
+            <div class="counts">
+                <div class="count-card"><div class="n" style="color:var(--sev-bug-text)">2</div><div class="l">Bugs</div></div>
+                <div class="count-card"><div class="n" style="color:var(--sev-risk-text)">26</div><div class="l">Correctness-risks</div></div>
+                <div class="count-card"><div class="n" style="color:var(--sev-imp-text)">24</div><div class="l">Improvements</div></div>
+                <div class="count-card"><div class="n" style="color:var(--sev-cos-text)">17</div><div class="l">Cosmetics</div></div>
+                <div class="count-card"><div class="n" style="color:var(--accent)">17</div><div class="l">Fix milestones</div></div>
+            </div>
+        </div>
+
+        <h2 class="section">Cross-submodule themes (de-duplicated)</h2>
+        <div class="prose">
+            <ul>
+                <li><strong>Non-finite (NaN/Inf) handling.</strong> Five findings share one root
+                    &mdash; float-FITS blank pixels are never sanitized: SwiftPixel BUG-1
+                    (<code>Normalize</code>), CR-3 (<code>GaussianKernel</code> crash), CR-8
+                    (<code>median</code>/<code>percentileBounds</code>), CR-9
+                    (<code>CosmeticCorrection</code>); SwiftAstro CR-2 (SNR/sky background). One
+                    <strong>policy decision</strong> (D1) drives two milestones (M5.1 SwiftPixel,
+                    M5.12 SwiftAstro) applying it consistently.</li>
+                <li><strong>The Bayer <code>.rgbg</code>/<code>GBRG</code> tangle.</strong> SwiftPixel
+                    CR-1 (<code>.rgbg</code> is not a valid CFA and demosaics wrong) and SwiftAstro
+                    BUG-1 (the FITS decoder omits the valid <code>GBRG</code> and maps
+                    <code>RGBG</code> into that broken path) are two ends of one problem. One
+                    <strong>decision</strong> (D2) drives two coordinated milestones (M5.2, M5.11).</li>
+            </ul>
+        </div>
+
+        <h2 class="section"><span class="capsule decide">Decision</span> &nbsp;Decisions from the maintainer</h2>
+        <div class="prose"><p>Each drives one or more fix milestones. <strong>All nine were resolved on 2026-07-16</strong> (recorded in the plan's M4 Review comments); the per-decision detail below is retained for reference.</p></div>
+        <div class="note-block">
+            <ul>
+                <li><strong>D1</strong> &mdash; <strong>Filter</strong>: sanitize non-finite in the stat helpers + guard <code>Normalize</code>/<code>GaussianKernel</code>.</li>
+                <li><strong>D2</strong> &mdash; <strong>Remove <code>RGBG</code>, add <code>GBRG</code></strong>.</li>
+                <li><strong>D3</strong> &mdash; <strong>Normalize the MAD</strong> (MADN, &times;1.4826) for PixInsight parity.</li>
+                <li><strong>D4</strong> &mdash; <strong>Keep the lower-median</strong> and document.</li>
+                <li><strong>D5</strong> &mdash; <strong>Skip alpha</strong> and document.</li>
+                <li><strong>D6</strong> &mdash; <strong>True VNG</strong>: implement like-coloured gradients and same-colour-only borders.</li>
+                <li><strong>D7</strong> &mdash; <strong>True HFR</strong> matching NINA (flux-weighted mean radius, HFD/2); FWHM to the geometric mean across both paths.</li>
+                <li><strong>D8</strong> &mdash; <strong>Keep whole-image MAD</strong> and document.</li>
+                <li><strong>D9</strong> &mdash; Horizon: <strong>document + add a refraction-aware variant</strong>. Outer planets: <strong>add Schlyter's ~17 perturbation terms</strong> (also closes CR-9).</li>
+            </ul>
+        </div>
+
+        <div class="decision">
+            <h4>D1 &middot; Non-finite (NaN/Inf) handling policy &nbsp;<span style="color:var(--text-dim);font-size:0.85rem;">&rarr; M5.1, M5.12</span></h4>
+            <p>Float FITS frames carry <code>NaN</code> blanks. Options: <strong>(a)</strong> reject non-finite input with a thrown error; <strong>(b)</strong> filter non-finite samples inside each statistic (median/MAD/min/max) and guard the value transforms (<code>Normalize</code>, <code>GaussianKernel</code>); <strong>(c)</strong> mask/replace blanks at decode with a sentinel.</p>
+            <p class="rec"><strong>Recommendation:</strong> (b) &mdash; filter in the statistical helpers and add finiteness guards to <code>Normalize</code>/<code>GaussianKernel</code>, so a stray blank degrades gracefully instead of corrupting or crashing. Cheap, local, and preserves valid data.</p>
+        </div>
+        <div class="decision">
+            <h4>D2 &middot; Fate of the <code>.rgbg</code> pattern &nbsp;<span style="color:var(--text-dim);font-size:0.85rem;">&rarr; M5.2, M5.11</span></h4>
+            <p><code>.rgbg</code> (R,G/B,G) is not a real Bayer CFA. Options: <strong>(a)</strong> remove <code>.rgbg</code> from SwiftPixel's <code>Pattern</code> enum and the FITS decoder, and add the valid <code>.gbrg</code>; <strong>(b)</strong> keep <code>.rgbg</code> as an explicitly-documented non-Bayer path with its own handling.</p>
+            <p class="rec"><strong>Recommendation:</strong> (a) &mdash; remove <code>.rgbg</code>, add <code>GBRG</code>. It is not a pattern capture software emits, and keeping it only preserves a broken demosaic.</p>
+        </div>
+        <div class="decision">
+            <h4>D3 &middot; STF shadow clip &mdash; raw MAD vs normalized MAD &nbsp;<span style="color:var(--text-dim);font-size:0.85rem;">&rarr; M5.4</span></h4>
+            <p>The Screen Transfer clips shadows with raw MAD, but its cited PixInsight <code>&minus;2.8</code> assumes normalized MAD (&times;1.4826). Options: <strong>(a)</strong> normalize the MAD for true PixInsight parity (deeper clip); <strong>(b)</strong> keep raw MAD and correct the docs to stop claiming parity.</p>
+            <p class="rec"><strong>Recommendation:</strong> (a) &mdash; normalize, so the result matches the algorithm the code says it implements (and the constant SwiftPixel already uses in <code>CosmeticCorrection</code>).</p>
+        </div>
+        <div class="decision">
+            <h4>D4 &middot; Histogram median convention &nbsp;<span style="color:var(--text-dim);font-size:0.85rem;">&rarr; M5.5</span></h4>
+            <p><code>HistogramStatistics.median</code> is the lower-median bin (first bin reaching half the count), biased low vs an interpolated median. Options: <strong>(a)</strong> keep the (documented, <code>Int</code>-typed) lower-median; <strong>(b)</strong> interpolate.</p>
+            <p class="rec"><strong>Recommendation:</strong> (a) &mdash; keep and document; it is deliberate and bin-indexed. (The genuine bug in the same file &mdash; small-total percentiles collapsing to bin 0 &mdash; is fixed regardless.)</p>
+        </div>
+        <div class="decision">
+            <h4>D5 &middot; Alpha handling &amp; per-channel normalize &nbsp;<span style="color:var(--text-dim);font-size:0.85rem;">&rarr; M5.7</span></h4>
+            <p><code>Invert</code>/<code>BrightnessContrast</code>/<code>CorrectGamma</code> transform a 4th (alpha) channel; <code>Normalize</code> stretches globally across channels. Options: <strong>(a)</strong> skip alpha in those stages and document global normalization as intended; <strong>(b)</strong> add a per-channel normalize option and/or reject &gt;3-channel input.</p>
+            <p class="rec"><strong>Recommendation:</strong> (a) &mdash; skip alpha where RGBA is reachable, document global normalize as the intended colour-preserving behaviour. Add per-channel only if a consumer needs it.</p>
+        </div>
+        <div class="decision">
+            <h4>D6 &middot; VNG fidelity &amp; demosaic edges &nbsp;<span style="color:var(--text-dim);font-size:0.85rem;">&rarr; M5.8</span></h4>
+            <p>VNG gradients mix unlike-coloured samples (not true Chang/Cok); border pixels edge-replicate wrong-colour neighbours. Options: <strong>(a)</strong> implement true like-coloured gradients and same-colour-only border handling; <strong>(b)</strong> relabel the mode &ldquo;VNG-style&rdquo; and document the border trade-off (both are locked by golden tests and low-impact for detection).</p>
+            <p class="rec"><strong>Recommendation:</strong> (b) unless demosaic image quality is a priority &mdash; the constants are correct and the current output is reasonable; honest labelling is the cheap, safe fix. Choose (a) if visual demosaic quality matters.</p>
+        </div>
+        <div class="decision">
+            <h4>D7 &middot; Star metrics &mdash; HFR meaning &amp; FWHM basis &nbsp;<span style="color:var(--text-dim);font-size:0.85rem;">&rarr; M5.13</span></h4>
+            <p><strong>HFR:</strong> the code reports the half-light (encircled-50%) radius, not the flux-weighted-mean radius acquisition software (NINA/SGP/Ekos) calls &ldquo;HFR&rdquo; (+6.4% offset). Options: <strong>(a)</strong> keep the half-light radius but rename/clarify; <strong>(b)</strong> switch to the flux-weighted mean for interop.
+            <br><strong>FWHM:</strong> the one-number FWHM is the RMS of the two axis widths on the moment path but the geometric mean on the fit path. Pick one: RMS everywhere, or geometric mean everywhere.</p>
+            <p class="rec"><strong>Recommendation:</strong> HFR &mdash; your call (you flagged it): choose (b) if matching acquisition-software HFR matters to your users, (a) if the principled SExtractor radius is fine (then just fix the naming/test rationale). FWHM &mdash; geometric mean everywhere (the standard &ldquo;equivalent circular&rdquo; seeing FWHM).</p>
+        </div>
+        <div class="decision">
+            <h4>D8 &middot; SNR noise estimator &nbsp;<span style="color:var(--text-dim);font-size:0.85rem;">&rarr; M5.16</span></h4>
+            <p>SNR/sky-background noise is whole-image <code>1.4826&middot;MAD</code>; PixInsight's SNRWeight uses a multiscale (MRS) estimate that excludes structure. Also, demosaicing biases CFA absolute noise low. Options: <strong>(a)</strong> keep the whole-image MAD (agrees with the star detector's estimator) and document the divergence + the CFA bias; <strong>(b)</strong> estimate noise on a high-pass residual for closer MRS parity.</p>
+            <p class="rec"><strong>Recommendation:</strong> (a) &mdash; document. The estimator is intentionally shared with the detector, and SNRWeight is a <em>relative</em> measure; MRS parity is a larger change for marginal benefit here.</p>
+        </div>
+        <div class="decision">
+            <h4>D9 &middot; Horizon convention &amp; outer-planet accuracy &nbsp;<span style="color:var(--text-dim);font-size:0.85rem;">&rarr; M5.17</span></h4>
+            <p><strong>Horizon:</strong> <code>isAboveHorizon</code> uses 0&deg;, twilight uses &minus;0.833&deg;, so the Sun can be &ldquo;past sunrise&rdquo; yet <code>isAboveHorizon == false</code>. Options: <strong>(a)</strong> document the distinction (and optionally add <code>isAboveHorizon(refraction:)</code>); <strong>(b)</strong> unify on the refraction-aware threshold.
+            <br><strong>Outer planets:</strong> mutual perturbations omitted (Saturn ~0.8&deg;). Options: <strong>(a)</strong> keep &amp; document (already honest); <strong>(b)</strong> add Schlyter's perturbation terms.</p>
+            <p class="rec"><strong>Recommendation:</strong> Horizon &mdash; (a) document + add the refraction-aware variant. Outer planets &mdash; (a) keep &amp; document; it is ample for the visibility purpose. Choose (b) only if sub-0.1&deg; outer-planet positions are wanted.</p>
+        </div>
+
+        <h2 class="section">Phase-2 fix milestones</h2>
+        <div class="prose"><p>Ordered SwiftPixel first, then SwiftAstro; within each, roughly by severity. <span class="capsule decide">Decision</span> marks a milestone gated on a decision above.</p></div>
+
+        <h3 class="sub">SwiftPixel</h3>
+
+        <div class="milestone">
+            <h4><span class="mid">M5.1</span> Non-finite (NaN/Inf) sample handling <span class="capsule bug">Bug</span> <span class="capsule decide">D1</span></h4>
+            <p>Stop NaN/Inf blanks from corrupting or crashing: fix <code>Normalize</code> (the guard that misses NaN), guard <code>GaussianKernel(sigma:)</code> against non-finite &sigma;, and define NaN order for <code>median</code>/<code>percentileBounds</code> and <code>CosmeticCorrection</code>'s neighbour sort.</p>
+            <p class="covers"><strong>Covers:</strong> SP BUG-1, CR-3, CR-8, CR-9.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.2</span> Debayer <code>.rgbg</code> pattern <span class="capsule risk">Correctness-risk</span> <span class="capsule decide">D2</span></h4>
+            <p>Resolve the invalid <code>.rgbg</code> CFA (remove it, or give it a documented non-Bayer path), coordinated with M5.11.</p>
+            <p class="covers"><strong>Covers:</strong> SP CR-1.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.3</span> Channel-count guard order <span class="capsule risk">Correctness-risk</span></h4>
+            <p>Reorder the guards in <code>MonoToRGB</code> and <code>Debayer</code> so a multi-channel buffer reports the accurate <code>unsupportedChannelCount</code> instead of a misleading <code>dataSizeMismatch</code>; fix the tests that pass on the wrong path.</p>
+            <p class="covers"><strong>Covers:</strong> SP CR-4, CR-5.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.4</span> Screen Transfer Function (STF) <span class="capsule risk">Correctness-risk</span> <span class="capsule decide">D3</span></h4>
+            <p>Resolve the raw-MAD-vs-MADN shadow clip (D3), and handle the degenerate <code>median &le; shadows</code> case (median-0 frames) so the stretch doesn't collapse to a hard threshold.</p>
+            <p class="covers"><strong>Covers:</strong> SP CR-2, CR-10.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.5</span> HistogramStatistics small-sample robustness <span class="capsule risk">Correctness-risk</span> <span class="capsule decide">D4</span></h4>
+            <p>Fix the percentiles/median collapsing to bin 0 for <code>total &lt; 100</code> (clamp the thresholds); decide the lower-median convention (D4).</p>
+            <p class="covers"><strong>Covers:</strong> SP CR-7, CR-17 (lower-median).</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.6</span> Public-API precondition validation <span class="capsule risk">Correctness-risk</span></h4>
+            <p>Validate/guard the unenforced public entry points: <code>Convolution.convolve</code> and <code>zeroSumResponse</code> (sizes/channels), <code>Curves.value(at:)</code> (malformed curve), <code>GaussianFit</code>'s absolute singularity threshold, <code>BitsPerPixel.size</code> overflow, and pin the 4-channel premultiplied-alpha contract with a test.</p>
+            <p class="covers"><strong>Covers:</strong> SP CR-11, CR-12, CR-13, CR-14, CR-15, IMP-7.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.7</span> Pipeline &amp; processor semantics <span class="capsule imp">Improvement</span> <span class="capsule decide">D5</span></h4>
+            <p>Alpha handling and per-channel normalize (D5); validate <code>Levels</code> output inversion; no-op <code>correctGamma:1.0</code> forcing auto-normalization; <code>binFactor</code> ignored/unvalidated for <code>.rgb</code>; document the <code>MonoToRGB</code> non-normalized requirement, the <code>Scale</code> flag clearing, and the <code>Bin</code> CFA-only assumption.</p>
+            <p class="covers"><strong>Covers:</strong> SP IMP-2, IMP-3, IMP-4, IMP-5, IMP-9, IMP-10, CR-17 (alpha, Bin).</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.8</span> Demosaic quality (VNG gradients &amp; edges) <span class="capsule imp">Improvement</span> <span class="capsule decide">D6</span></h4>
+            <p>VNG like-coloured gradients vs relabel, and the border edge-replicate contamination (D6).</p>
+            <p class="covers"><strong>Covers:</strong> SP IMP-1, CR-17 (Debayer edges).</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.9</span> Test-coverage hardening <span class="capsule imp">Improvement</span></h4>
+            <p>Close the audited-but-untested holes: fix the mis-wired <code>invalidNormalize</code> test; add a rotated/elliptical + noisy <code>GaussianFit</code> recovery test; <code>Bin</code>/<code>Resample</code> pipeline-integration tests; a <code>Convolution</code> output-edge regression test; <code>PixelBuffer</code> <code>Equatable</code>/throwing-body and the colour (ColorBalance/WhiteBalance/Hue/Saturation) assertions; and an external-value <code>GaussianFit</code> model check.</p>
+            <p class="covers"><strong>Covers:</strong> SP CR-6, CR-16, IMP-6, IMP-8, IMP-11, COS-7.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.10</span> Docs, cosmetics &amp; minor cleanups <span class="capsule cos">Cosmetic</span></h4>
+            <p>The <code>vDSP_mmovD</code> comment M/N swap; the stale <code>GaussianFit</code> &ldquo;finite-difference Jacobian&rdquo; docstrings; luma-vs-luminance naming; the redundant <code>mtf</code> branch; <code>readRawPixels</code> zero-sample return; <code>Bin.outputSize</code> for a rejected factor; the <code>Deinterleave</code> &ldquo;must be positive&rdquo; doc; and the unused <code>Histogram</code> bin arrays.</p>
+            <p class="covers"><strong>Covers:</strong> SP COS-1, COS-2, COS-3, COS-4, COS-5, COS-6, COS-8, IMP-12.</p>
+        </div>
+
+        <h3 class="sub">SwiftAstro</h3>
+
+        <div class="milestone">
+            <h4><span class="mid">M5.11</span> FITS Bayer pattern support (<code>GBRG</code>) <span class="capsule bug">Bug</span> <span class="capsule decide">D2</span></h4>
+            <p>Add the valid <code>GBRG</code> mapping the decoder is missing, and resolve the <code>RGBG</code> mapping in step with M5.2 (D2). Add decoder Bayer-pattern tests.</p>
+            <p class="covers"><strong>Covers:</strong> SA BUG-1.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.12</span> Non-finite handling (SNR &amp; sky background) <span class="capsule risk">Correctness-risk</span> <span class="capsule decide">D1</span></h4>
+            <p>Apply the D1 policy to <code>SignalToNoise</code> and <code>SkyBackground</code> so a float-FITS blank no longer yields NaN stats or discards a good frame.</p>
+            <p class="covers"><strong>Covers:</strong> SA CR-2.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.13</span> Star-metric conventions <span class="capsule risk">Correctness-risk</span> <span class="capsule decide">D7</span></h4>
+            <p>Resolve the HFR meaning and the FWHM basis (D7); apply the chosen FWHM consistently across the moment and fit paths; clamp eccentricity to <code>[0,1]</code>; report the roundness-gated eccentricity; tidy the half-flux dead branch and the bright-pass comparability doc.</p>
+            <p class="covers"><strong>Covers:</strong> SA CR-3, CR-4, CR-5, IMP-1, COS-3, COS-6.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.14</span> Detector config, robustness &amp; performance <span class="capsule risk">Correctness-risk</span></h4>
+            <p>Reconcile <code>saturationLevel</code> with the default-on bright pass; bound the <code>sampleWidth</code> fit window; give <code>footprintWidth</code> the annulus-sky read (or note the backstop); and add the missing config-knob / bright-threshold / <code>SyntheticStarGrid</code> recall tests.</p>
+            <p class="covers"><strong>Covers:</strong> SA CR-6, IMP-5, IMP-6, IMP-12, COS-8, COS-9.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.15</span> FITS decoder robustness <span class="capsule risk">Correctness-risk</span></h4>
+            <p>Reject (or handle) <code>NAXIS &ge; 3</code> cubes instead of silently truncating to plane 1; read the header once (drop the double data-segment materialization); mask integer <code>BLANK</code> pixels.</p>
+            <p class="covers"><strong>Covers:</strong> SA CR-1, IMP-2, IMP-3.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.16</span> SNR / sky-background estimator <span class="capsule imp">Improvement</span> <span class="capsule decide">D8</span></h4>
+            <p>Document (or refine) the whole-image-MAD noise estimator and the CFA smoothing bias (D8); validate <code>SignalToNoise.init(noise:)</code>; de-duplicate the <code>1.4826</code> constant; tidy the <code>channels</code>-stride/<code>/3</code> mix in the grayscale combine.</p>
+            <p class="covers"><strong>Covers:</strong> SA CR-8, IMP-4, IMP-7, COS-1, COS-2.</p>
+        </div>
+        <div class="milestone">
+            <h4><span class="mid">M5.17</span> Ephemeris (conventions, coverage, cleanups) <span class="capsule imp">Improvement</span> <span class="capsule decide">D9</span></h4>
+            <p>Horizon convention and outer-planet accuracy (D9); add Jupiter/Saturn numeric position tests, an <code>Ephemeris</code>-facade test, and the moment-seed test; de-tautologize the <code>isAboveHorizon</code> tests; guard the zenith <code>asin</code>; note the <code>e &ge; 1</code> Kepler limit; align the stray <code>=</code>.</p>
+            <p class="covers"><strong>Covers:</strong> SA CR-7, CR-9, IMP-8, IMP-9, IMP-10, IMP-11, COS-4, COS-5, COS-7.</p>
+        </div>
+
+        <h2 class="section">Full-coverage index (all 69 findings)</h2>
+        <div class="prose"><p>Every audit finding and the milestone that fixes it &mdash; the guarantee that nothing is left. See the source audit reports for each finding's detail.</p></div>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Finding</th><th>Summary</th><th>Sev</th><th>Fix</th></tr></thead>
+            <tbody>
+                <tr><td>SP&nbsp;BUG-1</td><td><code>Normalize</code> corrupts NaN/Inf, flags normalized</td><td><span class="capsule bug">Bug</span></td><td class="mid">M5.1</td></tr>
+                <tr><td>SP&nbsp;CR-1</td><td><code>.rgbg</code> is not a valid CFA</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.2</td></tr>
+                <tr><td>SP&nbsp;CR-2</td><td>STF raw MAD vs normalized MAD</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.4</td></tr>
+                <tr><td>SP&nbsp;CR-3</td><td><code>GaussianKernel</code> NaN/Inf &sigma; crash</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.1</td></tr>
+                <tr><td>SP&nbsp;CR-4</td><td><code>MonoToRGB</code> guard order / wrong error</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.3</td></tr>
+                <tr><td>SP&nbsp;CR-5</td><td><code>Debayer</code> guard order / wrong error</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.3</td></tr>
+                <tr><td>SP&nbsp;CR-6</td><td><code>invalidNormalize</code> tests wrong processor</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.9</td></tr>
+                <tr><td>SP&nbsp;CR-7</td><td>Histogram small-total &rarr; bin 0</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.5</td></tr>
+                <tr><td>SP&nbsp;CR-8</td><td><code>median</code>/<code>percentileBounds</code> NaN order</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.1</td></tr>
+                <tr><td>SP&nbsp;CR-9</td><td><code>CosmeticCorrection</code> NaN neighbours</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.1</td></tr>
+                <tr><td>SP&nbsp;CR-10</td><td>STF <code>median &le; shadows</code> hard threshold</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.4</td></tr>
+                <tr><td>SP&nbsp;CR-11</td><td><code>Convolution.convolve</code> no preconditions</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.6</td></tr>
+                <tr><td>SP&nbsp;CR-12</td><td><code>zeroSumResponse</code> ignores channels</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.6</td></tr>
+                <tr><td>SP&nbsp;CR-13</td><td><code>Curves.value(at:)</code> unvalidated</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.6</td></tr>
+                <tr><td>SP&nbsp;CR-14</td><td>4-ch premultiplied alpha untested</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.6</td></tr>
+                <tr><td>SP&nbsp;CR-15</td><td><code>GaussianFit</code> absolute pivot threshold</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.6</td></tr>
+                <tr><td>SP&nbsp;CR-16</td><td><code>GaussianFit</code> rotated/elliptical untested</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.9</td></tr>
+                <tr><td>SP&nbsp;CR-17</td><td>By-design: edges, alpha, Bin CFA, lower-median</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.5/7/8</td></tr>
+                <tr><td>SP&nbsp;IMP-1</td><td>VNG unlike-coloured gradients</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.8</td></tr>
+                <tr><td>SP&nbsp;IMP-2</td><td><code>Normalize</code> global vs per-channel</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.7</td></tr>
+                <tr><td>SP&nbsp;IMP-3</td><td><code>Levels</code> output inversion unvalidated</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.7</td></tr>
+                <tr><td>SP&nbsp;IMP-4</td><td>No-op gamma forces auto-normalize</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.7</td></tr>
+                <tr><td>SP&nbsp;IMP-5</td><td><code>binFactor</code> ignored for <code>.rgb</code></td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.7</td></tr>
+                <tr><td>SP&nbsp;IMP-6</td><td><code>Bin</code>/<code>Resample</code> pipeline untested</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.9</td></tr>
+                <tr><td>SP&nbsp;IMP-7</td><td><code>BitsPerPixel.size</code> overflow traps</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.6</td></tr>
+                <tr><td>SP&nbsp;IMP-8</td><td><code>Convolution</code> vDSP border dependency</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.9</td></tr>
+                <tr><td>SP&nbsp;IMP-9</td><td><code>MonoToRGB</code> requires non-normalized</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.7</td></tr>
+                <tr><td>SP&nbsp;IMP-10</td><td><code>Scale</code> flag clearing (conservative)</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.7</td></tr>
+                <tr><td>SP&nbsp;IMP-11</td><td>PixelBuffer/colour test gaps</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.9</td></tr>
+                <tr><td>SP&nbsp;IMP-12</td><td><code>Histogram</code> unused bin arrays</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.10</td></tr>
+                <tr><td>SP&nbsp;COS-1</td><td><code>vDSP_mmovD</code> comment M/N swap</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.10</td></tr>
+                <tr><td>SP&nbsp;COS-2</td><td><code>mtf</code> redundant <code>m==0.5</code> branch</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.10</td></tr>
+                <tr><td>SP&nbsp;COS-3</td><td>luma vs luminance naming</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.10</td></tr>
+                <tr><td>SP&nbsp;COS-4</td><td><code>readRawPixels</code> zero-sample throws</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.10</td></tr>
+                <tr><td>SP&nbsp;COS-5</td><td><code>Bin.outputSize</code> returns (0,0)</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.10</td></tr>
+                <tr><td>SP&nbsp;COS-6</td><td><code>Deinterleave</code> &ldquo;must be positive&rdquo; doc</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.10</td></tr>
+                <tr><td>SP&nbsp;COS-7</td><td><code>GaussianFit</code> tests self-consistent</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.9</td></tr>
+                <tr><td>SP&nbsp;COS-8</td><td>Stale &ldquo;finite-difference Jacobian&rdquo; docs</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.10</td></tr>
+                <tr><td>SA&nbsp;BUG-1</td><td>FITS decoder rejects <code>GBRG</code>, maps <code>RGBG</code></td><td><span class="capsule bug">Bug</span></td><td class="mid">M5.11</td></tr>
+                <tr><td>SA&nbsp;CR-1</td><td><code>NAXIS &ge; 3</code> cubes truncated to plane 1</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.15</td></tr>
+                <tr><td>SA&nbsp;CR-2</td><td>SNR/background NaN not sanitized</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.12</td></tr>
+                <tr><td>SA&nbsp;CR-3</td><td>HFR is half-light, not acquisition HFR</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.13</td></tr>
+                <tr><td>SA&nbsp;CR-4</td><td>FWHM RMS vs geometric-mean split</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.13</td></tr>
+                <tr><td>SA&nbsp;CR-5</td><td>Roundness gate vs reported eccentricity</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.13</td></tr>
+                <tr><td>SA&nbsp;CR-6</td><td><code>saturationLevel</code> defeated by bright pass</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.14</td></tr>
+                <tr><td>SA&nbsp;CR-7</td><td>Two horizon conventions (0&deg; vs &minus;0.833&deg;)</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.17</td></tr>
+                <tr><td>SA&nbsp;CR-8</td><td>Bilinear smoothing biases CFA noise low</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.16</td></tr>
+                <tr><td>SA&nbsp;CR-9</td><td>Jupiter/Saturn positions untested</td><td><span class="capsule risk">Risk</span></td><td class="mid">M5.17</td></tr>
+                <tr><td>SA&nbsp;IMP-1</td><td>Eccentricity not upper-clamped</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.13</td></tr>
+                <tr><td>SA&nbsp;IMP-2</td><td><code>detectionImage</code> double-materializes data</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.15</td></tr>
+                <tr><td>SA&nbsp;IMP-3</td><td>Integer <code>BLANK</code> pixels not masked</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.15</td></tr>
+                <tr><td>SA&nbsp;IMP-4</td><td>Whole-image MAD vs MRS noise</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.16</td></tr>
+                <tr><td>SA&nbsp;IMP-5</td><td><code>sampleWidth</code> fit window grows unbounded</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.14</td></tr>
+                <tr><td>SA&nbsp;IMP-6</td><td>Matched-filter config knobs untested</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.14</td></tr>
+                <tr><td>SA&nbsp;IMP-7</td><td><code>SignalToNoise.init(noise:)</code> unvalidated</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.16</td></tr>
+                <tr><td>SA&nbsp;IMP-8</td><td>Outer-planet perturbations omitted</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.17</td></tr>
+                <tr><td>SA&nbsp;IMP-9</td><td><code>Ephemeris</code> facade untested</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.17</td></tr>
+                <tr><td>SA&nbsp;IMP-10</td><td><code>isAboveHorizon</code> tests tautological</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.17</td></tr>
+                <tr><td>SA&nbsp;IMP-11</td><td>Moment&rarr;fit seed untested directly</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.17</td></tr>
+                <tr><td>SA&nbsp;IMP-12</td><td><code>footprintWidth</code> annulus-sky robustness</td><td><span class="capsule imp">Imp</span></td><td class="mid">M5.14</td></tr>
+                <tr><td>SA&nbsp;COS-1</td><td><code>1.4826</code> constant duplicated</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.16</td></tr>
+                <tr><td>SA&nbsp;COS-2</td><td><code>channels</code> stride mixed with <code>/3</code></td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.16</td></tr>
+                <tr><td>SA&nbsp;COS-3</td><td>Half-flux dead branch + pixelization notes</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.13</td></tr>
+                <tr><td>SA&nbsp;COS-4</td><td>Kepler NaN for <code>e &ge; 1</code></td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.17</td></tr>
+                <tr><td>SA&nbsp;COS-5</td><td>Zenith <code>asin</code> unguarded</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.17</td></tr>
+                <tr><td>SA&nbsp;COS-6</td><td>Bright-pass metric comparability doc</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.13</td></tr>
+                <tr><td>SA&nbsp;COS-7</td><td>Misaligned <code>=</code></td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.17</td></tr>
+                <tr><td>SA&nbsp;COS-8</td><td><code>SyntheticStarGrid</code> unused by detector tests</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.14</td></tr>
+                <tr><td>SA&nbsp;COS-9</td><td><code>honorsBrightPassThreshold</code> doesn't isolate</td><td><span class="capsule cos">Cos</span></td><td class="mid">M5.14</td></tr>
+            </tbody>
+        </table>
+        </div>
+
+        <footer>
+            FITScope algorithms plan &mdash; M4 triage. Every finding from the SwiftPixel (M2) and
+            SwiftAstro (M3) audits is mapped to a Phase-2 fix milestone; nine decisions are pending
+            the maintainer. Phase 2 implements <code>M5.1</code>&ndash;<code>M5.17</code> one at a time.
+        </footer>
+    </div>
+</body>
+</html>
