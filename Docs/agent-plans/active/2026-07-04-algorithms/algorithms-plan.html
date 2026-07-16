@@ -387,25 +387,38 @@
         </div>
 
         <div class="milestone">
-            <h3><span class="m-num">M3.</span> Correctness audit &mdash; SwiftAstro <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M3.</span> Correctness audit &mdash; SwiftAstro <span class="capsule completed">Completed</span></h3>
             <div class="field-label">Goal</div>
             <p class="goal">Review every SwiftAstro algorithm &mdash; star detection, signal-to-noise, preprocessing, and ephemeris &mdash; for correctness, and produce a written findings report on the same basis as M2.</p>
             <div class="field-label">Tasks</div>
             <ul class="tasks">
-                <li>Audit StarDetection: MatchedFilterStarDetector (+ BrightStars), GaussianFit+StarMoments, StarMoments, StarField, Star, StarDetecting &mdash; verify detection math, centroiding, moment/PSF fitting, and thresholds against real-frame validation tests.</li>
-                <li>Audit SignalToNoise: SignalToNoise and SkyBackground &mdash; verify the SNR and background-estimation formulas and their statistical assumptions.</li>
-                <li>Audit Preprocessing: BayerGrayscaleConverter and FITSImageDecoder &mdash; verify Bayer handling and decode correctness against SwiftPixel's debayering.</li>
-                <li>Audit Ephemeris (11 files): planet/lunar/solar position models, twilight events, moon phase, and coordinate conversions &mdash; sanity-check against known reference values and documented precision.</li>
-                <li>Record findings with severity into the M4 report; note overlaps with SwiftPixel primitives (e.g. shared Gaussian-fit code) to avoid duplicated fixes.</li>
+                <li class="done">Audit StarDetection: MatchedFilterStarDetector (+ BrightStars), GaussianFit+StarMoments, StarMoments, StarField, Star, StarDetecting &mdash; verify detection math, centroiding, moment/PSF fitting, and thresholds against real-frame validation tests.</li>
+                <li class="done">Audit SignalToNoise: SignalToNoise and SkyBackground &mdash; verify the SNR and background-estimation formulas and their statistical assumptions.</li>
+                <li class="done">Audit Preprocessing: BayerGrayscaleConverter and FITSImageDecoder &mdash; verify Bayer handling and decode correctness against SwiftPixel's debayering.</li>
+                <li class="done">Audit Ephemeris (11 files): planet/lunar/solar position models, twilight events, moon phase, and coordinate conversions &mdash; sanity-check against known reference values and documented precision.</li>
+                <li class="done">Record findings with severity into the M4 report; note overlaps with SwiftPixel primitives (e.g. shared Gaussian-fit code) to avoid duplicated fixes.</li>
             </ul>
             <div class="field-label">Status</div>
-            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <p><span class="capsule completed">Completed</span> &nbsp; <span class="completed-date">Completed: 2026-07-16</span></p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="note-block">
+                <p><strong>Deliverable.</strong> A findings-only audit &mdash; <strong>no production code was changed</strong>. The findings live in <a href="swiftastro-audit.html">swiftastro-audit.html</a> in this plan folder (same style as the SwiftPixel report), which M4 will consolidate with M2. Scope: all 23 SwiftAstro source files (star detection, signal-to-noise, preprocessing, ephemeris, core) and their 21 test/helper files, at <code>HEAD</code> <code>9275c6e</code>.</p>
+                <p><strong>Method.</strong> The 23 files were audited by <strong>5 independent, fresh-context sub-agents</strong>, one per domain, each told to verify formulas against authoritative sources rather than memory. The ephemeris reviewers correctly identified the reference as <strong>Paul Schlyter's &ldquo;Computing planetary positions&rdquo;</strong> (not Meeus) and verified against it, one re-deriving Schlyter's worked example in a standalone Swift program. Every finding was then <strong>lead-reviewed</strong>, with load-bearing items re-verified against the source (BUG-1, the FWHM RMS-vs-geometric-mean split, the roundness gate/report mismatch, the <code>saturationLevel</code> override, and the NAXIS-cube truncation confirmed by reading the code). Notably, a reported <strong>latent <code>+Inf</code> crash was refuted</strong> on verification &mdash; the edge-margin guard at <code>+BrightStars.swift:105</code> rejects a non-finite centroid before the <code>Int()</code> at <code>:121</code> &mdash; and excluded from the findings.</p>
+                <p><strong>Result.</strong> <strong>1 bug, 9 correctness-risks, 12 improvements, 9 cosmetics.</strong> The headline is again reassuring &mdash; the heavy math is correct: the ephemeris is a faithful, numerically-verified Schlyter low-precision implementation, and the detection statistic (matched filter, robust noise, moments, Gaussian-fit seed) and the SNR &ldquo;SNRWeight&rdquo; formula check out. The defects cluster into: one functional bug (<strong>BUG-1</strong> &mdash; <code>FITSImageDecoder</code> rejects the valid <code>GBRG</code> Bayer pattern and maps the non-standard <code>RGBG</code>, tying into SwiftPixel M2 CR-1); a recurring <strong>NaN/Inf-handling gap</strong> (SNR/SkyBackground emit NaN, detection silently under-counts); a set of <strong>single-number metric conventions</strong> that don't match their names or disagree across paths (HFR meaning, FWHM RMS-vs-geomean, roundness gate-vs-report); a config-semantics gap (<code>saturationLevel</code> defeated by the default-on bright pass); and several test-coverage holes (Jupiter/Saturn positions, matched-filter gate knobs, the ephemeris facade). SwiftPixel overlaps were noted, not re-filed.</p>
+                <p><strong>Automated review loop.</strong> 1 round, converged. The fresh-context reviewer read the numerically-heavy files in full, <strong>independently re-traced and confirmed the <code>+Inf</code>-crash refutation</strong>, verified BUG-1 (down to the fixtures' <code>BAYERPAT</code> headers) and every correctness-risk's line references, and found <strong>no false positives and no Critical/High/Medium defects</strong>. One Info item was fixed (see below).</p>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="note-block">
+                <p><strong>Round 1</strong> (fresh-context reviewer; read the heavy files in full and re-verified load-bearing findings against the source): <strong>no false positives; converged</strong> (no Critical/High/Medium defects). It positively confirmed BUG-1 (including that the committed fixtures are <code>RGGB</code>/<code>GRBG</code>, so <code>GBRG</code> was never exercised), CR-1 through CR-9, and the internal-consistency counts, and it <strong>independently re-traced the refuted <code>+Inf</code> crash</strong> &mdash; agreeing it is unreachable (NaN/&minus;Inf fail the lower edge-margin bound, <code>+Inf</code> fails the upper), so no real bug was dropped.</p>
+                <ul>
+                    <li><strong>Info &mdash; COS-8 inaccurate parenthetical.</strong> The finding claimed the out-of-scope benchmarks use the <code>SyntheticStarGrid</code> fixture; a grep shows they do not (only its own generator self-test references it). <strong>Fixed</strong> &mdash; removed the benchmark reference (the core &ldquo;unused by any detector test&rdquo; claim was already correct).</li>
+                    <li><strong>Note (no change) &mdash; CR-9 severity.</strong> The reviewer observed CR-9 (Jupiter/Saturn positions never numerically validated) could be read as an improvement-level test gap rather than a correctness-risk; kept as a correctness-risk since those two bodies have zero numeric validation, and the report is transparent that the elements are verified-correct today.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+            <div class="note-block">
+                <p><strong>Maintainer:</strong> &ldquo;Looks good&rdquo; &mdash; reviewed and approved the SwiftAstro audit report and its findings.</p>
+            </div>
         </div>
 
         <div class="milestone">

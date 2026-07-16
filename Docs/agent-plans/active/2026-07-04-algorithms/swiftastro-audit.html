@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftAstro &mdash; Correctness Audit</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --bg-card:   #181b24;
+            --bg-card-2: #1d212c;
+            --border:    #2a2f3c;
+            --text:      #e6e9ef;
+            --text-dim:  #9aa3b2;
+            --accent:    #5aa9ff;
+            --accent-dim:#2d3b52;
+            --code-bg:   #11141b;
+
+            --sev-bug-bg:    #4a1414;
+            --sev-bug-text:  #ff7b7b;
+            --sev-risk-bg:   #4a3b12;
+            --sev-risk-text: #ffd15a;
+            --sev-imp-bg:    #123a4a;
+            --sev-imp-text:  #5ac8ff;
+            --sev-cos-bg:    #2a2f3c;
+            --sev-cos-text:  #b7c0d0;
+            --clean-text:    #5ad67f;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container { max-width: 940px; margin: 0 auto; padding: 48px 24px 96px; }
+
+        header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 12px; }
+        h1 { margin: 0 0 12px; font-size: 2.2rem; letter-spacing: -0.02em; }
+
+        .meta { color: var(--text-dim); font-size: 0.9rem; }
+        .meta strong { color: var(--text); font-weight: 600; }
+        .meta a { color: var(--accent); text-decoration: none; }
+        .meta a:hover { text-decoration: underline; }
+
+        h2.section {
+            font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--text-dim); margin: 44px 0 18px; padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .prose { color: var(--text-dim); font-size: 1.0rem; }
+        .prose p { margin: 0 0 14px; }
+        .prose ul { color: var(--text-dim); }
+        .prose li { margin: 6px 0; }
+        .prose strong { color: var(--text); }
+
+        .legend { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .capsule {
+            display: inline-block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; padding: 3px 12px; border-radius: 999px; white-space: nowrap;
+        }
+        .capsule.bug  { background: var(--sev-bug-bg);  color: var(--sev-bug-text);  }
+        .capsule.risk { background: var(--sev-risk-bg); color: var(--sev-risk-text); }
+        .capsule.imp  { background: var(--sev-imp-bg);  color: var(--sev-imp-text);  }
+        .capsule.cos  { background: var(--sev-cos-bg);  color: var(--sev-cos-text);  }
+
+        .counts { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0 0; }
+        .count-card { flex: 1 1 150px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+        .count-card .n { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+        .count-card .l { color: var(--text-dim); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 6px; }
+
+        .finding { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; }
+        .finding h3 { margin: 0 0 10px; font-size: 1.1rem; color: var(--text); display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+        .finding h3 .fid { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 0.9rem; }
+        .finding .field { margin: 10px 0 0; }
+        .finding .field .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); font-weight: 700; margin-right: 8px; }
+        .finding p { margin: 6px 0 0; }
+        .loc { color: var(--text-dim); font-size: 0.9rem; }
+
+        code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; font-size: 0.84em; color: var(--text); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.92rem; }
+        th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        th { color: var(--text-dim); text-transform: uppercase; font-size: 0.74rem; letter-spacing: 0.06em; }
+        td.clean { color: var(--clean-text); font-weight: 600; }
+        .table-wrap { overflow-x: auto; }
+
+        .note-block { background: var(--bg-card-2); border: 1px dashed var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text-dim); margin: 12px 0 0; }
+
+        footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SwiftAstro &mdash; Correctness Audit</h1>
+            <div class="meta">
+                <div><strong>Milestone</strong> &mdash; M3 (Correctness audit &mdash; SwiftAstro), from <a href="algorithms-plan.html">algorithms-plan.html</a></div>
+                <div><strong>Generated</strong> &mdash; 2026-07-16</div>
+                <div><strong>Scope</strong> &mdash; all 23 SwiftAstro source files (star detection, signal-to-noise, preprocessing, ephemeris, core) and their 21 test/helper files (18 tests + 3 shared fixture/generator helpers), at <code>Submodules/SwiftAstro</code> (<code>HEAD</code> <code>9275c6e</code>)</div>
+                <div><strong>Nature</strong> &mdash; findings only; no production code was changed in this milestone.</div>
+                <div class="legend">
+                    <span class="capsule bug">Bug</span>
+                    <span class="capsule risk">Correctness-risk</span>
+                    <span class="capsule imp">Improvement</span>
+                    <span class="capsule cos">Cosmetic</span>
+                </div>
+            </div>
+        </header>
+
+        <h2 class="section">Overview</h2>
+        <div class="prose">
+            <p>
+                This report audits every SwiftAstro algorithm &mdash; the matched-filter
+                star detector, the signal-to-noise / sky-background estimators, the FITS
+                preprocessing, and the positional-astronomy ephemeris &mdash; for
+                correctness, on the same basis as the SwiftPixel audit (M2). SwiftAstro
+                builds on SwiftPixel; where an issue actually lives in SwiftPixel it is
+                noted as an overlap rather than re-filed.
+            </p>
+            <p>
+                The <strong>headline is again reassuring</strong>: the heavy math is correct.
+                The ephemeris is a <strong>faithful, numerically-verified implementation of
+                Paul Schlyter's low-precision model</strong> (every Sun/Moon/planet element,
+                the lunar perturbation series, the Kepler solver, sidereal time, the
+                equatorial&harr;horizontal transform, twilight, and moon phase reproduce
+                Schlyter's worked example). The star-detection statistic (zero-sum Gaussian
+                matched filter, robust <code>MAD&middot;1.4826</code> noise on the response,
+                strict-neighbour peak finding, moment centroids, and the Gaussian-fit seed),
+                and the SNR &ldquo;SNRWeight&rdquo; formula, all check out against references.
+            </p>
+            <p>
+                The defects that exist cluster into recurring themes: <strong>one functional
+                bug</strong> (a valid Bayer pattern rejected while a broken one is accepted),
+                a <strong>non-finite (NaN/Inf) handling gap</strong> that mirrors SwiftPixel's,
+                a set of <strong>single-number metric conventions</strong> that don't match
+                their names or disagree across measurement paths, and several
+                <strong>test-coverage holes</strong> that leave correct code unguarded.
+            </p>
+            <div class="counts">
+                <div class="count-card"><div class="n" style="color:var(--sev-bug-text)">1</div><div class="l">Bug</div></div>
+                <div class="count-card"><div class="n" style="color:var(--sev-risk-text)">9</div><div class="l">Correctness-risk</div></div>
+                <div class="count-card"><div class="n" style="color:var(--sev-imp-text)">12</div><div class="l">Improvement</div></div>
+                <div class="count-card"><div class="n" style="color:var(--sev-cos-text)">9</div><div class="l">Cosmetic</div></div>
+            </div>
+        </div>
+
+        <h2 class="section">Method &amp; verification</h2>
+        <div class="prose">
+            <p>
+                The 23 files were audited by five independent, fresh-context reviewers, one
+                per domain (matched-filter detector; star moments/fit/types; SNR +
+                preprocessing + core; ephemeris position models; ephemeris facade /
+                coordinates / events), each with a findings-only mandate and instructed to
+                verify formulas against authoritative sources rather than memory. The
+                ephemeris reviewers correctly identified the reference as <strong>Paul
+                Schlyter's &ldquo;Computing planetary positions&rdquo;</strong> (not Meeus) and
+                verified against it, one of them re-deriving Schlyter's worked example in a
+                standalone Swift program.
+            </p>
+            <p>
+                Every finding was then <strong>reviewed by the lead and the load-bearing
+                items re-verified against the source</strong>. Notably, one reported
+                <strong>latent crash was refuted on verification</strong>: a claimed
+                <code>+Inf &rarr; Int(NaN)</code> trap in the bright-star pass
+                (<code>+BrightStars.swift:121</code>) is <em>not</em> reachable &mdash; the
+                edge-margin guard at <code>:105</code> (<code>base.x &gt;= margin</code> &hellip;)
+                is <code>false</code> for a non-finite centroid, so the candidate returns
+                <code>nil</code> before the <code>Int()</code> conversion. It is excluded from
+                the findings below. The FITS <code>GBRG</code> bug, the FWHM RMS-vs-geomean
+                split, the roundness gate/report mismatch, the <code>saturationLevel</code>
+                override, and the NAXIS-cube truncation were each confirmed by reading the
+                cited code. Confidence levels are carried on each finding.
+            </p>
+        </div>
+
+        <h2 class="section">Cross-cutting themes</h2>
+        <div class="prose">
+            <ul>
+                <li><strong>Non-finite (NaN/Inf) samples are inconsistently handled</strong>
+                    (the same theme as SwiftPixel M2). Float FITS frames carry NaN blanks, and
+                    the decoder passes them through. The detector guards finiteness on some
+                    <em>derived</em> metrics (<code>.isFinite</code> at
+                    <code>MatchedFilterStarDetector.swift:332, 401, 502</code> and
+                    <code>+BrightStars:171</code>), so a blank generally causes graceful
+                    <em>under-detection</em> rather than a crash &mdash; but nothing sanitizes
+                    the input, and <code>SignalToNoise</code>/<code>SkyBackground</code> emit
+                    <code>NaN</code> statistics or silently discard a good frame (CR-2). One
+                    decode-time policy (mask or reject blanks) would close it across the board.</li>
+                <li><strong>The Bayer <code>.rgbg</code> / <code>GBRG</code> tangle ties back to
+                    SwiftPixel M2 (CR-1).</strong> The FITS decoder <em>omits</em> the valid,
+                    common <code>GBRG</code> pattern and instead maps the non-standard
+                    <code>RGBG</code> &mdash; which routes into SwiftPixel's incorrect
+                    <code>.rgbg</code> demosaic. Fixing it well spans both submodules: add
+                    <code>GBRG</code> here (BUG-1) and resolve <code>.rgbg</code> in SwiftPixel.</li>
+                <li><strong>Single-number metric conventions don't match their names or each
+                    other.</strong> <code>hfr</code> is the half-light (encircled-50%) radius,
+                    not the acquisition-software HFR its name implies (CR-3); the one-number
+                    <code>fwhm</code> is the RMS of the two axis widths on the moment path but
+                    the geometric mean on the fit path, mixed within one <code>StarField</code>
+                    (CR-4); and the bright-star roundness cut gates one eccentricity but reports
+                    another (CR-5). A consumer comparing SwiftAstro metrics to other tools, or
+                    across stars, gets subtle mismatches.</li>
+                <li><strong>The ephemeris is a faithful low-precision Schlyter implementation.</strong>
+                    Its findings are test-coverage gaps and one horizon-convention consistency
+                    note (CR-7) &mdash; not math errors. The stated &ldquo;fraction of a degree&rdquo;
+                    outer-planet accuracy and the mean-phase moon model are honestly documented.</li>
+                <li><strong>SwiftPixel overlaps (noted, not re-filed):</strong> the
+                    <code>PixelUtilities.median</code>/<code>percentileBounds</code> NaN sort
+                    order, <code>PixelBuffer.init</code> performing no finiteness validation, and
+                    the <code>.rgbg</code> pattern itself &mdash; all already captured in the M2
+                    SwiftPixel report.</li>
+            </ul>
+        </div>
+
+        <!-- ===================== BUG ===================== -->
+        <h2 class="section">Bug</h2>
+
+        <div class="finding">
+            <h3><span class="fid">BUG-1</span> FITS decoder rejects the valid <code>GBRG</code> Bayer pattern and maps the non-standard <code>RGBG</code> <span class="capsule bug">Bug</span></h3>
+            <p class="loc"><code>Preprocessing/FITSImageDecoder.swift:132&ndash;139</code> &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>The <code>BAYERPAT</code> switch handles <code>BGGR</code>, <code>RGBG</code>, <code>GRBG</code>, <code>RGGB</code> and throws on everything else &mdash; so a frame carrying the common, valid <code>BAYERPAT = 'GBRG'</code> (many Sony/ZWO one-shot-colour sensors, partly because FITS stores rows bottom-up) is rejected outright with &ldquo;Unsupported BAYERPAT value GBRG,&rdquo; even though SwiftPixel supports <code>.gbrg</code> as a first-class, tested pattern and the whole demosaic path downstream handles it. In its place the switch maps <code>RGBG</code>, which is <em>not</em> a pattern capture software emits and which resolves to SwiftPixel's non-checkerboard <code>.rgbg</code> (the broken demosaic flagged in M2 CR-1). This reads as a <code>GBRG</code>&rarr;<code>RGBG</code> transposition. The committed fixtures are <code>GRBG</code> (Seestar) and <code>RGGB</code> (ZWO), so the gap was never exercised.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Add <code>case "GBRG": return .gbrg</code>. Drop or re-route <code>RGBG</code> in step with the SwiftPixel M2 CR-1 resolution (it should not silently select a broken demosaic).</p>
+            </div>
+            <div class="field"><span class="label">Test status</span>
+                <p>Missing &mdash; the decoder Bayer test asserts only <code>.rggb</code> and <code>nil</code> (mono); no <code>GBRG</code>/<code>BGGR</code>/<code>RGBG</code> or error-path case exists.</p>
+            </div>
+        </div>
+
+        <!-- ===================== CORRECTNESS-RISK ===================== -->
+        <h2 class="section">Correctness-risk</h2>
+
+        <div class="finding">
+            <h3><span class="fid">CR-1</span> <code>NAXIS &ge; 3</code> data cubes are silently truncated to their first plane <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Preprocessing/FITSImageDecoder.swift:63&ndash;90</code> &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>The decoder validates only that <code>NAXIS1 &gt; 0</code> and <code>NAXIS2 &gt; 0</code>; it never reads the <code>NAXIS</code> count nor rejects <code>NAXIS3 &gt; 1</code>. For a 3-plane RGB FITS or any data cube, <code>expectedBytes</code> is computed for a <em>single</em> plane, <code>prefix(expectedBytes)</code> grabs exactly plane 1's bytes, the size check passes, and the decoder returns only the first plane as a single-channel image &mdash; silent data loss, no error. The doc claims a &ldquo;2D image HDU&rdquo; but nothing enforces <code>NAXIS == 2</code>.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Read <code>hdu.header.naxis</code> and reject (or explicitly handle) <code>NAXIS != 2</code>; at minimum throw for <code>NAXIS &ge; 3</code>.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span><p>Missing &mdash; no cube fixture or <code>NAXIS</code> assertion.</p></div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-2</span> Non-finite (NaN/Inf) samples are not sanitized &mdash; SNR/background emit NaN, detection silently under-counts <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>SignalToNoise.swift:84&ndash;88</code>, <code>SkyBackground.swift:120&ndash;132</code>; detector <code>median</code>/<code>MAD</code>/convolution paths &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>Float FITS frames legitimately carry <code>NaN</code> blanks, decoded at face value. <code>SkyBackground.estimate</code> uses <code>pixels.min()</code>/<code>.max()</code> and <code>PixelUtilities.median</code>, all unreliable with <code>NaN</code>, and returns a struct whose absolute <code>level</code>/<code>noise</code>/<code>minimum</code>/<code>maximum</code> are then <code>NaN</code>. <code>SignalToNoise.estimate</code> gets <code>noise = NaN</code>, and <code>guard noise &gt; 0</code> (<code>NaN &gt; 0 == false</code>) makes it return <code>nil</code> &mdash; a good frame with one blank pixel is discarded. In the detector, non-finite input mostly causes graceful <em>under-detection</em> (finiteness guards on derived metrics turn a poisoned measurement into a dropped candidate), but nothing sanitizes the input, so counts silently fall. This is internally inconsistent &mdash; the detector guards <code>.isFinite</code> in several spots while the statistics helpers do not. <em>(A reported <code>+Inf</code> crash in the bright pass was refuted &mdash; see Method.)</em></p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Adopt one non-finite policy: mask/replace blanks at decode (or reject non-finite input with a thrown error), and filter to finite samples before median/MAD/min/max in <code>SignalToNoise</code>/<code>SkyBackground</code>.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span><p>Missing &mdash; all fixtures are 16-bit integer (always finite); no NaN/Inf path is exercised.</p></div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-3</span> <code>hfr</code> is the half-light (encircled-50%) radius, not the acquisition-software HFR its name implies <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>StarDetection/StarMoments.swift:162&ndash;190</code> &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>halfFluxRadius</code> accumulates flux in order of increasing radius and returns the radius enclosing 50% of the flux &mdash; the half-light / effective radius (SExtractor <code>FLUX_RADIUS</code> at 0.5), <code>= &sigma;&radic;(2 ln2) &asymp; 1.177&sigma;</code> for a Gaussian. That is <em>not</em> what acquisition software (NINA/SGP/Ekos) reports as &ldquo;HFR&rdquo;, which is <code>HFD/2</code>, a flux-weighted <em>mean</em> radius <code>= &sigma;&radic;(&pi;/2) &asymp; 1.253&sigma;</code> &mdash; a <strong>+6.4% definitional offset</strong> for an ideal Gaussian, more on real stars. The code is internally consistent (its <code>FWHM = 2&middot;HFR</code> relation holds under this definition), so the choice looks deliberate &mdash; but the name and the <code>RealFrameValidationTests</code> rationale (which attributes the difference to the Gaussian fit) are misleading; the offset is definitional and would persist with identical centres and no fit.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Decide the intended convention: keep the half-light radius but rename/clarify it and correct the test rationale, or switch to the flux-weighted mean radius <code>&Sigma;(w&middot;r)/&Sigma;w</code> for interop with acquisition-software HFR.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span><p>Loose &mdash; <code>measuresARoundGaussian</code> (10% tol) and <code>RealFrameValidationTests</code> (20% tol) both absorb the ~6% offset and cannot discriminate the two definitions.</p></div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-4</span> One-number <code>fwhm</code> is the RMS of &sigma;x,&sigma;y on the moment path but the geometric mean on the fit path &mdash; mixed within one <code>StarField</code> <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>StarMoments.swift:113</code> (RMS) vs <code>MatchedFilterStarDetector.swift:394, 684</code> (geomean) &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>StarMoments.fwhm = fwhmPerSigma&middot;&radic;((Mxx+Myy)/2)</code> &mdash; the <strong>quadratic mean (RMS)</strong> of the two widths. When the Gaussian fit succeeds, the detector instead reports <code>fwhmPerSigma&middot;&radic;(&sigma;_major&middot;&sigma;_minor)</code> &mdash; the <strong>geometric mean</strong> (verified at <code>:394</code> and <code>:684</code>). For a round star these coincide; for &sigma;=(2,4) they differ by <strong>+11.8%</strong>. The detector mixes bases in one result set: fit-measured stars carry the geometric-mean FWHM, while moment-fallback stars and <em>all</em> bright-pass stars (<code>+BrightStars</code> reports <code>refined.fwhm</code>) carry the RMS FWHM. <code>StarField.medianFWHM</code>/<code>fwhmRange</code> then aggregate across the two bases, and the size-band purity cut is applied on different bases per star &mdash; bright/saturated/trailed stars, the most elongated, are exactly the ones on the RMS basis. (Eccentricity, by contrast, is consistent: both paths use <code>&radic;(1 &minus; &sigma;_minor&sup2;/&sigma;_major&sup2;)</code>.)</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span>
+                <p>Pick one single-value FWHM convention (geometric mean is the standard &ldquo;equivalent circular&rdquo;/seeing FWHM) and use it in both paths.</p>
+            </div>
+            <div class="field"><span class="label">Test status</span><p>Missing &mdash; only round-star tests exist, where RMS and geomean coincide.</p></div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-5</span> Bright-star roundness cut gates on <code>base.eccentricity</code> but the star reports <code>refined.eccentricity</code> <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>StarDetection/MatchedFilterStarDetector+BrightStars.swift:107</code> (gate) vs <code>:177</code> (reported) &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>The purity gate is applied to the eccentricity of the detection footprint (<code>base</code>, global background), but the emitted <code>Star</code> carries the eccentricity of the refined core aperture (<code>refined</code>, local background) &mdash; measured on different sample sets. So a bright star can pass the gate on <code>base</code> yet be emitted with <code>refined.eccentricity &gt; roundnessLimit</code>, violating the stated purity contract. Round stars (the common case) have both &asymp; 0, so only borderline-elongated bright blobs are affected.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span><p>Apply the roundness cut to <code>refined.eccentricity</code> after refinement (or gate on whichever value is reported).</p></div>
+            <div class="field"><span class="label">Test status</span><p>Missing.</p></div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-6</span> <code>saturationLevel</code> is silently defeated by the default-on bright-star pass <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>MatchedFilterStarDetector.swift:137&ndash;138, 633&ndash;636</code> vs <code>+BrightStars.swift</code> (no saturation gate) &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>saturationLevel</code> is documented as dropping candidates whose peak sample is at/above the level (bloomed). The matched-filter path honours it (<code>:633</code>), but the bright-star pass &mdash; whose explicit purpose is to recover a bright star's <em>saturated, flat-topped core</em> &mdash; has <strong>no saturation gate</strong> and is <strong>on by default</strong>. So with <code>saturationLevel</code> set and default <code>detectsBrightStars: true</code>, saturated stars are dropped by one path and re-added by the other. Nothing documents that a user must also set <code>detectsBrightStars: false</code> for <code>saturationLevel</code> to take effect.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span><p>Honour <code>saturationLevel</code> in the bright pass, or document that it applies only to the matched-filter pass and is overridden by the bright pass.</p></div>
+            <div class="field"><span class="label">Test status</span><p>Missing &mdash; <code>saturationLevel</code> is never set to a non-default value (see IMP-6).</p></div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-7</span> Two horizon conventions coexist &mdash; <code>isAboveHorizon</code> at 0&deg; vs sunrise at &minus;0.833&deg; <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Ephemeris/HorizontalCoordinate.swift:39&ndash;42</code> vs <code>Ephemeris/TwilightEvents.swift:67</code> &middot; Confidence: <strong>medium (both individually correct)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p><code>isAboveHorizon</code> is <code>altitude &gt; 0</code> (geometric), while <code>TwilightEvents</code> uses <code>sunriseAltitude = &minus;0.833&deg;</code> (refraction + semidiameter). A caller comparing <code>SolarPosition.horizontal(&hellip;).isAboveHorizon</code> against <code>sunrise</code>/<code>sunset</code> finds the Sun reports <code>isAboveHorizon == false</code> for the minutes its centre sits between &minus;0.833&deg; and 0&deg; &mdash; i.e. <em>after</em> the reported sunrise. Both thresholds are defensible and documented, but the library never reconciles them (internally, twilight uses &minus;0.833&deg; directly and never routes through <code>isAboveHorizon</code>).</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span><p>Call out the distinction in both docs, and/or offer a refraction-aware <code>isAboveHorizon(refraction:)</code> so &ldquo;Sun is up&rdquo; agrees with the sunrise time.</p></div>
+            <div class="field"><span class="label">Test status</span><p>The &minus;0.833&deg;&hellip;0&deg; band is not probed by any test.</p></div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-8</span> Bilinear demosaic smooths the frame, biasing the CFA absolute-noise estimate low <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>Preprocessing/BayerGrayscaleConverter.swift:84&ndash;91</code> (feeding <code>SkyBackground</code>/<code>SignalToNoise</code>) &middot; Confidence: <strong>medium</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>The converter removes the CFA checkerboard (which would inflate the noise estimate) via bilinear demosaicing &mdash; but bilinear reconstruction is a low-pass filter: R/B at each site average 4 neighbours (G, 2), so <code>(R+G+B)/3</code> has materially suppressed per-pixel noise. Absolute ADU noise from <code>SkyBackground</code>/<code>SignalToNoise</code> on a demosaiced CFA frame is therefore biased <strong>low</strong> relative to a true mono frame or a 2&times;2 superpixel. For CFA-vs-CFA relative weighting this is consistent; CFA-vs-mono comparisons are not on equal footing. An inherent trade-off of the (deliberately resolution-preserving) approach, worth recording.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span><p>Document that CFA-frame noise is smoothing-suppressed and not directly comparable to mono; if absolute noise matters, estimate it on the raw mosaic per CFA phase.</p></div>
+            <div class="field"><span class="label">Test status</span><p>Not asserted (tests check means/geometry, not noise characteristics).</p></div>
+        </div>
+
+        <div class="finding">
+            <h3><span class="fid">CR-9</span> Jupiter and Saturn positions are never numerically validated <span class="capsule risk">Correctness-risk</span></h3>
+            <p class="loc"><code>SwiftAstroTests/Ephemeris/PlanetPositionTests.swift</code> &middot; Confidence: <strong>high (lead-verified)</strong></p>
+            <div class="field"><span class="label">What &amp; why</span>
+                <p>Among planets, only Mercury/Venus/Mars get a numeric Schlyter check, and Uranus/Neptune get only a heliocentric distance-range check (which exercises <code>a</code>/<code>e</code> but not <code>N</code>,<code>i</code>,<code>w</code>,<code>M</code>). <strong>Jupiter and Saturn have no accuracy test at all</strong> (they are never even referenced in the position tests) &mdash; a future typo in a Jupiter/Saturn element polynomial would very likely pass CI silently. The elements are correct today (all verified against Schlyter); this is purely regression exposure.</p>
+            </div>
+            <div class="field"><span class="label">Recommendation</span><p>Add a heliocentric long/lat/dist assertion for Jupiter and Saturn against Schlyter's worked example, matching the Mercury/Venus/Mars pattern.</p></div>
+            <div class="field"><span class="label">Test status</span><p>Missing.</p></div>
+        </div>
+
+        <!-- ===================== IMPROVEMENT ===================== -->
+        <h2 class="section">Improvement</h2>
+        <div class="prose">
+            <ul>
+                <li><strong>IMP-1 &mdash; <code>StarMoments</code> eccentricity is not upper-clamped</strong> (<code>StarMoments.swift:134</code>): <code>max(0, 1&minus;minor/major)</code> guards only the lower bound; a non-PSD moment matrix (negative weights, reachable via the public <code>init?</code> or the bright pass's aperture pixels below local sky) yields <code>ecc &gt; 1</code>, violating the documented 0&hellip;1 invariant. Clamp to <code>[0,1]</code>.</li>
+                <li><strong>IMP-2 &mdash; <code>detectionImage</code> materializes the data segment twice</strong> (<code>FITSImageDecoder.swift:106&ndash;107</code>): it calls <code>imageHDU</code> (which renders the whole data segment) only to read the header, then <code>linearImage</code> renders it again &mdash; a real, avoidable cost on large frames. Read the header once and reuse it.</li>
+                <li><strong>IMP-3 &mdash; integer <code>BLANK</code> undefined pixels are not masked</strong> (<code>FITSImageDecoder.swift</code>): the FITS <code>BLANK</code> sentinel for integer BITPIX is not read, so undefined pixels pass through as ordinary values and skew statistics. Rare in camera FITS, low impact. (<code>BZERO</code>/<code>BSCALE</code> application itself is correct.)</li>
+                <li><strong>IMP-4 &mdash; SNR noise is whole-image MAD, not a background-isolating estimator</strong> (<code>SignalToNoise.swift:84&ndash;86</code>): PixInsight's SNRWeight uses a multiscale (MRS) noise estimate that excludes stars/nebulosity/gradients; whole-image MAD is inflated by real structure on high-signal frames. A documented trade-off; note the divergence or estimate on a high-pass residual.</li>
+                <li><strong>IMP-5 &mdash; <code>sampleWidth</code> fits a full Gaussian over a window that grows with the estimate</strong> (<code>MatchedFilterStarDetector.swift:368, 389</code>): as FWHM grows toward the clamp of 40, the fit window reaches ~161&times;161 &asymp; 26 000 samples &times; up to 360 fits, on every default-config detection. Fit over the connected footprint or a capped sub-window.</li>
+                <li><strong>IMP-6 &mdash; matched-filter purity/gate knobs are entirely untested</strong> (<code>Configuration</code>: <code>saturationLevel</code>, <code>minSeparation</code>, <code>edgeMargin</code>, <code>sharpnessLow</code>, <code>roundnessLimit</code>, <code>minFWHMFactor</code>, <code>maxFWHMFactor</code>, <code>thresholdSigma</code>): none is ever set to a non-default value, so the size band, roundness, sharpness, separation, edge margin, saturation gate and threshold are validated only at their defaults. Add toggle tests as the bright-star tests already do.</li>
+                <li><strong>IMP-7 &mdash; <code>SignalToNoise.init(noise:)</code> accepts non-positive noise</strong> (<code>SignalToNoise.swift:47&ndash;62</code>): <code>weight = 1/noise&sup2;</code>, and the public initializer does not validate, so <code>init(noise: 0).weight</code> is <code>+&infin;</code> (the <code>estimate</code> path guards, the initializer does not). Precondition/failable-init or document positivity.</li>
+                <li><strong>IMP-8 &mdash; outer-planet mutual perturbations omitted</strong> (<code>Planet.swift:119&ndash;158</code>): Saturn can be ~0.8&deg; and Jupiter ~0.3&deg; off. Honestly documented (&ldquo;a fraction of a degree for the outer ones &hellip; ample for deciding whether a planet is above the horizon&rdquo;) and consistent with the visibility purpose &mdash; not a bug; add Schlyter's perturbation terms only if sub-0.1&deg; is ever wanted.</li>
+                <li><strong>IMP-9 &mdash; the <code>Ephemeris</code> facade has no dedicated test</strong>: <code>normalizedDegrees</code>/<code>normalizedHours</code> wraparound (esp. negative/NaN), <code>obliquity</code>, <code>radians</code>/<code>degrees</code>, and the horizontal transform at edge cases (poles, zenith, HA wrap) are untested directly (only anchored indirectly via <code>SolarPositionTests</code>). Add a small <code>EphemerisTests</code>.</li>
+                <li><strong>IMP-10 &mdash; <code>isAboveHorizon</code> consistency tests are tautological</strong> (<code>PlanetPositionTests.swift:166</code>, <code>LunarPositionTests.swift:152</code>): <code>isAboveHorizon == (altitude &gt; 0)</code> restates the implementation and can never fail. Replace with fixed-value cases (incl. the <code>altitude == 0 &rarr; false</code> boundary).</li>
+                <li><strong>IMP-11 &mdash; the moment&rarr;Gaussian-fit seeding has no direct unit test</strong> (<code>GaussianFit+StarMoments.swift</code>): the seed (<code>&sigma;x=&radic;&lambda;&#8321;</code>, <code>&sigma;y=&radic;&lambda;&#8322;</code>, <code>&theta;=&frac12;&middot;atan2(2Mxy, Mxx&minus;Myy)</code>) is correct but only exercised end-to-end (which sorts the &sigma; and checks orientation indirectly). Add a direct seed-value assertion on a known ellipse.</li>
+                <li><strong>IMP-12 &mdash; bootstrap <code>footprintWidth</code> did not receive the annulus-sky robustness of commit <code>5532c9a</code></strong> (<code>MatchedFilterStarDetector.swift:476&ndash;477</code>): it reads a whole-window median as &ldquo;background.&rdquo; Not an incomplete fix in practice (fixed radius; only the bootstrap seed, corrected by the now-robust <code>sampleWidth</code>) &mdash; recorded so a future change doesn't assume it is annulus-robust.</li>
+            </ul>
+        </div>
+
+        <!-- ===================== COSMETIC ===================== -->
+        <h2 class="section">Cosmetic</h2>
+        <div class="prose">
+            <ul>
+                <li><strong>COS-1 &mdash; <code>1.4826</code> (MAD&rarr;&sigma;) duplicated</strong> across <code>SignalToNoise</code>, <code>SkyBackground</code>, and the star detector as separate private constants. Correct, but a shared constant would prevent drift.</li>
+                <li><strong>COS-2 &mdash; <code>BayerGrayscaleConverter</code> mixes a <code>channels</code> stride with a hardcoded <code>/3</code></strong> (<code>:88&ndash;90</code>): <code>base = index*channels</code> then reads <code>base, base+1, base+2</code> and divides by 3. Correct (the CFA pipeline always yields 3 channels) but the mixed convention is misleading.</li>
+                <li><strong>COS-3 &mdash; <code>StarMoments.halfFluxRadius</code> has a dead <code>else</code> branch</strong> (<code>:176&ndash;180</code>): the cumulative's last element equals <code>flux</code>, so <code>&ge; flux/2</code> always holds and the fallback is unreachable. Plus informational notes: no Sheppard/pixelization correction (~+4% on FWHM at &sigma;&asymp;1) and a small noise-driven eccentricity floor &mdash; inherent to moment measurement.</li>
+                <li><strong>COS-4 &mdash; <code>OrbitalElements</code> Kepler solver yields NaN for <code>e &ge; 1</code></strong> (<code>:92</code>, <code>&radic;(1&minus;e&sup2;)</code>): unreachable (every element set is a fixed low-eccentricity body, max <code>e&asymp;0.206</code>); a note that the internal struct is not general-purpose.</li>
+                <li><strong>COS-5 &mdash; <code>Ephemeris</code> altitude <code>asin(horizontalZ)</code> is not domain-guarded</strong> (<code>:163</code>), unlike <code>EquatorialCoordinate.angularSeparation</code>'s <code>min(&radic;h,1)</code> (<code>:62</code>): mathematically bounded, but FP rounding at the exact zenith could push the argument a hair over 1 and return NaN. Clamp for parity.</li>
+                <li><strong>COS-6 &mdash; bright-pass doc overstates metric comparability</strong> (<code>+BrightStars.swift:82&ndash;85</code>): it measures shape from a circular aperture (including background pixels), the matched-filter path from the connected footprint (above <code>bg+3&sigma;</code>), so <code>flux</code>/<code>fwhm</code>/<code>hfr</code> are on a different basis &mdash; &ldquo;comparable&rdquo; is only loosely true. Soften the comment.</li>
+                <li><strong>COS-7 &mdash; misaligned <code>=</code></strong> at <code>MatchedFilterStarDetector.swift:477</code> (<code>let localBackground</code> is not <code>=</code>-aligned with its block), against the repo's alignment convention.</li>
+                <li><strong>COS-8 &mdash; the <code>SyntheticStarGrid</code> ground-truth fixture is unused by any detector test</strong> (it is referenced only by its own generator self-test): its saturated/eccentric/haloed ground truth never validates detector recall or metric trends. Add a small recall/metric test over it, or remove the unused fixture.</li>
+                <li><strong>COS-9 &mdash; <code>honorsBrightPassThreshold</code> doesn't isolate the knob</strong> (<code>BrightStarDetectionTests.swift:187&ndash;196</code>): it sets two bright-star parameters and asserts only recall, so it can pass without the threshold parameter doing anything. Assert a <em>change</em> versus default.</li>
+            </ul>
+        </div>
+
+        <!-- ===================== PER-DOMAIN ===================== -->
+        <h2 class="section">Per-file verdicts</h2>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>File</th><th>Verdict</th><th>Highest-severity finding</th></tr></thead>
+            <tbody>
+                <tr><td><code>Preprocessing/FITSImageDecoder.swift</code></td><td>1 bug</td><td>BUG-1 <code>GBRG</code> rejected</td></tr>
+                <tr><td><code>Preprocessing/BayerGrayscaleConverter.swift</code></td><td class="clean">Correct</td><td>CR-8 CFA noise bias</td></tr>
+                <tr><td><code>SignalToNoise/SignalToNoise.swift</code></td><td class="clean">Formula correct</td><td>CR-2 NaN handling</td></tr>
+                <tr><td><code>SignalToNoise/SkyBackground.swift</code></td><td class="clean">Formula correct</td><td>CR-2 NaN handling</td></tr>
+                <tr><td><code>StarDetection/MatchedFilterStarDetector.swift</code></td><td class="clean">Detection math sound</td><td>CR-4/CR-6 (FWHM basis, saturation)</td></tr>
+                <tr><td><code>StarDetection/MatchedFilterStarDetector+BrightStars.swift</code></td><td class="clean">Correct</td><td>CR-5 roundness gate/report</td></tr>
+                <tr><td><code>StarDetection/StarMoments.swift</code></td><td class="clean">Math verified</td><td>CR-3 HFR convention</td></tr>
+                <tr><td><code>StarDetection/GaussianFit+StarMoments.swift</code></td><td class="clean">Clean</td><td>IMP-11 seed untested</td></tr>
+                <tr><td><code>StarDetection/StarField.swift</code>, <code>Star.swift</code>, <code>StarDetecting.swift</code></td><td class="clean">Clean</td><td>&mdash;</td></tr>
+                <tr><td><code>Ephemeris/SolarPosition.swift</code></td><td class="clean">Clean (Schlyter-verified)</td><td>&mdash;</td></tr>
+                <tr><td><code>Ephemeris/LunarPosition.swift</code></td><td class="clean">Clean (all terms verified)</td><td>&mdash;</td></tr>
+                <tr><td><code>Ephemeris/PlanetPosition.swift</code></td><td class="clean">Clean</td><td>CR-9 (test gap)</td></tr>
+                <tr><td><code>Ephemeris/Planet.swift</code></td><td class="clean">Elements exact</td><td>IMP-8 outer perturbations</td></tr>
+                <tr><td><code>Ephemeris/OrbitalElements.swift</code></td><td class="clean">Kepler/reductions correct</td><td>COS-4 e&ge;1 note</td></tr>
+                <tr><td><code>Ephemeris/Ephemeris.swift</code></td><td class="clean">Algorithms verified</td><td>IMP-9 untested; COS-5 asin guard</td></tr>
+                <tr><td><code>Ephemeris/EquatorialCoordinate.swift</code></td><td class="clean">Clean</td><td>&mdash;</td></tr>
+                <tr><td><code>Ephemeris/HorizontalCoordinate.swift</code></td><td class="clean">Correct</td><td>CR-7 horizon convention</td></tr>
+                <tr><td><code>Ephemeris/GeographicLocation.swift</code></td><td class="clean">Clean</td><td>&mdash;</td></tr>
+                <tr><td><code>Ephemeris/TwilightEvents.swift</code></td><td class="clean">Clean (verified)</td><td>&mdash;</td></tr>
+                <tr><td><code>Ephemeris/MoonPhase.swift</code></td><td class="clean">Clean (verified)</td><td>&mdash;</td></tr>
+                <tr><td><code>Core/Error.swift</code></td><td class="clean">Clean</td><td>&mdash;</td></tr>
+            </tbody>
+        </table>
+        </div>
+
+        <div class="note-block">
+            <strong>For M4 (triage).</strong> The confirmed, actionable items to weigh first:
+            <strong>BUG-1</strong> (add <code>GBRG</code>; resolve <code>RGBG</code> with SwiftPixel M2 CR-1);
+            <strong>CR-2</strong> (a single non-finite policy, shared with the SwiftPixel NaN findings);
+            <strong>CR-3/CR-4/CR-5</strong> (the metric-convention decisions &mdash; HFR meaning, one FWHM basis, gate-vs-report);
+            <strong>CR-6</strong> (saturation semantics); and <strong>CR-1</strong> (reject <code>NAXIS&ge;3</code>).
+            Several are as much test additions as code fixes (CR-9, IMP-6, IMP-9, IMP-10, IMP-11).
+            A reported bright-pass crash was investigated and <strong>refuted</strong> (see Method) &mdash; not carried forward.
+        </div>
+
+        <footer>
+            SwiftAstro correctness audit &mdash; milestone M3 of the FITScope algorithms plan.
+            Findings only; no production code was changed. Consolidated with the SwiftPixel
+            audit (M2) and triaged into fix milestones by M4.
+        </footer>
+    </div>
+</body>
+</html>
