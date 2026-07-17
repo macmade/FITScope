@@ -57,7 +57,8 @@ public extension ImageProcessor
     ///   computation and the mono-vs-colour display choice).
     /// - Throws: ``RuntimeError`` for a missing or unsupported `BITPIX`, an
     ///   unsupported geometry (a non-2-D image that is not an RGB colour-planes
-    ///   cube), invalid dimensions, truncated data, or an unsupported `BAYERPAT`.
+    ///   cube), invalid dimensions, truncated data, an image byte size that
+    ///   overflows `Int`, or an unsupported `BAYERPAT`.
     static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> RenderResult
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.integer
@@ -125,7 +126,12 @@ public extension ImageProcessor
             throw RuntimeError( message: "Invalid NAXIS2 value \( nAxis2 )" )
         }
 
-        let size      = bitsPerPixel.size( numberOfPixels: width * height )
+        guard let size = bitsPerPixel.size( numberOfPixels: width * height )
+        else
+        {
+            throw RuntimeError( message: "FITS image byte size overflows Int" )
+        }
+
         let pixelData = Data( data.prefix( size ) ) // re-wrap: startIndex may be non-zero
 
         guard pixelData.count == size
@@ -193,7 +199,12 @@ public extension ImageProcessor
             return nil
         }
 
-        let size      = bitsPerPixel.size( numberOfPixels: width * height )
+        guard let size = bitsPerPixel.size( numberOfPixels: width * height )
+        else
+        {
+            return nil
+        }
+
         let pixelData = Data( data.prefix( size ) )
 
         guard pixelData.count == size,
@@ -326,9 +337,7 @@ public extension ImageProcessor
             return []
         }
 
-        let planeSize = bitsPerPixel.size( numberOfPixels: width * height )
-
-        guard planeSize > 0
+        guard let planeSize = bitsPerPixel.size( numberOfPixels: width * height ), planeSize > 0
         else
         {
             return []
@@ -386,7 +395,12 @@ public extension ImageProcessor
         // non-zero start index reads from zero), as `render` and `rgbPlaneSamples` do —
         // `readRawPixels` requires an exact byte count, so the padded section data must
         // not be passed through whole.
-        let size      = bitsPerPixel.size( numberOfPixels: width * height )
+        guard let size = bitsPerPixel.size( numberOfPixels: width * height )
+        else
+        {
+            return nil
+        }
+
         let pixelData = Data( data.prefix( size ) )
 
         guard pixelData.count == size,
@@ -413,7 +427,7 @@ public extension ImageProcessor
     ///   - bitsPerPixel: The sample format of `data`.
     ///   - settings:     The user-tunable render settings.
     /// - Returns: The rendered colour result.
-    /// - Throws: ``RuntimeError`` for invalid dimensions or truncated data.
+    /// - Throws: ``RuntimeError`` for invalid dimensions, truncated data, or an image byte size that overflows `Int`.
     private static func renderRGBPlanes( data: Data, properties: [ FITSPropertySnapshot ], bitsPerPixel: BitsPerPixel, settings: Settings ) throws -> RenderResult
     {
         let planes            = try Self.rgbPlaneSamples( data: data, properties: properties, bitsPerPixel: bitsPerPixel )
@@ -436,7 +450,7 @@ public extension ImageProcessor
     ///   - properties:   The owning header's property snapshots.
     ///   - bitsPerPixel: The sample format of `data`.
     /// - Returns: The plane dimensions and the raw red, green and blue samples.
-    /// - Throws: ``RuntimeError`` for invalid dimensions or truncated data.
+    /// - Throws: ``RuntimeError`` for invalid dimensions, truncated data, or an image byte size that overflows `Int`.
     private static func rgbPlaneSamples( data: Data, properties: [ FITSPropertySnapshot ], bitsPerPixel: BitsPerPixel ) throws -> ( width: Int, height: Int, red: [ Double ], green: [ Double ], blue: [ Double ] )
     {
         guard let ( width, height ) = Self.imageDimensions( from: properties )
@@ -445,8 +459,18 @@ public extension ImageProcessor
             throw RuntimeError( message: "Invalid or missing NAXIS1 / NAXIS2 for an RGB image" )
         }
 
-        let planeSize = bitsPerPixel.size( numberOfPixels: width * height )
-        let total     = planeSize * 3
+        guard let planeSize = bitsPerPixel.size( numberOfPixels: width * height )
+        else
+        {
+            throw RuntimeError( message: "FITS image byte size overflows Int" )
+        }
+
+        guard let total = Self.checkedProduct( planeSize, 3 )
+        else
+        {
+            throw RuntimeError( message: "FITS image byte size overflows Int" )
+        }
+
         let pixelData = Data( data.prefix( total ) ) // re-wrap: startIndex may be non-zero, and trim block padding
 
         guard pixelData.count == total
@@ -492,16 +516,33 @@ public extension ImageProcessor
             return nil
         }
 
-        let bytesPerSample    = bitsPerPixel.size( numberOfPixels: 1 )
-        let planeSampleCount  = width * height
+        guard let bytesPerSample = bitsPerPixel.size( numberOfPixels: 1 )
+        else
+        {
+            return nil
+        }
+
+        guard let planeSampleCount = Self.checkedProduct( width, height )
+        else
+        {
+            return nil
+        }
+
         let ( scale, offset ) = ImageProcessor.scaling( from: properties )
 
         let values = ( 0 ..< 3 ).compactMap
         {
             plane -> PixelValue? in
 
-            let sampleIndex = plane * planeSampleCount + y * width + x
-            let byteOffset  = sampleIndex * bytesPerSample
+            guard let planeStart  = Self.checkedProduct( plane, planeSampleCount ),
+                  let rowStart    = Self.checkedProduct( y, width ),
+                  let pixelIndex  = Self.checkedSum( planeStart, rowStart ),
+                  let sampleIndex = Self.checkedSum( pixelIndex, x ),
+                  let byteOffset  = Self.checkedProduct( sampleIndex, bytesPerSample )
+            else
+            {
+                return nil
+            }
 
             return Self.sampleValue( data: data, byteOffset: byteOffset, bitsPerPixel: bitsPerPixel, scale: scale, offset: offset )
         }
@@ -689,11 +730,52 @@ public extension ImageProcessor
             return nil
         }
 
-        let bytesPerSample    = bitsPerPixel.size( numberOfPixels: 1 )
-        let byteOffset        = ( y * width + x ) * bytesPerSample
+        guard let bytesPerSample = bitsPerPixel.size( numberOfPixels: 1 )
+        else
+        {
+            return nil
+        }
+
+        guard let rowStart    = Self.checkedProduct( y, width ),
+              let sampleIndex = Self.checkedSum( rowStart, x ),
+              let byteOffset  = Self.checkedProduct( sampleIndex, bytesPerSample )
+        else
+        {
+            return nil
+        }
+
         let ( scale, offset ) = ImageProcessor.scaling( from: properties )
 
         return Self.sampleValue( data: data, byteOffset: byteOffset, bitsPerPixel: bitsPerPixel, scale: scale, offset: offset )
+    }
+
+    /// Multiplies two counts, returning `nil` instead of trapping when the product
+    /// overflows `Int` — so a FITS header that declares an enormous geometry cannot
+    /// trap the byte-offset arithmetic.
+    ///
+    /// - Parameters:
+    ///   - a: The first factor.
+    ///   - b: The second factor.
+    /// - Returns: `a × b`, or `nil` on overflow.
+    private static func checkedProduct( _ a: Int, _ b: Int ) -> Int?
+    {
+        let ( product, overflow ) = a.multipliedReportingOverflow( by: b )
+
+        return overflow ? nil : product
+    }
+
+    /// Adds two counts, returning `nil` instead of trapping when the sum overflows
+    /// `Int`.
+    ///
+    /// - Parameters:
+    ///   - a: The first term.
+    ///   - b: The second term.
+    /// - Returns: `a + b`, or `nil` on overflow.
+    private static func checkedSum( _ a: Int, _ b: Int ) -> Int?
+    {
+        let ( sum, overflow ) = a.addingReportingOverflow( b )
+
+        return overflow ? nil : sum
     }
 
     /// Decodes a single sample at a byte offset into the HDU bytes and applies the
@@ -712,9 +794,8 @@ public extension ImageProcessor
     /// - Returns: The decoded value, or `nil` when the offset runs past the data.
     private static func sampleValue( data: Data, byteOffset: Int, bitsPerPixel: BitsPerPixel, scale: Double, offset: Double ) -> PixelValue?
     {
-        let bytesPerSample = bitsPerPixel.size( numberOfPixels: 1 )
-
-        guard byteOffset >= 0, byteOffset + bytesPerSample <= data.count
+        guard let bytesPerSample = bitsPerPixel.size( numberOfPixels: 1 ),
+              byteOffset >= 0, byteOffset + bytesPerSample <= data.count
         else
         {
             return nil

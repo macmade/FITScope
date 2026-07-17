@@ -212,8 +212,8 @@ public extension GraphSeries
     ///   - data:        The HDU's raw sample bytes.
     ///   - sampleCount: The number of samples to decode.
     /// - Returns: The decoded, unscaled samples.
-    /// - Throws: ``RuntimeError`` for a missing or unsupported `BITPIX`, or truncated
-    ///   data.
+    /// - Throws: ``RuntimeError`` for a missing or unsupported `BITPIX`, truncated
+    ///   data, or a byte size that overflows `Int`.
     private static func samples( header: FITSSection, data: Data, sampleCount: Int ) throws -> [ Double ]
     {
         guard let bitPix = header.bitpix
@@ -228,7 +228,12 @@ public extension GraphSeries
             throw RuntimeError( message: "Unsupported pixel format: BITPIX \( bitPix ) is not supported (supported values: 8, 16, 32, -32, -64)." )
         }
 
-        let size      = bitsPerPixel.size( numberOfPixels: sampleCount )
+        guard let size = bitsPerPixel.size( numberOfPixels: sampleCount )
+        else
+        {
+            throw RuntimeError( message: "FITS data byte size overflows Int" )
+        }
+
         let pixelData = Data( data.prefix( size ) )
 
         guard pixelData.count == size
