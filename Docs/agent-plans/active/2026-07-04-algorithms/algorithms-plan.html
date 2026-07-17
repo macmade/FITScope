@@ -554,19 +554,37 @@
         </div>
 
         <div class="milestone">
-            <h3><span class="m-num">M5.3</span> SwiftPixel &mdash; Channel-count guard order <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M5.3</span> SwiftPixel &mdash; Channel-count guard order <span class="capsule completed">Completed</span></h3>
             <div class="field-label">Fixes</div>
             <p class="goal">SP&nbsp;CR-4, CR-5.</p>
             <div class="field-label">Goal</div>
             <p class="goal">Reorder the channel-count guards in <code>MonoToRGB</code> and <code>Debayer</code> so a multi-channel buffer reports the accurate <code>unsupportedChannelCount</code> rather than a misleading <code>dataSizeMismatch</code>, and fix the tests that currently pass on the wrong path.</p>
             <div class="field-label">Status</div>
-            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <p><span class="capsule completed">Completed</span> &nbsp; <span class="completed-date">Completed: 2026-07-17</span></p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="note-block">
+                <p><strong>Approach.</strong> Built with <strong>TDD</strong> in the SwiftPixel submodule, applying the audit's <strong>CR-4/CR-5</strong> recommendation verbatim: check <code>channels&nbsp;==&nbsp;1</code> first, then the sample-count/geometry guard. Both <code>MonoToRGB.process</code> and <code>Debayer.process</code> previously computed <code>checkedSampleCount(&hellip;, channels:&nbsp;1)</code> and threw <code>dataSizeMismatch</code> <em>before</em> the <code>channels&nbsp;==&nbsp;1</code> guard, so any non-empty multi-channel buffer reported a misleading <code>dataSizeMismatch</code> and the accurate <code>unsupportedChannelCount</code> was effectively dead code. 2 source files changed, 0 added &mdash; <code>Package.swift</code> and the <code>.xcodeproj</code> stay in sync automatically.</p>
+                <p><strong>Guard order.</strong> New order is <code>channels</code> &rarr; sample-count/geometry &rarr; <code>mustNotBeNormalized</code> (the normalize guard is unchanged, still last), matching the sibling idiom in <code>WhiteBalance</code>&nbsp;/&nbsp;<code>ColorBalance</code>&nbsp;/&nbsp;<code>CosmeticCorrection</code>, which already check the channel count before any size-dependent work.</p>
+                <p><strong>TDD.</strong> The two <code>invalidChannels</code> tests (<code>MonoToRGB</code>, <code>Debayer</code>) were tightened from <code>#expect(throws:&nbsp;PixelBufferError.self)</code> &mdash; which passed on the wrong <code>dataSizeMismatch</code> path &mdash; to assert the specific <code>unsupportedChannelCount(actual:&nbsp;3,&nbsp;supported:&nbsp;[1])</code>. Confirmed <em>red</em> against the old order (both threw <code>dataSizeMismatch(expected:&nbsp;4,&nbsp;actual:&nbsp;12)</code>), then <em>green</em> after the reorder. No new tests; 2 existing tightened.</p>
+                <p><strong>No regression.</strong> <code>PixelBuffer.init</code> enforces <code>pixels.count&nbsp;==&nbsp;width&middot;height&middot;channels</code> and <code>pixels</code> is <code>private(set)</code>, so once the channel guard passes, <code>expected&nbsp;==&nbsp;pixels.count</code> always &mdash; the valid 1-channel happy path is unchanged, and the geometry guard is now (safely, intentionally) unreachable for valid buffers, exactly as in the siblings. <code>checkedSampleCount</code> cannot throw for a validly-constructed buffer, so relocating it past the channel guard changes nothing. A repo-wide search confirmed no SwiftAstro or app caller depends on these two processors throwing <code>dataSizeMismatch</code> for multi-channel input; the error-identity change is a pure diagnostic improvement.</p>
+                <p><strong>Out of scope (untouched).</strong> The mis-wired <code>invalidNormalize</code> test that instantiates <code>Debayer</code> inside the <code>MonoToRGB</code> test file (CR-6 &rarr; M5.9) and <code>Debayer+Deinterleave</code> (a raw <code>[Double]</code> signature with no channel concept) were deliberately left alone.</p>
+                <p><strong>Verification.</strong> Full SwiftPixel suite green via <code>xcodebuild</code> (<code>** TEST SUCCEEDED **</code>) and via <code>swift test</code> (<strong>435 tests, 45 suites</strong>). Diff is 4 files, focused, no stray reformatting. <strong>No M1 harness run</strong> &mdash; a pure O(1) guard reorder in the error-handling prologue cannot touch the demosaic&nbsp;/&nbsp;replicate hot path the benchmark measures, so it can't regress and isn't informative (the same rationale the maintainer accepted for M5.2).</p>
+                <p><strong>Automated review loop.</strong> 1 round, <strong>converged</strong> &mdash; no Critical/High/Medium findings.</p>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="note-block">
+                <p><strong>Round 1</strong> (fresh-context reviewer; static analysis of the source plus repo-wide greps): <strong>no defects</strong> (Critical/High/Medium/Low) within scope. It confirmed the load-bearing claims against the code: the <code>PixelBuffer</code> invariant (<code>pixels.count&nbsp;==&nbsp;width&middot;height&middot;channels</code>, <code>pixels</code> <code>private(set)</code>) makes the reorder behaviour-preserving on the valid 1-channel path; <code>checkedSampleCount</code> cannot throw for a validly-constructed buffer, so relocating it changes nothing; the tightened tests genuinely fail against the old order and pass against the new, with correct asserted values; the new order matches <code>WhiteBalance</code>&nbsp;/&nbsp;<code>ColorBalance</code>&nbsp;/&nbsp;<code>CosmeticCorrection</code>; empty-buffer edges are unchanged; and no SwiftAstro&nbsp;/&nbsp;app dependent relied on the old <code>dataSizeMismatch</code> identity. Three <strong>Info</strong> observations, no action:</p>
+                <ul>
+                    <li><strong>Info &mdash; geometry guard now defensively unreachable for valid buffers.</strong> Intentional belt-and-suspenders, identical to the siblings; kept.</li>
+                    <li><strong>Info &mdash; first value-matching <code>#expect(throws:)</code> in the suite.</strong> Every other throwing test uses the type form; the specific-value form is valid Swift Testing and strictly stronger &mdash; an improvement.</li>
+                    <li><strong>Info &mdash; out-of-scope items confirmed untouched.</strong> The mis-wired <code>invalidNormalize</code> test (CR-6&nbsp;/&nbsp;M5.9) and <code>Debayer+Deinterleave</code> correctly left unchanged.</li>
+                </ul>
+                <p>The reviewer reasoned by static analysis rather than executing the suite; test execution is covered separately by the full <code>xcodebuild</code> and <code>swift test</code> runs above. Loop converged after 1 round.</p>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+            <div class="note-block">
+                <p><strong>Maintainer:</strong> &ldquo;Looks good&rdquo; &mdash; reviewed and approved M5.3 (the <code>channels&nbsp;==&nbsp;1</code>-first guard reorder in <code>MonoToRGB</code>&nbsp;/&nbsp;<code>Debayer</code> and the two tightened <code>invalidChannels</code> tests).</p>
+            </div>
         </div>
 
         <div class="milestone">
