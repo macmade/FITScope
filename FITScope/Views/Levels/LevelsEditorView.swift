@@ -427,8 +427,13 @@ struct LevelsEditorView: View
         }
     }
 
-    /// Sets a field on `curve`, keeping the input black and white points a
-    /// minimum gap apart so the mapping stays valid.
+    /// Sets a field on `curve`, keeping the input black and white points a minimum
+    /// gap apart and the output black and white points ordered (output white never
+    /// below output black), so the mapping stays valid and the processor never
+    /// rejects it.
+    ///
+    /// The output points may meet (a constant output is valid) but never cross,
+    /// mirroring the input clamp; the processor rejects an inverted output range.
     ///
     /// - Parameters:
     ///   - field: The field to set.
@@ -441,8 +446,8 @@ struct LevelsEditorView: View
             case .inputBlack:  curve.inputBlack  = min( value, curve.inputWhite - Self.minimumInputGap )
             case .inputWhite:  curve.inputWhite  = max( value, curve.inputBlack + Self.minimumInputGap )
             case .gamma:       curve.gamma       = value
-            case .outputBlack: curve.outputBlack = value
-            case .outputWhite: curve.outputWhite = value
+            case .outputBlack: curve.outputBlack = min( value, curve.outputWhite )
+            case .outputWhite: curve.outputWhite = max( value, curve.outputBlack )
         }
     }
 
