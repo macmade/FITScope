@@ -632,4 +632,19 @@ struct ImageProcessorTests
 
         #expect( config.cosmeticCorrection == nil )
     }
+
+    /// The colour-filter-array pattern mapping (shared by the FITS `BAYERPAT` and
+    /// XISF paths) accepts the four valid Bayer arrangements — including the common
+    /// `GBRG` — and rejects the non-standard `RGBG` and any unknown value.
+    @Test
+    func debayerPatternMappingAcceptsValidPatternsAndRejectsRGBG() throws
+    {
+        #expect( try ImageProcessor.debayerPattern( named: "BGGR" ) == .bggr )
+        #expect( try ImageProcessor.debayerPattern( named: "GRBG" ) == .grbg )
+        #expect( try ImageProcessor.debayerPattern( named: "RGGB" ) == .rggb )
+        #expect( try ImageProcessor.debayerPattern( named: "GBRG" ) == .gbrg )
+
+        #expect( throws: ( any Error ).self ) { try ImageProcessor.debayerPattern( named: "RGBG" ) }
+        #expect( throws: ( any Error ).self ) { try ImageProcessor.debayerPattern( named: "XYZW" ) }
+    }
 }

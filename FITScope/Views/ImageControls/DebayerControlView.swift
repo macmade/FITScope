@@ -41,9 +41,6 @@ public struct DebayerControlView: View
         /// Force the BGGR pattern.
         case bggr
 
-        /// Force the RGBG pattern.
-        case rgbg
-
         /// Force the GRBG pattern.
         case grbg
 
@@ -61,7 +58,6 @@ public struct DebayerControlView: View
                 case .none: return "None"
                 case .auto: return "Auto"
                 case .bggr: return "BGGR"
-                case .rgbg: return "RGBG"
                 case .grbg: return "GRBG"
                 case .rggb: return "RGGB"
                 case .gbrg: return "GBRG"
@@ -106,7 +102,6 @@ public struct DebayerControlView: View
             case .none: return .none
             case .auto: return .auto
             case .bggr: return .pattern( .bggr )
-            case .rgbg: return .pattern( .rgbg )
             case .grbg: return .pattern( .grbg )
             case .rggb: return .pattern( .rggb )
             case .gbrg: return .pattern( .gbrg )
@@ -129,7 +124,6 @@ public struct DebayerControlView: View
                 switch pattern
                 {
                     case .bggr:       return .bggr
-                    case .rgbg:       return .rgbg
                     case .grbg:       return .grbg
                     case .rggb:       return .rggb
                     case .gbrg:       return .gbrg

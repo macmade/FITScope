@@ -491,35 +491,66 @@
         </div>
 
         <div class="milestone">
-            <h3><span class="m-num">M5.1</span> SwiftPixel &mdash; Non-finite (NaN/Inf) sample handling <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M5.1</span> SwiftPixel &mdash; Non-finite (NaN/Inf) sample handling <span class="capsule completed">Completed</span></h3>
             <div class="field-label">Fixes</div>
             <p class="goal">SP&nbsp;BUG-1, CR-3, CR-8, CR-9. &nbsp;<strong>Decision:</strong> D1 (sanitization policy).</p>
             <div class="field-label">Goal</div>
             <p class="goal">Stop non-finite FITS blanks from corrupting output or crashing: the <code>Normalize</code> guard that misses NaN (BUG-1), the <code>GaussianKernel(sigma:)</code> <code>Int(NaN)</code> trap (CR-3), and the undefined NaN order in <code>median</code>/<code>percentileBounds</code> (CR-8) and <code>CosmeticCorrection</code>'s neighbour sort (CR-9), applying the D1 policy consistently.</p>
             <div class="field-label">Status</div>
-            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <p><span class="capsule completed">Completed</span> &nbsp; <span class="completed-date">Completed: 2026-07-16</span></p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="note-block">
+                <p><strong>Approach.</strong> Built with <strong>TDD</strong> in the SwiftPixel submodule, applying the maintainer's <strong>D1&nbsp;= Filter</strong> policy: drop non-finite (NaN&nbsp;/&nbsp;&plusmn;Inf) samples in the statistical helpers and guard the value transforms, so a stray FITS blank degrades gracefully instead of corrupting output or crashing. <strong>16 failing tests</strong> were written first (5 median, 3 percentile, 1 GaussianKernel, 5 Normalize, 2 CosmeticCorrection) and confirmed <em>red</em> &mdash; the Normalize / PixelUtilities / CosmeticCorrection cases as graceful wrong-value failures, the GaussianKernel non-finite-&sigma; case as the actual <code>Int(NaN)</code> <strong>hard trap</strong> that aborts the test process &mdash; then <em>green</em>. 4 source files changed, no new files, so <code>Package.swift</code> and the <code>.xcodeproj</code> stay in sync automatically.</p>
+                <p><strong>BUG-1 &mdash; <code>Normalize</code>.</strong> All three modes (<code>.minMax</code>, <code>.percentile</code>, <code>.identity</code>) now take the range over the <em>finite</em> samples only and map non-finite blanks to <code>0</code> (black). <code>.minMax</code> uses a single scalar <code>finiteExtent</code> pass (min&nbsp;+&nbsp;max&nbsp;+&nbsp;a non-finite flag) in place of <code>vDSP_minvD</code>/<code>vDSP_maxvD</code>, so a blank no longer defeats the <code>min&nbsp;&ne;&nbsp;max</code> guard (<code>NaN&nbsp;&ne;&nbsp;NaN</code> is <code>true</code>) nor poisons the affine map &mdash; robustly, and independent of vDSP's undocumented NaN handling. A private <code>mapNonFinite</code> replaces blanks before the vDSP affine/clip.</p>
+                <p><strong>CR-3 &mdash; <code>GaussianKernel</code>.</strong> A non-finite &sigma; now clamps to the <code>1e-6</code> minimum (<code>sigma.isFinite ? max(sigma, 1e-6) : 1e-6</code>) instead of trapping in <code>Int(NaN)</code>&nbsp;/&nbsp;<code>Int(+Inf)</code>.</p>
+                <p><strong>CR-8 &mdash; <code>median</code>&nbsp;/&nbsp;<code>percentileBounds</code>.</strong> Both drop non-finite samples before sorting; the two <code>median</code> overloads now agree (both <code>nil</code> when no sample is finite). The common all-finite path is unchanged &mdash; a <code>contains</code> short-circuit avoids the filtering copy.</p>
+                <p><strong>CR-9 &mdash; <code>CosmeticCorrection</code>.</strong> Non-finite neighbours are treated as absent during the gather, so a NaN can't wall the insertion sort and leave a genuine hot/cold pixel next to a blank uncorrected.</p>
+                <p><strong>Verification.</strong> Full SwiftPixel suite green via <code>xcodebuild</code> (<strong>436 tests</strong>, 18 new). M1 harness re-run in Release: the hot primitives are unchanged within noise (<code>median</code> 245&rarr;247&nbsp;ms, <code>medianAbsoluteDeviation</code> 250&rarr;254&nbsp;ms, <code>percentileBounds</code> 245&rarr;248&nbsp;ms, <code>CosmeticCorrection</code> 206&rarr;207&nbsp;ms). <code>Normalize.minMax</code> moved 3.04&rarr;4.16&nbsp;ms (+1.1&nbsp;ms) &mdash; the deliberate cost of the robust scalar <code>finiteExtent</code> over vDSP min/max, on a processor ~60&times; faster than the hot paths.</p>
+                <p><strong>Automated review loop.</strong> 1 round, <strong>converged</strong> &mdash; no Critical/High/Medium findings. The four lower-severity items were carried to the maintainer pause (see Automated review).</p>
+                <p><strong>Post-review (decision A).</strong> On maintainer feedback (&ldquo;harden, should not trap&rdquo;), the <code>GaussianKernel</code> initializer was extended so <em>no</em> <code>Double</code> input can trap: a non-finite or overflowing <code>sigma&nbsp;&middot;&nbsp;radiusInSigmas</code> span falls back to the minimal footprint, and the radius is bounded to <code>[1,&nbsp;512]</code> (a new private <code>maximumRadius</code>) so <code>Int(_:)</code> and the <code>(2&middot;radius&nbsp;+&nbsp;1)&sup2;</code> arithmetic stay in range. For every finite, realistic input the radius is identical to before (verified against the old <code>max(1,&nbsp;Int(ceil(&hellip;)))</code>), so there is no behaviour change; 2 tests added (non-finite <code>radiusInSigmas</code>, pathologically large scale). <strong>Decision B:</strong> the robust scalar <code>Normalize</code> path is kept as-is.</p>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="note-block">
+                <p><strong>Round 1</strong> (fresh-context reviewer; built &amp; ran the suite, traced ~25 SwiftAstro/SwiftPixel call sites, verified the Accelerate/Swift semantics empirically): confirmed all four fixes <strong>correct, regression-free, and faithful to D1</strong>, and that the new tests genuinely reproduce the bugs against the old code. <strong>No Critical/High/Medium</strong> &mdash; converged. Findings:</p>
+                <ul>
+                    <li><strong>Low &mdash; <code>GaussianKernel</code> sibling <code>Int(_:)</code> trap.</strong> The CR-3 fix guards &sigma; but not <code>radiusInSigmas</code> nor a huge finite &sigma;, so <code>GaussianKernel(sigma: 5, radiusInSigmas: .infinity)</code> and <code>GaussianKernel(sigma: 1e300)</code> still trap in <code>Int(_:)</code>. External-surface only (no in-repo caller passes a non-default <code>radiusInSigmas</code>), and arguably beyond the literal CR-3 text. <strong>Fixed</strong> (post-review, per maintainer decision A) &mdash; the <code>sigma&nbsp;&middot;&nbsp;radiusInSigmas</code> span is guarded and the radius bounded to <code>[1,&nbsp;512]</code>, so no <code>Double</code> input traps.</li>
+                    <li><strong>Info &mdash; <code>CosmeticCorrection</code> NaN vs &plusmn;Inf sample asymmetry.</strong> A NaN <em>sample</em> passes through unrepaired while a &plusmn;Inf sample is treated as a hot/cold outlier and replaced. By design and consistent with the audit; optional one-line doc note. <strong>Deferred.</strong></li>
+                    <li><strong>Low &mdash; added finiteness scans on the finite-common path.</strong> <code>.identity</code>/<code>.percentile</code> add a <code>contains</code> scan and <code>median([Double])</code> adds a short-circuiting <code>contains</code>. The reviewer agrees the correctness rationale is sound and that the scalar <code>finiteExtent</code> for <code>.minMax</code> is the right call over trusting vDSP with NaN. <strong>Deferred</strong> &mdash; no action.</li>
+                    <li><strong>Low &mdash; out-of-scope whitespace reindent.</strong> The format-on-save hook reindented an unrelated gradient test's array literal. <strong>Fixed</strong> &mdash; reverted via <code>git</code> so the milestone diff stays focused.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+            <div class="note-block">
+                <p><strong>Maintainer &mdash; A (GaussianKernel hardening):</strong> &ldquo;Yes, harden, should not trap.&rdquo;</p>
+                <p><strong>Maintainer &mdash; B (Normalize perf tradeoff):</strong> &ldquo;OK&rdquo; &mdash; keep the robust scalar path.</p>
+                <p><strong>Maintainer:</strong> &ldquo;Looks good&rdquo; &mdash; approved M5.1 after the decision-A hardening.</p>
+            </div>
         </div>
 
         <div class="milestone">
-            <h3><span class="m-num">M5.2</span> SwiftPixel &mdash; Debayer <code>.rgbg</code> pattern <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M5.2</span> SwiftPixel &mdash; Debayer <code>.rgbg</code> pattern <span class="capsule completed">Completed</span></h3>
             <div class="field-label">Fixes</div>
             <p class="goal">SP&nbsp;CR-1. &nbsp;<strong>Decision:</strong> D2 (remove vs document), with M5.11.</p>
             <div class="field-label">Goal</div>
             <p class="goal">Resolve the invalid <code>.rgbg</code> CFA that demosaics to wrong colours &mdash; remove it (and add <code>GBRG</code> support with M5.11) or give it a documented non-Bayer path, per D2.</p>
             <div class="field-label">Status</div>
-            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <p><span class="capsule completed">Completed</span> &nbsp; <span class="completed-date">Completed: 2026-07-17</span></p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="note-block">
+                <p><strong>Coordinated D2 change.</strong> Because removing the <strong>public</strong> <code>Debayer.Pattern.rgbg</code> breaks SwiftAstro's decoder and the FITScope app, this was implemented as one coordinated change &mdash; M5.2 (this) + M5.11 + the app &mdash; per the maintainer's choice, so the whole tree builds green in one pass. This milestone covers the SwiftPixel removal; the decoder fix is recorded in M5.11.</p>
+                <p><strong>SwiftPixel removal.</strong> Removed <code>.rgbg</code> from <code>Debayer.Pattern</code> &mdash; the enum case, its <code>description</code>, and the <code>colorAt</code> geometry (the invalid <code>R&nbsp;G&nbsp;/&nbsp;B&nbsp;G</code> tile, which greens every odd column into a <em>vertical stripe</em> rather than the diagonal quincunx every demosaic assumes). <code>.gbrg</code> already existed, so nothing was added. The exhaustive (no-<code>default</code>) pattern switches mean the compiler enforced complete removal.</p>
+                <p><strong>Tests &amp; docs.</strong> Removed the three <code>.rgbg</code> tests (a bilinear demosaic, a deinterleave, and a <code>name</code> assertion) &mdash; each asserted only the removed invalid geometry, so <strong>no valid-pattern coverage was lost</strong>; the deinterleave sweep now covers the four valid patterns. Updated the README, which advertised <code>RGBG</code> but omitted <code>GBRG</code> &rarr; now <code>BGGR</code>/<code>GRBG</code>/<code>RGGB</code>/<code>GBRG</code>.</p>
+                <p><strong>Verification.</strong> Full SwiftPixel suite green via <code>xcodebuild</code>; the four valid patterns keep their bilinear/deinterleave/name tests. <strong>No M1 harness run</strong> &mdash; a switch-case removal makes no algorithmic or hot-path change, so the benchmark (which demosaics a <em>valid</em> pattern) can't regress and isn't informative here.</p>
+                <p><strong>Automated review loop.</strong> 1 round (covering M5.2&nbsp;+&nbsp;M5.11&nbsp;+&nbsp;app), <strong>converged</strong> &mdash; no Critical/High/Medium findings.</p>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="note-block">
+                <p><strong>Round 1</strong> (fresh-context reviewer; swept the entire working tree, traced every call site, and independently re-derived the CFA geometry): <strong>correct, complete, regression-free &mdash; no Critical/High/Medium.</strong> Confirmed no remaining SwiftPixel <code>.rgbg</code> reference anywhere; the same-spelled things in <strong>SwiftRAW</strong> (<code>RAWCFAPattern</code>'s <code>"RGBG"</code> descriptor for an RGGB sensor) and <strong>SwiftXISF</strong> are separate enums, correctly left untouched; the four kept patterns are valid quincunxes; and the removed SwiftPixel tests only covered the invalid geometry. (Decoder/app findings are shared with M5.11.)</p>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+            <div class="note-block">
+                <p><strong>Maintainer:</strong> &ldquo;Looks good&rdquo; &mdash; approved the coordinated D2 change (M5.2 + M5.11 + app).</p>
+            </div>
         </div>
 
         <div class="milestone">
@@ -651,19 +682,36 @@
         </div>
 
         <div class="milestone">
-            <h3><span class="m-num">M5.11</span> SwiftAstro &mdash; FITS Bayer pattern support (<code>GBRG</code>) <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M5.11</span> SwiftAstro &mdash; FITS Bayer pattern support (<code>GBRG</code>) <span class="capsule completed">Completed</span></h3>
             <div class="field-label">Fixes</div>
             <p class="goal">SA&nbsp;BUG-1. &nbsp;<strong>Decision:</strong> D2 (with M5.2).</p>
             <div class="field-label">Goal</div>
             <p class="goal">Add the valid <code>GBRG</code> mapping the decoder is missing, resolve the <code>RGBG</code> mapping in step with M5.2 (D2), and add decoder Bayer-pattern tests.</p>
             <div class="field-label">Status</div>
-            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <p><span class="capsule completed">Completed</span> &nbsp; <span class="completed-date">Completed: 2026-07-17</span></p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="note-block">
+                <p><strong>Coordinated with M5.2 + app.</strong> Implemented in one pass with the SwiftPixel <code>.rgbg</code> removal (M5.2) and the app fix, since they are a D2 pair and share a working tree. Built with <strong>TDD</strong>.</p>
+                <p><strong>Decoder fix (SA BUG-1).</strong> The <code>BAYERPAT</code> switch now maps <code>'GBRG'</code> &rarr; <code>.gbrg</code> (previously rejected outright as &ldquo;Unsupported&rdquo; &mdash; common on Sony/ZWO one-shot-colour sensors) and rejects the non-standard <code>'RGBG'</code> (which no capture software emits and which used to select the removed broken demosaic). <code>BGGR</code>/<code>GRBG</code>/<code>RGGB</code> and the no-<code>BAYERPAT</code> (monochrome &rarr; <code>nil</code>) path are unchanged. The string&rarr;pattern mapping was extracted into a testable <code>internal pattern(forBayerKeyword:)</code> (a behaviour-preserving seam) so the mapping can be unit-tested without a per-pattern fixture (none exists for GBRG). <strong>TDD:</strong> the four decoder tests were run <em>red</em> against the current code first (GBRG rejected, RGBG accepted), then green after the fix.</p>
+                <p><strong>App (accompanying D2 fix).</strong> <code>ImageProcessor.debayerPattern(named:)</code> &mdash; the app's parallel <code>BAYERPAT</code>/XISF mapping &mdash; dropped its <code>RGBG</code> case (it already had <code>GBRG</code>); <code>DebayerControlView</code> dropped its <code>RGBG</code> picker option (Mode case, <code>description</code>, and both mapping switches). Added a symmetric app mapping test.</p>
+                <p><strong>Tests.</strong> 4 decoder tests added to the existing <code>FITSImageDecoderTests</code> struct (BGGR/GRBG/RGGB map; GBRG accepted; RGBG rejected; unknown rejected); 1 app mapping test. Added to existing test files &mdash; no <code>.xcodeproj</code> surgery (an initial attempt to add a new file collided with the existing <code>FITSImageDecoderTests</code>, so the tests were folded into it instead, and the stray project edit was reverted).</p>
+                <p><strong>Verification.</strong> Full SwiftAstro suite green via <code>xcodebuild</code>; SwiftPixel suite green; the app builds and its <code>DebayerControlView</code> / <code>ImageProcessor</code> tests pass.</p>
+                <p><strong>Automated review loop.</strong> 1 round, <strong>converged</strong> &mdash; no Critical/High/Medium findings.</p>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="note-block">
+                <p><strong>Round 1</strong> (fresh-context reviewer over the full three-repo change): <strong>correct, complete, regression-free &mdash; no Critical/High/Medium.</strong> It verified the decoder extraction is behaviour-preserving for the kept patterns and that the only two behaviour changes are the intended ones (accept GBRG, reject RGBG); traced every caller of the app's shared string map and confirmed the <strong>RAW path never emits <code>"RGBG"</code></strong> (it derives spatial patterns via <code>cfaPatternString</code>), so removing the old mapping is not a regression; and confirmed the app switches stay consistent (incl. the <code>@unknown default</code> on the cross-module <code>Pattern</code> switch). Findings:</p>
+                <ul>
+                    <li><strong>Low &mdash; app test assertion precision.</strong> <code>ImageProcessorTests</code>'s new mapping test asserts <code>throws: (any Error).self</code>, whereas the decoder throws a specific type. <strong>Deferred</strong> &mdash; this matches the FITScope test target's own uniform <code>(any Error).self</code> convention (the sibling app tests all use it); surfaced for the maintainer to decide whether to tighten to <code>RuntimeError.self</code>.</li>
+                    <li><strong>Info &mdash; wrapper round-trip coverage.</strong> <code>bayerPattern(in:)</code> is exercised end-to-end only for RGGB (real frame) and mono (<code>nil</code>); since it is now a thin wrapper over the fully unit-tested mapping, this is adequate. <strong>Deferred.</strong></li>
+                    <li><strong>Info &mdash; pre-existing gaps.</strong> <code>DebayerControlViewTests</code> covers only none/auto/bggr/rggb, and there is no GBRG bilinear golden test; both predate this change and are compiler-guarded for exhaustiveness. <strong>Deferred.</strong></li>
+                    <li><strong>Info &mdash; historical docs.</strong> The audit/triage/plan HTML still mention <code>RGBG</code>; these are historical records of the decision, correctly left as-is. <strong>Deferred.</strong></li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+            <div class="note-block">
+                <p><strong>Maintainer:</strong> &ldquo;Looks good&rdquo; &mdash; approved the coordinated D2 change (M5.2 + M5.11 + app). Kept the app test's <code>(any Error).self</code> assertion (matches the FITScope target convention).</p>
+            </div>
         </div>
 
         <div class="milestone">

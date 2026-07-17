@@ -600,7 +600,6 @@ public enum ImageProcessor
         switch name
         {
             case "BGGR": return .bggr
-            case "RGBG": return .rgbg
             case "GRBG": return .grbg
             case "RGGB": return .rggb
             case "GBRG": return .gbrg
