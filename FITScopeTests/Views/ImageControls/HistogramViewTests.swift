@@ -132,7 +132,7 @@ struct HistogramViewTests
     }
 
     /// A monochrome image offers only the single "Mono" mode, so the picker shows
-    /// one segment rather than the RGB-only RGB/Luminance choice.
+    /// one segment rather than the RGB-only RGB/Luma choice.
     @Test
     @MainActor
     func monoImageOffersOnlyMonoMode() throws
@@ -140,12 +140,12 @@ struct HistogramViewTests
         #expect( HistogramControlView.Mode.availableModes( isMono: true ) == [ .mono ] )
     }
 
-    /// A colour image offers the RGB and luminance modes, and never the mono mode.
+    /// A colour image offers the RGB and luma modes, and never the mono mode.
     @Test
     @MainActor
-    func colorImageOffersRGBAndLuminance() throws
+    func colorImageOffersRGBAndLuma() throws
     {
-        #expect( HistogramControlView.Mode.availableModes( isMono: false ) == [ .rgb, .luminance ] )
+        #expect( HistogramControlView.Mode.availableModes( isMono: false ) == [ .rgb, .luma ] )
     }
 
     /// A mono image is always shown in mono mode, whatever colour mode was stored
@@ -155,7 +155,7 @@ struct HistogramViewTests
     func monoImageIsAlwaysShownInMonoMode() throws
     {
         #expect( HistogramControlView.Mode.effectiveMode( stored: .rgb,       isMono: true ) == .mono )
-        #expect( HistogramControlView.Mode.effectiveMode( stored: .luminance, isMono: true ) == .mono )
+        #expect( HistogramControlView.Mode.effectiveMode( stored: .luma, isMono: true ) == .mono )
         #expect( HistogramControlView.Mode.effectiveMode( stored: .mono,      isMono: true ) == .mono )
     }
 
@@ -166,7 +166,7 @@ struct HistogramViewTests
     func colorImageClampsStaleMonoSelection() throws
     {
         #expect( HistogramControlView.Mode.effectiveMode( stored: .rgb,       isMono: false ) == .rgb )
-        #expect( HistogramControlView.Mode.effectiveMode( stored: .luminance, isMono: false ) == .luminance )
+        #expect( HistogramControlView.Mode.effectiveMode( stored: .luma, isMono: false ) == .luma )
         #expect( HistogramControlView.Mode.effectiveMode( stored: .mono,      isMono: false ) == .rgb )
     }
 }

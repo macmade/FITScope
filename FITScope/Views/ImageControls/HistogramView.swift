@@ -37,7 +37,7 @@ public struct HistogramView: View
     /// overlaid. Only honoured in RGB mode.
     public let separateChannels: Bool
 
-    /// Which histogram (RGB, luminance or mono) to draw.
+    /// Which histogram (RGB, luma or mono) to draw.
     public let mode: HistogramControlView.Mode
 
     /// Whether to scale bar heights logarithmically, lifting small bins so detail
@@ -55,7 +55,7 @@ public struct HistogramView: View
     ///   - histogram:        The histograms to draw.
     ///   - separateChannels: Whether to stack the RGB channels in separate strips
     ///                       rather than overlaying them (RGB mode only).
-    ///   - mode:             Which histogram (RGB, luminance or mono) to draw.
+    ///   - mode:             Which histogram (RGB, luma or mono) to draw.
     ///   - logScale:         Whether to scale bar heights logarithmically.
     ///   - showsGrid:        Whether to draw the reference grid (default `true`);
     ///                       pass `false` when overlaying another grid.
@@ -148,16 +148,16 @@ public struct HistogramView: View
     {
         switch self.mode
         {
-            case .luminance: return 0.5
-            case .rgb:       return self.separateChannels ? 0.5 : 0.35
-            case .mono:      return 0.5
+            case .luma: return 0.5
+            case .rgb:  return self.separateChannels ? 0.5 : 0.35
+            case .mono: return 0.5
         }
     }
 
     /// The fill colour for a channel by index.
     ///
     /// - Parameter index: The channel index (0…2 for red/green/blue).
-    /// - Returns: Grey in luminance and mono modes, the matching RGB colour in
+    /// - Returns: Grey in luma and mono modes, the matching RGB colour in
     ///   RGB mode, or `.clear` for an out-of-range index.
     private func color( index: Int ) -> Color
     {
@@ -169,9 +169,9 @@ public struct HistogramView: View
 
         switch self.mode
         {
-            case .luminance: return .gray
-            case .rgb:       return [ .red, .green, .blue ][ index ]
-            case .mono:      return .gray
+            case .luma: return .gray
+            case .rgb:  return [ .red, .green, .blue ][ index ]
+            case .mono: return .gray
         }
     }
 
@@ -180,9 +180,9 @@ public struct HistogramView: View
     {
         switch self.mode
         {
-            case .luminance: return self.histogram.luminance.data
-            case .rgb:       return self.histogram.rgb.data
-            case .mono:      return self.histogram.mono.data
+            case .luma: return self.histogram.luma.data
+            case .rgb:  return self.histogram.rgb.data
+            case .mono: return self.histogram.mono.data
         }
     }
 
@@ -360,7 +360,7 @@ struct HistogramGridView: View
         Divider()
         HistogramView( histogram: histogram, separateChannels: true,  mode: .rgb, logScale: false )
         Divider()
-        HistogramView( histogram: histogram, separateChannels: false, mode: .luminance, logScale: true )
+        HistogramView( histogram: histogram, separateChannels: false, mode: .luma, logScale: true )
     }
     .frame( maxWidth: .infinity, alignment: .leading )
     .frame( maxHeight: .infinity, alignment: .top )

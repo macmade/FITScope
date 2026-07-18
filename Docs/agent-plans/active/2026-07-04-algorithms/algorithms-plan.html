@@ -805,19 +805,32 @@
         </div>
 
         <div class="milestone">
-            <h3><span class="m-num">M5.10</span> SwiftPixel &mdash; Docs, cosmetics &amp; minor cleanups <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M5.10</span> SwiftPixel &mdash; Docs, cosmetics &amp; minor cleanups <span class="capsule inprogress">In progress</span></h3>
             <div class="field-label">Fixes</div>
             <p class="goal">SP&nbsp;COS-1, COS-2, COS-3, COS-4, COS-5, COS-6, COS-8, IMP-12.</p>
             <div class="field-label">Goal</div>
             <p class="goal">The <code>vDSP_mmovD</code> comment M/N swap (COS-1), the stale <code>GaussianFit</code> finite-difference-Jacobian docstrings (COS-8), luma-vs-luminance naming (COS-3), the redundant <code>mtf</code> branch (COS-2), <code>readRawPixels</code> zero-sample return (COS-4), <code>Bin.outputSize</code> for a rejected factor (COS-5), the <code>Deinterleave</code> doc (COS-6), and the unused <code>Histogram</code> bin arrays (IMP-12).</p>
             <div class="field-label">Status</div>
-            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <p><span class="capsule inprogress">In progress</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <p><strong>Approach.</strong> A mixed docs/cosmetics milestone; TDD applies only to the one behaviour change (COS-4). SwiftPixel builds and its full suite passes; FITScope builds and its 47 histogram tests pass.</p>
+            <p><strong>COS-1.</strong> Corrected the <code>vDSP_mmovD</code> comment in <code>PixelUtilities.interleave</code> (&ldquo;N=1 column, M=count row&rdquo; &rarr; &ldquo;M=1 column, N=count rows&rdquo;), matching the call's M=columns / N=rows argument order.</p>
+            <p><strong>COS-2.</strong> Removed the redundant <code>mtf</code> <code>m == 0.5</code> branch; the general formula returns exactly <code>x</code> there (exact for all normal doubles), and the existing <code>midtonesOfHalfIsTheIdentity</code> test guards it.</p>
+            <p><strong>COS-4.</strong> Added <code>guard count &gt; 0 else { return [] }</code> to <code>readRawPixels</code>, <em>after</em> the size/mismatch guards so validation is unchanged, plus a <code>zeroAreaReturnsEmpty</code> test. Honest note: no red&ndash;green fired &mdash; on this toolchain empty <code>Data().withUnsafeBytes</code> yields a non-nil base address, so the code already returned <code>[]</code>; the guard makes the zero-area&rarr;<code>[]</code> contract explicit and platform-independent (the audit's toolchain threw).</p>
+            <p><strong>COS-5.</strong> Documented that <code>Bin.outputSize</code> returns a zero-area size for a factor <code>process</code> rejects. Reviewer-corrected: the two axes collapse independently, so it is a zero <em>width and/or height</em>, not necessarily <code>(0, 0)</code>.</p>
+            <p><strong>COS-6.</strong> Fixed the <code>Debayer.deinterleave</code> parameter docs (&ldquo;Must be positive&rdquo; &rarr; a zero dimension yields empty sets), matching the accepted zero-area behaviour.</p>
+            <p><strong>COS-8.</strong> Updated the two stale <code>GaussianFit</code> &ldquo;finite-difference Jacobian&rdquo; docstrings to describe the analytic Jacobian the code has used since commit&nbsp;131d928.</p>
+            <p><strong>IMP-12.</strong> <code>Histogram</code> now allocates only the accumulator(s) the active mode uses; the unused ones stay empty and are never indexed, so the output is identical.</p>
+            <p><strong>COS-3 &mdash; coordinated luma rename.</strong> Per the maintainer's decision (&ldquo;code should say luma; keep &lsquo;Luminance&rsquo; as the UI label&rdquo;), the Rec.&nbsp;709 histogram value was renamed <code>luminance</code>&rarr;<code>luma</code> across SwiftPixel's public <code>Histogram.Mode</code> (plus the <code>Saturation</code>/<code>ColorBalance</code> locals) and the FITScope side (<code>HistogramMode</code>, <code>ImageRenderer.Histogram</code>/<code>Statistics</code>, the histogram views, <code>PreviewHelper</code>, tests). The separate detection <em>linear luminance</em> (mean-of-channels, for star detection / auto-stretch &mdash; <code>rgbLinearLuminance</code> et&nbsp;al.) was left untouched, and the user-visible &ldquo;Luminance&rdquo; label is preserved (<code>HistogramMode.description</code>, the segmented control, the UI tests). A coordinated change across both repos, like D2.</p>
+            <p><strong>Automated review loop.</strong> 1 round, two fresh-context reviewers, <strong>converged</strong> &mdash; no correctness defects. The rename was verified complete, concept-correct (histogram only; detection luminance intact), label-preserving and behaviour-neutral. Two Low findings fixed (the COS-5 <code>(0,0)</code> wording; the <code>ImageRenderer</code> alignment). The one Medium (commit hygiene &mdash; the diff bundles the rename with the other cosmetics) is inherent to the milestone's scope: the changes are all intended M5.10 findings, splitting naturally into a SwiftPixel commit and a FITScope commit.</p>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <p><strong>Round 1</strong> &mdash; two fresh-context reviewers, <strong>converged</strong> (no Critical/High defects; all correctness verified).</p>
+            <ul>
+                <li><strong>Reviewer A (SwiftPixel cosmetics).</strong> COS-1 / COS-6 / COS-8 / IMP-12 verified correct (the seven Gaussian partials checked; no crash path in the mode-gated allocation). <strong>COS-5 &mdash; doc overstated <code>(0,0)</code></strong> (Low): <em>Fixed</em> &mdash; reworded to a zero-area size. COS-2 subnormal-ULP caveat and COS-4 &ldquo;no red&ndash;green on this toolchain&rdquo; reasoning (Info): <em>Deferred</em>, no action.</li>
+                <li><strong>Reviewer B (coordinated rename).</strong> All five checks passed: completeness/consistency (no dangling refs; SwiftAstro doesn't reference <code>Histogram</code>), concept-1-only (detection linear luminance intact), UI label preserved, behaviour-neutral (incl. no persistence break), alignment. <strong>Finding&nbsp;2 &mdash; <code>ImageRenderer</code> alignment not tightened</strong> (Low): <em>Fixed</em>. <strong>Finding&nbsp;1 &mdash; non-rename changes bundled in the diff</strong> (Medium): <em>Handled</em> &mdash; those are the other intended M5.10 cosmetics (reviewed by Reviewer&nbsp;A), separated into SwiftPixel vs FITScope commits; the <code>mtf</code> removal and zero-area guard are intended (COS-2 / COS-4).</li>
+            </ul>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+            <p><strong>Maintainer:</strong> Wants a single commit for SwiftPixel &mdash; keep the cosmetics and the luma rename together in one commit rather than splitting them.</p>
         </div>
 
         <div class="milestone">

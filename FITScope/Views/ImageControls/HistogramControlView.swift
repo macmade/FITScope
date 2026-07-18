@@ -27,7 +27,7 @@ import SwiftPixel
 import SwiftUI
 
 /// The histogram section of the controls panel: a mode picker (RGB vs
-/// luminance), the ``HistogramView`` itself, and toggles for separating the
+/// luma), the ``HistogramView`` itself, and toggles for separating the
 /// colour channels and showing summary statistics.
 public struct HistogramControlView: View
 {
@@ -166,7 +166,7 @@ public struct HistogramControlView: View
     }
 
     /// Whether the rendered image is monochrome, in which case the histogram is
-    /// shown as a single mono channel rather than RGB/luminance.
+    /// shown as a single mono channel rather than RGB/luma.
     private var isMono: Bool
     {
         self.histogram.isMono

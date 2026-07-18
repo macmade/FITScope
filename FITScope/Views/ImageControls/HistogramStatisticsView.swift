@@ -27,7 +27,7 @@ import SwiftUI
 
 /// A grid of histogram statistics — mean, standard deviation, median, min, max,
 /// percentiles and pixel count — with one column per channel for the current
-/// mode (three for RGB, one for luminance or mono).
+/// mode (three for RGB, one for luma or mono).
 public struct HistogramStatisticsView: View
 {
     /// One labelled statistic row, pairing a display label with a closure that
@@ -64,7 +64,7 @@ public struct HistogramStatisticsView: View
     /// The per-channel statistics to display.
     public let statistics: ImageRenderer.HistogramStatistics
 
-    /// Whether to show RGB channels or a single luminance/mono channel.
+    /// Whether to show RGB channels or a single luma/mono channel.
     public let mode: HistogramControlView.Mode
 
     /// The ordered statistic rows displayed in the grid.
@@ -102,9 +102,9 @@ public struct HistogramStatisticsView: View
                     {
                         switch self.mode
                         {
-                            case .rgb:       return [ self.statistics.red, self.statistics.green, self.statistics.blue ]
-                            case .luminance: return [ self.statistics.luminance ]
-                            case .mono:      return [ self.statistics.mono ]
+                            case .rgb:  return [ self.statistics.red, self.statistics.green, self.statistics.blue ]
+                            case .luma: return [ self.statistics.luma ]
+                            case .mono: return [ self.statistics.mono ]
                         }
                     }()
 
@@ -139,7 +139,7 @@ public struct HistogramStatisticsView: View
     {
         HistogramStatisticsView( statistics: statistics, mode: .rgb )
         Divider()
-        HistogramStatisticsView( statistics: statistics, mode: .luminance )
+        HistogramStatisticsView( statistics: statistics, mode: .luma )
     }
     .frame( maxWidth: .infinity, alignment: .leading )
     .frame( maxHeight: .infinity, alignment: .top )

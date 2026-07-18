@@ -25,14 +25,14 @@
 import Foundation
 
 /// Which histogram channels are displayed: the per-channel RGB triple, a single
-/// luminance curve, or a single mono curve for a monochrome image.
+/// luma curve, or a single mono curve for a monochrome image.
 public enum HistogramMode: CaseIterable, CustomStringConvertible
 {
     /// The per-channel red/green/blue histogram.
     case rgb
 
-    /// The single-channel luminance histogram.
-    case luminance
+    /// The single-channel luma histogram.
+    case luma
 
     /// The single-channel histogram of a monochrome image.
     case mono
@@ -42,21 +42,21 @@ public enum HistogramMode: CaseIterable, CustomStringConvertible
     {
         switch self
         {
-            case .rgb:       return "RGB"
-            case .luminance: return "Luminance"
-            case .mono:      return "Mono"
+            case .rgb:  return "RGB"
+            case .luma: return "Luminance"
+            case .mono: return "Mono"
         }
     }
 
     /// The modes a histogram offers for an image, given whether it is monochrome:
-    /// a single ``mono`` mode for mono images, or the RGB and luminance choice for
+    /// a single ``mono`` mode for mono images, or the RGB and luma choice for
     /// colour images.
     ///
     /// - Parameter isMono: Whether the rendered image is monochrome.
     /// - Returns: The selectable modes, in display order.
     public static func availableModes( isMono: Bool ) -> [ HistogramMode ]
     {
-        isMono ? [ .mono ] : [ .rgb, .luminance ]
+        isMono ? [ .mono ] : [ .rgb, .luma ]
     }
 
     /// Resolves the mode actually shown for an image, clamping a stored mode that

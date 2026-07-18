@@ -43,7 +43,7 @@ public class ImageRenderer: ObservableObject
         /// The rendered, display-ready image.
         public let image: CGImage
 
-        /// The RGB and luminance histograms of the rendered pixels.
+        /// The RGB and luma histograms of the rendered pixels.
         public let histogram: Histogram
 
         /// Per-channel statistics derived from the histograms.
@@ -74,8 +74,8 @@ public class ImageRenderer: ObservableObject
         /// The per-channel (red, green, blue) histogram.
         public let rgb: SwiftPixel.Histogram
 
-        /// The single-channel luminance histogram.
-        public let luminance: SwiftPixel.Histogram
+        /// The single-channel luma histogram.
+        public let luma: SwiftPixel.Histogram
 
         /// The single-channel histogram of the rendered first channel, shown for
         /// monochrome images in place of the redundant RGB triple.
@@ -86,7 +86,7 @@ public class ImageRenderer: ObservableObject
         /// demosaiced to RGB, anything else is replicated from one channel to RGB),
         /// so this can't be read back from the channel count — it records whether
         /// the source was monochrome, not whether debayering ran. When `true`, the
-        /// inspector presents ``mono`` rather than ``rgb``/``luminance``.
+        /// inspector presents ``mono`` rather than ``rgb``/``luma``.
         public let isMono: Bool
 
         public static func == ( lhs: Histogram, rhs: Histogram ) -> Bool
@@ -107,8 +107,8 @@ public class ImageRenderer: ObservableObject
         /// Statistics for the blue channel.
         public let blue: SwiftPixel.HistogramStatistics
 
-        /// Statistics for the luminance channel.
-        public let luminance: SwiftPixel.HistogramStatistics
+        /// Statistics for the luma channel.
+        public let luma: SwiftPixel.HistogramStatistics
 
         /// Statistics for the single (mono) channel, shown for monochrome images.
         public let mono: SwiftPixel.HistogramStatistics
@@ -118,7 +118,7 @@ public class ImageRenderer: ObservableObject
     /// unprocessed image's distribution alongside the live processed result.
     public struct HistogramSet
     {
-        /// The RGB and luminance histograms.
+        /// The RGB and luma histograms.
         public let histogram: Histogram
 
         /// Per-channel statistics derived from the histograms.
@@ -415,18 +415,18 @@ public class ImageRenderer: ObservableObject
     /// - Throws: Any error thrown by the pixel pipeline.
     private nonisolated static func makeResult( from producer: any RenderResultProducing, settings: ImageProcessor.Settings ) throws -> Result
     {
-        let render             = try producer.makeResult( settings: settings )
-        let channels           = render.outputPixelFormat.channels
-        let rgbHistogram       = Benchmark.run( label: "Histogram (RGB)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .rgb ) }
-        let luminanceHistogram = Benchmark.run( label: "Histogram (L)",   output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .luminance ) }
-        let monoHistogram      = Benchmark.run( label: "Histogram (Mono)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .mono ) }
-        let histogram          = Histogram( rgb: rgbHistogram, luminance: luminanceHistogram, mono: monoHistogram, isMono: render.inputPixelFormat == .mono )
-        let statistics         = HistogramStatistics(
-            red:       Benchmark.run( label: "Statistics (R)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 0 ] ) },
-            green:     Benchmark.run( label: "Statistics (G)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 1 ] ) },
-            blue:      Benchmark.run( label: "Statistics (B)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 2 ] ) },
-            luminance: Benchmark.run( label: "Statistics (L)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: luminanceHistogram.data[ 0 ] ) },
-            mono:      Benchmark.run( label: "Statistics (Mono)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: monoHistogram.data[ 0 ] ) }
+        let render        = try producer.makeResult( settings: settings )
+        let channels      = render.outputPixelFormat.channels
+        let rgbHistogram  = Benchmark.run( label: "Histogram (RGB)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .rgb ) }
+        let lumaHistogram = Benchmark.run( label: "Histogram (L)",   output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .luma ) }
+        let monoHistogram = Benchmark.run( label: "Histogram (Mono)", output: Benchmarking.log ) { SwiftPixel.Histogram( bytes: render.bytes, channels: channels, mode: .mono ) }
+        let histogram     = Histogram( rgb: rgbHistogram, luma: lumaHistogram, mono: monoHistogram, isMono: render.inputPixelFormat == .mono )
+        let statistics    = HistogramStatistics(
+            red:   Benchmark.run( label: "Statistics (R)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 0 ] ) },
+            green: Benchmark.run( label: "Statistics (G)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 1 ] ) },
+            blue:  Benchmark.run( label: "Statistics (B)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: rgbHistogram.data[ 2 ] ) },
+            luma:  Benchmark.run( label: "Statistics (L)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: lumaHistogram.data[ 0 ] ) },
+            mono:  Benchmark.run( label: "Statistics (Mono)", output: Benchmarking.log ) { SwiftPixel.HistogramStatistics( data: monoHistogram.data[ 0 ] ) }
         )
 
         return Result( image: render.image, histogram: histogram, statistics: statistics, orientation: settings.orientation )

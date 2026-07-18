@@ -187,36 +187,36 @@ public enum PreviewHelper
     /// Builds a synthetic histogram from random Gaussian-distributed RGB data,
     /// for previewing histogram views without rendering a real image.
     ///
-    /// - Returns: A histogram with both RGB and luminance channels populated.
+    /// - Returns: A histogram with both RGB and luma channels populated.
     public static func histogram() -> ImageRenderer.Histogram
     {
-        let bytes     = self.generateRandomRGBData( count: 1000 )
-        let rgb       = Histogram( bytes: bytes, channels: 3, mode: .rgb )
-        let luminance = Histogram( bytes: bytes, channels: 3, mode: .luminance )
-        let mono      = Histogram( bytes: bytes, channels: 3, mode: .mono )
+        let bytes = self.generateRandomRGBData( count: 1000 )
+        let rgb   = Histogram( bytes: bytes, channels: 3, mode: .rgb )
+        let luma  = Histogram( bytes: bytes, channels: 3, mode: .luma )
+        let mono  = Histogram( bytes: bytes, channels: 3, mode: .mono )
 
-        return ImageRenderer.Histogram( rgb: rgb, luminance: luminance, mono: mono, isMono: false )
+        return ImageRenderer.Histogram( rgb: rgb, luma: luma, mono: mono, isMono: false )
     }
 
     /// Builds synthetic per-channel histogram statistics from the same random
     /// data as ``histogram()``, for previewing statistics views.
     ///
-    /// - Returns: Statistics for the red, green, blue and luminance channels.
+    /// - Returns: Statistics for the red, green, blue and luma channels.
     public static func statistics() -> ImageRenderer.HistogramStatistics
     {
         let histogram = self.histogram()
         let red       = HistogramStatistics( data: histogram.rgb.data[ 0 ] )
         let green     = HistogramStatistics( data: histogram.rgb.data[ 1 ] )
         let blue      = HistogramStatistics( data: histogram.rgb.data[ 2 ] )
-        let luminance = HistogramStatistics( data: histogram.luminance.data[ 0 ] )
+        let luma      = HistogramStatistics( data: histogram.luma.data[ 0 ] )
         let mono      = HistogramStatistics( data: histogram.mono.data[ 0 ] )
 
         return ImageRenderer.HistogramStatistics(
-            red:       red,
-            green:     green,
-            blue:      blue,
-            luminance: luminance,
-            mono:      mono
+            red:   red,
+            green: green,
+            blue:  blue,
+            luma:  luma,
+            mono:  mono
         )
     }
 

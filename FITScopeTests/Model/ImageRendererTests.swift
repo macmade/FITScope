@@ -457,7 +457,7 @@ struct ImageRendererTests
         // The histogram is the observable product of the rendered bytes: equal
         // histograms confirm the off-actor input rendered identically.
         #expect( result.histogram.rgb       == SwiftPixel.Histogram( bytes: direct.bytes, channels: 3, mode: .rgb ) )
-        #expect( result.histogram.luminance == SwiftPixel.Histogram( bytes: direct.bytes, channels: 3, mode: .luminance ) )
+        #expect( result.histogram.luma == SwiftPixel.Histogram( bytes: direct.bytes, channels: 3, mode: .luma ) )
     }
 
     /// The committed result records the orientation it was rendered with, so a
@@ -723,11 +723,11 @@ struct ImageRendererTests
         #expect( result.histogram.isMono, "a non-debayered render must be flagged mono" )
         #expect( result.histogram.mono == SwiftPixel.Histogram( bytes: direct.bytes, channels: direct.outputPixelFormat.channels, mode: .mono ) )
         #expect( result.histogram.mono.data.count == 1 )
-        #expect( result.statistics.mono.count == result.statistics.luminance.count )
+        #expect( result.statistics.mono.count == result.statistics.luma.count )
     }
 
     /// A debayered (colour-filter-array) image is not monochrome, so the inspector
-    /// keeps the RGB/luminance presentation rather than the single mono histogram.
+    /// keeps the RGB/luma presentation rather than the single mono histogram.
     @Test
     @MainActor
     func debayeredImageIsNotFlaggedMono() async throws
@@ -781,7 +781,7 @@ struct ImageRendererTests
         await renderer.render()
 
         let histogram = try #require( renderer.result?.histogram )
-        let sameData  = ImageRenderer.Histogram( rgb: histogram.rgb, luminance: histogram.luminance, mono: histogram.mono, isMono: histogram.isMono )
+        let sameData  = ImageRenderer.Histogram( rgb: histogram.rgb, luma: histogram.luma, mono: histogram.mono, isMono: histogram.isMono )
 
         #expect( histogram == histogram, "the same histogram instance is equal to itself" )
         #expect( histogram != sameData,  "a distinct histogram with identical bins is not equal — compared by identity, so SwiftUI never deep-compares the bins" )
