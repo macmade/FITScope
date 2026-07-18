@@ -1,0 +1,139 @@
+<meta charset="utf-8">
+<title>Debayer — Backlog</title>
+<style>
+    :root {
+        --bg:        #0d1117;
+        --panel:     #161b22;
+        --border:    #2b3440;
+        --text:      #e6edf3;
+        --muted:     #9da7b3;
+        --accent:    #58a6ff;
+        --accent-2:  #7ee787;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin:           0;
+        padding:          2.5rem 1.25rem 4rem;
+        background:       var(--bg);
+        color:            var(--text);
+        font-family:      -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        line-height:      1.6;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+        max-width: 860px;
+        margin:    0 auto;
+    }
+
+    header.doc {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.5rem;
+        margin-bottom:  2rem;
+    }
+
+    h1 {
+        font-size:   2.25rem;
+        margin:      0 0 .35rem;
+        letter-spacing: -0.02em;
+    }
+
+    .meta {
+        color:       var(--muted);
+        font-size:   .9rem;
+    }
+
+    .overview {
+        color:       var(--muted);
+        font-size:   1.02rem;
+        margin:      0 0 2.5rem;
+    }
+
+    h2.section {
+        font-size:    1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color:        var(--accent-2);
+        margin:       0 0 1.25rem;
+    }
+
+    ol.backlog {
+        list-style:  none;
+        counter-reset: pt;
+        margin:      0;
+        padding:     0;
+    }
+
+    li.item {
+        counter-increment: pt;
+        position:    relative;
+        background:  var(--panel);
+        border:      1px solid var(--border);
+        border-radius: 10px;
+        padding:     1.15rem 1.25rem 1.15rem 3.6rem;
+        margin-bottom: 1rem;
+    }
+
+    li.item::before {
+        content:     counter(pt);
+        position:    absolute;
+        left:        1.1rem;
+        top:         1.15rem;
+        width:       1.7rem;
+        height:      1.7rem;
+        display:     flex;
+        align-items: center;
+        justify-content: center;
+        background:  var(--bg);
+        border:      1px solid var(--accent);
+        color:       var(--accent);
+        border-radius: 50%;
+        font-size:   .85rem;
+        font-weight: 600;
+    }
+
+    li.item h3 {
+        margin:      0 0 .35rem;
+        font-size:   1.12rem;
+        color:       var(--text);
+    }
+
+    li.item p {
+        margin:      0;
+        color:       var(--muted);
+    }
+</style>
+
+<div class="wrap">
+    <header class="doc">
+        <h1>Debayer</h1>
+        <div class="meta">Generated 2026-07-18</div>
+    </header>
+
+    <p class="overview">
+        A short backlog focused on FITScope's Bayer demosaicing: measuring the real-world cost of the
+        available interpolation modes and, if the difference warrants it, exposing a preference so the
+        user controls which mode is used when opening an image and when generating Finder previews and
+        Quick Look thumbnails.
+    </p>
+
+    <h2 class="section">Backlog</h2>
+
+    <ol class="backlog">
+        <li class="item">
+            <h3>Benchmark bilinear vs. VNG debayering</h3>
+            <p>Benchmark the bilinear and VNG demosaicing modes in a release build, using real data from the
+            project's test files, to measure the actual performance difference between the two.</p>
+        </li>
+        <li class="item">
+            <h3>Preference for the default debayering mode</h3>
+            <p>If the benchmark reveals a notable difference, add a Preferences section that lets the user choose
+            the default debayering mode used when opening an image, and the mode used for Finder previews and
+            Quick Look thumbnails.</p>
+        </li>
+    </ol>
+</div>
