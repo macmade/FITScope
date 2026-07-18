@@ -242,7 +242,7 @@ public extension GraphSeries
             throw RuntimeError( message: "Data too small: \( data.count ) < \( size )" )
         }
 
-        return try PixelUtilities.readRawPixels( data: pixelData, width: sampleCount, height: 1, bitsPerPixel: bitsPerPixel )
+        return try PixelUtilities.readRawPixels( data: pixelData, width: sampleCount, height: 1, bitsPerPixel: bitsPerPixel, blank: header[ "BLANK" ]?.value.integer )
     }
 
     /// The horizontal-axis scaling and labelling shared by every line of a graph,

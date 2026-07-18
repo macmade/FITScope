@@ -96,6 +96,53 @@ struct ImageProcessorTests
         #expect( result.bytes.contains { ( 165 ... 175 ).contains( $0 ) } )
     }
 
+    /// An integer `BLANK` sentinel decodes to NaN, so undefined pixels are dropped
+    /// by the non-finite-filtering statistics exactly as a float image's NaN blanks
+    /// already are.
+    @Test
+    func linearImageMasksIntegerBlankPixels() throws
+    {
+        let properties =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "BLANK",  value: .integer( 255 ) ),
+            ]
+
+        let data   = Data( [ 10, 255, 30, 40 ] )
+        let result = try #require( ImageProcessor.linearImage( data: data, properties: properties ) )
+
+        #expect( result.samples[ 0 ] == 10 )
+        #expect( result.samples[ 1 ].isNaN )
+        #expect( result.samples[ 2 ] == 30 )
+        #expect( result.samples[ 3 ] == 40 )
+    }
+
+    /// `BLANK` names the raw stored value, so a blank pixel decodes to NaN rather
+    /// than to the `BZERO`/`BSCALE`-rescaled sentinel.
+    @Test
+    func linearImageMasksBlankBeforeScaling() throws
+    {
+        let properties =
+            [
+                FITSPropertySnapshot( name: "BITPIX", value: .integer( 16 ) ),
+                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
+                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 1 ) ),
+                FITSPropertySnapshot( name: "BZERO",  value: .integer( 32768 ) ),
+                FITSPropertySnapshot( name: "BLANK",  value: .integer( -1 ) ),
+            ]
+
+        // Two big-endian Int16 samples: -1 (the BLANK sentinel) and 5.
+        let data   = Data( [ 0xFF, 0xFF, 0x00, 0x05 ] )
+        let result = try #require( ImageProcessor.linearImage( data: data, properties: properties ) )
+
+        #expect( result.samples[ 0 ].isNaN )
+        #expect( result.samples[ 1 ] == 32773 )
+    }
+
     /// The auto-stretch settings derive a *uniform* Screen Transfer seeded over
     /// identity normalization — matching the inspector's "Auto" action, so opening
     /// and clicking Auto agree; per-channel balancing stays a manual choice.

@@ -271,8 +271,8 @@ public class XISFImageLoader: ObservableObject, ImageLoading
     }
 
     /// Builds the detection-ready single-channel linear image for an XISF image,
-    /// mirroring `SwiftAstro.FITSImageDecoder.detectionImage`: a colour-filter-array
-    /// frame is demosaiced to a luminance channel via `BayerGrayscaleConverter`
+    /// matching the FITS and RAW loaders: a colour-filter-array frame is
+    /// demosaiced to a luminance channel via `BayerGrayscaleConverter`
     /// (feeding a raw mosaic to the detector would inject the Bayer grid as false
     /// structure), while a grayscale or RGB frame is already luminance and is used
     /// directly. Best-effort: any failure returns `nil`, so the load still succeeds

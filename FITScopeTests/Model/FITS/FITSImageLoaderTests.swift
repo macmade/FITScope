@@ -207,4 +207,49 @@ struct FITSImageLoaderTests
         #expect( loader.image == nil, "the failure state must remain retriable, not latched" )
         #expect( loader.error != nil )
     }
+
+    /// A monochrome image builds a single-channel detection image at native
+    /// resolution for star detection (the native FITS-2D detection path, no longer
+    /// routed through SwiftAstro's decoder).
+    @Test
+    @MainActor
+    func monochromeImageBuildsDetectionImage() async throws
+    {
+        let loader = FITSImageLoader( url: TestFixtures.monoImage, data: try Data( contentsOf: TestFixtures.monoImage ) )
+
+        await loader.load()
+
+        let image     = try #require( loader.image )
+        let source    = try image.renderer.renderSourceSnapshot()
+        let detection = try #require( source.detectionImage, "a monochrome frame must build a detection image" )
+        let rendered  = try source.makeResult( settings: ImageProcessor.Settings() )
+
+        #expect( detection.channels == 1 )
+        #expect( detection.width  == rendered.image.width )
+        #expect( detection.height == rendered.image.height )
+    }
+
+    /// A colour-filter-array image demosaics to a single-channel luminance detection
+    /// image (feeding a raw mosaic to the detector would inject the Bayer grid as
+    /// false structure), at native resolution.
+    @Test
+    @MainActor
+    func colorFilterArrayImageBuildsDemosaicedDetectionImage() async throws
+    {
+        let loader = FITSImageLoader( url: TestFixtures.colorImage, data: try Data( contentsOf: TestFixtures.colorImage ) )
+
+        await loader.load()
+
+        let image = try #require( loader.image )
+
+        #expect( image.isColorFilterArray, "the fixture is a one-shot-colour frame" )
+
+        let source    = try image.renderer.renderSourceSnapshot()
+        let detection = try #require( source.detectionImage, "a CFA frame must build a demosaiced detection image" )
+        let rendered  = try source.makeResult( settings: ImageProcessor.Settings() )
+
+        #expect( detection.channels == 1 )
+        #expect( detection.width  == rendered.image.width )
+        #expect( detection.height == rendered.image.height )
+    }
 }

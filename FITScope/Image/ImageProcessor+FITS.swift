@@ -140,7 +140,7 @@ public extension ImageProcessor
             throw RuntimeError( message: "Data too small: \( data.count ) < \( size )" )
         }
 
-        let raw = try PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel )
+        let raw = try PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel, blank: Self.blankValue( from: properties ) )
 
         return try Self.render( rawSamples: raw, width: width, height: height, bitsPerPixel: bitsPerPixel, properties: properties, settings: settings )
     }
@@ -208,7 +208,7 @@ public extension ImageProcessor
         let pixelData = Data( data.prefix( size ) )
 
         guard pixelData.count == size,
-              let raw = try? PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel )
+              let raw = try? PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel, blank: Self.blankValue( from: properties ) )
         else
         {
             return nil
@@ -404,7 +404,7 @@ public extension ImageProcessor
         let pixelData = Data( data.prefix( size ) )
 
         guard pixelData.count == size,
-              let raw = try? PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel )
+              let raw = try? PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel, blank: Self.blankValue( from: properties ) )
         else
         {
             return nil
@@ -487,7 +487,7 @@ public extension ImageProcessor
 
             let slice = Data( pixelData.dropFirst( plane * planeSize ).prefix( planeSize ) )
 
-            return try PixelUtilities.readRawPixels( data: slice, width: width, height: height, bitsPerPixel: bitsPerPixel )
+            return try PixelUtilities.readRawPixels( data: slice, width: width, height: height, bitsPerPixel: bitsPerPixel, blank: Self.blankValue( from: properties ) )
         }
 
         return ( width: width, height: height, red: planes[ 0 ], green: planes[ 1 ], blue: planes[ 2 ] )
@@ -703,6 +703,19 @@ public extension ImageProcessor
         let scale  = bScale?.value.float ?? bScale?.value.integer.map( Double.init ) ?? 1
 
         return ( scale: scale, offset: offset )
+    }
+
+    /// Reads the integer `BLANK` undefined-pixel sentinel (FITS 4.0 §5.4.2.2),
+    /// which `PixelUtilities.readRawPixels` maps to NaN for an integer image so
+    /// blanks are dropped by the non-finite-filtering statistics, exactly as a
+    /// float image's NaN blanks are.
+    ///
+    /// - Parameter properties: The image HDU's header properties.
+    /// - Returns: The `BLANK` value, or `nil` when the keyword is absent or not an
+    ///   integer (a floating-point image marks blanks with NaN directly).
+    static func blankValue( from properties: [ FITSPropertySnapshot ] ) -> Int64?
+    {
+        properties.first { $0.name == "BLANK" }?.value.integer
     }
 
     /// Decodes the raw sample at image coordinates `(x, y)` from the HDU bytes,

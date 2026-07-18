@@ -29,8 +29,8 @@ import SwiftPixel
 /// Runs SwiftAstro's star detection over a detection-ready image.
 ///
 /// The detection-ready, single-channel linear buffer is produced at load time by
-/// `SwiftAstro.FITSImageDecoder` (which demosaics one-shot-colour frames); this
-/// only selects a detector and runs it. The entry point is `nonisolated` and
+/// the format loaders (one-shot-colour frames demosaiced to luminance); this only
+/// selects a detector and runs it. The entry point is `nonisolated` and
 /// works on the `Sendable` ``SwiftPixel/PixelBuffer``, so a caller can run it off
 /// the main actor.
 public enum StarDetection

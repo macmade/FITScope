@@ -192,13 +192,11 @@ public class FITSImageLoader: ObservableObject, ImageLoading
                                     throw RuntimeError( message: "FITS file contains no image HDU" )
                                 }
 
-                                // Build the detection-ready buffer here, while
-                                // the non-Sendable file is still in scope; only
-                                // the Sendable PixelBuffer crosses back. A decode
-                                // failure must not fail the load, so detection is
-                                // best-effort. A graph is never rendered and has
-                                // no detection image.
-                                let detectionImage = graph == nil ? Self.detectionImage( forImageHDU: hdu, file: file ) : nil
+                                // Build the detection-ready buffer from the Sendable
+                                // HDU snapshot; a decode failure must not fail the
+                                // load, so detection is best-effort. A graph is never
+                                // rendered and has no detection image.
+                                let detectionImage = graph == nil ? Self.detectionImage( forImageHDU: hdu ) : nil
 
                                 return FITSRenderSource( data: hdu.data, properties: hdu.properties, detectionImage: detectionImage )
                             }
@@ -344,22 +342,20 @@ public class FITSImageLoader: ObservableObject, ImageLoading
     /// An RGB `NAXIS=3` colour image combines its three planes into a single
     /// luminance channel (their per-pixel mean, in scaled-linear ADU) so star
     /// detection and the sky-background measurement run on the whole colour image
-    /// rather than one plane; any other image goes through SwiftAstro's decoder
-    /// (a monochrome frame as-is, a colour-filter array demosaiced to luminance).
+    /// rather than one plane; any other image is decoded to its linear single
+    /// channel, with a colour-filter-array frame demosaiced to luminance — the
+    /// same recipe the XISF and RAW loaders use.
     ///
     /// The decode is best-effort: any failure returns `nil` so the load still
     /// succeeds and detection is simply skipped.
     ///
-    /// - Parameters:
-    ///   - hdu:  The image HDU's bytes and header properties.
-    ///   - file: The parsed FITS file, for the non-RGB decode path.
+    /// - Parameter hdu: The image HDU's bytes and header properties.
     /// - Returns: The detection image, or `nil` when it cannot be built.
-    private nonisolated static func detectionImage( forImageHDU hdu: ( data: Data, properties: [ FITSPropertySnapshot ] ), file: FITSFile ) -> PixelBuffer?
+    private nonisolated static func detectionImage( forImageHDU hdu: ( data: Data, properties: [ FITSPropertySnapshot ] ) ) -> PixelBuffer?
     {
-        // An RGB image must combine its planes into luminance; it never falls back
-        // to SwiftAstro's decoder, which would read a NAXIS=3 file as if 2-D and
-        // build the detection image from the first (red) plane alone. When the
-        // luminance decode fails (truncated/invalid data), detection is skipped.
+        // An RGB image must combine its planes into luminance rather than detect on
+        // one plane; when the luminance decode fails (truncated/invalid data),
+        // detection is skipped.
         if ImageProcessor.isRGBPlanes( properties: hdu.properties )
         {
             return ImageProcessor.rgbLinearLuminance( data: hdu.data, properties: hdu.properties ).flatMap
@@ -368,7 +364,26 @@ public class FITSImageLoader: ObservableObject, ImageLoading
             }
         }
 
-        return try? FITSImageDecoder.detectionImage( from: file )
+        // A 2-D image is decoded to its linear single channel; a colour-filter-array
+        // frame is then demosaiced to luminance (feeding a raw mosaic to the detector
+        // would inject the Bayer grid as false structure). Mirrors the XISF / RAW
+        // loaders; any failure returns nil so detection is skipped.
+        guard let linear = ImageProcessor.linearImage( data: hdu.data, properties: hdu.properties ),
+              let buffer = try? PixelBuffer( width: linear.width, height: linear.height, channels: 1, pixels: linear.samples, isNormalized: false )
+        else
+        {
+            return nil
+        }
+
+        // bayerPattern(from:) returns nil for a monochrome frame and throws on an
+        // unsupported BAYERPAT; both fall back to the single (mono / raw) channel.
+        guard let pattern = ( try? ImageProcessor.bayerPattern( from: hdu.properties ) ) ?? nil
+        else
+        {
+            return buffer
+        }
+
+        return ( try? BayerGrayscaleConverter( pattern: pattern ).grayscale( from: buffer ) ) ?? buffer
     }
 
     /// Builds one render source per plane for a multi-image `NAXIS=3` cube, or `nil`

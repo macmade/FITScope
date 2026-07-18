@@ -137,8 +137,7 @@ private struct SyntheticStarField
 
 /// Tests for the ``StarDetection`` coordinator, which runs a detector over a
 /// detection-ready image. (The FITS-to-image decoding it consumes — including
-/// one-shot-colour demosaicing — is covered by SwiftAstro's `FITSImageDecoder`
-/// tests.)
+/// one-shot-colour demosaicing — is covered by the `FITSImageLoader` tests.)
 @Suite( "StarDetection" )
 struct StarDetectionTests
 {

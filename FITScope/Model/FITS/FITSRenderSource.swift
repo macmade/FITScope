@@ -40,8 +40,8 @@ public struct FITSRenderSource: ImageRenderSource
     public let properties: [ FITSPropertySnapshot ]
 
     /// The detection-ready single-channel linear image — demosaiced to a luminance
-    /// channel for one-shot-colour frames — built once at load time via
-    /// `SwiftAstro.FITSImageDecoder`. `nil` when no detection input is needed (e.g.
+    /// channel for one-shot-colour frames — built once at load time by
+    /// `FITSImageLoader`. `nil` when no detection input is needed (e.g.
     /// the QuickLook extensions) or it could not be decoded.
     public let detectionImage: PixelBuffer?
 
