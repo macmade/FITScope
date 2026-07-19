@@ -260,7 +260,7 @@ public class LoadedImage: ObservableObject
         let background = await Task.detached { SkyBackground.estimate( in: image ) }.value
 
         self.skyBackground = background
-        self.signalToNoise = background.flatMap { $0.noise > 0 ? SignalToNoise( noise: $0.noise ) : nil }
+        self.signalToNoise = background.flatMap { SignalToNoise( noise: $0.noise ) }
     }
 
     /// Resets every image adjustment to its default and re-renders.
