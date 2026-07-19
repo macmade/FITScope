@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection Image &mdash; Extraction Design</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --bg-card:   #181b24;
+            --bg-card-2: #1d212c;
+            --border:    #2a2f3c;
+            --text:      #e6e9ef;
+            --text-dim:  #9aa3b2;
+            --accent:    #5aa9ff;
+            --accent-dim:#2d3b52;
+            --code-bg:   #11141b;
+            --good:      #7ee787;
+            --warn:      #f0b849;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 36px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 2.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .meta div { margin-top: 4px; }
+
+        .overview {
+            color: var(--text-dim);
+            margin: 24px 0 40px;
+            font-size: 1.02rem;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin: 44px 0 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.05rem;
+            margin: 28px 0 10px;
+            color: var(--text);
+        }
+
+        p { margin: 0 0 14px; }
+
+        ul, ol { margin: 0 0 14px; padding-left: 22px; }
+
+        li { margin-bottom: 8px; }
+
+        code {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.87em;
+        }
+
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            overflow-x: auto;
+            margin: 0 0 18px;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 0.86rem;
+            line-height: 1.55;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 20px;
+            font-size: 0.93rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--text-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            letter-spacing: 0.05em;
+        }
+
+        tbody tr:hover { background: var(--bg-card); }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin: 0 0 16px;
+        }
+
+        .card h3 { margin-top: 0; }
+
+        .decision {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin: 0 0 14px;
+        }
+
+        .decision .q {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .decision .a { font-weight: 600; }
+
+        .decision p { margin: 8px 0 0; color: var(--text-dim); font-size: 0.95rem; }
+
+        .milestone {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin: 0 0 14px;
+        }
+
+        .milestone h3 { margin: 0 0 8px; }
+
+        .tag {
+            display: inline-block;
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-radius: 5px;
+            padding: 1px 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-right: 8px;
+        }
+
+        .risk { border-left: 3px solid var(--warn); }
+
+        footer {
+            margin-top: 56px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Detection Image</h1>
+            <div class="meta">
+                <div><strong>Generated</strong> &mdash; 2026-07-20</div>
+                <div><strong>Scope</strong> &mdash; extract the detection-image construction and its underlying pixel decoding from FITScope into SwiftAstro</div>
+                <div><strong>Nature</strong> &mdash; design document; the milestone plan is derived from this separately.</div>
+            </div>
+        </header>
+
+        <p class="overview">
+            FITScope builds a detection-ready, single-channel linear image at load time and hands it to
+            SwiftAstro for star detection and the sky-background measurement. The recipe that produces that
+            buffer &mdash; decode the file's samples, apply the format's linear scaling, demosaic a colour-filter
+            array to luminance &mdash; lives entirely in the app, and SwiftAstro's own tests re-implement it by
+            hand. This document specifies moving the decoding and the detection-image construction into
+            SwiftAstro, so the app and the library's tests share one implementation.
+        </p>
+
+        <h2>Motivation</h2>
+
+        <p>
+            Four format loaders in the app each carry a private <code>detectionImage(&hellip;)</code> that applies
+            the same recipe:
+        </p>
+
+        <table>
+            <thead>
+                <tr><th>Loader</th><th>Decode step</th><th>Then</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>FITSImageLoader.swift:354</code></td>
+                    <td><code>ImageProcessor.linearImage</code> / <code>rgbLinearLuminance</code></td>
+                    <td>wrap in <code>PixelBuffer</code>, then <code>BayerGrayscaleConverter</code> when <code>BAYERPAT</code> is present</td>
+                </tr>
+                <tr>
+                    <td><code>XISFImageLoader.swift:285</code></td>
+                    <td><code>ImageProcessor.xisfLinearLuminance</code></td>
+                    <td>same</td>
+                </tr>
+                <tr>
+                    <td><code>RAWImageLoader.swift:317</code></td>
+                    <td><code>ImageProcessor.rawImageLinearLuminance</code></td>
+                    <td>same</td>
+                </tr>
+                <tr>
+                    <td><code>ImageIOImageLoader.swift:354</code></td>
+                    <td><code>ImageProcessor.imageIOLinearLuminance</code></td>
+                    <td>no CFA step (photographic sources carry no mosaic)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>
+            On the library side, <code>SwiftAstroTests/Helpers/FITSTestImage.swift:259-372</code> is a
+            hand-written re-implementation of the FITS decode and the <code>BAYERPAT</code> mapping. Its own
+            documentation calls it <em>&ldquo;a test-only reimplementation of the FITS&rarr;buffer adapter the
+            library no longer ships&rdquo;</em>. A second, independent copy of the same algorithm exists for
+            image-HDU selection: <code>FITSPreviewRenderer.imageHDU(from:)</code>
+            (<code>FITScope/Image/FITSPreviewRenderer.swift:49</code>) and
+            <code>FITSTestImage.imageHDU(in:)</code> (<code>:344</code>) implement the same rule &mdash;
+            <em>first <code>.data</code> section, paired with the section before it</em> &mdash; independently.
+        </p>
+
+        <p>
+            The consequence is that SwiftAstro's real-frame validation tests and its decode benchmarks assert
+            against frames decoded by code the app never runs. A change to how FITScope interprets a header
+            (scaling, blank masking, HDU choice, Bayer phase) does not reach the library's tests, and a change
+            in the library's test decoder does not reflect the app. That is the divergence this design removes.
+        </p>
+
+        <p>
+            There is also a duplication <em>inside</em> the app that the extraction exposes:
+            <code>ImageProcessor.render(data:properties:)</code>
+            (<code>ImageProcessor+FITS.swift:62-145</code>) hand-rolls a decode that duplicates
+            <code>linearImage</code> (<code>:384</code>) and <code>decodedImageHDU</code> (<code>:189</code>),
+            differing only in throwing rather than returning <code>nil</code>.
+        </p>
+
+        <h3>Prior decision this revisits</h3>
+
+        <p>
+            Commit <code>c0ac847</code> (SwiftAstro, 2026-07-19) removed the public
+            <code>FITSImageDecoder</code> on the grounds that it had degenerated into test-support scaffolding:
+            <em>&ldquo;the FITScope app now decodes FITS itself, so the type's sole remaining users were
+            SwiftAstro's own real-frame validation tests and the decode benchmark.&rdquo;</em> That reasoning was
+            sound for what the type had become. This design reinstates the name with the opposite property:
+            the app calls it in production, and it is the only decode path either side uses. Any commit
+            reinstating the type should say so explicitly, so the change is not read as an accidental revert.
+        </p>
+
+        <h2>Decisions</h2>
+
+        <div class="decision">
+            <div class="q">Boundary</div>
+            <div class="a">Decode and detection assembly both move, along with the <code>Sendable</code> property-snapshot types.</div>
+            <p>Sharing only the thin luminance&rarr;demosaic step would not achieve the goal: the part
+            <code>FITSTestImage</code> duplicates is the header&rarr;samples decode (BITPIX, BZERO/BSCALE, BLANK,
+            block-padding trim).</p>
+        </div>
+
+        <div class="decision">
+            <div class="q">Formats</div>
+            <div class="a">All four &mdash; FITS, XISF, RAW and photographic (ImageIO).</div>
+            <p>No format keeps an app-side duplicate. Requires adding SwiftXISF and SwiftRAW to SwiftAstro's
+            package dependencies; the photographic path needs no new dependency, as its properties type is
+            Foundation-only and the <code>CGImage</code> draw stays app-side.</p>
+        </div>
+
+        <div class="decision">
+            <div class="q">API shape</div>
+            <div class="a">Per-format decoder namespaces, one type per file.</div>
+            <p>Keeps the linear decoders public so the app's render path reuses the same decode. A protocol
+            (<code>DetectionImageSource</code>) was considered and rejected: the polymorphic abstraction over
+            formats already exists app-side as <code>ImageRenderSource</code>, so a second one would have no
+            consumer; and a computed <code>var detectionImage</code> would invite recomputing a full decode plus
+            demosaic of a multi-megapixel frame on every access, where the app deliberately stores it once at
+            load time.</p>
+        </div>
+
+        <div class="decision">
+            <div class="q">HDU selection</div>
+            <div class="a">Moves into <code>FITSImageDecoder</code>.</div>
+            <p>It decides <em>which</em> HDU is decoded at all, so leaving it behind would leave the second
+            drift point open. It stops short of file parsing: <code>FITSFile</code> construction, and the
+            <code>.lenient</code> option choice, stay with the caller.</p>
+        </div>
+
+        <div class="decision">
+            <div class="q">Test ownership</div>
+            <div class="a">Decode tests move to SwiftAstroTests, which grows its own minimal fixture builders.</div>
+            <p>A shared test-support target was considered but rejected as scope creep. The residual
+            duplication is acceptable because it is only in <em>fixtures</em>: once the decoder is shared, a
+            drifting fixture means a different input, not different behaviour. SwiftAstro's copy covers only
+            the shapes its decode tests need &mdash; not a port of all 340 lines of <code>FITSTestData</code>.</p>
+        </div>
+
+        <div class="decision">
+            <div class="q">Call sites</div>
+            <div class="a">All updated; no forwarding shims on <code>ImageProcessor</code>.</div>
+            <p>Shims would leave two names for every operation and a facade suggesting the app still owns the
+            decode &mdash; the exact confusion this change removes. The edit is mechanical and
+            compiler-verified: delete the method, fix what breaks. Roughly 103 sites (49 in the app, 36 in its
+            tests, 18 internal to <code>ImageProcessor+FITS</code>), sequenced per format.</p>
+        </div>
+
+        <h2>Target structure</h2>
+
+        <p>New files under <code>SwiftAstro/Preprocessing/Decoding/</code>, one type per file:</p>
+
+        <table>
+            <thead>
+                <tr><th>File</th><th>Contents</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>FITSPropertySnapshot.swift</code></td><td>moved verbatim from the app</td></tr>
+                <tr><td><code>FITSImageDecoder.swift</code></td><td><code>imageHDU(from:)</code>, <code>imageDimensions</code>, <code>scaling</code>, <code>blankValue</code>, <code>bayerPattern</code>, <code>isRGBPlanes</code>, <code>isMultiImageCube</code>, <code>cubePlanes</code>, <code>fullScale(forImageHDU:)</code>, <code>linearImage</code>, <code>rgbPlaneSamples</code>, <code>rgbLinearLuminance</code>, <code>decodedImageHDU</code>, <code>detectionImage</code></td></tr>
+                <tr><td><code>XISFImageProperties.swift</code></td><td>moved verbatim</td></tr>
+                <tr><td><code>XISFImageDecoder.swift</code></td><td><code>planeSamples</code>, <code>samples</code>, <code>decodeSample</code>, <code>linearLuminance</code> (bytes and planes), <code>fullScale</code>, <code>bitsPerPixel</code>, <code>detectionImage</code></td></tr>
+                <tr><td><code>RAWImageProperties.swift</code></td><td>moved verbatim</td></tr>
+                <tr><td><code>RAWImageDecoder.swift</code></td><td><code>samples</code>, <code>linearLuminance</code>, <code>detectionImage</code></td></tr>
+                <tr><td><code>BitmapImageProperties.swift</code></td><td>renamed from <code>ImageIOImageProperties</code></td></tr>
+                <tr><td><code>BitmapImageDecoder.swift</code></td><td><code>planeSamples</code>, <code>sample</code>, <code>linearLuminance</code> (bytes and planes), <code>detectionImage</code></td></tr>
+                <tr><td><code>Debayer+CFAKeyword.swift</code></td><td><code>Processors.Debayer.Pattern</code> extension replacing <code>ImageProcessor.debayerPattern(named:)</code></td></tr>
+            </tbody>
+        </table>
+
+        <p>
+            The <code>xisf</code> / <code>raw</code> / <code>imageIO</code> method prefixes disappear: they exist
+            only to disambiguate within the single <code>ImageProcessor</code> namespace.
+            <code>ImageProcessor.xisfLinearLuminance</code> becomes
+            <code>XISFImageDecoder.linearLuminance</code>.
+        </p>
+
+        <p>The photographic decoder is named for what it decodes rather than for the framework the app used
+            to produce its bytes: ImageIO parsing itself stays app-side (the <code>CGImage</code> draw belongs
+            to the loader), and what moves is the decode of a canonical interleaved bitmap described by
+            <code>BitmapImageProperties</code>. This keeps ImageIO out of SwiftAstro's vocabulary entirely.</p>
+
+        <h3>Sketch</h3>
+
+<pre><code>public enum FITSImageDecoder
+{
+    public static func imageHDU( from sections: [ FITSSection ] ) throws
+        -&gt; ( data: Data, properties: [ FITSPropertySnapshot ] )
+
+    public static func linearImage( data: Data, properties: [ FITSPropertySnapshot ] )
+        -&gt; ( width: Int, height: Int, samples: [ Double ] )?
+
+    public static func detectionImage( data: Data, properties: [ FITSPropertySnapshot ] )
+        -&gt; PixelBuffer?
+}</code></pre>
+
+        <h2>What stays in the app</h2>
+
+        <p>
+            <code>ImageProcessor</code> keeps everything presentation-side: <code>Settings</code>,
+            <code>DebayerSelection</code>, <code>AutoStretchColorSource</code> /
+            <code>AutoStretchDomain</code>, all <code>PixelPipeline.Config</code> building, all
+            <code>render(&hellip;)</code>, all <code>*PixelValues</code> / <code>rawPixelValue</code> read-out
+            and their private <code>sampleValue</code> / <code>decodeSample</code> helpers,
+            <code>previewBinFactor</code>, <code>PixelValue</code>, <code>RenderResult</code>, and the whole
+            auto Screen Transfer derivation.
+        </p>
+
+        <p>
+            <code>ImageRenderSource</code> and the four render sources keep their current shape. The protocol
+            still exposes <code>detectionImage</code> as a stored property; only its <em>producer</em> changes.
+            The seam is therefore: <strong>decoding and header interpretation belong to SwiftAstro; rendering
+            and presentation belong to the app.</strong>
+        </p>
+
+        <h2>Dependency and project changes</h2>
+
+        <ul>
+            <li><strong><code>Package.swift</code></strong> &mdash; add <code>SwiftXISF</code> and
+                <code>SwiftRAW</code> to both the <code>SwiftAstro</code> target and
+                <code>SwiftAstroTests</code>.</li>
+            <li><strong><code>SwiftAstro.xcodeproj</code></strong> &mdash; this is a pre-existing
+                inconsistency to repair, not merely an addition. The project already lists
+                <code>SwiftXISF.framework</code> and <code>SwiftRAW.framework</code> in both targets'
+                Frameworks phases (<code>project.pbxproj:268-280</code>) as <code>BUILT_PRODUCTS_DIR</code>
+                references, but there are no corresponding subproject file references &mdash; only SwiftPixel
+                and SwiftFITS have those (<code>:242-243</code>, <code>:770-774</code>). SwiftAstro therefore
+                links them only by virtue of being built inside the FITScope workspace, and
+                <code>swift build</code> never sees them. Proper subproject references and target
+                dependencies are needed.</li>
+            <li><strong><code>FITScope.xcodeproj</code></strong> &mdash; remove the moved files from the
+                FITScope target. No new subproject references are required; the app already embeds all five
+                (<code>:1122-1126</code>).</li>
+        </ul>
+
+        <p>
+            Both the Xcode projects and <code>Package.swift</code> must stay in sync, and each milestone must
+            build through <code>xcodebuild</code> as well as <code>swift build</code>.
+        </p>
+
+        <h3>Error types</h3>
+
+        <p>
+            The throwing helpers currently raise <code>RuntimeError</code>, which lives in
+            <code>SwiftUtilities</code> &mdash; a FITScope-level submodule SwiftAstro cannot reach. The moved
+            helpers must therefore throw <code>SwiftAstro.Error</code>. This was verified as safe: no caller
+            inspects the error type (all use <code>try?</code> or propagate), and the single test that asserts
+            a throw checks only <code>(any Error).self</code>
+            (<code>FITScopeTests/Image/ImageProcessorTests.swift:694-695</code>).
+        </p>
+
+        <h2>Test changes</h2>
+
+        <ul>
+            <li><code>FITSTestImage</code> loses <code>linearImage(header:data:)</code>,
+                <code>imageHDU(in:)</code>, <code>pattern(forBayerKeyword:)</code> and
+                <code>numericValue(of:)</code> &mdash; roughly <code>:259-388</code> collapses into calls to
+                <code>FITSImageDecoder</code>. It keeps what it exists for: fixture location
+                (<code>url(resource:)</code>), the named-frame accessors, and <code>crop</code>.</li>
+            <li>The decode assertions move from <code>FITScopeTests/Image/ImageProcessor*Tests.swift</code>
+                into <code>SwiftAstroTests/Preprocessing/Decoding/</code>. The moving surface is currently
+                exercised at roughly 35 call sites: <code>isRGBPlanes</code> (9),
+                <code>isMultiImageCube</code> (8), <code>debayerPattern</code> (6), <code>scaling</code> (2),
+                <code>linearImage</code> (2), and one each for <code>cubePlanes</code>,
+                <code>decodedImageHDU</code>, <code>fullScale</code>, <code>rgbLinearLuminance</code>,
+                <code>xisfPlaneSamples</code>, <code>xisfLinearLuminance</code>,
+                <code>rawImageLinearLuminance</code> and <code>imageIOLinearLuminance</code>.</li>
+            <li>SwiftAstroTests gains a minimal FITS byte-synthesis fixture builder covering only the shapes
+                those tests need &mdash; a gradient, RGB planes, and a multi-image cube.</li>
+            <li><code>FITScopeTests</code> keeps <code>FITSTestData</code> for the render, loader, graph and
+                view tests that still depend on it (10 files use it today).</li>
+        </ul>
+
+        <h2>Sequencing</h2>
+
+        <p>
+            One format per milestone, so no single change is oversized. Each milestone is self-contained:
+            move the property type and its decoder, update every call site, move the tests, and leave both
+            suites green under <code>xcodebuild</code> and <code>swift build</code>.
+        </p>
+
+        <div class="milestone">
+            <h3><span class="tag">M1</span> FITS</h3>
+            <p>First, because it carries the actual drift, plus image-HDU selection and the Bayer keyword
+            mapping that the other formats also reach for. Largest single milestone.</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="tag">M2</span> XISF</h3>
+            <p>Adds <code>SwiftXISF</code> to SwiftAstro's package dependencies and repairs the
+            <code>xcodeproj</code> subproject reference.</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="tag">M3</span> RAW</h3>
+            <p>Adds <code>SwiftRAW</code> likewise. The LibRAW-backed crop stays app-side; only the cropped
+            mosaic's decode moves.</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="tag">M4</span> Bitmap (photographic)</h3>
+            <p>Includes the <code>ImageIOImageProperties</code> &rarr; <code>BitmapImageProperties</code>
+            rename. No new dependency.</p>
+        </div>
+
+        <h2>Risks</h2>
+
+        <div class="card risk">
+            <h3>Rename churn for no functional gain</h3>
+            <p><code>ImageIOImageProperties</code> &rarr; <code>BitmapImageProperties</code> touches 8 app
+            files for a naming reason alone. Reversible if it is judged not worth the diff; the rest of M4
+            does not depend on it.</p>
+        </div>
+
+        <div class="card risk">
+            <h3>SwiftAstro grows two dependencies</h3>
+            <p>Any future non-FITScope consumer pulls SwiftXISF and SwiftRAW &mdash; and LibRAW behind the
+            latter &mdash; whether it needs them or not. Splitting SwiftAstro into separate library products
+            would avoid this but adds targets; deferred until a second consumer exists.</p>
+        </div>
+
+        <div class="card risk">
+            <h3>SwiftPM may surface pre-existing breakage</h3>
+            <p>Because <code>Package.swift</code> has never declared SwiftXISF or SwiftRAW, wiring them in
+            could expose problems the Xcode-only build path has been masking. Encountered at M2/M3.</p>
+        </div>
+
+        <div class="card risk">
+            <h3>Large mechanical diff</h3>
+            <p>Roughly 103 call sites move. The change is compiler-verified rather than subtle, but the
+            per-format sequencing exists specifically to keep any one review tractable.</p>
+        </div>
+
+        <h2>Out of scope</h2>
+
+        <ul>
+            <li>Collapsing <code>ImageProcessor.render(data:properties:)</code>'s inline decode onto the
+                shared decoder. The duplication is noted above and is worth doing, but it is an app-internal
+                cleanup independent of the extraction.</li>
+            <li>Moving <code>FITSFile</code> parsing or the <code>.lenient</code> option choice into
+                SwiftAstro.</li>
+            <li>Any change to the star detector, the sky-background estimator, or the auto Screen Transfer
+                derivation. The detection image's <em>contents</em> must be byte-identical before and after.</li>
+        </ul>
+
+        <footer>
+            FITScope &mdash; FITS Image Viewer for macOS.
+        </footer>
+    </div>
+</body>
+</html>
