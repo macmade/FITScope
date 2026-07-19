@@ -249,12 +249,22 @@
                 The approach is <strong>audit-first</strong>: we build a repeatable
                 benchmark and profiling harness, then produce a written correctness
                 audit of every algorithm before touching code. Confirmed issues are
-                triaged and appended to this plan as concrete fix milestones. Only then
-                do we tackle performance &mdash; profiling to identify the hot processors,
-                moving those to Metal kernels (SwiftPixel has none today), and optimizing
-                the remaining CPU processors with Accelerate and fewer allocations. Every
-                performance change is measured against the harness baseline, and every
-                behavioural change is guarded by the existing per-algorithm unit tests.
+                triaged and appended to this plan as concrete fix milestones
+                (Phases&nbsp;1&ndash;2, complete). Only then do we tackle performance.
+            </p>
+            <p>
+                <strong>Performance direction &mdash; revised after the M6 profiling</strong>
+                (see <a href="profiling.html">profiling.html</a> and &ldquo;Replan&rdquo;
+                below). The original plan moved the hot processors to Metal first; the
+                profiling showed that the largest costs are better addressed on the CPU
+                (the sort-based robust statistics, the un-vectorized scalar processors),
+                that full-resolution interactivity is primarily a <em>caching</em> problem
+                rather than a compute-speed one, and that Metal is a last-mile, conditional
+                win that would be swamped without caching first. So the order is now
+                <strong>CPU optimization &rarr; caching &rarr; re-measure &rarr; Metal only
+                if the numbers justify it</strong>. Every performance change is measured
+                against the harness baseline, and every behavioural change is guarded by
+                the existing per-algorithm unit tests.
             </p>
         </div>
 
@@ -297,6 +307,69 @@
                 <li>All work happens inside the submodule repositories (<code>SwiftAstro</code> and the nested <code>SwiftPixel</code>), not in the FITScope app target. Per the working agreement, <strong>each submodule change is approved case by case</strong>, and commits/pushes/submodule-pointer bumps are left to the maintainer &mdash; this plan never performs them on its own.</li>
                 <li>Each submodule has both an <code>.xcodeproj</code> and a <code>Package.swift</code>; keep them in sync and prefer building/testing through <code>xcodebuild</code>.</li>
                 <li>Never weaken, skip, or delete a unit test to make a change pass. When a fix legitimately changes expected output, update the test deliberately and record why in the milestone's implementation notes.</li>
+            </ul>
+        </div>
+
+        <h2 class="section">Replan (post-M6): direction &amp; key decisions</h2>
+        <div class="prose">
+            <p>
+                The M6 profiling (<a href="profiling.html">profiling.html</a>) reshaped the
+                performance half of this plan. The decisions below were worked through with
+                the maintainer and drive Phases&nbsp;3&ndash;7; they are recorded here so the
+                rationale is not lost.
+            </p>
+            <ul>
+                <li><strong>CPU and caching before Metal.</strong> The dominant cost is star
+                    detection (a composite, not a clean GPU target) whose hot sub-parts are
+                    shared CPU primitives; the slow display stages are un-vectorized scalar
+                    closures; and <code>MonoToRGB</code>&nbsp;/&nbsp;<code>Orient</code> are
+                    overhead-bound, not compute-bound. So the CPU wins are higher-ROI and
+                    lower-risk than Metal, and several benefit the app and the library alike.</li>
+                <li><strong>Interactivity is a caching problem.</strong> <code>ImageRenderer</code>
+                    re-runs the <em>whole</em> pipeline on every adjustment (no cross-render
+                    cache, deliberately, because hundreds of full-resolution images can be open
+                    at once), and editing is full-resolution &mdash; so a slider drag re-runs
+                    decode&nbsp;+&nbsp;cosmetic&nbsp;+&nbsp;debayer&nbsp;+&nbsp;normalize
+                    (~750&nbsp;ms) that don't depend on the slider. Caching the linear buffer for
+                    the <em>active</em> image (released under memory pressure) is the single
+                    biggest interactivity lever &mdash; and a prerequisite for any display-path
+                    acceleration to matter.</li>
+                <li><strong>Metal is last-mile and conditional.</strong> It is decided by the
+                    re-measure (M12), targets a fused Float32 display pass, and is built only if a
+                    vectorized, cached CPU display chain is still short of interactive. The Metal
+                    Shading Language has no <code>double</code> type (verified against the MSL
+                    spec), so any GPU kernel is Float32; the CPU path is kept regardless (CI /
+                    build-VMs have no Metal, and it is the parity reference).</li>
+                <li><strong>Precision boundary (D-A).</strong> Everything inside the library is
+                    <code>Double</code>. If a Float32 display path is adopted, the safe boundary is
+                    the <em>display</em> chain (normalized <code>[0,1]</code> data, output to a
+                    &le;16-bit image); <strong>ingest and the SwiftAstro analysis path stay
+                    Double</strong>. The Float32 decision is deferred to M12; the Double-domain work
+                    (M7&ndash;M11) does not depend on it.</li>
+                <li><strong>Float32, if adopted, is a two-family split by role (D-B), not generics
+                    or per-op duplication (M13).</strong> A <code>PixelPreprocessor</code> family
+                    works in Double (through <code>Normalize</code>); a <code>PixelProcessor</code>
+                    family works in Float32 (the display chain), with one Double&rarr;Float32
+                    conversion at the <code>Normalize</code> seam. Each stage lives in exactly one
+                    family (no op implemented twice); <code>PixelBuffer</code> stays concrete (a
+                    hidden generic behind <code>PixelBuffer64</code>&nbsp;/&nbsp;<code>PixelBuffer32</code>
+                    aliases, or a duplicated struct). The Float32 family requires normalized input
+                    (its existing contract), so it only ever runs after <code>Normalize</code>; with
+                    no display chain the pipeline stays Double end to end (<code>.identity</code>
+                    normalize included).</li>
+                <li><strong>Metal keeps the public API Double (D-B).</strong> A Metal-capable stage
+                    is one processor with an internal GPU kernel (a CPU-reference + kernel pair bound
+                    by a parity test), not a public Float32 family; Float32 lives inside the kernel /
+                    a GPU-resident texture, never in the public <code>PixelBuffer</code>.</li>
+                <li><strong>Orient stays last, vectorized.</strong> Keeping it after the display chain
+                    lets the linear cache survive rotations (a rotate re-runs only the display chain on
+                    the cached buffer). Export needs real re-oriented pixels, so it is a genuine
+                    (vectorized) permutation, not a view transform; it joins the Float32 display family
+                    if M13 is adopted.</li>
+                <li><strong>Baselines (D-D) / <code>detectStars</code> (D-E).</strong> The committed
+                    M1 baselines stay as the historical reference; M6's fresh numbers live in
+                    <a href="profiling.html">profiling.html</a>, and M12 re-measures at full resolution.
+                    <code>detectStars</code> gets its own profiling+optimization milestone (M9).</li>
             </ul>
         </div>
 
@@ -1095,7 +1168,7 @@
         </div>
 
         <!-- ============ PHASE 3 ============ -->
-        <div class="phase-label">Phase 3 &middot; Metal acceleration of hot processors</div>
+        <div class="phase-label">Phase 3 &middot; Profiling &amp; CPU optimization</div>
 
         <div class="milestone">
             <h3><span class="m-num">M6.</span> Profile &amp; rank the hot processors <span class="capsule completed">Completed</span></h3>
@@ -1117,6 +1190,7 @@
                 <p><strong>Classification.</strong> All <strong>29 SwiftPixel</strong> measurements and the <strong>11 SwiftAstro</strong> ones were classified by workload shape (per-pixel&nbsp;/&nbsp;stencil&nbsp;/&nbsp;reduction&nbsp;/&nbsp;geometric&nbsp;/&nbsp;composite), each verified against the source. Because the harness uses a different representative frame per processor (mono/raw/cfa 2048&sup2;, colour 1024&sup2;), rows are ranked by <strong>throughput (Mpx/s)</strong> &mdash; the size-independent measure &mdash; and also projected to <strong>8.3&nbsp;Mpx</strong> (the app's full-resolution render size).</p>
                 <p><strong>Findings.</strong> (F1) The CPU story is two-tier &mdash; vDSP-vectorized stages (290&ndash;3200&nbsp;Mpx/s) vs. scalar-per-pixel-closure stages (~20&nbsp;Mpx/s). (F2) <code>MonoToRGB</code>&nbsp;/&nbsp;<code>Orient</code> are <strong>overhead-bound, not compute-bound</strong> (~0.5&nbsp;GB/s effective) &rarr; a CPU rewrite, not Metal. (F3) <code>detectStars</code> is the single biggest cost (1.69&nbsp;s) but a composite (convolve&nbsp;+&nbsp;robust stats&nbsp;+&nbsp;per-star LM fit), not a clean port. (F4) The strongest Metal case is <strong>fusing the per-pixel display chain</strong> (upload once, chain kernels GPU-resident, read back once), not porting any single processor. (F5) <code>median</code>&nbsp;/&nbsp;<code>MAD</code> (quickselect) is the highest-leverage CPU win, feeding SNR, SkyBackground, <code>Normalize(.percentile)</code>, the stretch stats and the detector. <strong>Verified constraint:</strong> the Metal Shading Language has no <code>double</code> type (Apple's MSL spec), so the whole <code>[Double]</code> pipeline needs a Float32 decision that gates Phase&nbsp;3.</p>
                 <p><strong>Lists produced.</strong> <em>Metal targets (M7/M8+):</em> Debayer&nbsp;VNG, the fused display chain, CosmeticCorrection (Hue&nbsp;/&nbsp;Saturation&nbsp;/&nbsp;ColorBalance and the matched-filter convolution flagged to evaluate). <em>Stays on CPU (M9):</em> median&nbsp;/&nbsp;MAD&nbsp;/&nbsp;percentileBounds, MonoToRGB, Orient, readRawPixels. <em>Already optimal:</em> the 17 vDSP-backed stages. Five decisions are surfaced for the maintainer: <strong>D-A</strong> Float32 for GPU, <strong>D-B</strong> fused-chain vs. per-processor ports, <strong>D-C</strong> phase ordering (some CPU wins are lower-risk and also speed detection, so consider them before/alongside Metal), <strong>D-D</strong> refresh the committed baselines?, <strong>D-E</strong> is <code>detectStars</code> in Phase-3 scope?</p>
+                <p><strong>Post-M6 replan.</strong> The maintainer subsequently replanned Phases&nbsp;3&ndash;7 around these lists &mdash; CPU optimization and caching first, Metal last and conditional. The milestone numbers referenced just above (<code>M7</code>&nbsp;/&nbsp;<code>M8+</code>&nbsp;/&nbsp;<code>M9</code>) predate that; see the &ldquo;Replan&rdquo; section at the top for the current mapping (the Metal candidates are now Phase&nbsp;6, the CPU wins Phase&nbsp;3).</p>
                 <p><strong>Automated review loop.</strong> 1 round, fresh-context reviewer, <strong>converged</strong> &mdash; no Critical/High/Medium. The reviewer recomputed every throughput/projection against the fresh baselines and verified every classification against the source; all matched. Three Low consistency items were fixed in-milestone; one Info was left as-is with a rationale (see Automated review).</p>
             </div>
             <div class="field-label">Automated review</div>
@@ -1137,16 +1211,15 @@
         </div>
 
         <div class="milestone">
-            <h3><span class="m-num">M7.</span> Metal infrastructure in SwiftPixel <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M7.</span> CPU &mdash; robust statistics (quickselect) <span class="capsule notstarted">Not started</span></h3>
             <div class="field-label">Goal</div>
-            <p class="goal">Introduce the GPU foundation SwiftPixel currently lacks: device/command-queue/library management, a shader-loading path packaged with the module, buffer&harr;texture bridging with <code>PixelBuffer</code>, and a clean way for a processor to offer a Metal path with a CPU fallback &mdash; without changing any processor's observable behaviour yet.</p>
+            <p class="goal">Replace the full-sort <code>median</code>&nbsp;/&nbsp;<code>medianAbsoluteDeviation</code>&nbsp;/&nbsp;<code>percentileBounds</code> (~250&nbsp;ms each on a 2048&sup2; frame &mdash; the highest-leverage CPU cost) with an O(n) quickselect, and route MAD's absolute-deviation pass through <code>vDSP</code> to drop its second full-array allocation. These feed <code>SignalToNoise</code>, <code>SkyBackground</code>, <code>Normalize(.percentile)</code>, the stretch statistics <em>and</em> the star detector's robust noise, so one fix ripples across the system.</p>
             <div class="field-label">Tasks</div>
             <ul class="tasks">
-                <li>Add Metal device/queue/library plumbing and decide how <code>.metal</code> shaders are compiled and bundled for both the Xcode project and SwiftPM targets.</li>
-                <li>Define the GPU/CPU dispatch seam in <code>PixelProcessor</code> / <code>PixelPipeline</code> so a processor can run on Metal when available and fall back to CPU otherwise (headless/no-GPU environments included).</li>
-                <li>Add <code>PixelBuffer</code>&harr;<code>MTLBuffer</code>/<code>MTLTexture</code> conversion helpers that respect bit depth and channel layout.</li>
-                <li>Prove the seam end-to-end with one trivial kernel (e.g. Invert), asserting the GPU and CPU paths produce identical output within tolerance.</li>
-                <li>Keep the Xcode project and Package.swift in sync; ensure CI/tests still pass with and without a usable GPU.</li>
+                <li>Implement quickselect-based median/percentile in <code>PixelUtilities</code> that reproduces the existing values <strong>exactly</strong> &mdash; the M5.5 lower-median convention and the interpolation &mdash; not merely within tolerance.</li>
+                <li>Route the MAD absolute-deviation computation through <code>vDSP</code>, eliminating the extra full-length allocation; keep the non-finite filtering semantics unchanged.</li>
+                <li>Confirm identical output on the existing SwiftPixel/SwiftAstro suites; re-run the M1 harness and record before/after for the three primitives and their knock-on (SNR, SkyBackground, detectStars).</li>
+                <li>Keep the Xcode project and <code>Package.swift</code> in sync.</li>
             </ul>
             <div class="field-label">Status</div>
             <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
@@ -1159,22 +1232,41 @@
         </div>
 
         <div class="milestone">
-            <h3><span class="m-num">M8+.</span> Port hot processors to Metal <span class="capsule notstarted">Not started</span></h3>
-            <div class="note-block">
-                One milestone per hot processor (or per tightly-related group) identified in
-                M6, built on the M7 infrastructure. Ordered by the profiled payoff. The
-                concrete list is filled in after M6.
-            </div>
-            <div class="field-label">Per-processor template</div>
+            <h3><span class="m-num">M8.</span> CPU &mdash; overhead-bound &amp; scalar processors <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">Vectorize the processors that are slow only because of per-index scalar closures or geometric scatter, all in <strong>Double</strong>, preserving output: <code>MonoToRGB</code> and <code>Orient</code> (overhead-bound, ~190&nbsp;ms &mdash; effective throughput far below memory bandwidth), <code>readRawPixels</code> (per-sample decode), and the scalar colour ops <code>Hue</code>&nbsp;/&nbsp;<code>Saturation</code>&nbsp;/&nbsp;<code>ColorBalance</code> (~20&nbsp;Mpx/s). <strong>Orient stays last</strong> (so the M10 linear cache survives rotations) and is a real vectorized pixel permutation (export needs re-oriented pixels). The colour ops and Orient migrate to Float32 later only if M12/M13 adopt the split.</p>
+            <div class="field-label">Tasks</div>
             <ul class="tasks">
-                <li><strong>Goal</strong> &mdash; move processor X to a Metal kernel while preserving its output.</li>
-                <li><strong>Tasks</strong> &mdash; write the <code>.metal</code> kernel; wire it through the M7 dispatch seam with CPU fallback; assert GPU vs CPU parity within tolerance using existing unit tests; benchmark against the M1 baseline and record the speedup; keep Xcode project and Package.swift in sync.</li>
-                <li><strong>Status / Completed / Implementation notes / Automated review / Review comments</strong> &mdash; standard per-milestone fields.</li>
+                <li>Replace <code>MonoToRGB</code>'s per-index closure with a chunked/strided (<code>vDSP</code>) copy; vectorize <code>Orient</code> (e.g. <code>vImage</code> rotate/reflect), keeping it the last display stage; move <code>readRawPixels</code> to a <code>vDSP</code> integer&rarr;float (+ byte-order) conversion.</li>
+                <li>Vectorize <code>Hue</code>&nbsp;/&nbsp;<code>Saturation</code>&nbsp;/&nbsp;<code>ColorBalance</code> in Double (the Rec.&nbsp;709 luma is a fixed linear combination; the per-channel adjustment is affine; the smoothstep weights computed once).</li>
+                <li>Preserve output within tolerance, guarded by the existing tests; re-run the harness and record before/after for each.</li>
+                <li>Keep the Xcode project and <code>Package.swift</code> in sync.</li>
             </ul>
             <div class="field-label">Status</div>
             <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">&mdash; per-processor milestones appended here after M6 &mdash;</p>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M9.</span> CPU &mdash; star-detection deep-dive <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">Profile <code>MatchedFilterStarDetector.detectStars</code> &mdash; the single biggest cost in the system (~1.7&nbsp;s on a 1&nbsp;Mpx crop, seconds on a real frame) &mdash; into its sub-stages and optimize the dominant ones, without changing detection results. It is a composite (matched-filter convolution, robust noise, moments, per-star Levenberg&ndash;Marquardt fit) and inherits the M7 median win; this milestone finds and cuts whatever still dominates.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Instrument/profile <code>detectStars</code> into its sub-stages on a representative full frame; identify the dominant cost after M7.</li>
+                <li>Optimize the dominant sub-stage(s) (e.g. the convolution, the fit loop), preserving detection output &mdash; the real-frame calibration and the M5.13&nbsp;/&nbsp;M5.14 tests stay green.</li>
+                <li>Re-run the harness; record before/after for <code>detectStars</code> (and the decode/grayscale it shares).</li>
+                <li>Keep the Xcode project and <code>Package.swift</code> in sync.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
             <div class="field-label">Automated review</div>
             <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
             <div class="field-label">Review comments</div>
@@ -1182,19 +1274,39 @@
         </div>
 
         <!-- ============ PHASE 4 ============ -->
-        <div class="phase-label">Phase 4 &middot; CPU optimization of the remainder</div>
+        <div class="phase-label">Phase 4 &middot; Caching &amp; interactive rendering</div>
 
         <div class="milestone">
-            <h3><span class="m-num">M9.</span> Optimize the remaining CPU processors <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M10.</span> Linear-buffer cache <span class="capsule notstarted">Not started</span></h3>
             <div class="field-label">Goal</div>
-            <p class="goal">For processors and primitives that stay on the CPU (per M6), verify their performance and optimize where the harness shows it matters: lean on Accelerate (<code>vDSP</code>/<code>vImage</code>) wherever applicable, and cut allocations, intermediate buffers, and copies &mdash; all without changing observable output.</p>
+            <p class="goal">Cache the post-<code>Normalize</code> linear buffer for the <em>actively-edited</em> image, so a display-slider drag re-runs only the display chain instead of the whole pipeline. Today a full-res drag re-runs decode&nbsp;+&nbsp;cosmetic&nbsp;+&nbsp;debayer&nbsp;+&nbsp;normalize (~750&nbsp;ms) that don't depend on the slider. Active-image-scoped and best-effort &mdash; released under memory pressure, falling back to a full re-render.</p>
             <div class="field-label">Tasks</div>
             <ul class="tasks">
-                <li>From the M6 "stays on CPU" list, rank the remaining processors by measured cost.</li>
-                <li>Replace hand-rolled loops with Accelerate primitives where a correct equivalent exists; measure each change against the M1 baseline.</li>
-                <li>Reduce allocations and copies: reuse buffers, process in place where safe, avoid redundant format conversions.</li>
-                <li>Guard every change with the existing unit tests; record before/after numbers in the implementation notes.</li>
-                <li>Split into several committable milestones if the volume of work warrants it.</li>
+                <li>Expose a pipeline seam in SwiftPixel so the app can run the preprocessors once to the linear (post-<code>Normalize</code>) buffer and re-apply only the display chain &mdash; the same seam the M13 Float32 split would convert at.</li>
+                <li>Cache that linear buffer keyed to the active image; reuse it across every display-chain adjustment (white balance &rarr; &hellip; &rarr; invert &rarr; orient).</li>
+                <li>Define and <strong>test the invalidation matrix</strong>: rebuild on any change to {scale, cosmetic correction, bin, debayer mode/pattern, normalize mode} or the source frame &mdash; but <em>not</em> on orientation (Orient runs after the cache) nor on any display-chain slider. A test per setting confirming it busts the right thing.</li>
+                <li>Release the cache under memory pressure (<code>DispatchSource</code> memory-pressure source / <code>NSCache</code>); fall back to a full re-render when absent. Verify no stale pixels; measure the per-drag latency win at full resolution.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M11.</span> Result-image cache &amp; memory-pressure policy <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">Evict the rendered <code>result</code> image (and the M10 linear buffer) for opened-but-inactive/hidden images under memory pressure, so hundreds of open full-resolution images do not retain hundreds of CGImages (multi-GB). One coordinated pressure policy that always protects the actively-edited image.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Add a single coordinated memory-pressure policy: evict inactive images' results first, then inactive linear buffers, then the active linear buffer only under critical pressure; never evict the actively-edited image (or degrade gracefully).</li>
+                <li>Re-render an evicted image on reactivation (accept the cold cost; faster once M10 re-warms).</li>
+                <li>Verify the footprint reduction with many open images; confirm no over-eviction of the active image.</li>
+                <li>Keep the Xcode project and <code>Package.swift</code> in sync.</li>
             </ul>
             <div class="field-label">Status</div>
             <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
@@ -1207,17 +1319,90 @@
         </div>
 
         <!-- ============ PHASE 5 ============ -->
-        <div class="phase-label">Phase 5 &middot; Validation &amp; integration</div>
+        <div class="phase-label">Phase 5 &middot; Re-measure &amp; precision decision</div>
 
         <div class="milestone">
-            <h3><span class="m-num">M10.</span> Full validation &amp; FITScope integration <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M12.</span> Re-measure &amp; the Float32 decision <span class="capsule notstarted">Not started</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal"><strong>Decision:</strong> D-A (Float32 for the display path).</p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Re-run the harness on the post-optimization tree <strong>at full resolution</strong>, compile a before/after summary versus the M6 snapshot, and make the Float32 decision: is the Double, vectorized, cached display chain interactive enough at full res, or does the ~2&times; from a Float32 display path justify the M13 restructure?</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Extend the M1 harness with a representative full-resolution frame (e.g. 3840&times;2160) and a &ldquo;cached display-chain re-render&rdquo; measurement (the per-drag path).</li>
+                <li>Re-measure all SwiftPixel/SwiftAstro algorithms; compile the before/after versus M6.</li>
+                <li>Assess full-res interactive (per-drag) latency; <strong>decide Float32</strong> &mdash; proceed to M13, or stop (Double is sufficient; M13&nbsp;/&nbsp;M14 are skipped).</li>
+                <li>Review the decision and the numbers with the maintainer before proceeding.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M13.</span> Float32 display path (two-family split) <span class="capsule inprogress">Conditional &mdash; gated on M12</span></h3>
+            <div class="field-label">Fixes</div>
+            <p class="goal"><strong>Decision:</strong> D-A / D-B. <em>Built only if M12 adopts Float32.</em></p>
+            <div class="field-label">Goal</div>
+            <p class="goal">Restructure the display path to Float32 via a two-family split &mdash; <code>PixelPreprocessor</code> (Double, through <code>Normalize</code>) and <code>PixelProcessor</code> (Float32, white balance &rarr; &hellip; &rarr; orient) &mdash; with one Double&rarr;Float32 conversion at the <code>Normalize</code> seam (the M10 seam). No generics in the processor API, one implementation per stage, <code>PixelBuffer</code> stays concrete; the cache becomes Float32 (~2&times; throughput, half the active buffer). Ingest and the SwiftAstro analysis path stay Double.</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Introduce the two protocols and the <code>PixelBuffer64</code>&nbsp;/&nbsp;<code>PixelBuffer32</code> types (a hidden generic behind aliases, or a duplicated struct); recategorize each stage into its family.</li>
+                <li>Run the pipeline in two phases with the conversion at the <code>Normalize</code> seam; when there is no display chain, stay Double end to end (no conversion).</li>
+                <li>Migrate the display stages (the M8-vectorized <code>Hue</code>&nbsp;/&nbsp;<code>Saturation</code>&nbsp;/&nbsp;<code>ColorBalance</code> and <code>Orient</code> included) to Float32; keep reductions (e.g. <code>WhiteBalance</code>&nbsp;auto) accumulating in Double.</li>
+                <li>Move display-stage tests to within-tolerance comparison; keep ingest/analysis Double and their tests exact. Re-measure; keep the Xcode project and <code>Package.swift</code> in sync.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <!-- ============ PHASE 6 ============ -->
+        <div class="phase-label">Phase 6 &middot; Metal acceleration (conditional)</div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M14.</span> Metal fused display pass <span class="capsule inprogress">Conditional &mdash; gated on M12</span></h3>
+            <div class="field-label">Goal</div>
+            <p class="goal">If M12&nbsp;/&nbsp;M13 show a residual full-res interactivity gap, add the GPU foundation SwiftPixel lacks and a <strong>fused Float32 display pass</strong> &mdash; upload the (Float32) linear buffer once, run the display-chain kernels GPU-resident, read back once. Float32 stays internal to the kernels; <code>PixelBuffer</code> stays public-Double; each ported stage is one processor + a kernel bound by a GPU-vs-CPU parity test, with a CPU fallback (CI / build-VMs have no Metal).</p>
+            <div class="field-label">Tasks</div>
+            <ul class="tasks">
+                <li>Add Metal device/queue/library plumbing and <code>.metal</code> bundling for both the Xcode project and SwiftPM; a dispatch seam with CPU fallback (headless/no-GPU included).</li>
+                <li>Implement the fused display pass (the M13 Float32 chain as chained kernels on a resident texture); prove parity versus the CPU path within tolerance.</li>
+                <li>Benchmark against the M12 baseline; record the speedup and the transfer/latency behaviour.</li>
+                <li>Keep the Xcode project and <code>Package.swift</code> in sync; tests pass with and without a usable GPU.</li>
+            </ul>
+            <div class="field-label">Status</div>
+            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <div class="field-label">Implementation notes</div>
+            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="field-label">Automated review</div>
+            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="field-label">Review comments</div>
+            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+        </div>
+
+        <!-- ============ PHASE 7 ============ -->
+        <div class="phase-label">Phase 7 &middot; Validation &amp; integration</div>
+
+        <div class="milestone">
+            <h3><span class="m-num">M15.</span> Full validation &amp; FITScope integration <span class="capsule notstarted">Not started</span></h3>
             <div class="field-label">Goal</div>
             <p class="goal">Confirm the combined correctness and performance work is sound end to end, then integrate the updated submodules back into FITScope so the app benefits from the changes.</p>
             <div class="field-label">Tasks</div>
             <ul class="tasks">
                 <li>Run the full SwiftPixel and SwiftAstro test suites green via <code>xcodebuild</code>.</li>
-                <li>Re-run the M1 harness end to end and compile a before/after performance summary across all changed processors.</li>
-                <li>Sanity-check the pipeline on real frames in FITScope (visual diff of debayered/stretched output vs. the pre-change baseline).</li>
+                <li>Re-run the harness end to end and compile a before/after summary across all changed algorithms (versus the M6 and M12 baselines).</li>
+                <li>Sanity-check the pipeline and interactive editing on real frames in FITScope (visual diff plus per-drag latency).</li>
                 <li>Prepare the submodule-pointer bumps in FITScope for the maintainer to review and commit (this plan does not commit or push).</li>
                 <li>Note any remaining findings deferred as future work.</li>
             </ul>
@@ -1233,10 +1418,11 @@
 
         <footer>
             FITScope &mdash; FITS Image Viewer for macOS. &nbsp;&middot;&nbsp;
-            Living document: milestones M2&ndash;M10 update their Status, Implementation
-            notes, Automated review, and Review comments in place as work proceeds, and
-            Phases&nbsp;2 and&nbsp;3 gain concrete milestones after the audit (M4) and
-            profiling (M6).
+            Living document: milestones update their Status, Implementation notes, Automated
+            review, and Review comments in place as work proceeds. Phases&nbsp;3&ndash;7 were
+            re-planned after the M6 profiling (see &ldquo;Replan&rdquo; and
+            <a href="profiling.html">profiling.html</a>); M13 and M14 are conditional on the
+            M12 re-measure.
         </footer>
     </div>
 </body>
