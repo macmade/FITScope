@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithms &mdash; Profiling &amp; Metal Target Ranking (M6)</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --bg-card:   #181b24;
+            --bg-card-2: #1d212c;
+            --border:    #2a2f3c;
+            --text:      #e6e9ef;
+            --text-dim:  #9aa3b2;
+            --accent:    #5aa9ff;
+            --accent-dim:#2d3b52;
+            --code-bg:   #11141b;
+
+            --gpu-strong-bg:#143d24; --gpu-strong-text:#5ad67f;
+            --gpu-maybe-bg: #123a4a; --gpu-maybe-text: #5ac8ff;
+            --cpu-first-bg: #4a3b12; --cpu-first-text: #ffd15a;
+            --cpu-keep-bg:  #2a2f3c; --cpu-keep-text:  #b7c0d0;
+            --decide-bg:    #3a2352; --decide-text:    #c79bff;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 48px 24px 96px; }
+
+        header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 12px; }
+
+        h1 { margin: 0 0 12px; font-size: 2.2rem; letter-spacing: -0.02em; }
+
+        .meta { color: var(--text-dim); font-size: 0.9rem; }
+        .meta strong { color: var(--text); font-weight: 600; }
+        .meta a { color: var(--accent); text-decoration: none; }
+        .meta a:hover { text-decoration: underline; }
+        .legend { margin-top: 10px; }
+        .legend .capsule { margin-right: 8px; margin-bottom: 4px; }
+
+        h2.section {
+            font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--text-dim); margin: 44px 0 18px; padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 { font-size: 1.15rem; margin: 28px 0 8px; }
+
+        .prose { color: var(--text-dim); }
+        .prose p { margin: 0 0 14px; }
+        .prose strong { color: var(--text); }
+        .prose ul { color: var(--text-dim); }
+        .prose li { margin: 6px 0; }
+
+        .capsule {
+            display: inline-block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; padding: 2px 10px; border-radius: 999px; white-space: nowrap;
+        }
+        .capsule.gpu-strong { background: var(--gpu-strong-bg); color: var(--gpu-strong-text); }
+        .capsule.gpu-maybe  { background: var(--gpu-maybe-bg);  color: var(--gpu-maybe-text); }
+        .capsule.cpu-first  { background: var(--cpu-first-bg);  color: var(--cpu-first-text); }
+        .capsule.cpu-keep   { background: var(--cpu-keep-bg);   color: var(--cpu-keep-text); }
+        .capsule.decide     { background: var(--decide-bg);     color: var(--decide-text); }
+
+        .table-scroll { overflow-x: auto; margin: 8px 0 6px; }
+        table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+        th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        th { color: var(--text-dim); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.06em; white-space: nowrap; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        tbody tr:hover { background: var(--bg-card); }
+        .row-hot td.num.cost { color: var(--cpu-first-text); font-weight: 600; }
+
+        code {
+            background: var(--code-bg); border: 1px solid var(--border); border-radius: 5px;
+            padding: 1px 6px; font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.84em; color: var(--text);
+        }
+
+        .callout {
+            background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+            border-radius: 8px; padding: 14px 18px; margin: 14px 0; color: var(--text-dim);
+        }
+        .callout.warn { border-left-color: var(--cpu-first-text); }
+        .callout strong { color: var(--text); }
+
+        .finding {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+            padding: 16px 20px; margin-bottom: 14px;
+        }
+        .finding h3 { margin: 0 0 6px; font-size: 1.05rem; color: var(--text); }
+        .finding p { margin: 0 0 8px; color: var(--text-dim); }
+        .finding .tag { color: var(--accent); font-weight: 600; }
+
+        .count-cards { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0 6px; }
+        .count-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; min-width: 130px; }
+        .count-card .n { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .count-card .l { color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Algorithms &mdash; Profiling &amp; Metal Target Ranking</h1>
+            <div class="meta">
+                <div><strong>Milestone</strong> &mdash; M6 (Phase 3 &middot; Metal acceleration of hot processors)</div>
+                <div><strong>Captured</strong> &mdash; 2026-07-19 &middot; Release build &middot; Host <code>Mac16,12</code> &middot; macOS 26.5.1 (25F80) &middot; 20 iterations, 3 warmup</div>
+                <div><strong>Source</strong> &mdash; the M1 harness re-run fresh on both submodules (<code>RUN_BENCHMARKS=1 swift test -c release</code>); output captured out-of-repo, so the committed M1 baselines are untouched. Plan: <a href="algorithms-plan.html">algorithms-plan.html</a>.</div>
+                <div class="legend">
+                    <span class="capsule gpu-strong">GPU &mdash; strong</span>
+                    <span class="capsule gpu-maybe">GPU &mdash; evaluate</span>
+                    <span class="capsule cpu-first">CPU &mdash; optimize first</span>
+                    <span class="capsule cpu-keep">CPU &mdash; already optimal</span>
+                    <span class="capsule decide">Decision</span>
+                </div>
+            </div>
+        </header>
+
+        <h2 class="section">Overview</h2>
+        <div class="prose">
+            <p>
+                M6 re-ran the M1 benchmark harness fresh, in Release, on the current
+                post-M5 tree, and classified every SwiftPixel processor and core
+                primitive (and the SwiftAstro algorithms) by <strong>workload
+                shape</strong> to judge Metal suitability. This is an
+                <strong>analysis-only</strong> milestone &mdash; like the M2/M3 audits,
+                <strong>no production code was changed</strong>. It produces two lists for
+                the phases ahead: the <strong>Metal target list</strong> (for M7/M8+) and
+                the <strong>&ldquo;stays on CPU&rdquo; list</strong> (for Phase&nbsp;4 / M9).
+            </p>
+            <p>
+                <strong>Why re-run.</strong> The committed M1 baselines (2026-07-15)
+                predate several Phase-2 changes and are stale &mdash; most notably
+                Debayer&nbsp;VNG (<code>20.85&nbsp;&rarr;&nbsp;55.76&nbsp;ms</code> after
+                M5.8's canonical port) and Normalize
+                (<code>3.01&nbsp;&rarr;&nbsp;4.08&nbsp;ms</code> after M5.1; both figures are <code>min</code>, as throughout) &mdash; and the
+                SwiftAstro decode rows were renamed when M5.15 retired
+                <code>FITSImageDecoder</code>. The numbers below are the current truth.
+            </p>
+        </div>
+
+        <div class="prose"><p style="margin:18px 0 6px;">Verdict split across the <strong>29 SwiftPixel</strong> processors &amp; primitives:</p></div>
+        <div class="count-cards">
+            <div class="count-card"><div class="n" style="color:var(--gpu-strong-text)">3</div><div class="l">GPU &mdash; strong</div></div>
+            <div class="count-card"><div class="n" style="color:var(--gpu-maybe-text)">3</div><div class="l">GPU &mdash; evaluate</div></div>
+            <div class="count-card"><div class="n" style="color:var(--cpu-first-text)">6</div><div class="l">CPU &mdash; optimize first</div></div>
+            <div class="count-card"><div class="n" style="color:var(--cpu-keep-text)">17</div><div class="l">CPU &mdash; already optimal</div></div>
+        </div>
+
+        <h2 class="section">Method &amp; how to read the numbers</h2>
+        <div class="prose">
+            <p>
+                <strong>Two cost views.</strong> The harness runs each algorithm on a
+                <em>different</em> representative frame (mono/raw stages on
+                <code>2048&sup2;</code> = 4.19&nbsp;Mpx, colour stages on
+                <code>1024&sup2;</code> = 1.05&nbsp;Mpx), so raw milliseconds are
+                <em>not</em> comparable across rows. Every table therefore also gives
+                <strong>throughput (Mpx/s)</strong> &mdash; pixels processed per second,
+                the size-independent measure &mdash; and a <strong>projected cost at
+                8.3&nbsp;Mpx</strong> (a real 3840&times;2160 frame, the app's
+                full-resolution render size). <code>min</code> is used as the least-noisy
+                estimate of intrinsic cost, per the harness convention.
+            </p>
+            <p><strong>Workload taxonomy</strong> (what determines GPU fit):</p>
+            <ul>
+                <li><strong>Per-pixel (map)</strong> &mdash; each output sample is a pure function of the co-located input sample(s). Embarrassingly parallel; the ideal GPU shape.</li>
+                <li><strong>Neighbourhood / stencil</strong> &mdash; each output reads a small fixed window (convolution, demosaic, local median). Parallel, GPU-friendly, higher arithmetic intensity.</li>
+                <li><strong>Reduction</strong> &mdash; the whole image collapses to a few numbers (min/max, sum, <em>median &amp; MAD via a full sort</em>). Poor GPU fit &mdash; sorting on the GPU is a bitonic network that rarely beats Accelerate.</li>
+                <li><strong>Geometric / permutation</strong> &mdash; samples are moved, not transformed (rotate, mirror, resample, channel replicate). Bandwidth- or scatter-bound; often has a dedicated Accelerate/vImage primitive.</li>
+            </ul>
+            <p>
+                <strong>Metal-suitability rubric.</strong> A row is a strong GPU
+                candidate when it is per-pixel or stencil (independent outputs), has
+                <em>real</em> arithmetic intensity, has <em>no</em> cheap Accelerate
+                equivalent, and runs on the large full-resolution frames the app renders.
+                A row is &ldquo;optimize on CPU first&rdquo; when it is slow only because
+                of implementation overhead (per-index closures, allocations) or a sort,
+                where a CPU fix is lower-risk and may erase the need for a GPU port. A row
+                is &ldquo;already optimal&rdquo; when it is Accelerate-backed and fast.
+            </p>
+        </div>
+
+        <div class="callout warn">
+            <strong>Load-bearing constraint &mdash; the pipeline is <code>Double</code>, Metal has no <code>double</code>.</strong>
+            Every SwiftPixel sample is a 64-bit <code>Double</code>, but the Metal Shading
+            Language Specification states Metal <em>does not support the <code>double</code>
+            type</em> (only <code>half</code> and <code>float</code>). So <strong>any</strong>
+            GPU kernel must operate in Float32 (or Float16), a deliberate
+            <em>precision reduction</em> from today's Double math &mdash; which the whole
+            correctness audit (M2&ndash;M5) was verified in. This is not a detail: it gates
+            all of Phase&nbsp;3 and needs a maintainer decision (see
+            <a href="#decisions">Open decisions&nbsp;D-A</a>). Confirmed against the Metal
+            Shading Language Specification (Apple).
+        </div>
+
+        <h2 class="section">Headline findings</h2>
+
+        <div class="finding">
+            <h3><span class="tag">F1.</span> The CPU story is two-tier: vDSP-vectorized vs. scalar-closure</h3>
+            <p>
+                Every fast processor runs on Accelerate (<code>vDSP</code>&nbsp;/&nbsp;vForce);
+                every slow one runs a <em>scalar Swift closure per pixel</em> via
+                <code>PixelUtilities.parallelOrSerial</code>. The gap is stark:
+                per-pixel vDSP <em>processor</em> stages hit <strong>290&ndash;3200&nbsp;Mpx/s</strong>, while the
+                scalar-closure stages (Hue, Saturation, ColorBalance, MonoToRGB, Orient,
+                CosmeticCorrection) sit at <strong>~20&nbsp;Mpx/s</strong> &mdash; a
+                <strong>15&ndash;100&times;</strong> spread. The sort-based reductions
+                (median&nbsp;/&nbsp;MAD&nbsp;/&nbsp;percentileBounds) also land at
+                ~17&nbsp;Mpx/s, but for a different reason (the <code>O(n&nbsp;log&nbsp;n)</code>
+                sort). This split &mdash; not intuition &mdash; defines the two work-lists below.
+            </p>
+        </div>
+
+        <div class="finding">
+            <h3><span class="tag">F2.</span> Some &ldquo;hot&rdquo; processors are overhead-bound, not compute-bound &mdash; a CPU fix, not Metal</h3>
+            <p>
+                <code>MonoToRGB</code> is a channel <em>copy</em>, yet it takes
+                <strong>187&nbsp;ms</strong>. It writes ~96&nbsp;MB, which at that time is
+                <strong>~0.5&nbsp;GB/s</strong> effective &mdash; two orders of magnitude
+                below this machine's memory bandwidth. It is bound by the per-index closure
+                and bounds-checking, not by the work or the bandwidth. <code>Orient</code>
+                (a pure permutation, 188&nbsp;ms) is the same story. These do not need a GPU
+                &mdash; they need a chunked/strided CPU rewrite (or a vImage/vDSP primitive),
+                which should recover ~10&times; on the CPU alone. Rushing them to Metal would
+                hide the real defect and pay the Float32/transfer cost for nothing.
+            </p>
+        </div>
+
+        <div class="finding">
+            <h3><span class="tag">F3.</span> The single biggest cost in the system is <code>detectStars</code> &mdash; and it is not a clean Metal target</h3>
+            <p>
+                Star detection is <strong>1.69&nbsp;s</strong> on a 1&nbsp;Mpx crop
+                (~<strong>0.6&nbsp;Mpx/s</strong>) &mdash; it would be several seconds on the
+                app's full frames, dwarfing everything else. But it is a
+                <em>composite</em> pipeline: a matched-filter convolution (already vDSP),
+                robust-noise median/MAD (sort-bound), and a Levenberg&ndash;Marquardt
+                Gaussian fit <em>per star</em> (small, iterative, serial). The convolution
+                could move to <code>MPSImageConvolution</code>; the per-star fits do not
+                parallelize cleanly across the image. Its two hot sub-parts &mdash;
+                convolution and median/MAD &mdash; are <em>shared SwiftPixel primitives</em>,
+                so the CPU wins in F5 benefit detection directly, at no extra risk.
+            </p>
+        </div>
+
+        <div class="finding">
+            <h3><span class="tag">F4.</span> The strongest Metal case is <em>fusing the display chain</em>, not porting any one processor</h3>
+            <p>
+                The pipeline defines a long fixed chain of per-pixel stages that run
+                back-to-back &mdash;
+                Normalize&nbsp;&rarr;&nbsp;WhiteBalance&nbsp;&rarr;&nbsp;Stretch&nbsp;&rarr;&nbsp;BrightnessContrast&nbsp;&rarr;&nbsp;Gamma&nbsp;&rarr;&nbsp;Levels&nbsp;&rarr;&nbsp;Curves&nbsp;&rarr;&nbsp;ColorBalance&nbsp;&rarr;&nbsp;Hue&nbsp;&rarr;&nbsp;Saturation&nbsp;&rarr;&nbsp;Invert
+                (the app wires all of these to controls except <code>Gamma</code>, which the
+                pipeline supports but the app does not currently expose) &mdash; and the app
+                re-runs the enabled ones at full resolution whenever an adjustment changes.
+                On unified memory a
+                fused GPU pass uploads once (or shares the buffer with no copy), chains all
+                these kernels on one command buffer with the intermediate staying resident,
+                and reads back once. That amortizes the (small) submission latency over the
+                whole chain and keeps the interactive re-render responsive &mdash; a far
+                better payoff than accelerating a single stage while the rest stays on the CPU.
+            </p>
+        </div>
+
+        <div class="finding">
+            <h3><span class="tag">F5.</span> The highest-leverage CPU win is <code>median</code>&nbsp;/&nbsp;<code>MAD</code></h3>
+            <p>
+                These sort the full <code>4.19&nbsp;M</code>-sample array
+                (<code>~248&nbsp;ms</code>, and MAD allocates a second full array for the
+                deviations). The median is the 50th percentile &mdash; a
+                <strong>quickselect</strong> (<code>O(n)</code> partial selection) computes
+                it without a full sort, and the MAD's absolute-deviation pass can go through
+                <code>vDSP</code>. They are consumed by SNR, SkyBackground,
+                <code>Normalize(.percentile)</code>, the stretch statistics <em>and</em> the
+                star detector's robust noise, so one fix ripples across the whole system.
+            </p>
+        </div>
+
+        <h2 class="section">SwiftPixel &mdash; ranked (by throughput)</h2>
+        <div class="prose"><p>Sorted slowest-throughput first. &ldquo;@8.3&nbsp;Mpx&rdquo; projects the cost onto a full-resolution frame.</p></div>
+        <div class="table-scroll">
+        <table>
+            <thead><tr>
+                <th>Algorithm</th><th>Kind</th><th>Frame</th><th class="num">Min</th><th class="num">Mpx/s</th><th class="num">@8.3&nbsp;Mpx</th><th>Workload</th><th>Verdict</th>
+            </tr></thead>
+            <tbody>
+                <tr class="row-hot"><td><code>PixelUtilities.median</code></td><td>Primitive</td><td>mono-2048</td><td class="num cost">247.4 ms</td><td class="num">17.0</td><td class="num">489 ms</td><td>Reduction (sort)</td><td><span class="capsule cpu-first">CPU first</span></td></tr>
+                <tr class="row-hot"><td><code>PixelUtilities.medianAbsoluteDeviation</code></td><td>Primitive</td><td>mono-2048</td><td class="num cost">252.9 ms</td><td class="num">16.6</td><td class="num">500 ms</td><td>Reduction (sort + alloc)</td><td><span class="capsule cpu-first">CPU first</span></td></tr>
+                <tr class="row-hot"><td><code>PixelUtilities.percentileBounds</code></td><td>Primitive</td><td>mono-2048</td><td class="num cost">247.3 ms</td><td class="num">17.0</td><td class="num">489 ms</td><td>Reduction (sort)</td><td><span class="capsule cpu-first">CPU first</span></td></tr>
+                <tr class="row-hot"><td><code>CosmeticCorrection</code></td><td>Processor</td><td>raw-mono-2048</td><td class="num cost">210.6 ms</td><td class="num">19.9</td><td class="num">417 ms</td><td>Stencil (per-pixel local median)</td><td><span class="capsule gpu-strong">GPU strong</span></td></tr>
+                <tr class="row-hot"><td><code>Saturation</code></td><td>Processor</td><td>rgb-1024</td><td class="num cost">52.9 ms</td><td class="num">19.8</td><td class="num">418 ms</td><td>Per-pixel (luma lerp)</td><td><span class="capsule gpu-maybe">GPU / vDSP</span></td></tr>
+                <tr class="row-hot"><td><code>ColorBalance</code></td><td>Processor</td><td>rgb-1024</td><td class="num cost">51.8 ms</td><td class="num">20.2</td><td class="num">410 ms</td><td>Per-pixel (luma + smoothstep)</td><td><span class="capsule gpu-maybe">GPU / vDSP</span></td></tr>
+                <tr class="row-hot"><td><code>Hue</code></td><td>Processor</td><td>rgb-1024</td><td class="num cost">52.4 ms</td><td class="num">20.0</td><td class="num">414 ms</td><td>Per-pixel (RGB&harr;HSV, branchy)</td><td><span class="capsule gpu-strong">GPU strong</span></td></tr>
+                <tr class="row-hot"><td><code>Orient</code></td><td>Processor</td><td>mono-2048</td><td class="num cost">188.0 ms</td><td class="num">22.3</td><td class="num">372 ms</td><td>Geometric (permutation / scatter)</td><td><span class="capsule cpu-first">CPU first</span></td></tr>
+                <tr class="row-hot"><td><code>MonoToRGB</code></td><td>Processor</td><td>raw-mono-2048</td><td class="num cost">187.1 ms</td><td class="num">22.4</td><td class="num">370 ms</td><td>Geometric (channel replicate)</td><td><span class="capsule cpu-first">CPU first</span></td></tr>
+                <tr><td><code>PixelUtilities.readRawPixels</code></td><td>Primitive</td><td>mono-2048</td><td class="num">165.9 ms</td><td class="num">25.3</td><td class="num">328 ms</td><td>Per-sample decode (byte-swap)</td><td><span class="capsule cpu-first">CPU first</span></td></tr>
+                <tr><td><code>Convolution.zeroSumResponse</code></td><td>Primitive</td><td>mono-2048</td><td class="num">86.7 ms</td><td class="num">48.4</td><td class="num">171 ms</td><td>Stencil (convolution, vDSP)</td><td><span class="capsule gpu-maybe">MPS option</span></td></tr>
+                <tr><td><code>Debayer (VNG)</code></td><td>Processor</td><td>cfa-2048</td><td class="num">55.8 ms</td><td class="num">75.2</td><td class="num">110 ms</td><td>Stencil (5&times;5, branchy)</td><td><span class="capsule gpu-strong">GPU strong</span></td></tr>
+                <tr><td><code>PixelUtilities.interleave</code></td><td>Primitive</td><td>mono-2048</td><td class="num">26.0 ms</td><td class="num">161.6</td><td class="num">51 ms</td><td>Geometric (strided move, vDSP)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>Levels</code></td><td>Processor</td><td>mono-2048</td><td class="num">14.5 ms</td><td class="num">290</td><td class="num">29 ms</td><td>Per-pixel (vDSP + vForce)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>CorrectGamma</code></td><td>Processor</td><td>mono-2048</td><td class="num">12.0 ms</td><td class="num">350</td><td class="num">24 ms</td><td>Per-pixel (vForce <code>vvpow</code>)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>Debayer (Bilinear)</code></td><td>Processor</td><td>cfa-2048</td><td class="num">6.3 ms</td><td class="num">671</td><td class="num">12 ms</td><td>Stencil (same-colour average)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>Stretch</code></td><td>Processor</td><td>mono-2048</td><td class="num">6.0 ms</td><td class="num">700</td><td class="num">12 ms</td><td>Per-pixel MTF (vDSP)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>Histogram</code></td><td>Primitive</td><td>mono-2048</td><td class="num">4.2 ms</td><td class="num">1003</td><td class="num">8 ms</td><td>Reduction (binning)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>Normalize</code></td><td>Processor</td><td>raw-mono-2048</td><td class="num">4.1 ms</td><td class="num">1028</td><td class="num">8 ms</td><td>Reduction + per-pixel (vDSP)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>Curves</code></td><td>Processor</td><td>mono-2048</td><td class="num">3.6 ms</td><td class="num">1182</td><td class="num">7 ms</td><td>Per-pixel (vDSP)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>WhiteBalance</code></td><td>Processor</td><td>rgb-1024</td><td class="num">3.5 ms</td><td class="num">298</td><td class="num">28 ms</td><td>Reduction + per-pixel (vDSP)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>Scale</code></td><td>Processor</td><td>raw-mono-2048</td><td class="num">1.9 ms</td><td class="num">2162</td><td class="num">4 ms</td><td>Per-pixel (vDSP)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>Bin</code></td><td>Processor</td><td>raw-mono-2048</td><td class="num">1.9 ms</td><td class="num">2185</td><td class="num">4 ms</td><td>Geometric (box average, vDSP)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>BrightnessContrast</code></td><td>Processor</td><td>mono-2048</td><td class="num">1.9 ms</td><td class="num">2185</td><td class="num">4 ms</td><td>Per-pixel (vDSP)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>Resample</code></td><td>Processor</td><td>mono-2048</td><td class="num">1.5 ms</td><td class="num">2873</td><td class="num">3 ms</td><td>Geometric (downsample, vDSP)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>Invert</code></td><td>Processor</td><td>mono-2048</td><td class="num">1.3 ms</td><td class="num">3226</td><td class="num">3 ms</td><td>Per-pixel (vDSP)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>GaussianFit.fit</code></td><td>Primitive</td><td>15&times;15 patch</td><td class="num">40.3 &micro;s</td><td class="num">n/a</td><td class="num">n/a</td><td>Sequential (LM iteration)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>GaussianKernel(sigma:)</code></td><td>Primitive</td><td>&mdash;</td><td class="num">833 ns</td><td class="num">n/a</td><td class="num">n/a</td><td>Build (tiny)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td><code>HistogramStatistics</code></td><td>Primitive</td><td>256 bins</td><td class="num">541 ns</td><td class="num">n/a</td><td class="num">n/a</td><td>Reduction (tiny)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+            </tbody>
+        </table>
+        </div>
+
+        <h2 class="section">SwiftAstro &mdash; ranked</h2>
+        <div class="table-scroll">
+        <table>
+            <thead><tr>
+                <th>Algorithm</th><th>Frame</th><th class="num">Min</th><th class="num">Mpx/s</th><th>Workload</th><th>Verdict</th>
+            </tr></thead>
+            <tbody>
+                <tr class="row-hot"><td><code>MatchedFilterStarDetector.detectStars</code></td><td>m35-1024</td><td class="num cost">1.69 s</td><td class="num">0.62</td><td>Composite (convolve + robust stats + per-star fit)</td><td><span class="capsule gpu-maybe">Partial (MPS convolve)</span></td></tr>
+                <tr class="row-hot"><td><code>FITSTestImage.detectionImage</code></td><td>real-8.3</td><td class="num cost">381.0 ms</td><td class="num">21.8</td><td>Decode + demosaic&rarr;grayscale</td><td><span class="capsule cpu-first">CPU first (via readRawPixels)</span></td></tr>
+                <tr class="row-hot"><td><code>FITSTestImage.linearImage</code></td><td>real-8.3</td><td class="num cost">356.2 ms</td><td class="num">23.3</td><td>Decode (per-sample)</td><td><span class="capsule cpu-first">CPU first (via readRawPixels)</span></td></tr>
+                <tr><td><code>SkyBackground.estimate</code></td><td>m35-1024</td><td class="num">87.7 ms</td><td class="num">12.0</td><td>Reduction (median/MAD + extent)</td><td><span class="capsule cpu-first">CPU first (via median)</span></td></tr>
+                <tr><td><code>SignalToNoise.estimate</code></td><td>m35-1024</td><td class="num">85.2 ms</td><td class="num">12.3</td><td>Reduction (median/MAD)</td><td><span class="capsule cpu-first">CPU first (via median)</span></td></tr>
+                <tr><td><code>BayerGrayscaleConverter.grayscale</code></td><td>real-8.3</td><td class="num">27.3 ms</td><td class="num">304</td><td>Stencil (demosaic&rarr;luma)</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+                <tr><td>Ephemeris (5 models)</td><td>scalar</td><td class="num">&le; 1 &micro;s</td><td class="num">n/a</td><td>Scalar math</td><td><span class="capsule cpu-keep">optimal</span></td></tr>
+            </tbody>
+        </table>
+        </div>
+        <div class="prose">
+            <p>
+                <strong>Note on <code>detectStars</code> throughput.</strong> 0.62&nbsp;Mpx/s
+                is not comparable to a single-pass processor &mdash; the detector makes many
+                passes (convolution, robust statistics, and an iterative fit per detected
+                star). It is called with defaults; it is a candidate for its <em>own</em>
+                focused profiling sub-pass (which sub-stage dominates on a real frame)
+                before any port. The two decode rows and the SNR/SkyBackground rows are
+                bottlenecked on shared SwiftPixel primitives
+                (<code>readRawPixels</code>, <code>median</code>/<code>MAD</code>), so they
+                improve for free when those are optimized.
+            </p>
+        </div>
+
+        <h2 class="section">Metal target list (for M7 / M8+)</h2>
+        <div class="prose">
+            <p>Ordered by expected payoff. Speedups are <strong>provisional order-of-magnitude estimates</strong> from the workload shape, not measurements &mdash; each must be confirmed with a spike against the M1 harness (per the plan's per-processor template). All assume the Float32 decision (D-A) is settled.</p>
+        </div>
+
+        <div class="finding">
+            <h3>1. Debayer&nbsp;VNG &nbsp;<span class="capsule gpu-strong">GPU strong</span></h3>
+            <p><span class="tag">Why:</span> a 5&times;5 stencil with per-pixel gradient selection and conditional colour-difference averaging &mdash; every output pixel independent, genuine arithmetic intensity, and (unlike bilinear) <em>no</em> fixed-kernel Accelerate form. The M5.8 review already flagged Metal as its natural home. ~110&nbsp;ms at full resolution today.</p>
+            <p><span class="tag">Estimate:</span> high (a data-parallel stencil is the GPU's best case); the data-dependent branch per direction is the only friction. <span class="tag">Transfer:</span> one mono upload, one RGB download; small vs. the compute.</p>
+        </div>
+        <div class="finding">
+            <h3>2. The fused display chain &mdash; Stretch, BrightnessContrast, Levels, Curves, ColorBalance, Hue, Saturation, Invert &nbsp;<span class="capsule gpu-strong">GPU strong (as a group)</span></h3>
+            <p><span class="tag">Why:</span> see F4. Individually most of these are already fast on vDSP; the win is <em>fusing</em> the whole interactive re-render into one resident GPU buffer so a slider drag doesn't round-trip each stage through the CPU. This is the case that justifies the M7 infrastructure investment.</p>
+            <p><span class="tag">Estimate:</span> the payoff is <em>latency</em> and CPU offload on interactive edits, not raw throughput on any one stage. <span class="tag">Transfer:</span> the crux &mdash; the design must keep the buffer GPU-resident across stages (no per-stage copy); on unified memory this is cheap if done right and ruinous if not.</p>
+        </div>
+        <div class="finding">
+            <h3>3. CosmeticCorrection &nbsp;<span class="capsule gpu-strong">GPU strong</span></h3>
+            <p><span class="tag">Why:</span> a per-pixel 8-neighbour local-median/MAD stencil, already written to read source-only and write its own slot (embarrassingly parallel). ~417&nbsp;ms at full resolution. The tiny per-pixel sort maps to a fixed unrolled network on the GPU.</p>
+            <p><span class="tag">Estimate:</span> high. <span class="tag">Transfer:</span> one upload, one download; it runs pre-demosaic on the raw mono/CFA buffer.</p>
+        </div>
+        <div class="finding">
+            <h3>Evaluate: Hue / Saturation / ColorBalance individually &nbsp;<span class="capsule gpu-maybe">GPU / vDSP</span></h3>
+            <p>Members of the fused chain above. Standalone, <code>Hue</code> favours the GPU (branchy RGB&harr;HSV resists vDSP); <code>Saturation</code> and <code>ColorBalance</code> are also <em>CPU-vectorizable</em> (the luma is a fixed linear combination, the per-channel adjustment affine) &mdash; so if the fused pass slips, they have a cheaper CPU path. <code>Convolution</code> and the detector's matched filter could use <code>MPSImageConvolution</code>, but they are already on vDSP, so measure before porting.</p>
+        </div>
+
+        <h2 class="section">Stays on CPU &mdash; optimize here (Phase 4 / M9)</h2>
+        <div class="prose">
+            <p>These should be improved on the CPU, not ported. Several are higher-leverage and lower-risk than the Metal work.</p>
+            <ul>
+                <li><strong><code>median</code>&nbsp;/&nbsp;<code>MAD</code>&nbsp;/&nbsp;<code>percentileBounds</code></strong> &mdash; replace the full sort with a <strong>quickselect</strong> (the median/percentile need only a selection, not a total order) and route the MAD's absolute-deviation pass through <code>vDSP</code> to drop the second full allocation. Benefits SNR, SkyBackground, <code>Normalize(.percentile)</code>, the stretch stats, and the star detector. <em>Highest leverage.</em></li>
+                <li><strong><code>MonoToRGB</code>, <code>Orient</code></strong> &mdash; overhead-bound (F2). Rewrite the per-index closure as chunked/strided work; <code>Orient</code> maps onto vImage's rotate/reflect primitives, and <code>MonoToRGB</code> onto a strided <code>vDSP</code> copy. Expect ~10&times; on the CPU with no precision change.</li>
+                <li><strong><code>readRawPixels</code></strong> &mdash; per-sample decode + byte-swap; a <code>vDSP</code> integer&rarr;float conversion (with a vImage byte-order pass) beats the scalar closure. Directly speeds the FITS decode rows.</li>
+                <li><strong><code>detectStars</code></strong> &mdash; profile its sub-stages on a real frame first; it inherits the median and (optionally) convolution wins. A dedicated milestone, not a blind port.</li>
+            </ul>
+        </div>
+
+        <h2 class="section">Data-transfer &amp; fusion analysis</h2>
+        <div class="prose">
+            <ul>
+                <li><strong>Unified memory helps, but is not free.</strong> Apple-silicon GPUs share DRAM with the CPU, so a <code>MTLBuffer</code> can wrap the sample storage without a copy. The real cost is <em>per-command-buffer submission latency</em> (tens of &micro;s) and any implicit format conversion &mdash; both negligible when amortized over millions of pixels, but able to dominate a single cheap stage on a small preview.</li>
+                <li><strong>Fuse, don't ping-pong.</strong> A per-stage &ldquo;upload&nbsp;&rarr;&nbsp;one kernel&nbsp;&rarr;&nbsp;download&rdquo; design would lose to the CPU. The chain must stay GPU-resident across stages (F4); this is what M7's dispatch seam has to make natural.</li>
+                <li><strong>Float32 conversion is a real, recurring cost</strong> (D-A). If the buffer stays <code>Double</code> on the CPU, every GPU excursion pays a <code>Double&rarr;Float</code> down-convert and a <code>Float&rarr;Double</code> up-convert. The fused chain pays this once (in/out); a per-processor port pays it every stage &mdash; another argument for fusion over piecemeal ports.</li>
+                <li><strong>Small previews may never want the GPU.</strong> The preview path already downsamples (<code>maxDimension</code>); at a few hundred&nbsp;kpx the submission + conversion overhead can exceed the compute. The seam should fall back to CPU below a size threshold (and in headless/no-GPU environments).</li>
+            </ul>
+        </div>
+
+        <h2 class="section" id="decisions"><span class="capsule decide">Decision</span> &nbsp;Open decisions for the maintainer</h2>
+        <div class="prose">
+            <p>M6's task 4 is to review this before M7 builds any infrastructure. These shape Phase&nbsp;3:</p>
+            <ul>
+                <li><strong>D-A &mdash; Float32 for GPU.</strong> Metal has no <code>double</code>. Accept Float32 (single precision) for GPU kernels? For display-referred stages on normalized <code>[0,&nbsp;1]</code> data this is almost certainly fine; for anything feeding measurement/detection it needs thought. <em>This gates all of Phase&nbsp;3.</em></li>
+                <li><strong>D-B &mdash; Metal scope: fused chain vs. per-processor.</strong> The evidence favours building M7 around a <em>fused, GPU-resident display pass</em> (F4) rather than the plan's implied one-processor-per-milestone ports (M8+). Confirm the direction, since it reshapes M7/M8+.</li>
+                <li><strong>D-C &mdash; phase ordering.</strong> Several top CPU wins (median/quickselect, MonoToRGB/Orient vectorize, readRawPixels) are lower-risk, need no Float32 decision, and also speed up <code>detectStars</code> and decode &mdash; the system's biggest costs. Consider doing that CPU work (Phase&nbsp;4 / M9) <em>before or alongside</em> the Metal build, rather than strictly after. This is a suggested re-ordering, not a change made unilaterally.</li>
+                <li><strong>D-D &mdash; refresh the committed baselines?</strong> The committed M1 baselines are stale. Options: (a) refresh both submodules' <code>Docs/Benchmarks</code> to these post-M5 numbers so Phase&nbsp;3/4 measure against current state; (b) keep M1 as the historical reference and treat this report as the M6 snapshot; (c) both. The plan's M9/M10 currently say &ldquo;measure against the M1 baseline.&rdquo;</li>
+                <li><strong>D-E &mdash; <code>detectStars</code> in scope for Phase&nbsp;3?</strong> It is the biggest single cost but a composite, not a clean port. Confirm whether it gets its own profiling+optimization milestone or is deferred.</li>
+            </ul>
+        </div>
+
+        <h2 class="section">Recommended next step</h2>
+        <div class="prose">
+            <p>
+                Pending the decisions above, the highest-confidence sequence is:
+                <strong>(1)</strong> settle D-A/D-B; <strong>(2)</strong> take the
+                median/quickselect and MonoToRGB/Orient/readRawPixels CPU wins (low risk,
+                broad benefit, no precision change); <strong>(3)</strong> build M7 around a
+                fused Float32 display pass and prove it end-to-end with a trivial kernel;
+                <strong>(4)</strong> port VNG and CosmeticCorrection as the first stencils on
+                that infrastructure, each measured against this baseline.
+            </p>
+        </div>
+
+        <footer>
+            FITScope &mdash; FITS Image Viewer for macOS. &nbsp;&middot;&nbsp;
+            M6 profiling snapshot, captured 2026-07-19 on <code>Mac16,12</code> (Release, 20 iterations).
+            Analysis only; no production code changed. Speedup figures are provisional until confirmed by a spike.
+        </footer>
+    </div>
+</body>
+</html>

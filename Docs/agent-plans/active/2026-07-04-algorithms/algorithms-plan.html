@@ -1098,24 +1098,42 @@
         <div class="phase-label">Phase 3 &middot; Metal acceleration of hot processors</div>
 
         <div class="milestone">
-            <h3><span class="m-num">M6.</span> Profile &amp; rank the hot processors <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M6.</span> Profile &amp; rank the hot processors <span class="capsule completed">Completed</span></h3>
             <div class="field-label">Goal</div>
             <p class="goal">Use the M1 harness to profile the SwiftPixel processors on representative frames and produce a ranked, evidence-backed list of the performance-critical ones &mdash; the candidates for Metal &mdash; distinguishing GPU-friendly (per-pixel, parallel) work from work that stays on the CPU.</p>
             <div class="field-label">Tasks</div>
             <ul class="tasks">
-                <li>Run the harness across all processors; rank by runtime on realistic image sizes.</li>
-                <li>For each hot processor, classify its workload (embarrassingly parallel per-pixel, neighbourhood/convolution, reduction, or inherently sequential) to judge Metal suitability.</li>
-                <li>Estimate expected speedup and note data-transfer overhead (CPU&harr;GPU copies) that could erode gains.</li>
-                <li>Produce the target list for M7 and the "stays on CPU" list feeding Phase&nbsp;4; review it with the maintainer before building Metal infrastructure.</li>
+                <li class="done">Run the harness across all processors; rank by runtime on realistic image sizes.</li>
+                <li class="done">For each hot processor, classify its workload (embarrassingly parallel per-pixel, neighbourhood/convolution, reduction, or inherently sequential) to judge Metal suitability.</li>
+                <li class="done">Estimate expected speedup and note data-transfer overhead (CPU&harr;GPU copies) that could erode gains.</li>
+                <li class="done">Produce the target list for M7 and the "stays on CPU" list feeding Phase&nbsp;4; review it with the maintainer before building Metal infrastructure. <em>(Lists produced; reviewed and approved.)</em></li>
             </ul>
             <div class="field-label">Status</div>
-            <p><span class="capsule notstarted">Not started</span> &nbsp; <span class="completed-date">Completed: &mdash;</span></p>
+            <p><span class="capsule completed">Completed</span> &nbsp; <span class="completed-date">Completed: 2026-07-19</span></p>
             <div class="field-label">Implementation notes</div>
-            <p class="placeholder">&mdash; to be filled in as work progresses &mdash;</p>
+            <div class="note-block">
+                <p><strong>Deliverable.</strong> An <strong>analysis-only</strong> milestone (like the M2/M3 audits) &mdash; <strong>no production code was changed</strong>. The ranked findings live in <a href="profiling.html">profiling.html</a> in this plan folder, styled like the audit reports.</p>
+                <p><strong>Fresh capture.</strong> The M1 harness was re-run in Release (20 iterations, 3 warmup) on <code>Mac16,12</code> / macOS&nbsp;26.5.1 via SwiftPM (<code>RUN_BENCHMARKS=1 swift test -c release --filter Test_&lt;Module&gt;Benchmarks</code>, the env-forwarding path from M1), with output redirected out-of-repo (<code>FITSCOPE_BENCH_OUT</code>) so the <strong>committed M1 baselines stay intact</strong>. The committed baselines were stale &mdash; Debayer&nbsp;VNG <code>20.85&nbsp;&rarr;&nbsp;55.76&nbsp;ms</code> (M5.8), Normalize <code>3.01&nbsp;&rarr;&nbsp;4.08&nbsp;ms</code> (M5.1), and the two decode rows renamed when M5.15 retired <code>FITSImageDecoder</code>. Both suites built and ran green (exit 0); the SwiftPixel run took ~47&nbsp;s. Whether to refresh the committed baselines is raised as a decision (D-D). <strong>TDD</strong> does not apply &mdash; there is no production behaviour to test-drive; the deliverable is a report derived from measured data and source classification.</p>
+                <p><strong>Classification.</strong> All <strong>29 SwiftPixel</strong> measurements and the <strong>11 SwiftAstro</strong> ones were classified by workload shape (per-pixel&nbsp;/&nbsp;stencil&nbsp;/&nbsp;reduction&nbsp;/&nbsp;geometric&nbsp;/&nbsp;composite), each verified against the source. Because the harness uses a different representative frame per processor (mono/raw/cfa 2048&sup2;, colour 1024&sup2;), rows are ranked by <strong>throughput (Mpx/s)</strong> &mdash; the size-independent measure &mdash; and also projected to <strong>8.3&nbsp;Mpx</strong> (the app's full-resolution render size).</p>
+                <p><strong>Findings.</strong> (F1) The CPU story is two-tier &mdash; vDSP-vectorized stages (290&ndash;3200&nbsp;Mpx/s) vs. scalar-per-pixel-closure stages (~20&nbsp;Mpx/s). (F2) <code>MonoToRGB</code>&nbsp;/&nbsp;<code>Orient</code> are <strong>overhead-bound, not compute-bound</strong> (~0.5&nbsp;GB/s effective) &rarr; a CPU rewrite, not Metal. (F3) <code>detectStars</code> is the single biggest cost (1.69&nbsp;s) but a composite (convolve&nbsp;+&nbsp;robust stats&nbsp;+&nbsp;per-star LM fit), not a clean port. (F4) The strongest Metal case is <strong>fusing the per-pixel display chain</strong> (upload once, chain kernels GPU-resident, read back once), not porting any single processor. (F5) <code>median</code>&nbsp;/&nbsp;<code>MAD</code> (quickselect) is the highest-leverage CPU win, feeding SNR, SkyBackground, <code>Normalize(.percentile)</code>, the stretch stats and the detector. <strong>Verified constraint:</strong> the Metal Shading Language has no <code>double</code> type (Apple's MSL spec), so the whole <code>[Double]</code> pipeline needs a Float32 decision that gates Phase&nbsp;3.</p>
+                <p><strong>Lists produced.</strong> <em>Metal targets (M7/M8+):</em> Debayer&nbsp;VNG, the fused display chain, CosmeticCorrection (Hue&nbsp;/&nbsp;Saturation&nbsp;/&nbsp;ColorBalance and the matched-filter convolution flagged to evaluate). <em>Stays on CPU (M9):</em> median&nbsp;/&nbsp;MAD&nbsp;/&nbsp;percentileBounds, MonoToRGB, Orient, readRawPixels. <em>Already optimal:</em> the 17 vDSP-backed stages. Five decisions are surfaced for the maintainer: <strong>D-A</strong> Float32 for GPU, <strong>D-B</strong> fused-chain vs. per-processor ports, <strong>D-C</strong> phase ordering (some CPU wins are lower-risk and also speed detection, so consider them before/alongside Metal), <strong>D-D</strong> refresh the committed baselines?, <strong>D-E</strong> is <code>detectStars</code> in Phase-3 scope?</p>
+                <p><strong>Automated review loop.</strong> 1 round, fresh-context reviewer, <strong>converged</strong> &mdash; no Critical/High/Medium. The reviewer recomputed every throughput/projection against the fresh baselines and verified every classification against the source; all matched. Three Low consistency items were fixed in-milestone; one Info was left as-is with a rationale (see Automated review).</p>
+            </div>
             <div class="field-label">Automated review</div>
-            <p class="placeholder">&mdash; findings from the automated review loop &mdash;</p>
+            <div class="note-block">
+                <p><strong>Round 1</strong> (fresh-context reviewer, execution-backed: recomputed all throughput and 8.3&nbsp;Mpx projections against the fresh <code>swiftpixel</code>&nbsp;/&nbsp;<code>swiftastro</code> baselines, verified every workload classification and vDSP-vs-scalar claim against the source, checked the counts, the F4 chain against <code>PixelPipeline.processors()</code>, and the historical claims against the committed M1 baseline + git log): <strong>no factual errors in the numbers or classifications, no material overreach; counts reconcile (3&nbsp;+&nbsp;3&nbsp;+&nbsp;6&nbsp;+&nbsp;17&nbsp;=&nbsp;29); speedups explicitly provisional.</strong> No Critical/High/Medium. Findings:</p>
+                <ul>
+                    <li><strong>Low &mdash; min/median mix in the overview.</strong> The two regressions were cited as VNG min&rarr;min but Normalize median&rarr;median (<code>3.04&nbsp;&rarr;&nbsp;4.18</code>), which broke the stated <code>min</code> convention and disagreed with the table (<code>4.1</code>). <strong>Fixed</strong> &mdash; now <code>3.01&nbsp;&rarr;&nbsp;4.08</code> (min), labelled.</li>
+                    <li><strong>Low &mdash; F4 listed Gamma as an app-active stage.</strong> The app hardcodes <code>correctGamma: nil</code> (no gamma control), so Gamma is defined by the pipeline order but never runs in the app render. <strong>Fixed</strong> &mdash; F4 now attributes the chain to the pipeline's fixed order and notes Gamma is pipeline-supported but not app-wired.</li>
+                    <li><strong>Low/Info &mdash; F1 over-broad &ldquo;vDSP stages&rdquo;.</strong> Two Accelerate-backed rows (Convolution&nbsp;48, interleave&nbsp;162&nbsp;Mpx/s) fall below the quoted 290&ndash;3200 range, which brackets the per-pixel vDSP <em>processor</em> tier. <strong>Fixed</strong> &mdash; scoped the wording accordingly.</li>
+                    <li><strong>Info &mdash; MonoToRGB &ldquo;~96&nbsp;MB&rdquo; is MiB.</strong> The write is 100.66&nbsp;MB&nbsp;=&nbsp;96.02&nbsp;MiB. <strong>Left as-is</strong> &mdash; &ldquo;~96&nbsp;MB&rdquo; matches the harness's own peak-alloc units (the table shows <code>96.02&nbsp;MB</code>), so keeping MB-as-MiB is internally consistent; the ~0.5&nbsp;GB/s derivation is unaffected. Surfaced.</li>
+                </ul>
+            </div>
             <div class="field-label">Review comments</div>
-            <p class="placeholder">&mdash; human review feedback &mdash;</p>
+            <div class="note-block">
+                <p><strong>Maintainer:</strong> The report looks good. Asked whether to discuss the surfaced decisions (D-A&ndash;D-E) now, or consider M6 complete first and take the decisions up when starting M7.</p>
+                <p><strong>Maintainer:</strong> Chose to finalize M6 now; the D-A&ndash;D-E decisions will be taken up at the start of M7.</p>
+            </div>
         </div>
 
         <div class="milestone">
