@@ -114,6 +114,8 @@
 		05E2A868300E78410038C2A2 /* SwiftAstro.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05E2A84D300E77C20038C2A2 /* SwiftAstro.framework */; };
 		05E2A86A300E78B70038C2A2 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05E2A869300E78B70038C2A2 /* SwiftUtilities.framework */; };
 		05E2A86B300E78BD0038C2A2 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05E2A869300E78B70038C2A2 /* SwiftUtilities.framework */; };
+		05E2A905300E9C010038C2A2 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05E2A900300E9BF90038C2A2 /* SwiftUtilities.framework */; };
+		05E2A906300E9C0B0038C2A2 /* SwiftUtilities.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 05E2A900300E9BF90038C2A2 /* SwiftUtilities.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		05EE1000000000000000FB01 /* ImageMetadataProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA01 /* ImageMetadataProperty.swift */; };
 		05EE1000000000000000FB02 /* ImageMetadataSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA02 /* ImageMetadataSection.swift */; };
 		05EE1000000000000000FB03 /* ImageMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA03 /* ImageMetadata.swift */; };
@@ -468,6 +470,13 @@
 			remoteGlobalIDString = 05E974C02FE921070078F616;
 			remoteInfo = SwiftAstro;
 		};
+		05E2A8FF300E9BF90038C2A2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 17284595CC1624354A6F83F2 /* SwiftUtilities.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 05C527822DD8E36300843626;
+			remoteInfo = SwiftUtilities;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -478,6 +487,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				05C01AB52FEF2AEC00FE62EC /* SwiftAstro.framework in Embed Frameworks */,
+				05E2A906300E9C0B0038C2A2 /* SwiftUtilities.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -942,20 +952,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				05C01AB42FEF2AD600FE62EC /* SwiftAstro.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		053BEAAE2DDDDDA900EF0C79 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		053BEAB82DDDDDA900EF0C79 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+				05E2A905300E9C010038C2A2 /* SwiftUtilities.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1422,6 +1419,7 @@
 		05E2A8A9300E970B0038C2A2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				05E2A900300E9BF90038C2A2 /* SwiftUtilities.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2064,8 +2062,6 @@
 			buildConfigurationList = 053BEAC82DDDDDA900EF0C79 /* Build configuration list for PBXNativeTarget "FITScopeTests" */;
 			buildPhases = (
 				053BEAAD2DDDDDA900EF0C79 /* Sources */,
-				053BEAAE2DDDDDA900EF0C79 /* Frameworks */,
-				053BEAAF2DDDDDA900EF0C79 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -2082,8 +2078,6 @@
 			buildConfigurationList = 053BEACB2DDDDDA900EF0C79 /* Build configuration list for PBXNativeTarget "FITScopeUITests" */;
 			buildPhases = (
 				053BEAB72DDDDDA900EF0C79 /* Sources */,
-				053BEAB82DDDDDA900EF0C79 /* Frameworks */,
-				053BEAB92DDDDDA900EF0C79 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -2101,7 +2095,6 @@
 			buildPhases = (
 				05B189C22FEAE7930056553A /* Sources */,
 				05B189C32FEAE7930056553A /* Frameworks */,
-				05B189C42FEAE7930056553A /* Resources */,
 				052104512FF3ACFD0089C911 /* ShellScript */,
 			);
 			buildRules = (
@@ -2119,7 +2112,6 @@
 			buildPhases = (
 				05B189DF2FEAE7AD0056553A /* Sources */,
 				05B189E02FEAE7AD0056553A /* Frameworks */,
-				05B189E12FEAE7AD0056553A /* Resources */,
 				05128D432FF69E3800AC8EBD /* ShellScript */,
 			);
 			buildRules = (
@@ -2201,6 +2193,13 @@
 			remoteRef = 05E2A84C300E77C20038C2A2 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		05E2A900300E9BF90038C2A2 /* SwiftUtilities.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = SwiftUtilities.framework;
+			remoteRef = 05E2A8FF300E9BF90038C2A2 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 /* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
@@ -2208,45 +2207,17 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				05DC79A72DF30DCC003E2AFA /* ColorImage.fits in Resources */,
-				05282AA1300113B00097206C /* License-SwiftRAW.txt in Resources */,
-				05282AA2300113B00097206C /* License-SwiftPixel.txt in Resources */,
-				05282AA3300113B00097206C /* License-LibRAW.txt in Resources */,
-				05282AA4300113B00097206C /* License-SwiftAstro.txt in Resources */,
-				05282AA5300113B00097206C /* License-SwiftUtilities.txt in Resources */,
-				05282AA6300113B00097206C /* License-SwiftFITS.txt in Resources */,
-				05282AA7300113B00097206C /* License-SwiftXISF.txt in Resources */,
-				05DC79A92DF30DDB003E2AFA /* MonoImage.fits in Resources */,
 				0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */,
 				0579B6252DF2C149002FDD47 /* Preview Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		053BEAAF2DDDDDA900EF0C79 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		053BEAB92DDDDDA900EF0C79 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		05B189C42FEAE7930056553A /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		05B189E12FEAE7AD0056553A /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+				05DC79A72DF30DCC003E2AFA /* ColorImage.fits in Resources */,
+				05DC79A92DF30DDB003E2AFA /* MonoImage.fits in Resources */,
+				05282AA6300113B00097206C /* License-SwiftFITS.txt in Resources */,
+				05282AA7300113B00097206C /* License-SwiftXISF.txt in Resources */,
+				05282AA1300113B00097206C /* License-SwiftRAW.txt in Resources */,
+				05282AA3300113B00097206C /* License-LibRAW.txt in Resources */,
+				05282AA2300113B00097206C /* License-SwiftPixel.txt in Resources */,
+				05282AA4300113B00097206C /* License-SwiftAstro.txt in Resources */,
+				05282AA5300113B00097206C /* License-SwiftUtilities.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
