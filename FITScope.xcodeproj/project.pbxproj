@@ -2797,7 +2797,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = FITScope/FITScope.entitlements;
-				DEVELOPMENT_ASSET_PATHS = "\"FITScope/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"FITScope/Preview Content\" \"Test Files/Fixtures\"";
 				INFOPLIST_FILE = FITScope/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2815,7 +2815,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = FITScope/FITScope.entitlements;
-				DEVELOPMENT_ASSET_PATHS = "\"FITScope/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"FITScope/Preview Content\" \"Test Files/Fixtures\"";
 				INFOPLIST_FILE = FITScope/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
