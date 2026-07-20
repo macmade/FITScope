@@ -21,13 +21,6 @@
     },
     {
       "target" : {
-        "containerPath" : "container:Submodules\/SwiftAstro\/Submodules\/SwiftPixel\/Submodules\/SwiftUtilities\/SwiftUtilities.xcodeproj",
-        "identifier" : "05F175C32DD8E36300843626",
-        "name" : "SwiftUtilitiesTests"
-      }
-    },
-    {
-      "target" : {
         "containerPath" : "container:FITScope.xcodeproj",
         "identifier" : "053BEAB02DDDDDA900EF0C79",
         "name" : "FITScopeTests"
@@ -52,6 +45,27 @@
         "containerPath" : "container:FITScope.xcodeproj",
         "identifier" : "053BEABA2DDDDDA900EF0C79",
         "name" : "FITScopeUITests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Submodules\/SwiftUtilities\/SwiftUtilities.xcodeproj",
+        "identifier" : "05F175C32DD8E36300843626",
+        "name" : "SwiftUtilitiesTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Submodules\/SwiftAstro\/Submodules\/SwiftRAW\/SwiftRAW.xcodeproj",
+        "identifier" : "056ACF822FFFE69100F40080",
+        "name" : "SwiftRAWTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Submodules\/SwiftAstro\/Submodules\/SwiftXISF\/SwiftXISF.xcodeproj",
+        "identifier" : "052104722FF3AE500089C911",
+        "name" : "SwiftXISFTests"
       }
     }
   ],
