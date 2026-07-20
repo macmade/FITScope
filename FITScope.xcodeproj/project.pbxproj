@@ -2268,7 +2268,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Set the bundle version (CFBundleVersion) to the number of commits in the repository.\n\nif ! command -v git >/dev/null 2>&1 ; then\n    echo \"warning: git not found; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\ncount=$(git -C \"$SRCROOT\" rev-list --count HEAD 2>/dev/null)\n\nif [ -z \"$count\" ] ; then\n    echo \"warning: not a git repository; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\nplist=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\n\nif [ ! -f \"$plist\" ] ; then\n    echo \"warning: $plist not found; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $count\" \"$plist\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string $count\" \"$plist\"\n\necho \"Set CFBundleVersion to $count\"\n";
+			shellScript = "# Set the bundle version (CFBundleVersion) to the number of commits in the repository.\n\nif ! command -v git >/dev/null 2>&1 ; then\n    echo \"error: git not found\"\n    exit 1\nfi\n\ncount=$(git -C \"$SRCROOT\" rev-list --count HEAD 2>/dev/null)\n\nif [ -z \"$count\" ] ; then\n    echo \"error: not a git repository\"\n    exit 1\nfi\n\nplist=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\n\nif [ ! -f \"$plist\" ] ; then\n    echo \"error: $plist not found\"\n    exit 1\nfi\n\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $count\" \"$plist\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string $count\" \"$plist\"\n\necho \"Set CFBundleVersion to $count\"\n";
 		};
 		05128D522FF69E4100AC8EBD /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2286,7 +2286,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Set the bundle version (CFBundleVersion) to the number of commits in the repository.\n\nif ! command -v git >/dev/null 2>&1 ; then\n    echo \"warning: git not found; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\ncount=$(git -C \"$SRCROOT\" rev-list --count HEAD 2>/dev/null)\n\nif [ -z \"$count\" ] ; then\n    echo \"warning: not a git repository; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\nplist=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\n\nif [ ! -f \"$plist\" ] ; then\n    echo \"warning: $plist not found; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $count\" \"$plist\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string $count\" \"$plist\"\n\necho \"Set CFBundleVersion to $count\"\n";
+			shellScript = "# Set the bundle version (CFBundleVersion) to the number of commits in the repository.\n\nif ! command -v git >/dev/null 2>&1 ; then\n    echo \"error: git not found\"\n    exit 1\nfi\n\ncount=$(git -C \"$SRCROOT\" rev-list --count HEAD 2>/dev/null)\n\nif [ -z \"$count\" ] ; then\n    echo \"error: not a git repository\"\n    exit 1\nfi\n\nplist=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\n\nif [ ! -f \"$plist\" ] ; then\n    echo \"error: $plist not found\"\n    exit 1\nfi\n\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $count\" \"$plist\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string $count\" \"$plist\"\n\necho \"Set CFBundleVersion to $count\"\n";
 		};
 		052104512FF3ACFD0089C911 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2304,7 +2304,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Set the bundle version (CFBundleVersion) to the number of commits in the repository.\n\nif ! command -v git >/dev/null 2>&1 ; then\n    echo \"warning: git not found; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\ncount=$(git -C \"$SRCROOT\" rev-list --count HEAD 2>/dev/null)\n\nif [ -z \"$count\" ] ; then\n    echo \"warning: not a git repository; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\nplist=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\n\nif [ ! -f \"$plist\" ] ; then\n    echo \"warning: $plist not found; leaving CFBundleVersion unchanged\"\n    exit 0\nfi\n\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $count\" \"$plist\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string $count\" \"$plist\"\n\necho \"Set CFBundleVersion to $count\"\n";
+			shellScript = "# Set the bundle version (CFBundleVersion) to the number of commits in the repository.\n\nif ! command -v git >/dev/null 2>&1 ; then\n    echo \"error: git not found\"\n    exit 1\nfi\n\ncount=$(git -C \"$SRCROOT\" rev-list --count HEAD 2>/dev/null)\n\nif [ -z \"$count\" ] ; then\n    echo \"error: not a git repository\"\n    exit 1\nfi\n\nplist=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\n\nif [ ! -f \"$plist\" ] ; then\n    echo \"error: $plist not found\"\n    exit 1\nfi\n\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $count\" \"$plist\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string $count\" \"$plist\"\n\necho \"Set CFBundleVersion to $count\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
