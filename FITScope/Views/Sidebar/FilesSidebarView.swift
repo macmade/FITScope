@@ -218,7 +218,7 @@ public struct FilesSidebarView: View
     let model      = WindowModel()
     let appModel   = AppModel()
     let actions    = FileActions( appModel: appModel, model: model, preferences: Preferences() )
-    let sampleURLs = [ PreviewHelper.url( file: .M42 ), PreviewHelper.url( file: .HST_FOS ) ].compactMap { $0 }
+    let sampleURLs = [ PreviewHelper.url( file: .color ), PreviewHelper.url( file: .mono ) ].compactMap { $0 }
 
     model.open( urls: sampleURLs )
 

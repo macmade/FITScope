@@ -139,7 +139,7 @@ public struct ImageCarouselCellView: View
 
 #Preview
 {
-    if let frame = PreviewHelper.image( file: .M42 )
+    if let frame = PreviewHelper.image( file: .color )
     {
         HStack( spacing: 8 )
         {

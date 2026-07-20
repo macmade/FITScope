@@ -168,7 +168,7 @@ public struct ImageCarouselView: View
 {
     @Previewable @State var selection = 0
 
-    if let frame = PreviewHelper.image( file: .M42 )
+    if let frame = PreviewHelper.image( file: .color )
     {
         ImageCarouselView( frames: [ frame, frame, frame ], selection: $selection )
             .frame( height: 96 )

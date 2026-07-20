@@ -85,7 +85,7 @@ public struct InspectorColumnView: View
 
 #Preview
 {
-    if let file = PreviewHelper.openFile( file: .M42 )
+    if let file = PreviewHelper.openFile( file: .color )
     {
         InspectorColumnView( file: file )
             .frame( width: 255 )

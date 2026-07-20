@@ -33,26 +33,29 @@ import SwiftPixel
 /// rendering even when a sample file is missing from the bundle.
 public enum PreviewHelper
 {
-    /// A sample FITS file bundled with the app for previews.
+    /// A sample FITS fixture bundled with the app for previews.
     public enum TestFile
     {
-        /// A one-shot-colour (Bayer) deep-sky capture of the Orion Nebula.
-        case M42
+        /// A colour-filter-array (RGGB Bayer) image, for previews that need a
+        /// colour image — per-channel screen transfers, saturation and the
+        /// channel-specific inspector controls.
+        case color
 
-        /// A monochrome Hubble Faint Object Spectrograph frame.
-        case HST_FOS
+        /// A monochrome image, for previews that only need a second distinct
+        /// file or a header to display.
+        case mono
     }
 
-    /// The bundle URL of the given sample file, or `nil` when it is not present.
+    /// The bundle URL of the given sample fixture, or `nil` when it is not present.
     ///
-    /// - Parameter file: The sample file to locate.
-    /// - Returns: The file's URL, or `nil` if it is missing from the bundle.
+    /// - Parameter file: The sample fixture to locate.
+    /// - Returns: The fixture's URL, or `nil` if it is missing from the bundle.
     public static func url( file: TestFile ) -> URL?
     {
         switch file
         {
-            case .M42:     return Bundle.main.url( forResource: "2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69", withExtension: "fits" )
-            case .HST_FOS: return Bundle.main.url( forResource: "FOSy19g0309t_c2f", withExtension: "fits" )
+            case .color: return Bundle.main.url( forResource: "ColorImage", withExtension: "fits" )
+            case .mono:  return Bundle.main.url( forResource: "MonoImage",  withExtension: "fits" )
         }
     }
 

@@ -737,7 +737,7 @@ struct STFEditorView: View
 // a manual value.
 #Preview( "Managed" )
 {
-    if let image = PreviewHelper.image( file: .M42 )
+    if let image = PreviewHelper.image( file: .color )
     {
         STFEditorView( image: image )
             .frame( width: 400 )
@@ -757,7 +757,7 @@ struct STFEditorView: View
 // Manual: a hand-set stretch, so there is no managed banner.
 #Preview( "Manual" )
 {
-    if let image = PreviewHelper.image( file: .M42 )
+    if let image = PreviewHelper.image( file: .color )
     {
         STFEditorView( image: image )
             .frame( width: 400 )

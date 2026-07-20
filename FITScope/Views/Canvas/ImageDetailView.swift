@@ -92,7 +92,7 @@ public struct ImageDetailView: View
 
 #Preview
 {
-    if let file = PreviewHelper.openFile( file: .M42 )
+    if let file = PreviewHelper.openFile( file: .color )
     {
         let actions = FileActions( appModel: AppModel(), model: WindowModel(), preferences: Preferences() )
 

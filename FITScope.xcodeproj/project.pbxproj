@@ -78,8 +78,8 @@
 		05D710D02DF201C300CE32E3 /* NSBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D710CF2DF201C100CE32E3 /* NSBundle.swift */; };
 		05DC79A12DF2F82A003E2AFA /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DC79A02DF2F827003E2AFA /* ErrorView.swift */; };
 		05DC79A32DF2FCF8003E2AFA /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DC79A22DF2FCF4003E2AFA /* LoadingView.swift */; };
-		05DC79A72DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits in Resources */ = {isa = PBXBuildFile; fileRef = 05DC79A62DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits */; };
-		05DC79A92DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits in Resources */ = {isa = PBXBuildFile; fileRef = 05DC79A82DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits */; };
+		05DC79A72DF30DCC003E2AFA /* ColorImage.fits in Resources */ = {isa = PBXBuildFile; fileRef = 05DC79A62DF30DCC003E2AFA /* ColorImage.fits */; };
+		05DC79A92DF30DDB003E2AFA /* MonoImage.fits in Resources */ = {isa = PBXBuildFile; fileRef = 05DC79A82DF30DDB003E2AFA /* MonoImage.fits */; };
 		05DD1000000000000000FB01 /* ImageLoading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA01 /* ImageLoading.swift */; };
 		05DD1000000000000000FB02 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA02 /* ImageLoader.swift */; };
 		05DD1000000000000000FB03 /* LoadedImage+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DD1000000000000000FA03 /* LoadedImage+FITS.swift */; };
@@ -622,8 +622,8 @@
 		05D710CF2DF201C100CE32E3 /* NSBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSBundle.swift; sourceTree = "<group>"; };
 		05DC79A02DF2F827003E2AFA /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
 		05DC79A22DF2FCF4003E2AFA /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
-		05DC79A62DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits */ = {isa = PBXFileReference; lastKnownFileType = text; name = "2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits"; path = "Submodules/SwiftAstro/Submodules/SwiftFITS/Test Files/2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits"; sourceTree = SOURCE_ROOT; };
-		05DC79A82DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits */ = {isa = PBXFileReference; lastKnownFileType = text; name = FOSy19g0309t_c2f.fits; path = "Submodules/SwiftAstro/Submodules/SwiftFITS/Test Files/NASA/FOSy19g0309t_c2f.fits"; sourceTree = SOURCE_ROOT; };
+		05DC79A62DF30DCC003E2AFA /* ColorImage.fits */ = {isa = PBXFileReference; lastKnownFileType = text; name = ColorImage.fits; path = "Test Files/Fixtures/ColorImage.fits"; sourceTree = SOURCE_ROOT; };
+		05DC79A82DF30DDB003E2AFA /* MonoImage.fits */ = {isa = PBXFileReference; lastKnownFileType = text; name = MonoImage.fits; path = "Test Files/Fixtures/MonoImage.fits"; sourceTree = SOURCE_ROOT; };
 		05DD1000000000000000FA01 /* ImageLoading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoading.swift; sourceTree = "<group>"; };
 		05DD1000000000000000FA02 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		05DD1000000000000000FA03 /* LoadedImage+FITS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LoadedImage+FITS.swift"; sourceTree = "<group>"; };
@@ -1282,8 +1282,8 @@
 		0579B6242DF2C120002FDD47 /* Preview Content */ = {
 			isa = PBXGroup;
 			children = (
-				05DC79A62DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits */,
-				05DC79A82DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits */,
+				05DC79A62DF30DCC003E2AFA /* ColorImage.fits */,
+				05DC79A82DF30DDB003E2AFA /* MonoImage.fits */,
 				0579B6232DF2C120002FDD47 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
@@ -1437,6 +1437,13 @@
 				05DD1000000000000000FA06 /* ImageLoaderTests.swift */,
 			);
 			path = Loading;
+			sourceTree = "<group>";
+		};
+		05E2A8A9300E970B0038C2A2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		05EE1000000000000000FC01 /* Metadata */ = {
@@ -2190,6 +2197,10 @@
 					ProductGroup = 05C01AB62FEF2C6200FE62EC /* Products */;
 					ProjectRef = 05C01AA22FEF2ACE00FE62EC /* SwiftAstro.xcodeproj */;
 				},
+				{
+					ProductGroup = 05E2A8A9300E970B0038C2A2 /* Products */;
+					ProjectRef = 17284595CC1624354A6F83F2 /* SwiftUtilities.xcodeproj */;
+				},
 			);
 			projectRoot = "";
 			targets = (
@@ -2217,7 +2228,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				05DC79A72DF30DCC003E2AFA /* 2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits in Resources */,
+				05DC79A72DF30DCC003E2AFA /* ColorImage.fits in Resources */,
 				05282AA1300113B00097206C /* License-SwiftRAW.txt in Resources */,
 				05282AA2300113B00097206C /* License-SwiftPixel.txt in Resources */,
 				05282AA3300113B00097206C /* License-LibRAW.txt in Resources */,
@@ -2225,7 +2236,7 @@
 				05282AA5300113B00097206C /* License-SwiftUtilities.txt in Resources */,
 				05282AA6300113B00097206C /* License-SwiftFITS.txt in Resources */,
 				05282AA7300113B00097206C /* License-SwiftXISF.txt in Resources */,
-				05DC79A92DF30DDB003E2AFA /* FOSy19g0309t_c2f.fits in Resources */,
+				05DC79A92DF30DDB003E2AFA /* MonoImage.fits in Resources */,
 				0587FF0E2DDE64DF005DECEF /* Assets.xcassets in Resources */,
 				0579B6252DF2C149002FDD47 /* Preview Assets.xcassets in Resources */,
 			);

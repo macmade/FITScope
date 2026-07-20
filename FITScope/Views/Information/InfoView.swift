@@ -243,8 +243,8 @@ public struct InfoView: View
 
 #Preview
 {
-    if let url  = PreviewHelper.url( file: .HST_FOS ),
-       let file = PreviewHelper.file( file: .HST_FOS )
+    if let url  = PreviewHelper.url( file: .mono ),
+       let file = PreviewHelper.file( file: .mono )
     {
         InfoView( metadata: FITSImageInfo( url: url, file: file ).imageMetadata )
     }

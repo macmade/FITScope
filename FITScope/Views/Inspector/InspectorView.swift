@@ -304,7 +304,7 @@ public struct InspectorView: View
 
 #Preview
 {
-    if let image = PreviewHelper.image( file: .M42 )
+    if let image = PreviewHelper.image( file: .color )
     {
         InspectorView( image: image )
             .frame( width: 255 )

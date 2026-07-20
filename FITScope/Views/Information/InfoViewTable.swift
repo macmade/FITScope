@@ -130,7 +130,7 @@ public struct InfoViewTable: View
 
 #Preview
 {
-    if let properties = PreviewHelper.properties( file: .HST_FOS )
+    if let properties = PreviewHelper.properties( file: .mono )
     {
         InfoViewTable( properties: properties )
     }
