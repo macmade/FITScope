@@ -524,8 +524,6 @@
 		056E5C002DDF0E8B003254C7 /* CODE_OF_CONDUCT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CODE_OF_CONDUCT.md; sourceTree = "<group>"; };
 		056E5C012DDF0E8B003254C7 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		056E5C022DDF0E8B003254C7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		056E5C032DDF0EB5003254C7 /* ci-mac.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = "ci-mac.yaml"; sourceTree = "<group>"; };
-		056E5C052DDF0EB5003254C7 /* FUNDING.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = FUNDING.yml; sourceTree = "<group>"; };
 		056E5C072DDF1041003254C7 /* FUNDING.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = FUNDING.yml; sourceTree = "<group>"; };
 		056E5C092DDF1041003254C7 /* C++.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "C++.xcconfig"; sourceTree = "<group>"; };
 		056E5C0A2DDF1041003254C7 /* Modules.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Modules.xcconfig; sourceTree = "<group>"; };
@@ -1043,7 +1041,6 @@
 				05C01AA22FEF2ACE00FE62EC /* SwiftAstro.xcodeproj */,
 				17284595CC1624354A6F83F2 /* SwiftUtilities.xcodeproj */,
 				056E5C3E2DDF1041003254C7 /* xcconfig */,
-				056E5C062DDF0EB5003254C7 /* .github */,
 				0587FF0D2DDE64DF005DECEF /* FITScope */,
 				05B189F72FEAE7BC0056553A /* FITScopeThumbnailExtension */,
 				05B189FF2FEAE7BE0056553A /* FITScopePreviewExtension */,
@@ -1064,23 +1061,6 @@
 				05B189E32FEAE7AD0056553A /* FITScopePreviewExtension.appex */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		056E5C042DDF0EB5003254C7 /* workflows */ = {
-			isa = PBXGroup;
-			children = (
-				056E5C032DDF0EB5003254C7 /* ci-mac.yaml */,
-			);
-			path = workflows;
-			sourceTree = "<group>";
-		};
-		056E5C062DDF0EB5003254C7 /* .github */ = {
-			isa = PBXGroup;
-			children = (
-				056E5C042DDF0EB5003254C7 /* workflows */,
-				056E5C052DDF0EB5003254C7 /* FUNDING.yml */,
-			);
-			path = .github;
 			sourceTree = "<group>";
 		};
 		056E5C082DDF1041003254C7 /* .github */ = {
