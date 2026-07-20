@@ -66,7 +66,7 @@ struct AppUpdater
     ///            from the configured owner and repository.
     func makeUpdater() -> GitHubUpdater?
     {
-        GitHubUpdater( owner: self.owner, repository: self.repository )
+        GitHubUpdater( owner: self.owner, repository: self.repository, behavior: .inApp )
     }
 
     /// Checks for updates, reporting every outcome to the user.

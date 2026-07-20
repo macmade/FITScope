@@ -116,6 +116,7 @@
 		05E2A86B300E78BD0038C2A2 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05E2A869300E78B70038C2A2 /* SwiftUtilities.framework */; };
 		05E2A905300E9C010038C2A2 /* SwiftUtilities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05E2A900300E9BF90038C2A2 /* SwiftUtilities.framework */; };
 		05E2A906300E9C0B0038C2A2 /* SwiftUtilities.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 05E2A900300E9BF90038C2A2 /* SwiftUtilities.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		05E2A931300EA2D60038C2A2 /* Updater.xpc in Copy Files */ = {isa = PBXBuildFile; fileRef = 05E2A930300EA2CC0038C2A2 /* Updater.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		05EE1000000000000000FB01 /* ImageMetadataProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA01 /* ImageMetadataProperty.swift */; };
 		05EE1000000000000000FB02 /* ImageMetadataSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA02 /* ImageMetadataSection.swift */; };
 		05EE1000000000000000FB03 /* ImageMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA03 /* ImageMetadata.swift */; };
@@ -477,6 +478,13 @@
 			remoteGlobalIDString = 05C527822DD8E36300843626;
 			remoteInfo = SwiftUtilities;
 		};
+		05E2A92F300EA2CC0038C2A2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 17284595CC1624354A6F83F2 /* SwiftUtilities.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 05F00073000000000000000A;
+			remoteInfo = Updater;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -502,6 +510,17 @@
 				05B189D12FEAE7930056553A /* FITScopeThumbnailExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		05E2A925300EA2CB0038C2A2 /* Copy Files */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
+			dstSubfolderSpec = 16;
+			files = (
+				05E2A931300EA2D60038C2A2 /* Updater.xpc in Copy Files */,
+			);
+			name = "Copy Files";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -1420,6 +1439,7 @@
 			isa = PBXGroup;
 			children = (
 				05E2A900300E9BF90038C2A2 /* SwiftUtilities.framework */,
+				05E2A930300EA2CC0038C2A2 /* Updater.xpc */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2042,6 +2062,7 @@
 				053BEA9E2DDDDDA800EF0C79 /* Sources */,
 				053BEA9F2DDDDDA800EF0C79 /* Frameworks */,
 				053BEAA02DDDDDA800EF0C79 /* Resources */,
+				05E2A925300EA2CB0038C2A2 /* Copy Files */,
 				056E5C532DDF1356003254C7 /* Embed Frameworks */,
 				05B189D22FEAE7930056553A /* Embed Foundation Extensions */,
 				05128D522FF69E4100AC8EBD /* ShellScript */,
@@ -2198,6 +2219,13 @@
 			fileType = wrapper.framework;
 			path = SwiftUtilities.framework;
 			remoteRef = 05E2A8FF300E9BF90038C2A2 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		05E2A930300EA2CC0038C2A2 /* Updater.xpc */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.xpc-service";
+			path = Updater.xpc;
+			remoteRef = 05E2A92F300EA2CC0038C2A2 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
