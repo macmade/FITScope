@@ -2774,6 +2774,7 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
+					"@executable_path/../Frameworks/SwiftAstro.framework/Versions/A/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.xs-labs.FITScope";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2791,6 +2792,7 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
+					"@executable_path/../Frameworks/SwiftAstro.framework/Versions/A/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.xs-labs.FITScope";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2861,6 +2863,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
+					"@executable_path/../../../../Frameworks/SwiftAstro.framework/Versions/A/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.xs-labs.FITScope.FITScopeThumbnailExtension";
@@ -2883,6 +2886,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
+					"@executable_path/../../../../Frameworks/SwiftAstro.framework/Versions/A/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.xs-labs.FITScope.FITScopeThumbnailExtension";
@@ -2905,6 +2909,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
+					"@executable_path/../../../../Frameworks/SwiftAstro.framework/Versions/A/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.xs-labs.FITScope.FITScopePreviewExtension";
@@ -2927,6 +2932,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
+					"@executable_path/../../../../Frameworks/SwiftAstro.framework/Versions/A/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.xs-labs.FITScope.FITScopePreviewExtension";
