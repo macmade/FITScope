@@ -2065,7 +2065,7 @@
 				05E2A925300EA2CB0038C2A2 /* Copy Files */,
 				056E5C532DDF1356003254C7 /* Embed Frameworks */,
 				05B189D22FEAE7930056553A /* Embed Foundation Extensions */,
-				05128D522FF69E4100AC8EBD /* ShellScript */,
+				05128D522FF69E4100AC8EBD /* Set Bundle Version */,
 			);
 			buildRules = (
 			);
@@ -2116,7 +2116,7 @@
 			buildPhases = (
 				05B189C22FEAE7930056553A /* Sources */,
 				05B189C32FEAE7930056553A /* Frameworks */,
-				052104512FF3ACFD0089C911 /* ShellScript */,
+				052104512FF3ACFD0089C911 /* Set Bundle Version */,
 			);
 			buildRules = (
 			);
@@ -2133,7 +2133,7 @@
 			buildPhases = (
 				05B189DF2FEAE7AD0056553A /* Sources */,
 				05B189E02FEAE7AD0056553A /* Frameworks */,
-				05128D432FF69E3800AC8EBD /* ShellScript */,
+				05128D432FF69E3800AC8EBD /* Set Bundle Version */,
 			);
 			buildRules = (
 			);
@@ -2252,7 +2252,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		05128D432FF69E3800AC8EBD /* ShellScript */ = {
+		05128D432FF69E3800AC8EBD /* Set Bundle Version */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -2261,7 +2261,9 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
 			);
+			name = "Set Bundle Version";
 			outputFileListPaths = (
 			);
 			outputPaths = (
@@ -2270,7 +2272,7 @@
 			shellPath = /bin/sh;
 			shellScript = "# Set the bundle version (CFBundleVersion) to the number of commits in the repository.\n\nif ! command -v git >/dev/null 2>&1 ; then\n    echo \"error: git not found\"\n    exit 1\nfi\n\ncount=$(git -C \"$SRCROOT\" rev-list --count HEAD 2>/dev/null)\n\nif [ -z \"$count\" ] ; then\n    echo \"error: not a git repository\"\n    exit 1\nfi\n\nplist=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\n\nif [ ! -f \"$plist\" ] ; then\n    echo \"error: $plist not found\"\n    exit 1\nfi\n\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $count\" \"$plist\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string $count\" \"$plist\"\n\necho \"Set CFBundleVersion to $count\"\n";
 		};
-		05128D522FF69E4100AC8EBD /* ShellScript */ = {
+		05128D522FF69E4100AC8EBD /* Set Bundle Version */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -2279,7 +2281,9 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
 			);
+			name = "Set Bundle Version";
 			outputFileListPaths = (
 			);
 			outputPaths = (
@@ -2288,7 +2292,7 @@
 			shellPath = /bin/sh;
 			shellScript = "# Set the bundle version (CFBundleVersion) to the number of commits in the repository.\n\nif ! command -v git >/dev/null 2>&1 ; then\n    echo \"error: git not found\"\n    exit 1\nfi\n\ncount=$(git -C \"$SRCROOT\" rev-list --count HEAD 2>/dev/null)\n\nif [ -z \"$count\" ] ; then\n    echo \"error: not a git repository\"\n    exit 1\nfi\n\nplist=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\n\nif [ ! -f \"$plist\" ] ; then\n    echo \"error: $plist not found\"\n    exit 1\nfi\n\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $count\" \"$plist\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string $count\" \"$plist\"\n\necho \"Set CFBundleVersion to $count\"\n";
 		};
-		052104512FF3ACFD0089C911 /* ShellScript */ = {
+		052104512FF3ACFD0089C911 /* Set Bundle Version */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -2297,7 +2301,9 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
 			);
+			name = "Set Bundle Version";
 			outputFileListPaths = (
 			);
 			outputPaths = (
