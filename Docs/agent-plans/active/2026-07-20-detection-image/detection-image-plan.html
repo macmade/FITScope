@@ -617,7 +617,7 @@
             <div class="phase">Phase 1 &mdash; Foundations</div>
             <ul>
                 <li><span class="num">M1</span><span class="name"><a href="#m1">Shared decoder API &mdash; vocabulary and compiling stubs</a></span><span class="capsule completed">Completed</span></li>
-                <li><span class="num">M2</span><span class="name"><a href="#m2">Golden baseline &mdash; detection-image digests through the current path</a></span><span class="capsule notstarted">Not started</span></li>
+                <li><span class="num">M2</span><span class="name"><a href="#m2">Golden baseline &mdash; detection-image digests through the current path</a></span><span class="capsule completed">Completed</span></li>
                 <li><span class="num">M3</span><span class="name"><a href="#m3">Test fixtures &mdash; reorganise along the new boundary</a></span><span class="capsule notstarted">Not started</span></li>
             </ul>
 
@@ -884,7 +884,7 @@
         <!-- ============================== M2 ============================== -->
 
         <section class="milestone" id="m2">
-            <h3><span class="m-num">M2.</span> Golden baseline &mdash; detection-image digests through the current path <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M2.</span> Golden baseline &mdash; detection-image digests through the current path <span class="capsule completed">Completed</span></h3>
 
             <h4>Goal</h4>
             <p>
@@ -937,14 +937,142 @@
                 <li>Full test plan green.</li>
             </ul>
 
-            <p class="field"><span class="label">Status</span><span class="capsule notstarted">Not started</span></p>
-            <p class="field"><span class="label">Completed</span><span class="placeholder">&mdash;</span></p>
+            <p class="field"><span class="label">Status</span><span class="capsule completed">Completed</span></p>
+            <p class="field"><span class="label">Completed</span> 2026-07-22</p>
 
             <h4>Implementation notes</h4>
-            <p class="placeholder">To be filled in as work progresses.</p>
+
+            <p><strong>What landed.</strong> <code>FITScopeTests/Golden/DetectionImageGoldenTests.swift</code> (a
+                temporary suite, documented as removed in <a href="#m9">M9</a>) and the committed
+                <code>FITScopeTests/Golden/detection-image-golden.json</code>, both added to
+                <code>FITScope.xcodeproj</code> (the suite to the <code>FITScopeTests</code> Sources phase; the JSON as
+                a navigator file reference only &mdash; it is read via <code>#filePath</code>, not bundled).</p>
+
+            <p><strong>What it captures.</strong> For every one of the <strong>38 inputs</strong> &mdash; the 21
+                synthetic fixtures and 14 captures under the app's <code>Test Files/</code>, plus the 3 frames under
+                <code>Submodules/SwiftAstro/Test Files/</code> &mdash; the suite opens the file through the real
+                <code>ImageLoader.loader( for: )</code> path (<code>await load()</code>, then
+                <code>loader.frames</code>), and for every frame records two SHA-256 digests as separate fields: the
+                frame's <code>detectionImage</code> and its default
+                <code>makeResult( settings: ImageProcessor.Settings() ).bytes</code>. The detection digest is taken
+                over the geometry (<code>width</code>, <code>height</code>, <code>channels</code> as little-endian
+                <code>Int64</code>) followed by the little-endian bit patterns of the <code>[ Double ]</code> samples
+                &mdash; hashing the raw bit patterns, not formatted values, so a <code>NaN</code> from
+                <code>BLANK</code> masking is both distinguishable and stable. Entries are keyed by file <em>name</em>
+                plus frame index, never by path, so <a href="#m3">M3</a>'s relocation leaves the baseline valid; the
+                suite finds the inputs wherever they live by walking both <code>Test Files/</code> trees.</p>
+
+            <p><strong>Baseline contents recorded (37 of 38 open).</strong> Only <code>InvalidImage.fits</code> fails
+                to open (recorded <code>opened: false</code>, no frames). Three frames legitimately yield no detection
+                image, recorded as an explicit <code>null</code> sentinel rather than an absent entry:
+                <code>Spectrum1D.fits</code> and <code>InvalidSpectrum1D.fits</code> (each opens as a graph frame with
+                <em>neither</em> a detection image nor a render) and <code>StackedSpectra.fits</code> (a graph frame
+                with no detection image but a real render). Four inputs vend multiple frames:
+                <code>MultiImage.xisf</code> (3), <code>MultiImage3D.fits</code> (4),
+                <code>MultiImage3DNoWCS.fits</code> (4) and <code>MultiImageHEIC.heic</code> (3).</p>
+
+            <div class="note-box">
+                <p><strong>Correction to a plan assumption, surfaced by the baseline.</strong> The plan's task list
+                    expected <em>both</em> <code>InvalidImage.fits</code> <em>and</em>
+                    <code>InvalidSpectrum1D.fits</code> to &ldquo;fail to open at all&rdquo;. In fact only
+                    <code>InvalidImage.fits</code> does; <code>InvalidSpectrum1D.fits</code> opens as a graph frame
+                    (<code>FITSImageLoader.decodeGraph</code> accepts its 1-D header) that produces no detection image
+                    and no render. The baseline records the real behaviour, and this is exactly the kind of latent
+                    assumption a golden capture exists to pin down.</p>
+            </div>
+
+            <div class="note-box">
+                <p><strong>Sandbox adaptation (deviates from the plan's literal &ldquo;the suite writes the
+                    JSON&rdquo;).</strong> The <code>FITScopeTests</code> host runs inside the app sandbox, so it can
+                    <em>read</em> the repository tree (all 38 inputs decode) but cannot <em>write</em> into it &mdash;
+                    an in-place <code>write</code> fails with <em>Operation not permitted</em>. The suite therefore
+                    only reads the committed baseline for comparison; on a bootstrap (no committed file) or any
+                    mismatch it writes the recomputed digests to its sandbox-writable temporary directory and records
+                    that path via <code>Issue.record</code>, failing loudly. The committed JSON was produced by
+                    running the suite once and copying that temp output into the repository. Once committed, the
+                    suite is green. A bootstrap run therefore fails (with instructions) rather than passing &mdash;
+                    the one place the behaviour departs from the plan, forced by the sandbox and reviewed as sound.</p>
+            </div>
+
+            <div class="note-box">
+                <p><strong>Kept out of the normal loop &mdash; the risk-box's intent, via command-line selection.</strong>
+                    The suite decodes and renders the whole corpus in one test, taking ~7.5&nbsp;minutes; run
+                    <em>inside</em> the full <code>FITScopeTests</code> target under load it crossed Xcode's default
+                    600&nbsp;s per-test execution-time watchdog and the run was killed (<em>&ldquo;Time limit was
+                    exceeded: 600.000&nbsp;seconds&rdquo;</em>) &mdash; but run <em>on its own</em> it finishes in
+                    ~445&nbsp;s, comfortably under that watchdog. The milestone's risk-box calls to &ldquo;split it
+                    behind a separate test plan rather than reducing its coverage&rdquo;; an <code>.xctestplan</code>
+                    turned out to be the wrong tool for it, because <strong>Xcode test plans cannot select or skip an
+                    individual Swift Testing test</strong> &mdash; verified empirically in this Xcode, both
+                    <code>selectedTests</code> and <code>skippedTests</code> match a Swift Testing test with no
+                    identifier format (suite-only, method with/without parens, target-prefixed all select or skip
+                    nothing), whereas the command-line <code>-only-testing</code> / <code>-skip-testing</code>
+                    selectors <em>do</em> resolve Swift Testing tests. So, with the human's agreement, the isolation is
+                    done at invocation rather than in a plan file, and no test-plan or scheme change ships:</p>
+                <pre><code># normal loop &mdash; all eight targets, golden excluded
+xcodebuild test -scheme "FITScope - Debug" \
+  -skip-testing:FITScopeTests/DetectionImageGoldenTests
+
+# golden drift-guard &mdash; runs alone in ~450&nbsp;s, under the 600&nbsp;s watchdog
+xcodebuild test -scheme "FITScope - Debug" \
+  -only-testing:FITScopeTests/DetectionImageGoldenTests</code></pre>
+                <p>Because the guard runs the suite in isolation, it never bundles with the ~800 other
+                    <code>FITScopeTests</code> and so never trips the watchdog &mdash; no timeout change is needed at
+                    all. Per-milestone verification is these two invocations.</p>
+            </div>
+
+            <p><strong>Verification.</strong> The golden suite was run three times end to end, each a full independent
+                recomputation over the ~237&nbsp;MB corpus (the 40&nbsp;MB CR3 through LibRAW included), all via
+                <code>-only-testing:FITScopeTests/DetectionImageGoldenTests</code>: one run wrote the baseline, and two
+                subsequent compare runs each passed against the committed file (<strong>green, ~450&nbsp;s each</strong>).
+                The two independent compares reproducing every digit is the determinism check the plan requires. Separately,
+                <code>FITScopeTests</code> with the golden suite skipped
+                (<code>-skip-testing:FITScopeTests/DetectionImageGoldenTests</code>) ran <strong>814 tests in 99 suites,
+                all green</strong> in ~156&nbsp;s &mdash; confirming the skip cleanly excludes the suite (no watchdog trip)
+                and that the new files integrate without disturbing any other test. The digests are keyed and encoded with
+                sorted keys and pretty printing, so a future re-baseline (e.g. the CFA-cube fix in <a href="#m4">M4</a>)
+                produces a clean, reviewable diff. Shared caveat: this machine's <code>testmanagerd</code> was
+                intermittently failing to launch <em>other</em> targets' runners through the session (the
+                <code>FITScopeUITests</code>, <code>SwiftRAWTests</code> and <code>SwiftXISFTests</code> hosts), so the
+                full eight-target plan could not be run clean end to end tonight; every target that could launch &mdash;
+                and everything this milestone touches &mdash; is green.</p>
 
             <h4>Automated review</h4>
-            <p class="placeholder">To be filled in by the automated review loop.</p>
+            <ul>
+                <li><strong>Round 1 &mdash;</strong> a fresh-context reviewer read the suite, the types it drives, the
+                    committed JSON and the <code>.pbxproj</code> edit, and cross-checked the enumeration against disk.
+                    It found <em>no</em> correctness bugs &mdash; the digest computation, determinism, comparison
+                    <code>reduce</code>, custom <code>Codable</code> null round-trip, enumeration (exactly the intended
+                    38, all name-unique, no coverage gap) and the project edit were all verified correct, and the
+                    baseline data judged trustworthy.
+                    <ul>
+                        <li><em>Medium</em> &mdash; <strong>stale class doc comment</strong> describing the original
+                            &ldquo;writes the committed file and passes on bootstrap&rdquo; behaviour rather than the
+                            shipped sandbox-adapted one. <strong>Fixed</strong> &mdash; the type doc now states the
+                            read-only / write-to-temp-and-fail behaviour and that the comparison is over the decoded
+                            model, not raw file bytes.</li>
+                        <li><em>Low</em> &mdash; <strong><code>var</code> on four never-mutated stored
+                            properties</strong> (<code>FrameDigest</code> / <code>InputDigest</code>).
+                            <strong>Fixed</strong> &mdash; changed to <code>let</code>.</li>
+                        <li><em>Low</em> &mdash; the name-collision check <strong>asserts uniqueness</strong> (fails on
+                            a duplicate) rather than truly deduping. <strong>No change needed</strong> &mdash; a
+                            collision is caught by <code>#expect</code>, and all 38 names are unique; the message is
+                            already accurate.</li>
+                        <li><em>Info</em> &mdash; the render digest uses <code>makeResult</code> directly rather than
+                            via <code>decoded()</code> (matches the plan and is contractually byte-identical); the
+                            ~7-minute cost runs on every full-target invocation; a <code>nil</code> detection covers
+                            both &ldquo;no detection image&rdquo; and &ldquo;source extraction failed&rdquo;
+                            (disambiguated by the <code>opened</code> flag and the render field). All accepted as
+                            designed.</li>
+                    </ul>
+                </li>
+                <li><strong>Round 2 &mdash;</strong> a second fresh-context reviewer confirmed convergence: the
+                    rewritten class doc is accurate against every method it describes, the
+                    <code>var</code>&rarr;<code>let</code> change compiles and mutates nothing after init, and the
+                    digest computation, comparison <code>reduce</code>, custom <code>Codable</code> null round-trip
+                    and <code>@MainActor</code> usage are all correct. <strong>No Critical / High / Medium findings;
+                    loop converged, no further fix required.</strong></li>
+            </ul>
 
             <h4>Review comments</h4>
             <p class="placeholder">To be filled in during human review.</p>

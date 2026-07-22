@@ -425,6 +425,7 @@
 		FEEDFACE0000000000000004 /* FileContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDFACE0000000000000003 /* FileContextMenu.swift */; };
 		FEEDFACE0000000000000012 /* ColorBalanceControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDFACE0000000000000011 /* ColorBalanceControlView.swift */; };
 		FF9F29EC74DC477B9F1B3286 /* StarsOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDD8757733A94F59A15A76F8 /* StarsOverlay.swift */; };
+		05C0DE000000000000000003 /* DetectionImageGoldenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0DE000000000000000002 /* DetectionImageGoldenTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -951,6 +952,8 @@
 		FEEDFACE0000000000000003 /* FileContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileContextMenu.swift; sourceTree = "<group>"; };
 		FEEDFACE0000000000000011 /* ColorBalanceControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorBalanceControlView.swift; sourceTree = "<group>"; };
 		FFC8D19544EBB1A50302A2E1 /* ImageCanvasController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCanvasController.swift; sourceTree = "<group>"; };
+		05C0DE000000000000000002 /* DetectionImageGoldenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionImageGoldenTests.swift; sourceTree = "<group>"; };
+		05C0DE000000000000000004 /* detection-image-golden.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = detection-image-golden.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1293,6 +1296,7 @@
 		0587FF122DDE64E0005DECEF /* FITScopeTests */ = {
 			isa = PBXGroup;
 			children = (
+				05C0DE000000000000000001 /* Golden */,
 				05FB1000000000000000C001 /* Helpers */,
 				05FB1000000000000000C002 /* Image */,
 				05FB1000000000000000C003 /* Model */,
@@ -2036,6 +2040,15 @@
 			path = Overlays;
 			sourceTree = "<group>";
 		};
+		05C0DE000000000000000001 /* Golden */ = {
+			isa = PBXGroup;
+			children = (
+				05C0DE000000000000000002 /* DetectionImageGoldenTests.swift */,
+				05C0DE000000000000000004 /* detection-image-golden.json */,
+			);
+			path = Golden;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -2558,6 +2571,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				05C0DE000000000000000003 /* DetectionImageGoldenTests.swift in Sources */,
 				05C0A75A2DDE64E0005DECEF /* TestFixtures.swift in Sources */,
 				05FB1000000000000000B002 /* FITSTestData.swift in Sources */,
 				05FB1000000000000000B003 /* ImageProcessorTests.swift in Sources */,

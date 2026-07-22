@@ -1,0 +1,381 @@
+{
+  "2025-03-02_21-20-31_G252_B1x1_O7_T-9.80_F_10.00s_0000_H3.69.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "fef36d41c6f723ae8adfec49c9d1b190cb6426a049f2f725c975a9138ffb44b4",
+        "render" : "9731c0682fb3d3d265bb32db31d460a22d63f203cd2d21b3befddbb510f4b817"
+      }
+    ],
+    "opened" : true
+  },
+  "C6-ASI533-M104-Final.jpg" : {
+    "frames" : [
+      {
+        "detectionImage" : "401968e2d98558f07ffef85c820fca01be474f497e5b752050c8d961c42a2da7",
+        "render" : "585cb433dce10c817b1d5a9dc1a35225a6287024bc02aa41bdd6a76b50b6fca1"
+      }
+    ],
+    "opened" : true
+  },
+  "C6-ASI533-M104-Light.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "4ba72250db2eddf88dba54109a9e26dc0376c081ef05e78957744ae20ccc3eb0",
+        "render" : "2da856098ff78fc1dd46e26cc35e9cf22e25c59f83f9812eb2947b2e7590bfa1"
+      }
+    ],
+    "opened" : true
+  },
+  "C6-ASI533-M12-Final.jpg" : {
+    "frames" : [
+      {
+        "detectionImage" : "fd2812a1d1b278244c733521bea473f3a9c8438be922e39ba1f7f42e1de90475",
+        "render" : "4ff3cb0d3e0450437f8457c3472c214cfe1b00c552ca5d0b204f09ec74d48f85"
+      }
+    ],
+    "opened" : true
+  },
+  "C6-ASI533-M12-Light.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "8d2cdd945394396cb6687b2c44e529cdbf42a0d7139094d900164c8fa193e18d",
+        "render" : "ecad55655bd41b5ece66b7d48019663d7ecab552c351b43b234a3db34bdfc894"
+      }
+    ],
+    "opened" : true
+  },
+  "C6-ASI585-M42-Final.jpg" : {
+    "frames" : [
+      {
+        "detectionImage" : "c8510cc8528e84712928f6b9ccf9512067ebd380e30d0a627a885586adff5db5",
+        "render" : "d382286cc27d3c386bd8dc60c6b122ff04a491b8d12be4657e8fd0d79de6098f"
+      }
+    ],
+    "opened" : true
+  },
+  "C6-ASI585-M42-Light.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "188d9384794cf34074c2c33b2f01422272f93ebe68f77095a6168ca6d83564fe",
+        "render" : "6cdc149c0278311f0b8f9cda49c2e141bbbfea27edc2716c22a4f6364ca53f2f"
+      }
+    ],
+    "opened" : true
+  },
+  "C6-R7-M42-Light.cr3" : {
+    "frames" : [
+      {
+        "detectionImage" : "534a95e2ad287d05b712ec2404509e90af4168e10d5aed96c3999d9e7fd28b28",
+        "render" : "ff0d6d8bd711cce6a6d6589dc2e3654cd24cd1af6ba5dccdbb926956564032ed"
+      }
+    ],
+    "opened" : true
+  },
+  "ColorImage.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "0d3c9a65c9d56bdbaa16d946d3ca2c5c701a0ef4c7ecf3252e24275836a10a98",
+        "render" : "49ec2bbabe4d2e9ab06938572a28ea1af3ee5ced65ba9463304b29b5abbd14a2"
+      }
+    ],
+    "opened" : true
+  },
+  "CosmeticCorrectionTest.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "9bea3818b1aec4225ae38e5029e94e89af41d31c0142606bff756836eee6ec2b",
+        "render" : "83ad1862ff5c995eb25828567cd6478f509ed67b3d6815e37458d4cd1a99488f"
+      }
+    ],
+    "opened" : true
+  },
+  "CosmeticCorrectionTestRGB.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "661afd24a60026b12f986ca80da6604a52da2c96b2418ea5db041be3e6f1d3a7",
+        "render" : "4e2d3c83cdaadb49bfec4f62d8885da09cb1886d3019c1b9ab7417f1de59a963"
+      }
+    ],
+    "opened" : true
+  },
+  "InvalidImage.fits" : {
+    "frames" : [
+
+    ],
+    "opened" : false
+  },
+  "InvalidSpectrum1D.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : null,
+        "render" : null
+      }
+    ],
+    "opened" : true
+  },
+  "Light_M 42_10.0s_LP_20260101-234803.fit" : {
+    "frames" : [
+      {
+        "detectionImage" : "1641587e1c62bff686aebdd70a6ca0ce892e2a8856888e8233c336ee9a424da4",
+        "render" : "5eff9e777724561778c389051aead92e318ac2e692a1ad33fb65a1f07ceaca96"
+      }
+    ],
+    "opened" : true
+  },
+  "MonoImage.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "3c83a20916459a6439956998ae92296e3a2234972c16d5ce23d98e32d6a292dc",
+        "render" : "ffaefe4e366cb374d30ea7451b7e65f8dbe89a8750fcb2bffc23db24653c6300"
+      }
+    ],
+    "opened" : true
+  },
+  "MultiImage.xisf" : {
+    "frames" : [
+      {
+        "detectionImage" : "e67069935a8eda4bbbfb67b0ceeb78d696055c0c36c9ca845d4e74bf893d413e",
+        "render" : "e347d46d858f5eed86342662612959b93f81f29f2462577cfced9ce8e0e7326b"
+      },
+      {
+        "detectionImage" : "b162d705a2aec7857ea9ca06d3f48de6e3c02141a02067a61130075c16d1d54d",
+        "render" : "5ff8e300b432f6e3c3b334d3b89e1a0b6c25ed6bcb74aedceb72ecccd9e0ba69"
+      },
+      {
+        "detectionImage" : "e06f7c57285747036e1fc16ec4992ed118dfda6d921081aef954c3df5106fecb",
+        "render" : "6f3ad08905efa9485c7719e310c80f88e43c4b6ffabb4dd92e2eed46647f2b36"
+      }
+    ],
+    "opened" : true
+  },
+  "MultiImage3D.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "260b95d0645e48a33e33eb88dacd6b88ee631ef3262f8226b5a2a169e2ac1b9c",
+        "render" : "87f816d0c2836828edcc46cadbf8455abd60c903ede71d2aa7d92848de33086c"
+      },
+      {
+        "detectionImage" : "36f733446b0f46945a455629babc5ae86b595f5f5696a63b7db0b7970f9b3b0e",
+        "render" : "d8e9a137691316806b70c6023d3f76beea1b7be01da32804e1a37580c347395d"
+      },
+      {
+        "detectionImage" : "f7b5eaa25cfe720b186478523d55e3439c843d364c28d42ef83d6c81d17970c4",
+        "render" : "c19257e4727b709cbabb71a453598f942ec3a2f4937b7fba0dbb0db26afb636f"
+      },
+      {
+        "detectionImage" : "d94abbae78fcb9a40664d90121f95132c12215fae766c514d1ad0ad139d05972",
+        "render" : "ef7f006321efd64aa2f8d6b28ad3d14570587260d22478bcc1e4633e68517774"
+      }
+    ],
+    "opened" : true
+  },
+  "MultiImage3DNoWCS.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "260b95d0645e48a33e33eb88dacd6b88ee631ef3262f8226b5a2a169e2ac1b9c",
+        "render" : "87f816d0c2836828edcc46cadbf8455abd60c903ede71d2aa7d92848de33086c"
+      },
+      {
+        "detectionImage" : "36f733446b0f46945a455629babc5ae86b595f5f5696a63b7db0b7970f9b3b0e",
+        "render" : "d8e9a137691316806b70c6023d3f76beea1b7be01da32804e1a37580c347395d"
+      },
+      {
+        "detectionImage" : "f7b5eaa25cfe720b186478523d55e3439c843d364c28d42ef83d6c81d17970c4",
+        "render" : "c19257e4727b709cbabb71a453598f942ec3a2f4937b7fba0dbb0db26afb636f"
+      },
+      {
+        "detectionImage" : "d94abbae78fcb9a40664d90121f95132c12215fae766c514d1ad0ad139d05972",
+        "render" : "ef7f006321efd64aa2f8d6b28ad3d14570587260d22478bcc1e4633e68517774"
+      }
+    ],
+    "opened" : true
+  },
+  "MultiImageHEIC.heic" : {
+    "frames" : [
+      {
+        "detectionImage" : "3906b606b06dc5fe4f9745f4cfe6a034e09ac9c0e1a003ad0ecc506152dacd8c",
+        "render" : "24a0fddfbd1a194807fead0f2b6675c831f8bad13175d8721a9c7891fe8576d2"
+      },
+      {
+        "detectionImage" : "ecbbb3d23abd9e7884b049392088956e4f16bf9032d3eea4851f89f27b7b13b9",
+        "render" : "0066699a0ca6f14935a3429f8093092825219bb309c078b67e866a63dc6f7e4b"
+      },
+      {
+        "detectionImage" : "904f5d07795efc0e4150b57727a36300dcb599f23f1bc52b47a116b4c53ec419",
+        "render" : "94fb46997e73a5c584e5c8c12fe9c23d1c8f463b7e7b4d229b9627652de60f0a"
+      }
+    ],
+    "opened" : true
+  },
+  "OrientedPhoto.tiff" : {
+    "frames" : [
+      {
+        "detectionImage" : "5797b942e18291dcef0aa210e47fc212a59d2fe79ba1d96125cb6cffacc2466e",
+        "render" : "9d908ecfb6b256def8b49a7c504e6c889c4b0e41fe6ce3e01863dd7b61a20aa0"
+      }
+    ],
+    "opened" : true
+  },
+  "PhotoExif.jpeg" : {
+    "frames" : [
+      {
+        "detectionImage" : "ef8f3e3021045431e6f5eaa066c6555aeca2cd63d5c38561ed314bc287077ce6",
+        "render" : "9f03eb368a317827a72f639d6bc134c332abdc70370b518708ac9e992c628cc6"
+      }
+    ],
+    "opened" : true
+  },
+  "PhotoGray16.tiff" : {
+    "frames" : [
+      {
+        "detectionImage" : "0e71f6a5f263e37aa33f66a8c69ad272c32108dd84692f2edd661a5cc851db48",
+        "render" : "7163e079f88328f6861d8f10a5d0a7b6edcd1f383a121a623f803731d8a0b8c6"
+      }
+    ],
+    "opened" : true
+  },
+  "PhotoHEIC.heic" : {
+    "frames" : [
+      {
+        "detectionImage" : "edd00ac657964a913faadec1d80e4edbfa07c50fb69c850282d3d471989cbe1a",
+        "render" : "102cea150a304ca7061a26a2478488e0db9a3019b74435a5acb71aff409d658f"
+      }
+    ],
+    "opened" : true
+  },
+  "PhotoRGB.png" : {
+    "frames" : [
+      {
+        "detectionImage" : "007b8c561c59d6079d0fb3cc9b66ce44273f9b5dc0d1b2d24a6e52e3da4bfcd5",
+        "render" : "29ea072fba309a073008a8e3f4db435da86a04ce94ba768c6528865b2e1ac6a2"
+      }
+    ],
+    "opened" : true
+  },
+  "RGBImage.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "d2abf92762aae0ff167bfa780b1b2b0bfc6649d6aa90bd479543e329a49ab8ac",
+        "render" : "80dfeb4adbc41f0adeefb49927991ab77734d2c47c6f655ce50c5a5cb3aacccd"
+      }
+    ],
+    "opened" : true
+  },
+  "RGBImage.xisf" : {
+    "frames" : [
+      {
+        "detectionImage" : "43061be9bf09aa067c7e3c9c49b95a9f5aaf94948987d061112d25b6022e0a5a",
+        "render" : "95f2ae2432329dc9024b6081ec12506f411fd3c76c96cd6069dbde00e05c3066"
+      }
+    ],
+    "opened" : true
+  },
+  "S30-M42-Corrected.xisf" : {
+    "frames" : [
+      {
+        "detectionImage" : "406ac7b5a3b7c1b8d525c97ad71c31c3dc46b4eb0591d329714ca0e926625414",
+        "render" : "9b1731f7cb7027c0ca58bfd75762415b819185ff50c1152d60b03561f3c8372d"
+      }
+    ],
+    "opened" : true
+  },
+  "S30-M42-Light.fit" : {
+    "frames" : [
+      {
+        "detectionImage" : "1641587e1c62bff686aebdd70a6ca0ce892e2a8856888e8233c336ee9a424da4",
+        "render" : "5eff9e777724561778c389051aead92e318ac2e692a1ad33fb65a1f07ceaca96"
+      }
+    ],
+    "opened" : true
+  },
+  "S30Pro-NGC7822-Final.jpg" : {
+    "frames" : [
+      {
+        "detectionImage" : "dcbeb6be75b5dbd3613dd758490bc1ea22ea2a8b333e5a5ba91d3aa421e16c47",
+        "render" : "52b875400652e36ad0fad170aaca8558d6a9ee301237b0d14d30de4a3dc48afa"
+      }
+    ],
+    "opened" : true
+  },
+  "S30Pro-NGC7822-Light.fit" : {
+    "frames" : [
+      {
+        "detectionImage" : "ce957f856b67921da3c6f1d8b9dc14205c55263670d1f6e6c484c1ee621f064c",
+        "render" : "0c9b9b02f3f0a11bef07f294ca3b5f95c8d466f0be8d2c42cc10d17c657ce27e"
+      }
+    ],
+    "opened" : true
+  },
+  "S30Pro-NGC7822-Stacked.fit" : {
+    "frames" : [
+      {
+        "detectionImage" : "4870292ad3fab698d4e8cdcef96f330c89173c64752f71251bbdd615ba23ce24",
+        "render" : "0d1728fadbde39b94ad2aee4f71f3d51032c454200c5b2565985de19ae97d811"
+      }
+    ],
+    "opened" : true
+  },
+  "S50-M33-Final.jpg" : {
+    "frames" : [
+      {
+        "detectionImage" : "d8248aa4475393930c24ce5ef11366200dc213e27a370e220e8f86c3432b5e5f",
+        "render" : "bd057290caac8ab53d2edd9c1b47f9b458241881bba1bd530d67886d15eb782c"
+      }
+    ],
+    "opened" : true
+  },
+  "S50-M33-Light.fit" : {
+    "frames" : [
+      {
+        "detectionImage" : "dc1b6b667524a54aafa0ff0c0cca5395ca07d96447457063e28573ccd9a45b1d",
+        "render" : "2e763eb96a40b6e3d17927c61df4fc8d6ecdbbdeaa20c885249c52c82c084495"
+      }
+    ],
+    "opened" : true
+  },
+  "Spectrum1D.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : null,
+        "render" : null
+      }
+    ],
+    "opened" : true
+  },
+  "StackedSpectra.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : null,
+        "render" : "82eac02ebb09fae03aea000052de29398f1bb21bc062434f841b24793e29650a"
+      }
+    ],
+    "opened" : true
+  },
+  "StarGrid.png" : {
+    "frames" : [
+      {
+        "detectionImage" : "ae06b307dcec762afe9dc023f529190362c2fed07d1e28ad368bbbc28d4b5692",
+        "render" : "e74ffde0011a82beaf732cf07def3578fb3e5d3e81f060c895f82bb8aeec631e"
+      }
+    ],
+    "opened" : true
+  },
+  "StarGridDetail.png" : {
+    "frames" : [
+      {
+        "detectionImage" : "da491fe0769d0e65b1f459a5d9d1e9128301e50795508c457de3af0a10c632b4",
+        "render" : "7c88607516326d8a85e494732b2194016043351c2bddb48294af0f90b56dfdfd"
+      }
+    ],
+    "opened" : true
+  },
+  "m35_40min_blue.fits" : {
+    "frames" : [
+      {
+        "detectionImage" : "43c0c7ca0a9de0cb6d673c24caf3f74164a69a872a75bba1383bff32914cebfa",
+        "render" : "8a0bfb636852de35df8f35c7825f434f96248989fd334d3b4112492b58871694"
+      }
+    ],
+    "opened" : true
+  }
+}
