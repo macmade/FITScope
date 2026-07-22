@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftAstro
 import Testing
 
 /// Tests the RAW-facing ``ImageProcessor`` entry: decoding a cropped 16-bit sensor
@@ -144,7 +145,7 @@ struct ImageProcessorRAWTests
     {
         let properties = RAWImageProperties( width: 4, height: 4, colorFilterArrayPattern: "RGGB", whiteLevel: 65535 )
 
-        #expect( throws: ( any Error ).self )
+        #expect( throws: ( any Swift.Error ).self )
         {
             try ImageProcessor.render( data: Self.data( [ 1, 2, 3, 4 ] ), raw: properties )
         }
@@ -207,7 +208,7 @@ struct ImageProcessorRAWTests
         let samples    = ( 0 ..< 16 ).map { UInt16( $0 ) }
         let properties = RAWImageProperties( width: 4, height: 4, colorFilterArrayPattern: "CYGM", whiteLevel: 65535 )
 
-        #expect( throws: ( any Error ).self )
+        #expect( throws: ( any Swift.Error ).self )
         {
             try ImageProcessor.render( data: Self.data( samples ), raw: properties )
         }

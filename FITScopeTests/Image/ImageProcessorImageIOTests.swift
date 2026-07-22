@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftAstro
 import SwiftPixel
 import Testing
 
@@ -43,7 +44,7 @@ struct ImageProcessorImageIOTests
         // Two pixels: (200, 10, 20) and (20, 200, 10), each with a trailing padding
         // byte.
         let data       = Data( [ 200, 10, 20, 255, 20, 200, 10, 255 ] )
-        let properties = ImageIOImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
         let result     = try ImageProcessor.render( data: data, imageIO: properties, settings: ImageProcessor.Settings( normalize: .identity ) )
 
         #expect( result.inputPixelFormat == .rgb )
@@ -65,7 +66,7 @@ struct ImageProcessorImageIOTests
     func rendersGrayscaleAsMono() throws
     {
         let data       = Data( [ 50, 150 ] )
-        let properties = ImageIOImageProperties( width: 2, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
         let result     = try ImageProcessor.render( data: data, imageIO: properties, settings: ImageProcessor.Settings( normalize: .identity ) )
 
         #expect( result.inputPixelFormat == .mono )
@@ -83,7 +84,7 @@ struct ImageProcessorImageIOTests
     {
         // 1000 = 0x03E8 and 40000 = 0x9C40, little-endian.
         let data       = Data( [ 0xE8, 0x03, 0x40, 0x9C ] )
-        let properties = ImageIOImageProperties( width: 2, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 2 )
+        let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 2 )
 
         let first = try #require( ImageProcessor.imageIOPixelValues( data: data, properties: properties, x: 0, y: 0 ) )
 
@@ -102,7 +103,7 @@ struct ImageProcessorImageIOTests
     func identityNormalizationShowsSamplesAsAuthored() throws
     {
         let data       = Data( [ 100, 125, 150 ] )
-        let properties = ImageIOImageProperties( width: 3, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 3, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
         let result     = try ImageProcessor.render( data: data, imageIO: properties, settings: ImageProcessor.Settings( normalize: .identity ) )
 
         #expect( Array( result.bytes ) == [ 100, 100, 100, 125, 125, 125, 150, 150, 150 ] )
@@ -115,7 +116,7 @@ struct ImageProcessorImageIOTests
     func minMaxNormalizationStretchesTheSameSamples() throws
     {
         let data       = Data( [ 100, 125, 150 ] )
-        let properties = ImageIOImageProperties( width: 3, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 3, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
         let result     = try ImageProcessor.render( data: data, imageIO: properties, settings: ImageProcessor.Settings( normalize: .minMax ) )
 
         // 100 → 0, the midpoint 125 → ~127, 150 → 255: the range is stretched, unlike
@@ -129,7 +130,7 @@ struct ImageProcessorImageIOTests
     {
         // Pixel 0 mean 0, pixel 1 mean (60 + 120 + 180) / 3 = 120.
         let data       = Data( [ 0, 0, 0, 255, 60, 120, 180, 255 ] )
-        let properties = ImageIOImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
         let luminance  = try #require( ImageProcessor.imageIOLinearLuminance( data: data, properties: properties ) )
 
         #expect( luminance.width == 2 )
@@ -142,7 +143,7 @@ struct ImageProcessorImageIOTests
     func outOfBoundsReadoutIsNil() throws
     {
         let data       = Data( [ 10, 20 ] )
-        let properties = ImageIOImageProperties( width: 2, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
 
         #expect( ImageProcessor.imageIOPixelValues( data: data, properties: properties, x: 2, y: 0 ) == nil )
         #expect( ImageProcessor.imageIOPixelValues( data: data, properties: properties, x: 0, y: 1 ) == nil )
@@ -153,9 +154,9 @@ struct ImageProcessorImageIOTests
     func truncatedDataThrows() throws
     {
         let data       = Data( [ 1, 2, 3, 4 ] ) // one RGBX pixel, but two are required
-        let properties = ImageIOImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
 
-        #expect( throws: ( any Error ).self )
+        #expect( throws: ( any Swift.Error ).self )
         {
             try ImageProcessor.render( data: data, imageIO: properties, settings: ImageProcessor.Settings( normalize: .identity ) )
         }
@@ -166,9 +167,9 @@ struct ImageProcessorImageIOTests
     func unsupportedChannelCountThrows() throws
     {
         let data       = Data( [ 1, 2, 3, 4 ] )
-        let properties = ImageIOImageProperties( width: 2, height: 1, channelCount: 2, componentsPerPixel: 2, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 2, componentsPerPixel: 2, bytesPerComponent: 1 )
 
-        #expect( throws: ( any Error ).self )
+        #expect( throws: ( any Swift.Error ).self )
         {
             try ImageProcessor.render( data: data, imageIO: properties, settings: ImageProcessor.Settings( normalize: .identity ) )
         }

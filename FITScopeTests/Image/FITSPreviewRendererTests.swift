@@ -25,6 +25,7 @@
 import CoreGraphics
 @testable import FITScope
 import Foundation
+import SwiftAstro
 import SwiftFITS
 import SwiftPixel
 import Testing
@@ -56,7 +57,7 @@ struct FITSPreviewRendererTests
     @Test
     func throwsForAMalformedFITSFile()
     {
-        #expect( throws: ( any Error ).self )
+        #expect( throws: ( any Swift.Error ).self )
         {
             try FITSPreviewRenderer.render( contentsOf: TestFixtures.invalidImage )
         }

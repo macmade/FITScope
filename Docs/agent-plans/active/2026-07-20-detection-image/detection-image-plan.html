@@ -616,7 +616,7 @@
 
             <div class="phase">Phase 1 &mdash; Foundations</div>
             <ul>
-                <li><span class="num">M1</span><span class="name"><a href="#m1">Shared decoder API &mdash; vocabulary and compiling stubs</a></span><span class="capsule notstarted">Not started</span></li>
+                <li><span class="num">M1</span><span class="name"><a href="#m1">Shared decoder API &mdash; vocabulary and compiling stubs</a></span><span class="capsule completed">Completed</span></li>
                 <li><span class="num">M2</span><span class="name"><a href="#m2">Golden baseline &mdash; detection-image digests through the current path</a></span><span class="capsule notstarted">Not started</span></li>
                 <li><span class="num">M3</span><span class="name"><a href="#m3">Test fixtures &mdash; reorganise along the new boundary</a></span><span class="capsule notstarted">Not started</span></li>
             </ul>
@@ -642,7 +642,7 @@
         <!-- ============================== M1 ============================== -->
 
         <section class="milestone" id="m1">
-            <h3><span class="m-num">M1.</span> Shared decoder API &mdash; vocabulary and compiling stubs <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M1.</span> Shared decoder API &mdash; vocabulary and compiling stubs <span class="capsule completed">Completed</span></h3>
 
             <h4>Goal</h4>
             <p>
@@ -732,14 +732,150 @@
                     metadata.</li>
             </ul>
 
-            <p class="field"><span class="label">Status</span><span class="capsule notstarted">Not started</span></p>
-            <p class="field"><span class="label">Completed</span><span class="placeholder">&mdash;</span></p>
+            <p class="field"><span class="label">Status</span><span class="capsule completed">Completed</span></p>
+            <p class="field"><span class="label">Completed</span> 2026-07-22</p>
 
             <h4>Implementation notes</h4>
-            <p class="placeholder">To be filled in as work progresses.</p>
+
+            <p><strong>Implemented via TDD.</strong> <code>DecoderSymmetryTests</code> was written first and
+                observed failing to compile (the decoder types and property types did not yet exist in SwiftAstro),
+                then the sources were added until it built and passed.</p>
+
+            <p><strong>Appendix&nbsp;B decisions</strong> (each settled against all four formats, with rationale):</p>
+            <ul>
+                <li><strong>One shared protocol, not four independent enums.</strong> The four decoders conform to a
+                    single <code>ImageDecoding</code> protocol with associated <code>Container</code> /
+                    <code>Frame</code> / <code>Properties</code> types, rather than the independent enums Appendix&nbsp;A
+                    literally sketches. Rationale: the source document's named failure mode is <em>stopping early on a
+                    format</em>; with a protocol, an omitted operation is a compile error on that format's conformance,
+                    not a test somebody forgets to extend. The trade-off (associated types preclude an existential
+                    array of heterogeneous decoders) does not bind here &mdash; every call site knows its format
+                    statically. The enums still exist as the conforming namespaces, so Appendix&nbsp;A's per-format
+                    table is unchanged.</li>
+                <li><strong><code>Frame</code> is a lazy, per-format handle and is <em>not</em> required to be
+                    <code>Sendable</code>.</strong> Appendix&nbsp;B suggested a <code>Sendable</code> struct carrying
+                    <code>XISFImage</code> / the RAW file, but those container types are non-<code>Sendable</code>
+                    classes (verified: <code>FITSSection</code>, <code>XISFImage</code>, <code>RAWFile</code> are
+                    reference types; <code>CGImageSource</code> is a CF type), so a <code>Sendable</code> frame is
+                    impossible without eagerly cropping/drawing/decompressing every frame up front &mdash; which would
+                    make <code>contents( of: )</code> vestigial for three formats. Instead <code>frames( in: )</code>
+                    enumerates cheaply and <code>contents( of: )</code> does the real work, exactly as
+                    Appendix&nbsp;A's "where the RAW crop and the photographic draw live" intends. Only
+                    <code>FITSImageFrame</code> is <code>Sendable</code> (a FITS file is wholly in memory, so the frame
+                    can hold its <code>Data</code> outright). The protocol keeps <code>Properties: Sendable</code> and
+                    returns <code>Data</code> / <code>PixelBuffer</code>, so everything a decode <em>produces</em>
+                    crosses the isolation boundary; the frame handle stays within the loader's one background domain,
+                    which matches how all four loaders already work.</li>
+                <li><strong><code>decodeSample</code> returns <code>Double?</code>, not <code>Double</code>.</strong>
+                    The app code it replaces bounds-checks before decoding (<code>ImageProcessor+FITS.sampleValue:810</code>
+                    guards <code>byteOffset + bytesPerSample &lt;= data.count</code> before calling the unchecked
+                    private <code>decodeSample:827</code>). Publishing the unchecked variant would expose a trapping
+                    API to consumers, so the public operation keeps the bounds check and answers <code>nil</code> past
+                    the end.</li>
+                <li><strong>The CFA string&nbsp;&rarr;&nbsp;<code>Pattern</code> mapping is one shared
+                    <code>ColorFilterArray.pattern( named: )</code> in SwiftAstro, throwing on an unknown keyword.</strong>
+                    FITS, XISF and RAW all route through it; photographic never calls it. Adopting the throwing
+                    behaviour (over the removed test helper's silent <code>nil</code>) means a mosaic whose pattern is
+                    unrecognised is never mistaken for a monochrome frame.</li>
+                <li><strong><code>isRGBPlanes</code> / <code>isMultiImageCube</code> do not survive as public
+                    API.</strong> Cube-ness is answered by <code>frames( in: )</code> (a multi-image cube yields
+                    N&nbsp;frames); colour-ness by <code>channelCount( from: )</code> (which every format answers, RGB
+                    &rarr; 3). Neither FITS-specific predicate is on the shared surface.</li>
+                <li><strong>Pixel read-out crosses the boundary as <code>sampleByteOffsets( x:y: )</code> +
+                    <code>decodeSample</code>, never <code>PixelValue</code>.</strong> The offset arithmetic is format
+                    vocabulary and moves; the app composes <code>PixelValue</code> from the sample plus
+                    <code>fullScale</code>. Nothing in SwiftAstro learns what a tooltip is.</li>
+            </ul>
+
+            <p><strong>Additions to the sketched shape</strong> (the Appendix&nbsp;A "&#9733;" members): the protocol
+                also declares <code>bitsPerPixel( from: )</code> alongside <code>dimensions</code> and
+                <code>channelCount</code>. All four formats already derive a <code>BitsPerPixel</code> label today
+                (FITS from <code>BITPIX</code>, XISF via <code>xisfBitsPerPixel</code>, RAW as <code>.int16</code>,
+                photographic from <code>bytesPerComponent</code>), and the render config needs it, so it is a uniform
+                operation rather than a per-format detail.</p>
+
+            <p><strong>Vocabulary relocation.</strong> <code>FITSPropertySnapshot</code>,
+                <code>XISFImageProperties</code> and <code>RAWImageProperties</code> moved into
+                <code>SwiftAstro/Preprocessing/Decoding/</code> unchanged (only doc wording adjusted &mdash; the render
+                comments now read "a decode" rather than "the renderer", since the types no longer live in the app).
+                <code>ImageIOImageProperties</code> moved as <code>BitmapImageProperties</code>, keeping
+                <code>fullScale</code> and <code>isColor</code>. The app's four copies were deleted and removed from
+                <code>FITScope.xcodeproj</code>; every use site gained <code>import SwiftAstro</code> and, for the
+                photographic type, the rename. The <code>*RenderSource</code> renames are deferred to
+                <a href="#m7">M7</a> as planned.</p>
+
+            <p><strong>Frame handles.</strong> One file each: <code>FITSImageFrame</code> (Data + properties,
+                <code>Sendable</code>), <code>XISFImageFrame</code> (<code>XISFImage</code>), <code>RAWImageFrame</code>
+                (<code>RAWFile</code>), <code>BitmapImageFrame</code> (<code>CGImageSource</code> + index + EXIF
+                orientation, read at enumeration time so the draw can bring the frame upright).</p>
+
+            <p><strong>Uniform answers verified as members, not omissions.</strong>
+                <code>RAWImageDecoder.frames</code> documents "exactly one"; <code>RAWImageDecoder.planeSamples</code>
+                "exactly one plane"; <code>BitmapImageDecoder.cfaPattern</code> is present and (in its final form)
+                answers <code>nil</code>. Stub bodies use a sentinel per kind: the five throwing operations throw
+                <code>SwiftAstro.Error</code> via a shared internal <code>unimplemented( _: )</code> helper that names
+                the format and operation; the optional operations return <code>nil</code>;
+                <code>scaling</code> returns <code>(0,&nbsp;0)</code> and <code>channelCount</code> returns
+                <code>0</code>. <code>DecoderSymmetryTests</code> pins every one of these, plus the compile-time
+                conformance of all four decoders.</p>
+
+            <p><strong>Two adjustments outside the task list, both necessary and recorded:</strong></p>
+            <ul>
+                <li><strong><code>Package.swift</code> gained <code>.interoperabilityMode( .Cxx )</code> on both the
+                    <code>SwiftAstro</code> and <code>SwiftAstroTests</code> targets.</strong> SwiftRAW's
+                    <code>libraw</code> clang module is C++ (<code>requires cplusplus</code>), so once SwiftAstro
+                    depends on SwiftRAW, a plain <code>swift build</code> fails with <em>module 'libraw' requires
+                    feature 'cplusplus'</em> unless the importing target enables C++ interop. The Xcode side already
+                    sets this via <code>SWIFT_OBJC_INTEROP_MODE = objcxx</code> in SwiftRAW's own project and consumes
+                    the prebuilt framework, so no Xcode change is needed &mdash; the reviewer confirmed both build
+                    systems build. This is the SwiftPM half of the manual "wire SwiftXISF / SwiftRAW into
+                    <code>Package.swift</code>" precondition; the dependency lines themselves were already present.</li>
+                <li><strong>Bare <code>Error</code> shadowing.</strong> After <code>import SwiftAstro</code>, an
+                    unqualified <code>Error</code> in the app resolves to <code>SwiftAstro.Error</code> (a struct), so
+                    seven test files' <code>( any Error ).self</code> and one <code>struct StaleError: Error</code>
+                    were qualified to <code>Swift.Error</code> &mdash; matching the convention the app already uses in
+                    <code>FITSImageLoader.swift:54</code>. No production behaviour changed.</li>
+            </ul>
+
+            <p><strong>Verification.</strong> <code>swift build</code> in <code>Submodules/SwiftAstro</code> succeeds;
+                the full SwiftAstro SwiftPM suite is green (<strong>170 tests / 30 suites passed</strong>, including
+                the new <code>DecoderSymmetryTests</code> and the existing <code>RealFrameValidationTests</code> and
+                benchmark). <code>xcodebuild build</code> of <code>FITScope - Debug</code> is <strong>BUILD
+                SUCCEEDED</strong>, and the new decoder objects are present in the SwiftAstro build products, so they
+                compile under Xcode too. A full <code>xcodebuild test</code> run (after the <code>Swift.Error</code>
+                fix) reported <strong>FITScopeTests, SwiftAstroTests, SwiftFITSTests, SwiftPixelTests and
+                SwiftUtilitiesTests all Passed &mdash; 1947 tests, zero assertion failures</strong>. The only three
+                red targets were <code>FITScopeUITests</code>, <code>SwiftRAWTests</code> and <code>SwiftXISFTests</code>,
+                all failing at <em>test-runner launch</em> ("failed to initialize for UI testing" / "hung before
+                establishing connection") rather than on any assertion; this machine's <code>testmanagerd</code>
+                degraded through the session (a later run died with "Timed out&hellip;initiating control session with
+                daemon"). None of those three suites' sources were touched by this milestone (SwiftRAW, SwiftXISF and
+                <code>FITScopeUITests</code> are all unmodified), so the failures are environmental and want a clean
+                re-run of the full plan before commit.</p>
+
+            <p><strong>Automated review loop.</strong> One round; converged immediately. A fresh-context reviewer
+                (which independently compiled all three build systems and ran the symmetry test) found <em>no</em>
+                Critical / High / Medium issues &mdash; only two documentation observations tied to the intended stub
+                state, both left as-is (see Automated review).</p>
 
             <h4>Automated review</h4>
-            <p class="placeholder">To be filled in by the automated review loop.</p>
+            <ul>
+                <li><strong>Round 1 &mdash;</strong> converged; no Critical / High / Medium findings.</li>
+                <li><em>Low</em> &mdash; <strong>"<code>BitmapImageDecoder.cfaPattern</code> doc says &lsquo;Throws:
+                    Never&rsquo; while the stub throws"</strong> (<code>BitmapImageDecoder.swift</code>). The doc
+                    describes the <em>final</em> contract (photographic frames never carry a CFA, so the shipped body
+                    returns <code>nil</code> and never throws), but the M1 stub throws <code>unimplemented</code> like
+                    every other decoder, and <code>DecoderSymmetryTests.bitmapExposesEveryOperation()</code> asserts it
+                    throws. <strong>Resolution: Deferred</strong> &mdash; throwing in the stub is correct for M1
+                    (keeps Bitmap uniform); the note is carried to <a href="#m7">M7</a>, where the Bitmap
+                    <code>cfaPattern</code> expectation must flip from "throws" to <code>== nil</code> when its real
+                    body lands.</li>
+                <li><em>Info</em> &mdash; <strong>"<code>scaling( from: )</code> docs describe identity /
+                    <code>BSCALE</code>&ndash;<code>BZERO</code> while stubs return <code>(0,&nbsp;0)</code>"</strong>
+                    (all four decoders). Documenting the final behaviour on a stub is the intended approach.
+                    <strong>Resolution: Deferred</strong> &mdash; no change; the sentinel is filled in
+                    <a href="#m4">M4</a>&ndash;<a href="#m7">M7</a>.</li>
+            </ul>
 
             <h4>Review comments</h4>
             <p class="placeholder">To be filled in during human review.</p>

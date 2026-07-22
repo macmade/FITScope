@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftPixel
 
 /// The ImageIO ``DecodedRenderSource``: a photographic image decoded once into its
@@ -38,14 +39,14 @@ public struct ImageIODecodedRenderSource: DecodedRenderSource
     public let planes: [ [ Double ] ]
 
     /// The image's pixel layout.
-    public let properties: ImageIOImageProperties
+    public let properties: BitmapImageProperties
 
     /// Creates a decoded ImageIO render source.
     ///
     /// - Parameters:
     ///   - planes:     The already-decoded channel planes.
     ///   - properties: The image's pixel layout.
-    public init( planes: [ [ Double ] ], properties: ImageIOImageProperties )
+    public init( planes: [ [ Double ] ], properties: BitmapImageProperties )
     {
         self.planes     = planes
         self.properties = properties

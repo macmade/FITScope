@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftPixel
 import SwiftUtilities
 
@@ -56,7 +57,7 @@ public extension ImageProcessor
     ///   the input/output pixel formats.
     /// - Throws: ``RuntimeError`` for an unsupported channel count, invalid
     ///   dimensions, or truncated data.
-    static func render( data: Data, imageIO properties: ImageIOImageProperties, settings: Settings = Settings() ) throws -> RenderResult
+    static func render( data: Data, imageIO properties: BitmapImageProperties, settings: Settings = Settings() ) throws -> RenderResult
     {
         try Self.render( planes: Self.imageIOPlaneSamples( data: data, properties: properties ), imageIO: properties, settings: settings )
     }
@@ -72,7 +73,7 @@ public extension ImageProcessor
     ///   - settings:   The render settings.
     /// - Returns: The render result.
     /// - Throws: Any error building the configuration or running the pipeline.
-    static func render( planes: [ [ Double ] ], imageIO properties: ImageIOImageProperties, settings: Settings ) throws -> RenderResult
+    static func render( planes: [ [ Double ] ], imageIO properties: BitmapImageProperties, settings: Settings ) throws -> RenderResult
     {
         let config = try Self.imageIOConfig( properties: properties, settings: settings )
 
@@ -93,7 +94,7 @@ public extension ImageProcessor
     ///   - settings:   The user-tunable render settings.
     /// - Returns: The configured `PixelPipeline.Config`.
     /// - Throws: ``RuntimeError`` for an unsupported channel count.
-    private static func imageIOConfig( properties: ImageIOImageProperties, settings: Settings ) throws -> PixelPipeline.Config
+    private static func imageIOConfig( properties: BitmapImageProperties, settings: Settings ) throws -> PixelPipeline.Config
     {
         let scale = 1.0 / properties.fullScale
 
@@ -117,7 +118,7 @@ public extension ImageProcessor
     ///
     /// Exposed (not private) so ``ImageIORenderSource/decoded()`` can decode the
     /// planes once and render them without decoding the bytes a second time.
-    static func imageIOPlaneSamples( data: Data, properties: ImageIOImageProperties ) throws -> [ [ Double ] ]
+    static func imageIOPlaneSamples( data: Data, properties: BitmapImageProperties ) throws -> [ [ Double ] ]
     {
         guard properties.width > 0, properties.height > 0, properties.channelCount > 0,
               properties.componentsPerPixel >= properties.channelCount, properties.bytesPerComponent > 0
@@ -181,7 +182,7 @@ public extension ImageProcessor
     ///   - y:          The zero-based row, top to bottom.
     /// - Returns: One value per channel, or `nil` for out-of-bounds coordinates or
     ///   truncated data.
-    static func imageIOPixelValues( data: Data, properties: ImageIOImageProperties, x: Int, y: Int ) -> [ PixelValue ]?
+    static func imageIOPixelValues( data: Data, properties: BitmapImageProperties, x: Int, y: Int ) -> [ PixelValue ]?
     {
         guard properties.width > 0, properties.height > 0, properties.channelCount > 0,
               x >= 0, x < properties.width, y >= 0, y < properties.height
@@ -231,7 +232,7 @@ public extension ImageProcessor
     ///   - properties: The image's pixel layout.
     /// - Returns: The image dimensions and the linear luminance samples, or `nil`
     ///   when the planes cannot be decoded.
-    static func imageIOLinearLuminance( data: Data, properties: ImageIOImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
+    static func imageIOLinearLuminance( data: Data, properties: BitmapImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
     {
         guard let planes = try? Self.imageIOPlaneSamples( data: data, properties: properties )
         else
@@ -251,7 +252,7 @@ public extension ImageProcessor
     ///   - planes:     The already-decoded channel planes.
     ///   - properties: The image's pixel layout.
     /// - Returns: The dimensions and averaged luminance samples, or `nil` when empty.
-    static func imageIOLinearLuminance( fromPlanes planes: [ [ Double ] ], properties: ImageIOImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
+    static func imageIOLinearLuminance( fromPlanes planes: [ [ Double ] ], properties: BitmapImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
     {
         guard let first = planes.first
         else

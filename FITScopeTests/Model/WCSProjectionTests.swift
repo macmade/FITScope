@@ -24,6 +24,7 @@
 
 import CoreGraphics
 @testable import FITScope
+import SwiftAstro
 import SwiftFITS
 import Testing
 

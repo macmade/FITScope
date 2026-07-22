@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftPixel
 
 /// The camera-RAW ``DecodedRenderSource``: a sensor mosaic decoded once into its

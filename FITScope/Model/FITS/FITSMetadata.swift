@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftFITS
 
 /// Typed, unit-aware accessors for the astrometry-relevant header fields of a

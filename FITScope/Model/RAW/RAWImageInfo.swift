@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftRAW
 
 /// A `Sendable` snapshot of a camera RAW file's metadata, mirroring

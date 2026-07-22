@@ -25,6 +25,7 @@
 import CoreGraphics
 @testable import FITScope
 import Foundation
+import SwiftAstro
 import SwiftPixel
 import SwiftXISF
 import Testing
@@ -70,7 +71,7 @@ struct XISFPreviewRendererTests
     @Test
     func throwsForAMalformedXISFFile()
     {
-        #expect( throws: ( any Error ).self )
+        #expect( throws: ( any Swift.Error ).self )
         {
             try XISFPreviewRenderer.render( data: Data( "not an xisf file".utf8 ) )
         }

@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftPixel
 
 /// The XISF ``DecodedRenderSource``: an image decoded once into its channel

@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftAstro
 import SwiftFITS
 import SwiftPixel
 import Testing
@@ -443,7 +444,7 @@ struct ImageProcessorTests
                 FITSPropertySnapshot( name: "NAXIS3", value: .integer( 2 ) ),
             ]
 
-        let error = try #require( throws: ( any Error ).self )
+        let error = try #require( throws: ( any Swift.Error ).self )
         {
             _ = try ImageProcessor.render( data: Data(), properties: properties )
         }
@@ -611,7 +612,7 @@ struct ImageProcessorTests
         #expect( ImageProcessor.isRGBPlanes( properties: properties ) == false )
         #expect( ImageProcessor.isMultiImageCube( properties: properties ) == false )
 
-        let error = try #require( throws: ( any Error ).self )
+        let error = try #require( throws: ( any Swift.Error ).self )
         {
             _ = try ImageProcessor.render( data: Data(), properties: properties )
         }
@@ -635,7 +636,7 @@ struct ImageProcessorTests
                 FITSPropertySnapshot( name: "NAXIS2", value: .integer( 0 ) ),
             ]
 
-        let error = try #require( throws: ( any Error ).self )
+        let error = try #require( throws: ( any Swift.Error ).self )
         {
             _ = try ImageProcessor.render( data: Data(), properties: properties )
         }
@@ -691,7 +692,7 @@ struct ImageProcessorTests
         #expect( try ImageProcessor.debayerPattern( named: "RGGB" ) == .rggb )
         #expect( try ImageProcessor.debayerPattern( named: "GBRG" ) == .gbrg )
 
-        #expect( throws: ( any Error ).self ) { try ImageProcessor.debayerPattern( named: "RGBG" ) }
-        #expect( throws: ( any Error ).self ) { try ImageProcessor.debayerPattern( named: "XYZW" ) }
+        #expect( throws: ( any Swift.Error ).self ) { try ImageProcessor.debayerPattern( named: "RGBG" ) }
+        #expect( throws: ( any Swift.Error ).self ) { try ImageProcessor.debayerPattern( named: "XYZW" ) }
     }
 }

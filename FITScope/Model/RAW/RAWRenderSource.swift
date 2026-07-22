@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftPixel
 
 /// The camera-RAW conformer of ``ImageRenderSource``: a decoded RAW file's cropped

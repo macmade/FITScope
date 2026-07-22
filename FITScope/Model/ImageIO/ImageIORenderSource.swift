@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftPixel
 
 /// The ImageIO conformer of ``ImageRenderSource``: a decoded photographic image's
@@ -38,7 +39,7 @@ public struct ImageIORenderSource: ImageRenderSource
     public let data: Data
 
     /// The image's pixel layout, used to decode the bytes.
-    public let properties: ImageIOImageProperties
+    public let properties: BitmapImageProperties
 
     /// The detection-ready single-channel linear image (the mean of the channels),
     /// built once at load time. `nil` when it could not be decoded.
@@ -55,7 +56,7 @@ public struct ImageIORenderSource: ImageRenderSource
     ///   - data:           The image's decoded pixel bytes.
     ///   - properties:     The image's pixel layout.
     ///   - detectionImage: The detection-ready single-channel image, or `nil`.
-    public init( data: Data, properties: ImageIOImageProperties, detectionImage: PixelBuffer? = nil )
+    public init( data: Data, properties: BitmapImageProperties, detectionImage: PixelBuffer? = nil )
     {
         self.data           = data
         self.properties     = properties

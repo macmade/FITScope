@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftAstro
 import SwiftXISF
 import Testing
 
@@ -247,7 +248,7 @@ struct ImageProcessorXISFTests
         let properties = XISFImageProperties( width: 1, height: 1, channelCount: 3, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .cieLab, colorFilterArrayPattern: nil )
         let data       = Data( XISFTestData.uInt16LE( [ 1, 2, 3 ] ) )
 
-        #expect( throws: ( any Error ).self ) { try ImageProcessor.render( data: data, xisf: properties ) }
+        #expect( throws: ( any Swift.Error ).self ) { try ImageProcessor.render( data: data, xisf: properties ) }
     }
 
     /// A complex sample format is rejected at render.
@@ -257,7 +258,7 @@ struct ImageProcessorXISFTests
         let properties = XISFImageProperties( width: 1, height: 1, channelCount: 1, sampleFormat: .complex32, byteOrder: .little, pixelStorage: .planar, colorSpace: .gray, colorFilterArrayPattern: nil )
         let data       = Data( count: 8 )
 
-        #expect( throws: ( any Error ).self ) { try ImageProcessor.render( data: data, xisf: properties ) }
+        #expect( throws: ( any Swift.Error ).self ) { try ImageProcessor.render( data: data, xisf: properties ) }
     }
 
     /// Truncated pixel data is rejected at render.
@@ -267,6 +268,6 @@ struct ImageProcessorXISFTests
         let properties = XISFImageProperties( width: 4, height: 4, channelCount: 1, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .gray, colorFilterArrayPattern: nil )
         let data       = Data( XISFTestData.uInt16LE( [ 1, 2, 3 ] ) )
 
-        #expect( throws: ( any Error ).self ) { try ImageProcessor.render( data: data, xisf: properties ) }
+        #expect( throws: ( any Swift.Error ).self ) { try ImageProcessor.render( data: data, xisf: properties ) }
     }
 }

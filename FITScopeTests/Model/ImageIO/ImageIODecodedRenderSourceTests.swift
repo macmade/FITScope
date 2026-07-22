@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftAstro
 import Testing
 
 /// Tests for ``ImageIODecodedRenderSource`` and ``ImageIORenderSource/decoded()``:
@@ -38,7 +39,7 @@ struct ImageIODecodedRenderSourceTests
     func monoDecodeOnceRendersIdenticallyToTheBytePath() throws
     {
         let data       = Data( [ 100, 125, 150 ] )
-        let properties = ImageIOImageProperties( width: 3, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 3, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
         let source     = ImageIORenderSource( data: data, properties: properties )
         let decoded    = try #require( try source.decoded() )
 
@@ -59,7 +60,7 @@ struct ImageIODecodedRenderSourceTests
     func rgbDecodeOnceRendersIdenticallyToTheBytePath() throws
     {
         let data       = Data( [ 200, 10, 20, 255, 20, 200, 10, 255 ] )
-        let properties = ImageIOImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
         let source     = ImageIORenderSource( data: data, properties: properties )
         let decoded    = try #require( try source.decoded() )
 
@@ -79,7 +80,7 @@ struct ImageIODecodedRenderSourceTests
     func autoStretchColorSourceIsMonoLuminance() throws
     {
         let data       = Data( [ 200, 10, 20, 255, 20, 200, 10, 255 ] )
-        let properties = ImageIOImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
+        let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
         let decoded    = try #require( try ImageIORenderSource( data: data, properties: properties ).decoded() )
         let colour     = try #require( decoded.autoStretchColorSource( maxDimension: nil ) )
 

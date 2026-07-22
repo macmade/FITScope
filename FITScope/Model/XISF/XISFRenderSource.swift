@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftPixel
 
 /// The XISF conformer of ``ImageRenderSource``: a decoded XISF image's raw pixel

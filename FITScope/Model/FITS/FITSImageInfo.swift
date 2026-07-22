@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftFITS
 
 /// A `Codable`, `Hashable` snapshot of a FITS file's header metadata, suitable

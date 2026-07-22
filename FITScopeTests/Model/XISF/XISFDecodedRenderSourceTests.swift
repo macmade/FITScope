@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftAstro
 import Testing
 
 /// Tests for ``XISFDecodedRenderSource`` and ``XISFRenderSource/decoded()``: the

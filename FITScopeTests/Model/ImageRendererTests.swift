@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftAstro
 import SwiftFITS
 import SwiftPixel
 import Testing
@@ -927,5 +928,5 @@ struct ImageRendererTests
         #expect( rotated.height == 16 )
     }
 
-    private struct StaleError: Error {}
+    private struct StaleError: Swift.Error {}
 }

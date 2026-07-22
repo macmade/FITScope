@@ -44,10 +44,8 @@
 		05A1B2C30000000000000A04 /* FITSPreviewRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000A03 /* FITSPreviewRendererTests.swift */; };
 		05A1B2C30000000000000B01 /* FITSPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */; };
 		05A1B2C30000000000000B02 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8E2DE0C41800550A87 /* ImageProcessor.swift */; };
-		05A1B2C30000000000000B03 /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
 		05A1B2C30000000000000B04 /* FITSPreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000A01 /* FITSPreviewRenderer.swift */; };
 		05A1B2C30000000000000B05 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05206B8E2DE0C41800550A87 /* ImageProcessor.swift */; };
-		05A1B2C30000000000000B06 /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
 		05A1B2C30000000000000B07 /* ImageExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C30000000000000007 /* ImageExporter.swift */; };
 		05A1B2C30000000000000B08 /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */; };
 		05A1B2C30000000000000B09 /* Benchmarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C0A75D2DDE64E0005DECEF /* Benchmarking.swift */; };
@@ -124,7 +122,6 @@
 		05EE1000000000000000FB05 /* ImageMetadataSection+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA05 /* ImageMetadataSection+FITS.swift */; };
 		05EE1000000000000000FB11 /* ImageMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA11 /* ImageMetadataTests.swift */; };
 		05EE1000000000000000FB12 /* ImageMetadataFITSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EE1000000000000000FA12 /* ImageMetadataFITSTests.swift */; };
-		05F15F0000000000000000A1 /* XISFImageProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F1 /* XISFImageProperties.swift */; };
 		05F15F0000000000000000A2 /* XISFRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F2 /* XISFRenderSource.swift */; };
 		05F15F0000000000000000A3 /* ImageMetadataProperty+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F3 /* ImageMetadataProperty+XISF.swift */; };
 		05F15F0000000000000000A4 /* ImageMetadataSection+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F4 /* ImageMetadataSection+XISF.swift */; };
@@ -136,8 +133,6 @@
 		05F15F0000000000000000AA /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
 		05F15F0000000000000000AB /* ImageProcessor+FITS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FA /* ImageProcessor+FITS.swift */; };
 		05F15F0000000000000000AC /* ImageProcessor+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FB /* ImageProcessor+XISF.swift */; };
-		05F15F0000000000000000AD /* XISFImageProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F1 /* XISFImageProperties.swift */; };
-		05F15F0000000000000000AE /* XISFImageProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F1 /* XISFImageProperties.swift */; };
 		05F15F0000000000000000AF /* ImageProcessor+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FB /* ImageProcessor+XISF.swift */; };
 		05F15F0000000000000000B0 /* ImageProcessor+XISF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000FB /* ImageProcessor+XISF.swift */; };
 		05F15F0000000000000000B1 /* STFParameters+XISFDisplayFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F15F0000000000000000F9 /* STFParameters+XISFDisplayFunction.swift */; };
@@ -308,7 +303,6 @@
 		74AECD5CDE28F7F1D9B5BF08 /* ImageProcessor+RAW.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B200D70A22309B7AA0E0383 /* ImageProcessor+RAW.swift */; };
 		76B54F287C11C6DE09907894 /* HeaderExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D628DF4A1EE6FDEB030831 /* HeaderExport.swift */; };
 		776089F158755B3BAFA125DC /* SkyBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3608534BB97DAB5C88B42771 /* SkyBackgroundView.swift */; };
-		7A10031927444214E1AF24DC /* ImageIOImageProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1338FBA7DD4E85EC331EE06F /* ImageIOImageProperties.swift */; };
 		7B543E85E898ADF392FE8ACB /* AstrometryTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847C8768478977166B540620 /* AstrometryTransport.swift */; };
 		7D9F3B0B9F33E7D25CEB613F /* AstrometryTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86ADBDCAF1E7598A4CC5DEDD /* AstrometryTestSupport.swift */; };
 		7EBA7A151826541146E7EFF5 /* ObjectsOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B077522E455E19CF61F335A /* ObjectsOverlayTests.swift */; };
@@ -322,7 +316,6 @@
 		8E10B87816F7510D829FBC6D /* CanvasOverlayAppearanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E05613CB155AD97D3D27620 /* CanvasOverlayAppearanceTests.swift */; };
 		8EFCBDEAD1C1ADF3221AF90B /* ImageCanvasController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC8D19544EBB1A50302A2E1 /* ImageCanvasController.swift */; };
 		8FD4823A666A3CBBBA760D54 /* CursorReadoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */; };
-		9156E8D1975E4C4B4D12384E /* RAWImageProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF95FBD8CA2F741320F6A1E2 /* RAWImageProperties.swift */; };
 		9223E0C2DE42A8DD4D9ECB3F /* SessionMetricsWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70E4B14A8BBABFA12D93D8AC /* SessionMetricsWindowView.swift */; };
 		924C500405D583CA6C43F45B /* NorthOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DA1F380366A0478FB5293C1 /* NorthOverlay.swift */; };
 		936FAAA367BADF804D22EC43 /* PlateSolveObjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1CD2FCA750D764101AF3BE /* PlateSolveObjectsView.swift */; };
@@ -389,7 +382,6 @@
 		D41BBF135486BBEF8024EA39 /* CanvasOverlayStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2AB1D6E380EBFBEB8E9F768 /* CanvasOverlayStyle.swift */; };
 		D6356B42DB94E8CAD3027923 /* AppUpdaterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */; };
 		D68603F1398DE240630D7A92 /* IntegrationReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982DC11C05BB6556EDA0EFD7 /* IntegrationReference.swift */; };
-		D770733A040513E32E810C9D /* FITSPropertySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */; };
 		D7759AC4A9EEF7D16F0DEAE0 /* PlateSolveResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9478E5443F0419FE8102A162 /* PlateSolveResultView.swift */; };
 		D8C78C4D113C6ACD9FA5F500 /* RAWImageInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1E73F8419C861608BA0FE3 /* RAWImageInfoTests.swift */; };
 		D8F00D3F09B068453D096B06 /* SessionMetricSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506448917B85B0243B976250 /* SessionMetricSample.swift */; };
@@ -687,7 +679,6 @@
 		05F15F0000000000000000E3 /* XISFImageLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageLoaderTests.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000E5 /* ImageProcessorXISFTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessorXISFTests.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000E8 /* XISFPreviewRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFPreviewRendererTests.swift; sourceTree = "<group>"; };
-		05F15F0000000000000000F1 /* XISFImageProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFImageProperties.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000F2 /* XISFRenderSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XISFRenderSource.swift; sourceTree = "<group>"; };
 		05F15F0000000000000000F3 /* ImageMetadataProperty+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataProperty+XISF.swift"; sourceTree = "<group>"; };
 		05F15F0000000000000000F4 /* ImageMetadataSection+XISF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMetadataSection+XISF.swift"; sourceTree = "<group>"; };
@@ -772,7 +763,6 @@
 		10D628DF4A1EE6FDEB030831 /* HeaderExport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeaderExport.swift; sourceTree = "<group>"; };
 		110F63821980B8EE7718494F /* GraphSeriesFITSTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GraphSeriesFITSTests.swift; sourceTree = "<group>"; };
 		1201F624701C957BABD10644 /* WindowCloseConfirmationDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowCloseConfirmationDelegate.swift; sourceTree = "<group>"; };
-		1338FBA7DD4E85EC331EE06F /* ImageIOImageProperties.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageIOImageProperties.swift; sourceTree = "<group>"; };
 		15A76B7A5EE76FA883E623C6 /* MoonPhaseSymbol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseSymbol.swift; sourceTree = "<group>"; };
 		170E04A3A163A9DF3923D3BA /* GraphSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphSeries.swift; sourceTree = "<group>"; };
 		17284595CC1624354A6F83F2 /* SwiftUtilities.xcodeproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "wrapper.pb-project"; name = SwiftUtilities.xcodeproj; path = Submodules/SwiftUtilities/SwiftUtilities.xcodeproj; sourceTree = "<group>"; };
@@ -815,7 +805,6 @@
 		48B2EAF3AA7FFF8258530A42 /* Array.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Array.swift; sourceTree = "<group>"; };
 		4A09E9B8991D5CBB7DE09CCC /* SessionMetricsFilesObserver.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionMetricsFilesObserver.swift; sourceTree = "<group>"; };
 		4D7A6FCCB028599AAB32207D /* WeatherView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeatherView.swift; sourceTree = "<group>"; };
-		4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FITSPropertySnapshot.swift; sourceTree = "<group>"; };
 		5027679A560AAAF4691B21F0 /* OpenMeteoError.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenMeteoError.swift; sourceTree = "<group>"; };
 		506448917B85B0243B976250 /* SessionMetricSample.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionMetricSample.swift; sourceTree = "<group>"; };
 		528DA0DAD40D590B75B90AA3 /* WeatherConditions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeatherConditions.swift; sourceTree = "<group>"; };
@@ -898,7 +887,6 @@
 		BC4F968A60C95EEA5AACE036 /* SkyCondition.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SkyCondition.swift; sourceTree = "<group>"; };
 		BD699731BC20D77496B1C9AA /* PixelValueTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PixelValueTests.swift; sourceTree = "<group>"; };
 		BDD8757733A94F59A15A76F8 /* StarsOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarsOverlay.swift; sourceTree = "<group>"; };
-		BF95FBD8CA2F741320F6A1E2 /* RAWImageProperties.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RAWImageProperties.swift; sourceTree = "<group>"; };
 		BFA256D7D36DCB17FA81958C /* FilesSidebarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilesSidebarView.swift; sourceTree = "<group>"; };
 		C07659F02B1A39E7821ED5BE /* ImageInformationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageInformationTests.swift; sourceTree = "<group>"; };
 		C0FFEE000000000000000011 /* ImageComparisonLayer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageComparisonLayer.swift; sourceTree = "<group>"; };
@@ -1470,7 +1458,6 @@
 				05F15F0000000000000000F2 /* XISFRenderSource.swift */,
 				05DD1000000000000000FA10 /* XISFDecodedRenderSource.swift */,
 				05F15F0000000000000000F5 /* XISFImageInfo.swift */,
-				05F15F0000000000000000F1 /* XISFImageProperties.swift */,
 				05F15F0000000000000000F7 /* LoadedImage+XISF.swift */,
 				05F15F0000000000000000F6 /* ImageInformation+XISF.swift */,
 				05F15F0000000000000000F3 /* ImageMetadataProperty+XISF.swift */,
@@ -1825,7 +1812,6 @@
 				0579B6192DF2453C002FDD47 /* FITSImageLoader.swift */,
 				05EE1000000000000000FA04 /* ImageMetadataProperty+FITS.swift */,
 				05EE1000000000000000FA05 /* ImageMetadataSection+FITS.swift */,
-				4DB1651F210BE1F9ED5B4168 /* FITSPropertySnapshot.swift */,
 				59AF90C07BCB7472F4490908 /* FITSMetadata.swift */,
 			);
 			path = FITS;
@@ -1844,7 +1830,6 @@
 		B8BFE8807A04F44A1CC09979 /* ImageIO */ = {
 			isa = PBXGroup;
 			children = (
-				1338FBA7DD4E85EC331EE06F /* ImageIOImageProperties.swift */,
 				0D392BED62AAEDC93434757A /* ImageIORenderSource.swift */,
 				05DD1000000000000000FA12 /* ImageIODecodedRenderSource.swift */,
 				0C94BDF010C9B3667FE00649 /* ImageIOImageInfo.swift */,
@@ -1973,7 +1958,6 @@
 		DD0CDE24DAF558D1CB9815C8 /* RAW */ = {
 			isa = PBXGroup;
 			children = (
-				BF95FBD8CA2F741320F6A1E2 /* RAWImageProperties.swift */,
 				00AC3D2429776F3921B7E9E1 /* RAWRenderSource.swift */,
 				05DD1000000000000000FA11 /* RAWDecodedRenderSource.swift */,
 				0D5E09EBD752054C2EA4CC6C /* RAWImageInfo.swift */,
@@ -2388,7 +2372,6 @@
 				05F15F0000000000000000AC /* ImageProcessor+XISF.swift in Sources */,
 				05F15F0000000000000000B2 /* XISFPreviewRenderer.swift in Sources */,
 				05F15F0000000000000000B5 /* PreviewRenderer.swift in Sources */,
-				05F15F0000000000000000A1 /* XISFImageProperties.swift in Sources */,
 				05F15F0000000000000000A2 /* XISFRenderSource.swift in Sources */,
 				05DD1000000000000000FB12 /* XISFDecodedRenderSource.swift in Sources */,
 				05F15F0000000000000000A3 /* ImageMetadataProperty+XISF.swift in Sources */,
@@ -2473,7 +2456,6 @@
 				4C985DDD7F75E32CBF327D35 /* SegmentedControlView.swift in Sources */,
 				C0FFEE000000000000000022 /* CustomControlChrome.swift in Sources */,
 				14B77DB0AE541FDDF44D92ED /* Array.swift in Sources */,
-				D770733A040513E32E810C9D /* FITSPropertySnapshot.swift in Sources */,
 				1E9E33C8743D787B7D1F00C8 /* KeychainStoring.swift in Sources */,
 				16CA5451FED9C5F34706C016 /* HistogramMode.swift in Sources */,
 				FA14C3E0E2CE2FF26A71FF1B /* HistogramViewOptions.swift in Sources */,
@@ -2554,7 +2536,6 @@
 				2440026B4825D889DD9082A6 /* ExternalImageFile.swift in Sources */,
 				1AB2DFAB0D2DF7DFDDA6E037 /* OpenWithMenu.swift in Sources */,
 				9D7E8AC6067A6074DB711137 /* ImageProcessor+ImageIO.swift in Sources */,
-				7A10031927444214E1AF24DC /* ImageIOImageProperties.swift in Sources */,
 				3E896C0B571D381C043C1846 /* ImageIORenderSource.swift in Sources */,
 				05DD1000000000000000FB14 /* ImageIODecodedRenderSource.swift in Sources */,
 				B51904B603B09816BAC18B10 /* ImageIOImageInfo.swift in Sources */,
@@ -2563,7 +2544,6 @@
 				B40DEC6BB6D01BE53C9056D4 /* ImageInformation+ImageIO.swift in Sources */,
 				2C68039761C3C19791C65B17 /* LoadedImage+ImageIO.swift in Sources */,
 				C252521B229165A437AD0AE0 /* ImageIOImageLoader.swift in Sources */,
-				9156E8D1975E4C4B4D12384E /* RAWImageProperties.swift in Sources */,
 				4C64FF43E2904C659F10C10C /* RAWRenderSource.swift in Sources */,
 				05DD1000000000000000FB13 /* RAWDecodedRenderSource.swift in Sources */,
 				E469EA4F1F08D6B38E847D27 /* RAWImageInfo.swift in Sources */,
@@ -2708,7 +2688,6 @@
 				05A1B2C30000000000000B02 /* ImageProcessor.swift in Sources */,
 				05F15F0000000000000000AA /* ImageProcessor+FITS.swift in Sources */,
 				05F15F0000000000000000BF /* ImageProcessor+Subsample.swift in Sources */,
-				05F15F0000000000000000AD /* XISFImageProperties.swift in Sources */,
 				05F15F0000000000000000AF /* ImageProcessor+XISF.swift in Sources */,
 				05F15F0000000000000000B3 /* XISFPreviewRenderer.swift in Sources */,
 				05F15F0000000000000000BC /* STFParameters+XISFDisplayFunction.swift in Sources */,
@@ -2717,7 +2696,6 @@
 				05F15F0000000000000000B8 /* UTType.swift in Sources */,
 				05DD1000000000000000FB05 /* RenderResult.swift in Sources */,
 				05AA5D942FF85F9E00FCF406 /* BinaryFloatingPoint.swift in Sources */,
-				05A1B2C30000000000000B03 /* FITSPropertySnapshot.swift in Sources */,
 				05B189F92FEAE7BC0056553A /* ThumbnailProvider.swift in Sources */,
 				DB58C7448644AA71DE1EAD31 /* ThumbnailLayout.swift in Sources */,
 			);
@@ -2736,7 +2714,6 @@
 				05A1B2C30000000000000B05 /* ImageProcessor.swift in Sources */,
 				05F15F0000000000000000AB /* ImageProcessor+FITS.swift in Sources */,
 				05F15F0000000000000000C0 /* ImageProcessor+Subsample.swift in Sources */,
-				05F15F0000000000000000AE /* XISFImageProperties.swift in Sources */,
 				05F15F0000000000000000B0 /* ImageProcessor+XISF.swift in Sources */,
 				05F15F0000000000000000B4 /* XISFPreviewRenderer.swift in Sources */,
 				05F15F0000000000000000BD /* STFParameters+XISFDisplayFunction.swift in Sources */,
@@ -2744,7 +2721,6 @@
 				05F15F0000000000000000B7 /* PreviewRenderer.swift in Sources */,
 				05F15F0000000000000000B9 /* UTType.swift in Sources */,
 				05DD1000000000000000FB06 /* RenderResult.swift in Sources */,
-				05A1B2C30000000000000B06 /* FITSPropertySnapshot.swift in Sources */,
 				05A1B2C30000000000000B07 /* ImageExporter.swift in Sources */,
 				05B18A002FEAE7BE0056553A /* PreviewProvider.swift in Sources */,
 				05AA5D952FF85F9E00FCF406 /* BinaryFloatingPoint.swift in Sources */,

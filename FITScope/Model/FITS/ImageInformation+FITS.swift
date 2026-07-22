@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftFITS
 
 /// Builds the neutral ``ImageInformation`` summary from FITS header keywords,

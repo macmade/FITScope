@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 import Foundation
+import SwiftAstro
 import SwiftFITS
 
 /// A client for the nova.astrometry.net web API: log in with the stored key,

@@ -27,6 +27,7 @@ import CoreGraphics
 import CoreImage
 import Foundation
 import ImageIO
+import SwiftAstro
 import SwiftPixel
 import SwiftUtilities
 
@@ -253,7 +254,7 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
     /// - Returns: The canonical layout and its bytes.
     /// - Throws: ``RuntimeError`` for invalid dimensions or a bitmap context that
     ///   cannot be created.
-    private nonisolated static func decode( _ cgImage: CGImage, orientation: Int = 1 ) throws -> ( properties: ImageIOImageProperties, bytes: Data )
+    private nonisolated static func decode( _ cgImage: CGImage, orientation: Int = 1 ) throws -> ( properties: BitmapImageProperties, bytes: Data )
     {
         let image  = Self.upright( cgImage, orientation: orientation )
         let width  = image.width
@@ -302,7 +303,7 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
             throw RuntimeError( message: "The image could not be drawn into a bitmap context." )
         }
 
-        let properties = ImageIOImageProperties( width: width, height: height, channelCount: channelCount, componentsPerPixel: componentsPerPixel, bytesPerComponent: bytesPerComponent )
+        let properties = BitmapImageProperties( width: width, height: height, channelCount: channelCount, componentsPerPixel: componentsPerPixel, bytesPerComponent: bytesPerComponent )
 
         return ( properties, Data( buffer ) )
     }
@@ -351,7 +352,7 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
     ///   - bytes:      The image's decoded pixel bytes.
     ///   - properties: The image's pixel layout.
     /// - Returns: The detection image, or `nil` when it cannot be built.
-    private nonisolated static func detectionImage( bytes: Data, properties: ImageIOImageProperties ) -> PixelBuffer?
+    private nonisolated static func detectionImage( bytes: Data, properties: BitmapImageProperties ) -> PixelBuffer?
     {
         guard let luminance = ImageProcessor.imageIOLinearLuminance( data: bytes, properties: properties )
         else

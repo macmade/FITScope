@@ -24,6 +24,7 @@
 
 import CoreGraphics
 import Foundation
+import SwiftAstro
 import SwiftFITS
 import SwiftPixel
 import SwiftUtilities

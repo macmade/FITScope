@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import SwiftAstro
 import SwiftFITS
 
 /// Synthesised, minimal FITS payloads for tests that need a precisely shaped
