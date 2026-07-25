@@ -68,20 +68,20 @@ enum UITestSupport
     /// The identifier of the path field inside the "Go to Folder" sheet.
     private static let goToFolderField = "PathTextField"
 
-    /// The UI-test `Fixtures` directory (`Test Files/Fixtures` at the repository
-    /// root), resolved relative to this source file so the suite works regardless
-    /// of the test bundle's on-disk layout. The fixtures are checked into this
-    /// repository (not borrowed from a submodule), so their geometry is fixed and
-    /// the tests cannot break under an upstream change.
+    /// The UI-test fixtures directory (`Test Files` at the repository root),
+    /// resolved relative to this source file so the suite works regardless of the
+    /// test bundle's on-disk layout. The fixtures are checked into this repository
+    /// (not borrowed from a submodule), so their geometry is fixed and the tests
+    /// cannot break under an upstream change.
     static var fixturesDirectory: URL
     {
         URL( fileURLWithPath: #filePath )
             .deletingLastPathComponent() // FITScopeUITests/
             .deletingLastPathComponent() // repo root
-            .appendingPathComponent( "Test Files/Fixtures" )
+            .appendingPathComponent( "Test Files" )
     }
 
-    /// Resolves a fixture by its file name within the `Fixtures` directory.
+    /// Resolves a fixture by its file name within the `Test Files` directory.
     ///
     /// - Parameter name: e.g. `MonoImage.fits`.
     /// - Returns: The absolute file URL.
@@ -122,7 +122,7 @@ enum UITestSupport
     /// crashed the XCUITest runner under CI; launching in process is the path CI
     /// supports.
     ///
-    /// - Parameter name: Fixture file name within the `Fixtures` directory.
+    /// - Parameter name: Fixture file name within the `Test Files` directory.
     /// - Returns: The launched application proxy.
     @MainActor
     static func launchAppOpening( _ name: String ) throws -> XCUIApplication
@@ -289,7 +289,7 @@ enum UITestSupport
     /// point, so it is requested first with the Open command (`⌘O`) and then driven.
     ///
     /// - Parameters:
-    ///   - name:    Fixture file name within the `Fixtures` directory.
+    ///   - name:    Fixture file name within the `Test Files` directory.
     ///   - app:     The launched application proxy.
     ///   - timeout: How long to wait for the panel and its field to appear.
     @MainActor
@@ -310,7 +310,7 @@ enum UITestSupport
     /// confirmed by waiting for the sheet to dismiss before the final Return.
     ///
     /// - Parameters:
-    ///   - name:    Fixture file name within the `Fixtures` directory.
+    ///   - name:    Fixture file name within the `Test Files` directory.
     ///   - app:     The launched application proxy.
     ///   - timeout: How long to wait for the panel and its field to appear.
     @MainActor

@@ -26,11 +26,13 @@ import Foundation
 
 /// Locates the FITS fixtures checked into this repository.
 ///
-/// The fixtures live in `Test Files/Fixtures` — shared with the UI-test suite —
+/// Most fixtures live in the app's `Test Files` — shared with the UI-test suite —
 /// and are resolved by path rather than bundled, so tests open real files exactly
 /// as the app does. They are deliberately part of this repository rather than
 /// borrowed from the SwiftFITS submodule's sample files, whose contents can change
-/// and silently break these tests.
+/// and silently break these tests. The full-frame ``cameraRAW`` capture is the
+/// exception: it lives in the bundled `SwiftAstro` submodule's own `Test Files`,
+/// alongside the frames the library validates against.
 enum TestFixtures
 {
     /// The `Test Files` directory at the repository root, resolved relative to this
@@ -44,19 +46,24 @@ enum TestFixtures
             .appendingPathComponent( "Test Files" )
     }
 
-    /// The `Fixtures` directory, holding the small synthetic test fixtures.
-    static var directory: URL
+    /// The `Test Files` directory in the bundled `SwiftAstro` submodule, holding
+    /// the full-frame captures. The heavy captures moved there so the library's
+    /// real-frame validation can consume them; only their location changed.
+    static var capturesDirectory: URL
     {
-        self.testFilesDirectory.appendingPathComponent( "Fixtures" )
+        URL( fileURLWithPath: #filePath )
+            .deletingLastPathComponent() // FITScopeTests/
+            .deletingLastPathComponent() // repo root
+            .appendingPathComponent( "Submodules/SwiftAstro/Test Files" )
     }
 
-    /// Resolves a fixture by its file name within the `Fixtures` directory.
+    /// Resolves a fixture by its file name within the `Test Files` directory.
     ///
     /// - Parameter name: e.g. `MonoImage.fits`.
     /// - Returns: The absolute URL of the fixture on disk.
     static func url( _ name: String ) -> URL
     {
-        self.directory.appendingPathComponent( name )
+        self.testFilesDirectory.appendingPathComponent( name )
     }
 
     /// A real, monochrome NAXIS = 2 image fixture that loads and renders
@@ -169,11 +176,12 @@ enum TestFixtures
     /// sensor mosaic decoded through SwiftRAW (LibRAW), so tests can assert the RAW load,
     /// the debayered colour render, and the camera/exposure metadata end to end.
     ///
-    /// It lives in the `Test Files` root alongside the other full-frame captures,
-    /// not in the `Fixtures` subdirectory of small synthetic images.
+    /// It lives in the bundled `SwiftAstro` submodule's `Test Files` directory,
+    /// alongside the other full-frame captures the library validates against — not
+    /// in the app's own `Test Files`, which now holds only the synthetic fixtures.
     static var cameraRAW: URL
     {
-        self.testFilesDirectory.appendingPathComponent( "C6-R7-M42-Light.cr3" )
+        self.capturesDirectory.appendingPathComponent( "C6-R7-M42-Light.cr3" )
     }
 
     /// A real single-image HEIC (`8 × 8`, RGB) carrying an EXIF capture date, so tests

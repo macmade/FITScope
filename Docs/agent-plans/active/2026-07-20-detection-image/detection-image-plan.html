@@ -618,7 +618,7 @@
             <ul>
                 <li><span class="num">M1</span><span class="name"><a href="#m1">Shared decoder API &mdash; vocabulary and compiling stubs</a></span><span class="capsule completed">Completed</span></li>
                 <li><span class="num">M2</span><span class="name"><a href="#m2">Golden baseline &mdash; detection-image digests through the current path</a></span><span class="capsule completed">Completed</span></li>
-                <li><span class="num">M3</span><span class="name"><a href="#m3">Test fixtures &mdash; reorganise along the new boundary</a></span><span class="capsule notstarted">Not started</span></li>
+                <li><span class="num">M3</span><span class="name"><a href="#m3">Test fixtures &mdash; reorganise along the new boundary</a></span><span class="capsule completed">Completed</span></li>
             </ul>
 
             <div class="phase">Phase 2 &mdash; Per-format migration</div>
@@ -1081,7 +1081,7 @@ xcodebuild test -scheme "FITScope - Debug" \
         <!-- ============================== M3 ============================== -->
 
         <section class="milestone" id="m3">
-            <h3><span class="m-num">M3.</span> Test fixtures &mdash; reorganise along the new boundary <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M3.</span> Test fixtures &mdash; reorganise along the new boundary <span class="capsule completed">Completed</span></h3>
 
             <h4>Goal</h4>
             <p>
@@ -1154,17 +1154,144 @@ xcodebuild test -scheme "FITScope - Debug" \
                 <li>SwiftAstro's own suite green.</li>
             </ul>
 
-            <p class="field"><span class="label">Status</span><span class="capsule notstarted">Not started</span></p>
-            <p class="field"><span class="label">Completed</span><span class="placeholder">&mdash;</span></p>
+            <p class="field"><span class="label">Status</span><span class="capsule completed">Completed</span></p>
+            <p class="field"><span class="label">Completed</span> 2026-07-25</p>
 
             <h4>Implementation notes</h4>
-            <p class="placeholder">To be filled in as work progresses.</p>
+
+            <p><strong>Implemented via TDD.</strong> The one genuinely new piece of code &mdash; the format-neutral
+                capture accessor &mdash; was written test-first: <code>CaptureFixtures</code> and its
+                <code>CaptureFixturesTests</code> landed together and the suite was run <em>before</em> any capture
+                moved. <code>everyCaptureResolvesToAFileThatExists()</code> failed red (&ldquo;Missing capture:
+                C6-ASI533-M104-Final.jpg&rdquo;) while <code>captureNamesAreUnique()</code> and
+                <code>resolvingAnUnknownCaptureThrows()</code> passed; once the captures moved it went green. The
+                relocation itself adds no behaviour, so the standing regression guard is the <a href="#m2">M2</a>
+                golden suite, required to stay byte-identical.</p>
+
+            <div class="subhead">Captures moved to SwiftAstro</div>
+            <p>All 14 captures in <a href="#appendix-d">Appendix D</a> moved from the app's
+                <code>Test Files/</code> root into <code>Submodules/SwiftAstro/Test Files/</code>. Each was SHA-256
+                digested before and after the move: <strong>all 14 byte-identical</strong>. The enlarged SwiftAstro
+                tree (14 captures + the 3 pre-existing frames, <code>ESA/</code> included) has <strong>no duplicate
+                <code>lastPathComponent</code></strong>, so <code>FITSTestImage.url( resource:extension: )</code>'s
+                recursive, name-keyed resolution stays unambiguous. The 14 captures were added to
+                <code>SwiftAstro.xcodeproj</code> as navigator-only <code>PBXFileReference</code>s in the existing
+                <code>Test Files</code> group &mdash; matching the three frames already referenced there, and in no
+                build phase (they are read by <code>#filePath</code>, not bundled).</p>
+
+            <div class="subhead">The format-neutral capture accessor</div>
+            <p>Added <code>SwiftAstroTests/Helpers/CaptureFixtures.swift</code>: an enum vending
+                <code>testFilesDirectory</code>, a <code>captureFileNames</code> manifest (the single source of truth
+                for the moved set) and <code>url( named: )</code> &mdash; a recursive, name-keyed resolver throwing
+                <code>SwiftAstro.Error</code> on a miss. It is the format-neutral counterpart to the FITS-specific
+                <code>FITSTestImage</code>: it returns a URL and assumes nothing about format, for the XISF, CR3 and
+                JPEG frames <a href="#m5">M5</a>&ndash;<a href="#m7">M7</a> consume. <code>CaptureFixturesTests</code>
+                pins that every manifest name resolves to an existing file, that the names are unique, and that an
+                unknown name throws. Both files were added to <code>SwiftAstro.xcodeproj</code> (Helpers group +
+                <code>SwiftAstroTests</code> Sources phase); SwiftPM globs them automatically.</p>
+
+            <div class="subhead">Path accessors rewired</div>
+            <p><code>TestFixtures</code>: the <code>Fixtures</code> hop (<code>directory</code>) is gone &mdash;
+                <code>url( _: )</code> now resolves against <code>testFilesDirectory</code> (the app's
+                <code>Test Files/</code>); a new <code>capturesDirectory</code> points at the submodule's
+                <code>Test Files/</code>, and <code>cameraRAW</code> resolves through it. The six
+                <code>cameraRAW</code> assertions in <code>RAWImageLoaderTests</code>
+                (<code>:42, :55, :78, :99, :117, :159</code>) use only the URL and pass unchanged.
+                <code>UITestSupport.fixturesDirectory</code> now points at <code>Test Files</code>, and its six doc
+                references to &ldquo;the <code>Fixtures</code> directory&rdquo; were updated. No dangling
+                <code>Fixtures</code> / <code>directory</code> reference remains in any source.</p>
+
+            <div class="subhead">Synthetic fixtures promoted, dev-assets repointed</div>
+            <p>The 21 synthetic fixtures moved from <code>Test Files/Fixtures/</code> up into
+                <code>Test Files/</code> (byte-identical), and the empty <code>Fixtures/</code> directory was removed.
+                In <code>FITScope.xcodeproj</code> the two bundled preview fixtures
+                (<code>MonoImage.fits</code>/<code>ColorImage.fits</code>) were repointed from
+                <code>Test Files/Fixtures/X</code> to <code>Test Files/X</code>, and
+                <code>DEVELOPMENT_ASSET_PATHS</code> in both build configurations from
+                <code>"Test Files/Fixtures"</code> to <code>"Test Files"</code>. The task order held: the 237&nbsp;MB
+                of captures left <code>Test Files/</code> <em>before</em> the repoint, so the debug app's development
+                assets remain exactly the 21 synthetic fixtures &mdash; never the captures.</p>
+
+            <div class="subhead">Verification</div>
+            <ul>
+                <li><code>swift build</code> (SwiftAstro) succeeds; the full SwiftPM suite is green &mdash;
+                    <strong>173 tests / 31 suites</strong> (the +1 suite over <a href="#m1">M1</a> is
+                    <code>CaptureFixtures</code>), including <code>RealFrameValidationTests</code> and
+                    <code>FITSTestImage</code> resolution against the enlarged tree.</li>
+                <li>App <code>xcodebuild build</code> of <code>FITScope - Debug</code>: <strong>BUILD
+                    SUCCEEDED</strong>, Preview and Thumbnail extensions included &mdash; the two bundled fixtures
+                    resolve at their new path.</li>
+                <li><strong>Golden suite green with identical digests</strong>
+                    (<code>-only-testing:FITScopeTests/DetectionImageGoldenTests</code>, ~379&nbsp;s): every one of
+                    the 38 relocated inputs reproduces its committed detection-image <em>and</em> render digest. Only
+                    paths changed, so this is the byte-identity proof the milestone requires.</li>
+                <li><code>FITScopeTests</code> with the golden suite skipped: <strong>814 tests / 99 suites
+                    green</strong> &mdash; every fixture- and capture-driven suite (RAW/XISF/ImageIO render sources,
+                    <code>ImageProcessor</code>, <code>ExternalImageFile</code>, &hellip;) passes against the
+                    relocated files. The other submodule targets (SwiftFITS, SwiftPixel, SwiftRAW, SwiftXISF,
+                    SwiftUtilities) are green.</li>
+            </ul>
+
+            <div class="note-box">
+                <p><strong>Environmental &mdash; <code>FITScopeUITests</code> could not run clean.</strong> In the
+                    full eight-target run the UI suite failed all 40 tests with <em>&ldquo;Not authorized for
+                    performing UI testing actions&rdquo;</em> (AX / <code>testmanagerd</code>), aggravated by a second
+                    XCUITest session running concurrently on the machine. The failures occur at app launch / AX load
+                    (<code>UITestSupport.swift:135</code>, <code>:106</code>), <em>before</em> any fixture is opened,
+                    and this milestone changed no UI code &mdash; so they are not an M3 regression. The relocated
+                    <code>UITestSupport</code> path is exercised only once the app is drivable; a clean, isolated
+                    UI-test run is the authoritative check and is left to the human, consistent with the same
+                    environmental caveat recorded in <a href="#m1">M1</a> and <a href="#m2">M2</a>.</p>
+            </div>
+
+            <p><strong>Automated review loop.</strong> One round; converged. A first fresh-context reviewer stalled on
+                the harness watchdog and was discarded; a second, bounded reviewer (static only &mdash; git, grep,
+                <code>plutil</code>, targeted reads; no build or run, to avoid contending with the UI-test session)
+                returned a <strong>clean verdict &mdash; no Critical / High / Medium findings</strong>, with three
+                Info-level notes recorded below.</p>
+
+            <p><strong>Post-review change (human feedback).</strong> On the human's request, Info&nbsp;#1 was
+                applied: the <code>TestFixtures</code> enum doc comment (<code>:27-33</code>) no longer implies every
+                fixture lives in this repository &mdash; it now states that most fixtures live in the app's
+                <code>Test Files</code>, with the full-frame <code>cameraRAW</code> capture as the exception, in the
+                <code>SwiftAstro</code> submodule. A comment-only change; no code behaviour affected, so no rebuild
+                was required.</p>
 
             <h4>Automated review</h4>
-            <p class="placeholder">To be filled in by the automated review loop.</p>
+            <ul>
+                <li><strong>Round 1 &mdash;</strong> clean; no Critical / High / Medium findings. The reviewer
+                    independently confirmed: the path accessors resolve to the correct post-move locations with no
+                    dangling <code>Fixtures</code>/<code>directory</code> reference; the six <code>cameraRAW</code>
+                    assertions still resolve; <code>CaptureFixtures</code> and its test meet the conventions and
+                    handle the <code>Swift.Error</code>-vs-<code>SwiftAstro.Error</code> distinction correctly; the
+                    14-name manifest matches disk 1:1 with no basename collision in the enlarged tree; both
+                    <code>project.pbxproj</code> files lint, with the captures navigator-only and the new IDs correctly
+                    wired; and the captures left <code>Test Files/</code> before the dev-asset repoint.</li>
+                <li><em>Info</em> &mdash; <strong>enum-level doc slightly over-broad</strong>
+                    (<code>TestFixtures.swift:27-33</code>): the summary says the fixtures &ldquo;live in
+                    <code>Test Files</code>&rdquo; and are &ldquo;part of this repository&rdquo;, now true for every
+                    fixture except <code>cameraRAW</code>, which lives in the SwiftAstro submodule
+                    (<code>cameraRAW</code>'s own doc states this correctly). <strong>Resolution: Deferred</strong>
+                    &mdash; surfaced for the human; an optional one-line clarification.</li>
+                <li><em>Info</em> &mdash; <strong>pre-existing dev-asset / resource double membership</strong> of
+                    <code>MonoImage.fits</code>/<code>ColorImage.fits</code> (both explicit Resources members and
+                    covered by <code>DEVELOPMENT_ASSET_PATHS</code>). The relationship predates the move and is
+                    carried across unchanged &mdash; not a regression. <strong>Resolution: Deferred</strong>
+                    (awareness only).</li>
+                <li><em>Info</em> &mdash; the only surviving <code>Test Files/Fixtures</code> /
+                    <code>TestFixtures.directory</code> strings are in this initiative's own plan documents under
+                    <code>Docs/agent-plans/active/2026-07-20-detection-image/</code>, which describe the migration.
+                    Expected and harmless; no code references remain. <strong>Resolution: Deferred</strong>.</li>
+            </ul>
 
             <h4>Review comments</h4>
-            <p class="placeholder">To be filled in during human review.</p>
+            <ul>
+                <li><strong>Apply automated-review Info&nbsp;#1.</strong> Correct the over-broad
+                    <code>TestFixtures</code> enum doc comment (<code>:27-33</code>): it should not claim
+                    <em>all</em> fixtures live in this repository, because the <code>cameraRAW</code> capture now
+                    resides in the <code>SwiftAstro</code> submodule. <em>(Applied &mdash; see the implementation
+                    notes.)</em></li>
+            </ul>
         </section>
 
         <!-- ============================== M4 ============================== -->
