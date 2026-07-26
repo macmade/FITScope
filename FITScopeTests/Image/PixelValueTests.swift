@@ -123,7 +123,8 @@ struct PixelValueTests
         properties.append( FITSPropertySnapshot( name: "BSCALE", value: .integer( 2 ) ) )
         properties.append( FITSPropertySnapshot( name: "BZERO",  value: .integer( 1 ) ) )
 
-        let luminance = try #require( ImageProcessor.rgbLinearLuminance( data: data, properties: properties ) )
+        let planes    = try FITSImageDecoder.planeSamples( bytes: data, properties: properties )
+        let luminance = try #require( FITSImageDecoder.linearLuminance( fromPlanes: planes, properties: properties ) )
 
         #expect( luminance.width  == 2 )
         #expect( luminance.height == 2 )

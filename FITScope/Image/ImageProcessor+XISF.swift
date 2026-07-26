@@ -116,7 +116,7 @@ public extension ImageProcessor
                 // BAYERPAT path does; a plain grayscale image is expanded to RGB.
                 if let pattern = properties.colorFilterArrayPattern
                 {
-                    let bayer = try ImageProcessor.debayerPattern( named: pattern )
+                    let bayer = try ColorFilterArray.pattern( named: pattern )
 
                     // Bin the mosaic before the demosaic when heavily downsampling a
                     // colour-filter-array preview, exactly as the FITS path does, so the
@@ -356,7 +356,7 @@ public extension ImageProcessor
 
     /// The per-pixel luminance (mean of the channels) of an XISF image, as a
     /// single-channel linear image for star detection and the sky-background
-    /// measurement — the XISF analogue of ``rgbLinearLuminance``. A grayscale image
+    /// measurement — the XISF analogue of the FITS linear-luminance decode. A grayscale image
     /// yields its single channel unchanged.
     ///
     /// - Parameters:
@@ -443,7 +443,7 @@ public extension ImageProcessor
     static func xisfAutoStretchColorSource( fromPlanes planes: [ [ Double ] ], properties: XISFImageProperties ) -> AutoStretchColorSource?
     {
         if let cfaPattern = properties.colorFilterArrayPattern,
-           let pattern    = try? ImageProcessor.debayerPattern( named: cfaPattern ),
+           let pattern    = try? ColorFilterArray.pattern( named: cfaPattern ),
            let mosaic     = planes.first,
            let buffer     = try? PixelBuffer( width: properties.width, height: properties.height, channels: 1, pixels: mosaic, isNormalized: false )
         {

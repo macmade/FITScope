@@ -51,7 +51,7 @@ public struct FITSRenderSource: ImageRenderSource
     /// full scale.
     public var fullScale: Double?
     {
-        ImageProcessor.fullScale( forImageHDU: self.properties )
+        FITSImageDecoder.fullScale( from: self.properties )
     }
 
     /// The per-channel colour input for the auto Screen Transfer: an RGB
@@ -133,7 +133,7 @@ public struct FITSRenderSource: ImageRenderSource
     /// cannot be determined.
     public var dimensions: ( width: Int, height: Int )?
     {
-        ImageProcessor.imageDimensions( from: self.properties )
+        FITSImageDecoder.dimensions( from: self.properties )
     }
 }
 

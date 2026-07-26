@@ -295,7 +295,7 @@ public class XISFImageLoader: ObservableObject, ImageLoading
         // detection, as the FITS path does; a grayscale or RGB frame is already a
         // single luminance channel and needs no demosaicing.
         guard let cfaPattern = properties.colorFilterArrayPattern,
-              let pattern     = try? ImageProcessor.debayerPattern( named: cfaPattern )
+              let pattern     = try? ColorFilterArray.pattern( named: cfaPattern )
         else
         {
             return buffer

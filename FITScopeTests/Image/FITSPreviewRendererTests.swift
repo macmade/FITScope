@@ -177,7 +177,7 @@ struct FITSPreviewRendererTests
         }
 
         // Same colour source + same full-scale derivation the app opens with.
-        let fullScale   = try #require( ImageProcessor.fullScale( forImageHDU: hdu.properties ) )
+        let fullScale   = try #require( FITSImageDecoder.fullScale( from: hdu.properties ) )
         let colorSource = try #require( ImageProcessor.autoStretchColorSource( forImageHDU: hdu.data, properties: hdu.properties ) )
         let app         = try #require( ImageProcessor.autoStretchSettings( colorSource: colorSource, fullScale: fullScale ) )
 

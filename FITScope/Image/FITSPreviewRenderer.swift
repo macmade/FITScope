@@ -138,7 +138,7 @@ public enum FITSPreviewRenderer
            AutoStretchPreference.autoStretchPreviews( .fits, in: defaults ),
            let colorSource = Self.previewColorSource( hdu: hdu, maxDimension: maxDimension )
         {
-            let domain = ImageProcessor.fullScale( forImageHDU: hdu.properties ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+            let domain = FITSImageDecoder.fullScale( from: hdu.properties ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
 
             if let derived = ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
             {
@@ -173,7 +173,7 @@ public enum FITSPreviewRenderer
            AutoStretchPreference.autoStretchPreviews( .fits, in: defaults ),
            let colorSource = frame.autoStretchColorSource( maxDimension: maxDimension )
         {
-            let domain = ImageProcessor.fullScale( forImageHDU: frame.properties ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+            let domain = FITSImageDecoder.fullScale( from: frame.properties ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
 
             if let derived = ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
             {
@@ -225,11 +225,17 @@ public enum FITSPreviewRenderer
     ///   decoded (the caller then renders linear).
     private static func previewLuminance( hdu: ( data: Data, properties: [ FITSPropertySnapshot ] ) ) -> ( width: Int, height: Int, samples: [ Double ] )?
     {
-        if ImageProcessor.isRGBPlanes( properties: hdu.properties )
+        if FITSImageDecoder.channelCount( from: hdu.properties ) == 3
         {
-            return ImageProcessor.rgbLinearLuminance( data: hdu.data, properties: hdu.properties )
+            guard let planes = try? FITSImageDecoder.planeSamples( bytes: hdu.data, properties: hdu.properties )
+            else
+            {
+                return nil
+            }
+
+            return FITSImageDecoder.linearLuminance( fromPlanes: planes, properties: hdu.properties )
         }
 
-        return ImageProcessor.linearImage( data: hdu.data, properties: hdu.properties )
+        return FITSImageDecoder.linearImage( bytes: hdu.data, properties: hdu.properties )
     }
 }

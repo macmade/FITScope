@@ -588,25 +588,6 @@ public enum ImageProcessor
         return RenderResult( image: image, bytes: bytes, inputPixelFormat: inputPixelFormat, outputPixelFormat: .rgb )
     }
 
-    /// Maps a colour-filter-array pattern name (e.g. `"RGGB"`) to a debayer
-    /// pattern, shared by the FITS `BAYERPAT` path and the XISF colour-filter-array
-    /// path so both formats accept identical patterns.
-    ///
-    /// - Parameter name: The pattern name.
-    /// - Returns: The matching debayer pattern.
-    /// - Throws: ``RuntimeError`` for an unsupported pattern name.
-    public static func debayerPattern( named name: String ) throws -> Processors.Debayer.Pattern
-    {
-        switch name
-        {
-            case "BGGR": return .bggr
-            case "GRBG": return .grbg
-            case "RGGB": return .rggb
-            case "GBRG": return .gbrg
-            default:     throw RuntimeError( message: "Unsupported colour-filter-array pattern \( name )" )
-        }
-    }
-
     /// The factor to bin a colour-filter-array mosaic before the demosaic when
     /// rendering a downsampled preview, or `nil` to skip binning.
     ///

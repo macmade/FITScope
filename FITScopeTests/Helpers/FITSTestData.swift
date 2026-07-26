@@ -254,8 +254,7 @@ enum FITSTestData
     /// block-padded data segment.
     ///
     /// The third axis is a plain frame index — no `CTYPE3` — and the plane count is
-    /// *not* 3, so the file matches the multi-image rule
-    /// (``ImageProcessor/isMultiImageCube(properties:)``) rather than the RGB rule.
+    /// *not* 3, so the file matches the multi-image-cube rule rather than the RGB rule.
     /// Each plane is filled with a distinct per-plane ramp (`plane p` starts at
     /// `(p + 1) · 20`) so a decoded frame is individually identifiable.
     ///

@@ -219,7 +219,7 @@ public extension ImageProcessor
 
     /// The per-pixel luminance (mean of the channels) of a photographic image, as a
     /// single-channel image for star detection and the sky-background measurement —
-    /// the ImageIO analogue of ``xisfLinearLuminance`` / ``rgbLinearLuminance``. A
+    /// the ImageIO analogue of ``xisfLinearLuminance`` / the FITS linear-luminance decode. A
     /// grayscale image yields its single channel unchanged.
     ///
     /// Unlike the FITS/XISF luminance, these samples are display-encoded (gamma), not

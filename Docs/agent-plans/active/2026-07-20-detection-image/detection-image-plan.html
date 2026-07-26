@@ -623,7 +623,7 @@
 
             <div class="phase">Phase 2 &mdash; Per-format migration</div>
             <ul>
-                <li><span class="num">M4</span><span class="name"><a href="#m4">FITS &mdash; <code>FITSImageDecoder</code></a></span><span class="capsule notstarted">Not started</span></li>
+                <li><span class="num">M4</span><span class="name"><a href="#m4">FITS &mdash; <code>FITSImageDecoder</code></a></span><span class="capsule completed">Completed</span></li>
                 <li><span class="num">M5</span><span class="name"><a href="#m5">XISF &mdash; <code>XISFImageDecoder</code></a></span><span class="capsule notstarted">Not started</span></li>
                 <li><span class="num">M6</span><span class="name"><a href="#m6">RAW &mdash; <code>RAWImageDecoder</code></a></span><span class="capsule notstarted">Not started</span></li>
                 <li><span class="num">M7</span><span class="name"><a href="#m7">Photographic &mdash; <code>BitmapImageDecoder</code></a></span><span class="capsule notstarted">Not started</span></li>
@@ -1297,7 +1297,7 @@ xcodebuild test -scheme "FITScope - Debug" \
         <!-- ============================== M4 ============================== -->
 
         <section class="milestone" id="m4">
-            <h3><span class="m-num">M4.</span> FITS &mdash; <code>FITSImageDecoder</code> <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M4.</span> FITS &mdash; <code>FITSImageDecoder</code> <span class="capsule completed">Completed</span></h3>
 
             <h4>Goal</h4>
             <p>
@@ -1429,17 +1429,175 @@ xcodebuild test -scheme "FITScope - Debug" \
                     milestone.</li>
             </ul>
 
-            <p class="field"><span class="label">Status</span><span class="capsule notstarted">Not started</span></p>
-            <p class="field"><span class="label">Completed</span><span class="placeholder">&mdash;</span></p>
+            <p class="field"><span class="label">Status</span><span class="capsule completed">Completed</span></p>
+            <p class="field"><span class="label">Completed</span> 2026-07-26</p>
 
             <h4>Implementation notes</h4>
-            <p class="placeholder">To be filled in as work progresses.</p>
+
+            <p><strong>Implemented via TDD, in two phases.</strong> Phase A landed the SwiftAstro decoder and was
+                reviewed on its own before Phase B (the app switch) was built on top of it. The <a href="#m2">M2</a>
+                golden suite is the standing byte-identity guard throughout: the milestone's success criterion is that
+                every one of the 38 committed inputs reproduces its detection-image <em>and</em> render digest
+                unchanged.</p>
+
+            <div class="note-box">
+                <p><strong>Two boundary decisions confirmed with the human before the app switch.</strong></p>
+                <p><strong>(1) The FITS render cluster is deferred to <a href="#m9">M9</a>, not just
+                    <code>render( data:properties: )</code>.</strong> The delete-list's
+                    <code>isRGBPlanes</code>/<code>scaling</code>/<code>blankValue</code>/<code>rgbPlaneSamples</code>
+                    are transitive dependencies of the render path the plan explicitly leaves for M9, so M4 keeps the
+                    whole render-decode cluster intact &mdash; <code>render( data:properties: )</code>,
+                    <code>render( rawSamples: )</code>, <code>renderRGBPlanes</code>, <code>rgbPlaneSamples</code>,
+                    <code>decodedImageHDU</code>, <code>FITSRenderSource.decoded()</code>, and the shared helpers
+                    (<code>isRGBPlanes</code>, <code>scaling</code>, <code>blankValue</code>,
+                    <code>imageDimensions</code>, <code>fullScale( for: )</code>, <code>fullScaleScaling</code>,
+                    <code>bayerPattern( from: )</code>, <code>trimmedString</code>, <code>checkedProduct</code>). The
+                    section-selectors (<code>FITSPreviewRenderer.imageHDU( from: )</code>,
+                    <code>FITSRenderSource.init( sections: )</code>, <code>decodeGraph</code>'s inline selection) are
+                    kept for the same M9 consolidation (they operate on <code>FITSSection</code>, which the decoder's
+                    <code>Sendable</code>, snapshot-based surface does not take). M4 migrates the drift-fixing core:
+                    frame enumeration, the detection image, the cursor read-out, <code>fullScale</code>, the CFA
+                    mapping and the auto-stretch derivation.</p>
+                <p><strong>(2) Deleted-method test coverage is relocated to follow the code.</strong> Tests for the
+                    migrated decode logic move to (or are retargeted at) <code>FITSImageDecoder</code>; nothing is
+                    silently dropped.</p>
+            </div>
+
+            <div class="subhead">SwiftAstro &mdash; the decoder</div>
+            <p><code>FITSImageDecoder</code> is a faithful port of the app's FITS decode: HDU selection + cube
+                expansion (<code>frames</code>), block-padding trim (<code>contents</code>),
+                <code>linearImage</code>, <code>planeSamples</code>, equal-weight <code>linearLuminance</code>,
+                <code>scaling</code>, <code>fullScale</code> (255/65535/4294967295, <code>nil</code> for float),
+                <code>bitsPerPixel</code>, <code>dimensions</code>, <code>channelCount</code> (3 only for an RGB
+                cube), <code>cfaPattern</code> (via the shared <code>ColorFilterArray</code>, throwing on an unknown
+                keyword), the bounds-checked big-endian <code>decodeSample</code>, <code>sampleByteOffsets</code>
+                (0-based; the caller adds <code>bytes.startIndex</code>), and both <code>detectionImage</code>
+                overloads.</p>
+
+            <div class="note-box">
+                <p><strong>CFA-cube fix &mdash; implemented, and inert on the committed corpus.</strong> The shared
+                    <code>detectionImage</code> demosaics uniformly, cube planes included &mdash; closing the
+                    asymmetry where the app's <code>multiImageFrameSources</code> never demosaiced a cube plane.
+                    Determined empirically that <strong>neither committed multi-image cube
+                    (<code>MultiImage3D.fits</code>, <code>MultiImage3DNoWCS.fits</code>) carries
+                    <code>BAYERPAT</code></strong>, so the uniform demosaic changes no committed detection digest;
+                    the golden suite confirms this (all digests identical, no re-baseline). The behaviour is correct
+                    for any future CFA cube. Recorded as intended drift.</p>
+            </div>
+
+            <p><strong>CFA mapping consolidated.</strong> The one shared <code>ColorFilterArray.pattern( named: )</code>
+                (from <a href="#m1">M1</a>) is now the mapping all formats use: the FITS, XISF and RAW call sites were
+                repointed to it and <code>ImageProcessor.debayerPattern( named: )</code> was deleted. Behaviourally
+                identical (same four patterns, throws on an unknown keyword); the only change is
+                <code>RuntimeError</code>&nbsp;&rarr;&nbsp;<code>SwiftAstro.Error</code>, which every call site
+                already swallows with <code>try?</code>/<code>try</code>.</p>
+
+            <p><strong><code>FITSTestImage</code> retired, benchmark retargeted.</strong> The helper's private FITS
+                decode is gone; <code>load</code>/<code>detection</code> now delegate to <code>FITSImageDecoder</code>.
+                The decode benchmark measures the decoder (its record names already matched the committed
+                <code>swiftastro-baseline.json</code>, which was authored ahead of this migration). New real-frame
+                <code>FITSImageDecoderTests</code> plus the FITS-behavioural <code>DecoderSymmetryTests</code> cover
+                the decoder directly.</p>
+
+            <div class="subhead">FITScope &mdash; the app switch</div>
+            <p><code>FITSImageLoader</code>'s frame enumeration and detection image now go through
+                <code>FITSImageDecoder.frames</code> / <code>detectionImage( of: )</code>
+                (<code>multiImageFrameSources</code> and <code>detectionImage( forImageHDU: )</code> deleted);
+                <code>isRGBImage</code> comes from <code>channelCount</code>. The cursor read-out
+                (<code>rgbPixelValues</code>/<code>rawPixelValue</code>), both
+                <code>autoStretchColorSource</code> overloads, <code>FITSRenderSource.fullScale</code>/<code>dimensions</code>,
+                and <code>FITSPreviewRenderer.previewLuminance</code>/<code>fullScale</code> were rewired onto the
+                decoder, with <code>PixelValue</code> still composed app-side. Deleted from
+                <code>ImageProcessor+FITS.swift</code>: <code>isMultiImageCube</code>, <code>cubePlanes</code>,
+                <code>linearImage</code>, <code>rgbLinearLuminance</code>, <code>sampleValue</code>,
+                <code>decodeSample</code>, <code>fullScale( forImageHDU: )</code>, <code>checkedSum</code>. No
+                forwarding shims &mdash; the compiler proves the sweep. The app shrank by <strong>~515 lines</strong>
+                (623 deletions vs 108 insertions across the touched app files).</p>
+
+            <p><strong>Tests relocated / retargeted.</strong> The two <code>linearImage</code> <code>BLANK</code>-masking
+                tests moved to SwiftAstro's <code>FITSImageDecoderTests</code> (pure synthetic). The cube tests
+                (<code>isMultiImageCube</code>/<code>cubePlanes</code>) were retargeted to
+                <code>FITSImageDecoder.frames( in: )</code> over a synthesised cube file
+                (<code>FITSTestData.multiImageCube</code>). <code>PixelValueTests</code>'s luminance test uses
+                <code>planeSamples</code>&nbsp;+&nbsp;<code>linearLuminance</code>; the preview <code>fullScale</code>
+                test uses the decoder; the redundant <code>debayerPattern</code> mapping test was removed (superseded,
+                and strengthened, by <code>DecoderSymmetryTests.colorFilterArray*</code>).</p>
+
+            <div class="subhead">Verification</div>
+            <ul>
+                <li><strong>Golden suite green with identical digests</strong> &mdash; all 38 inputs reproduce their
+                    committed detection <em>and</em> render digests; no digest changed, no re-baseline. The
+                    byte-identity proof of the whole migration.</li>
+                <li><code>FITScopeTests</code> (golden skipped): <strong>811 tests / 99 suites green</strong>
+                    (811&nbsp;=&nbsp;814&nbsp;&minus;&nbsp;1 removed <code>debayerPattern</code> test&nbsp;&minus;&nbsp;2
+                    relocated <code>linearImage</code> tests), including the retargeted cube/luminance/read-out tests
+                    and the RAW/XISF loader tests exercising the <code>ColorFilterArray</code> repoint.</li>
+                <li>SwiftAstro SwiftPM: <strong>182 tests / 32 suites green</strong>, including the new
+                    <code>FITSImageDecoderTests</code> and an <strong>unchanged
+                    <code>RealFrameValidationTests</code></strong> (the detector finds the same stars through the
+                    decoder-backed detection image).</li>
+                <li>App <code>xcodebuild build</code> (with Preview and Thumbnail extensions) succeeds; SwiftFITS and
+                    SwiftPixel suites green; both <code>project.pbxproj</code> files lint.</li>
+            </ul>
+
+            <div class="note-box">
+                <p><strong>Environmental &mdash; the full eight-target run cannot complete clean.</strong> This
+                    machine's <code>testmanagerd</code>/device automation degraded mid-session (a connected, locked
+                    iOS device triggers a <code>DTDKRemoteDeviceConnection &hellip; passcode protected</code> storm
+                    that makes app test-runners &ldquo;hang before establishing connection&rdquo;). Each target
+                    passes when run in isolation (golden, <code>FITScopeTests</code>, SwiftAstro all green on
+                    isolated/retry runs); only the multi-target launch fails, with zero assertion failures. Same
+                    caveat as <a href="#m1">M1</a>&ndash;<a href="#m3">M3</a>; M4 changed no UI code.</p>
+            </div>
+
+            <p><strong>Automated review loop.</strong> Two rounds, each a fresh-context static reviewer; both
+                converged with <strong>no Critical / High / Medium findings</strong> &mdash; an interim review of
+                Phase A (the decoder) before the app switch, and a final review of the whole milestone. Low/Info
+                findings recorded below.</p>
 
             <h4>Automated review</h4>
-            <p class="placeholder">To be filled in by the automated review loop.</p>
+            <ul>
+                <li><strong>Round 1 (interim, Phase A) &mdash;</strong> clean; the reviewer verified the decoder is a
+                    byte-for-byte faithful port of the app's FITS decode, the CFA repoint is behaviourally identical,
+                    the index contract is consistent, and the cube-demosaic change is inert on the corpus. Two
+                    <em>Low</em> polish items <strong>Fixed</strong>: a truncated <code>linearImage</code> doc
+                    sentence reworded, and a dead <code>planes.isEmpty == false</code> guard removed from
+                    <code>linearLuminance</code>. Two <em>Info</em> notes (raw byte-accumulation loops in
+                    <code>decodeSample</code> &mdash; a faithful copy of the app's accepted code; a theoretical
+                    overflow in the bounds check, mirroring the app) left as-is.</li>
+                <li><strong>Round 2 (final, whole milestone) &mdash;</strong> clean; the reviewer confirmed every
+                    rewired app method is behaviour-preserving (matching the golden result), no leftover reference to
+                    any deleted method, the intended M9 render cluster intact, coverage retargeted, and both projects
+                    lint.
+                    <ul>
+                        <li><em>Low</em> &mdash; <strong>dangling DocC links to deleted symbols</strong>
+                            (<code>isMultiImageCube</code>, <code>linearImage</code>, <code>rgbLinearLuminance</code>)
+                            in six doc comments across <code>ImageProcessor+FITS.swift</code>,
+                            <code>+XISF.swift</code>, <code>+ImageIO.swift</code> and <code>FITSTestData.swift</code>.
+                            <strong>Fixed</strong> &mdash; de-linked / rephrased so the docs describe current code.</li>
+                        <li><em>Low</em> &mdash; <strong>a stray <code>resource:</code> parameter</strong> in a
+                            <code>FITSImageDecoderTests</code> doc comment. <strong>Fixed</strong>.</li>
+                        <li><em>Low</em> &mdash; <strong>the truncated multi-image-cube path is no longer unit-tested</strong>.
+                            The old test drove the (now-private) <code>cubePlanes</code> directly with crafted, unpadded
+                            data; through the decoder's public <code>frames( in: )</code> the FITS block-padding defeats
+                            the <code>availablePlanes = min( declared, present )</code> truncation, so it cannot be
+                            reproduced without either exposing the private helper or a genuinely short-on-disk file the
+                            fixture builder cannot emit. The logic is a verbatim port. <strong>Deferred</strong> &mdash;
+                            surfaced for the human to weigh (accept the small gap, or expose <code>cubePlanes</code> as
+                            <code>internal</code> for a direct decoder test).</li>
+                        <li><em>Info</em> &mdash; the cube-plane demosaic change (see the CFA-cube note above), recorded
+                            as intended and inert on the corpus. <strong>Deferred</strong> (no action).</li>
+                    </ul>
+                </li>
+            </ul>
 
             <h4>Review comments</h4>
-            <p class="placeholder">To be filled in during human review.</p>
+            <ul>
+                <li><strong>Approved.</strong> The human reviewed the milestone and accepted it as-is, including the
+                    Low truncated-multi-image-cube coverage gap (Automated review, Round&nbsp;2): the gap is accepted
+                    rather than exposing the private <code>cubePlanes</code> for a direct test, since the truncation
+                    logic is a verbatim port of the app's.</li>
+            </ul>
         </section>
 
         <!-- ============================== M5 ============================== -->

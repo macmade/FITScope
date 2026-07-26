@@ -97,53 +97,6 @@ struct ImageProcessorTests
         #expect( result.bytes.contains { ( 165 ... 175 ).contains( $0 ) } )
     }
 
-    /// An integer `BLANK` sentinel decodes to NaN, so undefined pixels are dropped
-    /// by the non-finite-filtering statistics exactly as a float image's NaN blanks
-    /// already are.
-    @Test
-    func linearImageMasksIntegerBlankPixels() throws
-    {
-        let properties =
-            [
-                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
-                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
-                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
-                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 2 ) ),
-                FITSPropertySnapshot( name: "BLANK",  value: .integer( 255 ) ),
-            ]
-
-        let data   = Data( [ 10, 255, 30, 40 ] )
-        let result = try #require( ImageProcessor.linearImage( data: data, properties: properties ) )
-
-        #expect( result.samples[ 0 ] == 10 )
-        #expect( result.samples[ 1 ].isNaN )
-        #expect( result.samples[ 2 ] == 30 )
-        #expect( result.samples[ 3 ] == 40 )
-    }
-
-    /// `BLANK` names the raw stored value, so a blank pixel decodes to NaN rather
-    /// than to the `BZERO`/`BSCALE`-rescaled sentinel.
-    @Test
-    func linearImageMasksBlankBeforeScaling() throws
-    {
-        let properties =
-            [
-                FITSPropertySnapshot( name: "BITPIX", value: .integer( 16 ) ),
-                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 2 ) ),
-                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
-                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 1 ) ),
-                FITSPropertySnapshot( name: "BZERO",  value: .integer( 32768 ) ),
-                FITSPropertySnapshot( name: "BLANK",  value: .integer( -1 ) ),
-            ]
-
-        // Two big-endian Int16 samples: -1 (the BLANK sentinel) and 5.
-        let data   = Data( [ 0xFF, 0xFF, 0x00, 0x05 ] )
-        let result = try #require( ImageProcessor.linearImage( data: data, properties: properties ) )
-
-        #expect( result.samples[ 0 ].isNaN )
-        #expect( result.samples[ 1 ] == 32773 )
-    }
-
     /// The auto-stretch settings derive a *uniform* Screen Transfer seeded over
     /// identity normalization — matching the inspector's "Auto" action, so opening
     /// and clicking Auto agree; per-channel balancing stays a manual choice.
@@ -530,66 +483,50 @@ struct ImageProcessorTests
         #expect( ImageProcessor.isRGBPlanes( properties: FITSTestData.gradient().properties ) == false, "a 2-D image is not RGB planes" )
     }
 
-    /// The multi-image rule accepts a `NAXIS=3` cube whose third axis is a plain
-    /// frame index: `NAXIS3 ≥ 2` and `≠ 3` (a count of 3 is claimed as RGB) and no
-    /// `CTYPE3` (whose presence marks a physical data cube).
+    /// A multi-image `NAXIS=3` cube (third axis a plain frame index) expands to one
+    /// frame per plane; a 3-plane cube is claimed by the RGB rule (a single frame),
+    /// and a physical `CTYPE3` cube is not split. Verified through the shared
+    /// decoder's frame enumeration, where the cube rule now lives.
     @Test
-    func multiImageCubeDetectionRule() throws
+    func multiImageCubeExpandsToOneFramePerPlane() throws
     {
-        func properties( naxis: Int64 = 3, naxis3: Int64, ctype3: String? = nil ) -> [ FITSPropertySnapshot ]
+        func frameCount( planes: Int, extraRecords: [ String ] = [] ) throws -> Int
         {
-            var props: [ FITSPropertySnapshot ] =
-                [
-                    FITSPropertySnapshot( name: "NAXIS",  value: .integer( naxis ) ),
-                    FITSPropertySnapshot( name: "NAXIS3", value: .integer( naxis3 ) ),
-                ]
+            let file = try FITSFile( data: FITSTestData.multiImageCube( planes: planes, extraRecords: extraRecords ), options: .lenient )
 
-            ctype3.map { props.append( FITSPropertySnapshot( name: "CTYPE3", value: .string( $0 ) ) ) }
-
-            return props
+            return try FITSImageDecoder.frames( in: file ).count
         }
 
-        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 2 ) ), "2 planes with no physical third axis is a multi-image cube" )
-        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 7 ) ), "7 planes is a multi-image cube" )
-        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 3 ) ) == false, "a 3-plane cube is claimed by the RGB rule, not multi-image" )
-        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 1 ) ) == false, "a single plane is not a stack" )
-        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 4, ctype3: "WAVE" ) ) == false, "a physical CTYPE3 marks a data cube, not separate images" )
-        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis: 2, naxis3: 0 ) ) == false, "a 2-D image is not a multi-image cube" )
-
-        // The RGB and multi-image rules are mutually exclusive over every NAXIS=3 shape.
-        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 4 ) ) == false )
-        #expect( ImageProcessor.isMultiImageCube( properties: properties( naxis3: 3 ) ) == false )
+        #expect( try frameCount( planes: 2 ) == 2, "2 planes → one frame per plane" )
+        #expect( try frameCount( planes: 7 ) == 7, "7 planes → one frame per plane" )
+        #expect( try frameCount( planes: 3 ) == 1, "a 3-plane cube is RGB → a single frame" )
+        #expect( try frameCount( planes: 4, extraRecords: [ "CTYPE3  = 'WAVE'" ] ) == 1, "a physical CTYPE3 cube is not split" )
     }
 
-    /// `cubePlanes` splits a multi-image cube into one 2-D HDU per plane: each plane
-    /// carries a `NAXIS=2` header (no `NAXIS3`) and its own contiguous byte slice, so
-    /// the existing 2-D render path renders each frame unchanged.
+    /// A multi-image cube decodes into one 2-D frame per plane: each frame carries a
+    /// `NAXIS=2` header (no `NAXIS3`) and its own contiguous byte slice, so the render
+    /// path renders each frame unchanged. Verified through the shared decoder, where
+    /// the cube split now lives.
     @Test
-    func cubePlanesSplitsIntoTwoDimensionalHDUs() throws
+    func multiImageCubeFramesAreTwoDimensionalPlaneSlices() throws
     {
-        // Three 2×2 planes filled with distinct constants: 1, 2, 3.
-        let planeBytes: [ [ UInt8 ] ] = [ [ 1, 1, 1, 1 ], [ 2, 2, 2, 2 ], [ 3, 3, 3, 3 ] ]
-        let data                      = Data( planeBytes.flatMap { $0 } )
-        let properties: [ FITSPropertySnapshot ] =
-            [
-                FITSPropertySnapshot( name: "BITPIX", value: .integer( 8 ) ),
-                FITSPropertySnapshot( name: "NAXIS",  value: .integer( 3 ) ),
-                FITSPropertySnapshot( name: "NAXIS1", value: .integer( 2 ) ),
-                FITSPropertySnapshot( name: "NAXIS2", value: .integer( 2 ) ),
-                FITSPropertySnapshot( name: "NAXIS3", value: .integer( 4 ) ),
-            ]
+        let width  = 2
+        let height = 2
+        let planes = 4
+        let file   = try FITSFile( data: FITSTestData.multiImageCube( width: width, height: height, planes: planes ), options: .lenient )
+        let frames = try FITSImageDecoder.frames( in: file )
 
-        let planes = ImageProcessor.cubePlanes( data: data, properties: properties )
+        #expect( frames.count == planes, "one frame per plane" )
 
-        // NAXIS3 says 4 but only 3 planes of data are present; the truncated plane is
-        // dropped rather than surfaced as a broken frame.
-        #expect( planes.count == 3, "one HDU per plane actually present in the data" )
-
-        for ( index, plane ) in planes.enumerated()
+        for ( index, frame ) in frames.enumerated()
         {
-            #expect( plane.properties.first { $0.name == "NAXIS"  }?.value.integer == 2, "each plane is a 2-D HDU" )
-            #expect( plane.properties.contains { $0.name == "NAXIS3" } == false, "the third-axis keyword is dropped from a plane" )
-            #expect( Array( plane.data ) == planeBytes[ index ], "each plane carries its own contiguous slice" )
+            #expect( frame.properties.first { $0.name == "NAXIS" }?.value.integer == 2, "each plane is a 2-D frame" )
+            #expect( frame.properties.contains { $0.name == "NAXIS3" } == false, "the third-axis keyword is dropped" )
+
+            // FITSTestData fills plane p, sample i, with (p + 1) · 20 + i.
+            let expected = ( 0 ..< ( width * height ) ).map { UInt8( truncatingIfNeeded: ( index + 1 ) * 20 + $0 ) }
+
+            #expect( Array( frame.data ) == expected, "each frame carries its own contiguous plane slice" )
         }
     }
 
@@ -610,7 +547,6 @@ struct ImageProcessorTests
             ]
 
         #expect( ImageProcessor.isRGBPlanes( properties: properties ) == false )
-        #expect( ImageProcessor.isMultiImageCube( properties: properties ) == false )
 
         let error = try #require( throws: ( any Swift.Error ).self )
         {
@@ -679,20 +615,5 @@ struct ImageProcessorTests
         let config   = settings.config( scale: 1, offset: 0, inputFormat: .mono )
 
         #expect( config.cosmeticCorrection == nil )
-    }
-
-    /// The colour-filter-array pattern mapping (shared by the FITS `BAYERPAT` and
-    /// XISF paths) accepts the four valid Bayer arrangements — including the common
-    /// `GBRG` — and rejects the non-standard `RGBG` and any unknown value.
-    @Test
-    func debayerPatternMappingAcceptsValidPatternsAndRejectsRGBG() throws
-    {
-        #expect( try ImageProcessor.debayerPattern( named: "BGGR" ) == .bggr )
-        #expect( try ImageProcessor.debayerPattern( named: "GRBG" ) == .grbg )
-        #expect( try ImageProcessor.debayerPattern( named: "RGGB" ) == .rggb )
-        #expect( try ImageProcessor.debayerPattern( named: "GBRG" ) == .gbrg )
-
-        #expect( throws: ( any Swift.Error ).self ) { try ImageProcessor.debayerPattern( named: "RGBG" ) }
-        #expect( throws: ( any Swift.Error ).self ) { try ImageProcessor.debayerPattern( named: "XYZW" ) }
     }
 }

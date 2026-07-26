@@ -100,7 +100,7 @@ public extension ImageProcessor
             return settings.config( scale: scale, offset: 0, inputFormat: .mono )
         }
 
-        let bayer = try ImageProcessor.debayerPattern( named: cfaPattern )
+        let bayer = try ColorFilterArray.pattern( named: cfaPattern )
 
         return settings.config( scale: scale, offset: 0, headerPattern: bayer )
     }
@@ -226,7 +226,7 @@ public extension ImageProcessor
         // per-channel colour input, so it returns nil without decoding the mosaic,
         // matching the fast path the caller relied on before the fromPlane split.
         guard let cfaPattern = properties.colorFilterArrayPattern,
-              ( try? ImageProcessor.debayerPattern( named: cfaPattern ) ) != nil,
+              ( try? ColorFilterArray.pattern( named: cfaPattern ) ) != nil,
               let mosaic      = Self.rawImageLinearLuminance( data: data, properties: properties )
         else
         {
@@ -251,7 +251,7 @@ public extension ImageProcessor
     static func rawAutoStretchColorSource( fromPlane plane: [ Double ], properties: RAWImageProperties ) -> AutoStretchColorSource?
     {
         guard let cfaPattern = properties.colorFilterArrayPattern,
-              let pattern     = try? ImageProcessor.debayerPattern( named: cfaPattern ),
+              let pattern     = try? ColorFilterArray.pattern( named: cfaPattern ),
               let buffer      = try? PixelBuffer( width: properties.width, height: properties.height, channels: 1, pixels: plane, isNormalized: false )
         else
         {

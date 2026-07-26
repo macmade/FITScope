@@ -324,7 +324,7 @@ public class RAWImageLoader: ObservableObject, ImageLoading
         }
 
         guard let cfaPattern = properties.colorFilterArrayPattern,
-              let pattern     = try? ImageProcessor.debayerPattern( named: cfaPattern )
+              let pattern     = try? ColorFilterArray.pattern( named: cfaPattern )
         else
         {
             return buffer
