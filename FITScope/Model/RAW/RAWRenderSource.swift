@@ -52,7 +52,7 @@ public struct RAWRenderSource: ImageRenderSource
     /// raw samples into `[0, 1]` against — `nil` when the decoder reported none.
     public var fullScale: Double?
     {
-        self.properties.whiteLevel
+        RAWImageDecoder.fullScale( from: self.properties )
     }
 
     /// The per-channel colour input for the auto Screen Transfer: a colour-filter-array
@@ -91,7 +91,10 @@ public struct RAWRenderSource: ImageRenderSource
     /// to the byte path.
     public func decoded() throws -> ( any DecodedRenderSource )?
     {
-        RAWDecodedRenderSource( plane: try ImageProcessor.rawImageSamples( data: self.data, properties: self.properties ), properties: self.properties )
+        try RAWImageDecoder.planeSamples( bytes: self.data, properties: self.properties ).first.map
+        {
+            RAWDecodedRenderSource( plane: $0, properties: self.properties )
+        }
     }
 
     /// The decoded sample at image coordinates `(x, y)` as a single-element array (a

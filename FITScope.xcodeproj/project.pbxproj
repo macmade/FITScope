@@ -383,7 +383,6 @@
 		D6356B42DB94E8CAD3027923 /* AppUpdaterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */; };
 		D68603F1398DE240630D7A92 /* IntegrationReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982DC11C05BB6556EDA0EFD7 /* IntegrationReference.swift */; };
 		D7759AC4A9EEF7D16F0DEAE0 /* PlateSolveResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9478E5443F0419FE8102A162 /* PlateSolveResultView.swift */; };
-		D8C78C4D113C6ACD9FA5F500 /* RAWImageInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1E73F8419C861608BA0FE3 /* RAWImageInfoTests.swift */; };
 		D8F00D3F09B068453D096B06 /* SessionMetricSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506448917B85B0243B976250 /* SessionMetricSample.swift */; };
 		DAE7CCB9CC877AD2ECC8C933 /* CanvasGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CDEBA7E46E766BCABAF5462 /* CanvasGeometryTests.swift */; };
 		DB58C7448644AA71DE1EAD31 /* ThumbnailLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81685BD1A3B59CF94FAA4347 /* ThumbnailLayout.swift */; };
@@ -871,7 +870,6 @@
 		A8D5C2CDF6BE5D61F992E63B /* FITSMetadataTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FITSMetadataTests.swift; sourceTree = "<group>"; };
 		A96803DD5818B6BF04A14656 /* MoonPhaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseTests.swift; sourceTree = "<group>"; };
 		AA60BABA3A513036582755F2 /* SessionMetricsSNRCurveView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionMetricsSNRCurveView.swift; sourceTree = "<group>"; };
-		AB1E73F8419C861608BA0FE3 /* RAWImageInfoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RAWImageInfoTests.swift; sourceTree = "<group>"; };
 		ADF279A9B79B04705676B41B /* ImageMetadataProperty+ImageIO.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ImageMetadataProperty+ImageIO.swift"; sourceTree = "<group>"; };
 		AE7E6AE4D499E0A7E298DBDD /* SessionMetricsUnavailableView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionMetricsUnavailableView.swift; sourceTree = "<group>"; };
 		AEBA7F9443AB955660DAA8DE /* AppUpdaterTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUpdaterTests.swift; sourceTree = "<group>"; };
@@ -1952,7 +1950,6 @@
 		D95B468239331F900AD4B8F7 /* RAW */ = {
 			isa = PBXGroup;
 			children = (
-				AB1E73F8419C861608BA0FE3 /* RAWImageInfoTests.swift */,
 				7D1489FB13BF095A7E2DDFD5 /* RAWImageLoaderTests.swift */,
 				05FB1000000000000000A011 /* RAWDecodedRenderSourceTests.swift */,
 			);
@@ -2669,7 +2666,6 @@
 				E7B88B9E7C22D5F0557DEC98 /* ImageIOImageInfoTests.swift in Sources */,
 				B690182437725A61FF7B1C76 /* ImageIOImageLoaderTests.swift in Sources */,
 				05FB1000000000000000B012 /* ImageIODecodedRenderSourceTests.swift in Sources */,
-				D8C78C4D113C6ACD9FA5F500 /* RAWImageInfoTests.swift in Sources */,
 				E4F9CCFD1766E44E707A38A0 /* RAWImageLoaderTests.swift in Sources */,
 				05FB1000000000000000B011 /* RAWDecodedRenderSourceTests.swift in Sources */,
 				672EF7466C9E4E942EF4F03A /* ImageProcessorRAWTests.swift in Sources */,

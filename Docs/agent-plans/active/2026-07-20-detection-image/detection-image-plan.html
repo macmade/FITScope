@@ -625,7 +625,7 @@
             <ul>
                 <li><span class="num">M4</span><span class="name"><a href="#m4">FITS &mdash; <code>FITSImageDecoder</code></a></span><span class="capsule completed">Completed</span></li>
                 <li><span class="num">M5</span><span class="name"><a href="#m5">XISF &mdash; <code>XISFImageDecoder</code></a></span><span class="capsule completed">Completed</span></li>
-                <li><span class="num">M6</span><span class="name"><a href="#m6">RAW &mdash; <code>RAWImageDecoder</code></a></span><span class="capsule notstarted">Not started</span></li>
+                <li><span class="num">M6</span><span class="name"><a href="#m6">RAW &mdash; <code>RAWImageDecoder</code></a></span><span class="capsule completed">Completed</span></li>
                 <li><span class="num">M7</span><span class="name"><a href="#m7">Photographic &mdash; <code>BitmapImageDecoder</code></a></span><span class="capsule notstarted">Not started</span></li>
             </ul>
 
@@ -1830,7 +1830,7 @@ xcodebuild test -scheme "FITScope - Debug" \
         <!-- ============================== M6 ============================== -->
 
         <section class="milestone" id="m6">
-            <h3><span class="m-num">M6.</span> RAW &mdash; <code>RAWImageDecoder</code> <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M6.</span> RAW &mdash; <code>RAWImageDecoder</code> <span class="capsule completed">Completed</span></h3>
 
             <h4>Goal</h4>
             <p>
@@ -1905,17 +1905,128 @@ xcodebuild test -scheme "FITScope - Debug" \
                 <li>Full test plan green; <code>swift build</code> green.</li>
             </ul>
 
-            <p class="field"><span class="label">Status</span><span class="capsule notstarted">Not started</span></p>
-            <p class="field"><span class="label">Completed</span><span class="placeholder">&mdash;</span></p>
+            <p class="field"><span class="label">Status</span><span class="capsule completed">Completed</span></p>
+            <p class="field"><span class="label">Completed</span> 2026-07-26</p>
 
             <h4>Implementation notes</h4>
-            <p class="placeholder">To be filled in as work progresses.</p>
+
+            <p><strong>Implemented via TDD, in two phases</strong>, mirroring <a href="#m4">M4</a>/<a href="#m5">M5</a>.
+                Phase&nbsp;A landed the SwiftAstro decoder (tests written first); Phase&nbsp;B switched the app onto it
+                and deleted the moved copies. The <a href="#m2">M2</a> golden suite is the standing byte-identity guard
+                — and the RAW capture's digest is the single most important one in the baseline.</p>
+
+            <p><strong>Delegated decision — the sensor guards move into <code>frames( in: )</code>.</strong> The loader's
+                two guards (<code>sensorData.layout == .bayer</code>, <code>cfaPattern.kind != .xTrans</code>) decide
+                whether there are decodable bytes at all, which is exactly what <code>frames( in: )</code> answers, so
+                they move there and throw <code>SwiftAstro.Error</code>. The <a href="#m1">M1</a> stub's doc already
+                anticipated this ("Throws when the sensor holds nothing this decoder can read"). No test depends on the
+                former <code>RuntimeError</code> type (the loader test asserts only failure; the render tests use
+                <code>throws: ( any Swift.Error ).self</code>).</p>
+
+            <div class="subhead">SwiftAstro — the decoder</div>
+            <p><code>RAWImageDecoder</code> is a verbatim port: <code>frames( in: )</code> (the sensor guards, one
+                frame), <code>contents( of: )</code> (the crop + <code>RAWImageProperties( file: )</code>),
+                <code>linearImage</code>/<code>planeSamples</code> (the host-order 16-bit decode, one plane),
+                <code>linearLuminance</code> (single-plane mean), <code>scaling</code> (identity), <code>fullScale</code>
+                (<code>whiteLevel</code>), <code>bitsPerPixel</code> (<code>.int16</code>), <code>cfaPattern</code> (via the
+                shared <code>ColorFilterArray</code>), <code>dimensions</code>, <code>channelCount</code> (1), the
+                bounds-checked host-order <code>decodeSample</code>, <code>sampleByteOffsets</code> (single zero-based
+                offset), and both <code>detectionImage</code> overloads. The private <code>croppedMosaic</code> is the
+                loader's crop moved verbatim (<code>rawPitch / 2</code> stride, the margin/bounds guards, the
+                row-by-row gather into host-order bytes). The RAW mosaic is host byte order (produced and consumed
+                in-process) — unlike FITS (big-endian) or XISF (byte-order-aware) — so the decode applies no swap.</p>
+
+            <p><strong>The crop-origin CFA phase moves with the crop.</strong> <code>RAWImageProperties( file: )</code>
+                (new) derives the cropped layout — geometry, the CFA pattern <em>at the crop origin</em> (via the
+                relocated <code>cfaPatternString</code>), and the white level — so <code>contents( of: )</code> produces
+                the pattern and the bytes from one source: a slightly different crop cannot desync the demosaic phase
+                from the samples. <code>RAWImageInfo</code> now reads its <code>imageProperties</code> (and its displayed
+                pattern) from this single derivation.</p>
+
+            <div class="subhead">FITScope — the app switch</div>
+            <p>Deleted from <code>ImageProcessor+RAW.swift</code>: <code>rawImageSamples</code> and
+                <code>rawImageLinearLuminance</code>. Kept and rewired onto the decoder: <code>render( data:raw: )</code>
+                (uses <code>planeSamples</code>), <code>render( plane:raw: )</code> (<code>bitsPerPixel</code>),
+                <code>rawImageConfig</code> (<code>scale</code> from <code>fullScale</code>, offset from
+                <code>scaling</code>), <code>rawImagePixelValues</code>
+                (<code>sampleByteOffsets</code>&nbsp;+&nbsp;<code>decodeSample</code>&nbsp;+&nbsp;<code>fullScale</code>),
+                and both <code>rawAutoStretchColorSource</code> overloads. <code>RAWImageLoader.renderSource</code> now
+                goes through <code>frames( in: )</code>&nbsp;/&nbsp;<code>contents( of: )</code>&nbsp;/&nbsp;<code>detectionImage( bytes:properties: )</code>,
+                with its <code>croppedMosaic</code>, <code>detectionImage</code> and the two guards deleted;
+                <code>RAWRenderSource.fullScale</code>/<code>decoded()</code> rewired. No forwarding shims. The app shrank
+                by <strong>~259 lines</strong> (340 deletions vs 81 insertions across the touched app files).</p>
+
+            <p><strong>Tests relocated / retargeted.</strong> New real-frame <code>RAWImageDecoderTests</code> (against
+                the committed <code>C6-R7-M42-Light.cr3</code> plus synthetic layouts) and the behavioural
+                <code>DecoderSymmetryTests.rawExposesEveryOperation()</code> cover the decoder directly. The four
+                crop-origin CFA-phase tests moved from the (now-deleted) app <code>RAWImageInfoTests</code> to
+                <code>RAWImageDecoderTests</code> (targeting <code>RAWImageProperties.cfaPatternString</code>); the app's
+                <code>linearLuminanceIsRawSamples</code> test is superseded by <code>linearImageIsTheRawMosaic</code> and
+                was removed. The new SwiftAstro test file was added to <code>SwiftAstro.xcodeproj</code>, and the deleted
+                app test file removed from <code>FITScope.xcodeproj</code> (both lint).</p>
+
+            <div class="subhead">Verification</div>
+            <ul>
+                <li><strong>Golden suite green with identical digests</strong> — every input, the
+                    <code>C6-R7-M42-Light.cr3</code> capture (the baseline's most important digest) included, reproduces
+                    its committed detection <em>and</em> render digest; no digest changed, no re-baseline.</li>
+                <li>SwiftAstro SwiftPM: <strong>223 tests / 34 suites green</strong> (the new
+                    <code>RAWImageDecoderTests</code> included), with <code>RealFrameValidationTests</code> and the
+                    benchmark <strong>unchanged</strong>. <code>swift build</code> is clean.</li>
+                <li><code>FITScopeTests</code> (golden skipped): <strong>805 tests / 98 suites green</strong>
+                    (810&nbsp;&minus;&nbsp;1 removed luminance test&nbsp;&minus;&nbsp;4 relocated CFA tests;
+                    &minus;1 suite for the deleted <code>RAWImageInfoTests</code>); the RAW subset re-ran green after the
+                    review cleanups.</li>
+                <li>App <code>xcodebuild build</code> of <code>FITScope - Debug</code> (Preview and Thumbnail extensions
+                    included): <strong>BUILD SUCCEEDED</strong>; both <code>project.pbxproj</code> files lint.</li>
+            </ul>
+
+            <div class="note-box">
+                <p><strong>Environmental &mdash; the full eight-target run cannot complete clean.</strong> The same
+                    connected passcode-protected device storm recorded in <a href="#m1">M1</a>&ndash;<a href="#m5">M5</a>
+                    makes an app test-runner "hang before establishing connection" at launch. Each target passes on its
+                    own; M6 changed no UI code.</p>
+            </div>
+
+            <p><strong>Automated review loop.</strong> One round; converged. A fresh-context static reviewer confirmed
+                the crop, the crop-origin CFA phase, the host-order decode, the detection image and the render
+                configuration all byte-identical, the moved guards' error-type change depended on by nothing, the tests
+                genuinely relocated, and both pbxproj edits correct — <strong>no Critical / High / Medium findings</strong>.
+                Three Low cleanups it flagged (all leftovers from the rewiring) were fixed; details below.</p>
 
             <h4>Automated review</h4>
-            <p class="placeholder">To be filled in by the automated review loop.</p>
+            <ul>
+                <li><strong>Round 1 &mdash;</strong> a fresh-context static reviewer verified byte-identity of the crop
+                    (<code>croppedMosaic</code> a verbatim move), the crop-origin CFA derivation
+                    (<code>RAWImageProperties( file: )</code> reproducing the old <code>RAWImageInfo</code> init), the
+                    host-order <code>decodeSample</code> index/bounds equivalence, and every rewired app site; and
+                    confirmed the test relocation and both pbxproj edits complete. <strong>No Critical / High / Medium
+                    findings.</strong>
+                    <ul>
+                        <li><em>Low</em> &mdash; <strong>unused <code>info</code> parameter</strong> in
+                            <code>RAWImageLoader.renderSource</code> (properties now come from
+                            <code>contents( of: )</code>). <strong>Fixed</strong> — parameter dropped.</li>
+                        <li><em>Low</em> &mdash; <strong>unused <code>import SwiftPixel</code></strong> in
+                            <code>RAWImageLoader</code> (the moved <code>detectionImage</code>/<code>croppedMosaic</code>
+                            were its only users). <strong>Fixed</strong> — import removed.</li>
+                        <li><em>Low</em> &mdash; <strong>misleading message on the defensive
+                            <code>frames( in: ).first</code> guard</strong> (the real unsupported-layout error propagates
+                            from <code>frames( in: )</code>). <strong>Fixed</strong> — a comment now notes the guard is a
+                            defensive unwrap.</li>
+                        <li><em>Info</em> &mdash; <code>RAWImageProperties.cfaPatternString</code> is implicitly
+                            <code>internal</code> where the library convention prefers explicit <code>public</code>; it is
+                            a genuine implementation detail exercised only via <code>@testable import</code>, so
+                            <code>internal</code> is defensible. <strong>Deferred</strong> (awareness only).</li>
+                    </ul>
+                </li>
+            </ul>
 
             <h4>Review comments</h4>
-            <p class="placeholder">To be filled in during human review.</p>
+            <ul>
+                <li><strong>Approved.</strong> The human reviewed the milestone and accepted it as-is
+                    (&ldquo;Looks good&rdquo;), including the three Low review cleanups and the Info observation on
+                    <code>cfaPatternString</code>'s access level recorded in the Automated review.</li>
+            </ul>
         </section>
 
         <!-- ============================== M7 ============================== -->

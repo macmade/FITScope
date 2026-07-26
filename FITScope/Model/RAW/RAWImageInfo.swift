@@ -110,17 +110,16 @@ public struct RAWImageInfo: Sendable
         let color  = file.colorData
         let gps    = file.gpsInfo
 
-        let pattern = Self.cfaPatternString( cfa: cfa, leftMargin: sizes.leftMargin, topMargin: sizes.topMargin )
-        let camera  = "\( info.make ) \( info.model )".trimmingCharacters( in: .whitespaces )
+        // The cropped layout — geometry, crop-origin CFA phase and white level — is
+        // derived by the shared decoder, so the pattern this info displays is exactly
+        // the one the render and detection image are built from.
+        let properties = RAWImageProperties( file: file )
+        let pattern    = properties.colorFilterArrayPattern
+        let camera     = "\( info.make ) \( info.model )".trimmingCharacters( in: .whitespaces )
 
         self.url                = url
         self.isColorFilterArray = pattern != nil
-        self.imageProperties    = RAWImageProperties(
-            width:                   sizes.width,
-            height:                  sizes.height,
-            colorFilterArrayPattern: pattern,
-            whiteLevel:              color.maximum > 0 ? Double( color.maximum ) : nil
-        )
+        self.imageProperties    = properties
 
         // An all-zero GPS pair is the "no fix" sentinel, not a real observing site,
         // so it yields no location and its GPS metadata section is dropped.
@@ -137,40 +136,6 @@ public struct RAWImageInfo: Sendable
         self.sections = Self.sections( info: info, sizes: sizes, cfa: cfa, pattern: pattern, shot: shot, lens: lens, color: color, gps: location != nil ? gps : nil )
 
         self.summaryValues = Self.summaryValues( camera: camera, pattern: pattern, shot: shot, lens: lens )
-    }
-
-    /// Derives the cropped mosaic's colour-filter-array pattern (e.g. `"RGGB"`) from
-    /// the sensor's CFA and the visible-area origin, so its Bayer phase is correct
-    /// after the optical-black margins are removed.
-    ///
-    /// - Parameters:
-    ///   - cfa:        The sensor's colour-filter array.
-    ///   - leftMargin: The left margin of the visible area, in pixels.
-    ///   - topMargin:  The top margin of the visible area, in pixels.
-    /// - Returns: The four-letter pattern of the visible mosaic's top-left 2×2 block,
-    ///   or `nil` for a non-Bayer sensor (monochrome, Foveon, or X-Trans — which the
-    ///   2×2 debayer cannot describe and which the loader rejects at render).
-    static func cfaPatternString( cfa: RAWCFAPattern, leftMargin: Int, topMargin: Int ) -> String?
-    {
-        guard cfa.kind == .bayer
-        else
-        {
-            return nil
-        }
-
-        let positions = [ ( 0, 0 ), ( 0, 1 ), ( 1, 0 ), ( 1, 1 ) ]
-        let letters    = positions.compactMap
-        {
-            cfa.channel( atRow: topMargin + $0.0, column: leftMargin + $0.1 )
-        }
-
-        guard letters.count == positions.count
-        else
-        {
-            return nil
-        }
-
-        return String( letters ).uppercased()
     }
 
     /// Assembles the metadata sections from SwiftRAW's structured metadata, omitting

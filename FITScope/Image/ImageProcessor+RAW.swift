@@ -27,9 +27,14 @@ import SwiftAstro
 import SwiftPixel
 import SwiftUtilities
 
-/// Camera-RAW rendering for ``ImageProcessor``: decodes a cropped 16-bit sensor
-/// mosaic and drives the shared pixel pipeline, plus the per-pixel read-out and
-/// detection luminance.
+/// Camera-RAW rendering for ``ImageProcessor``: drives the shared pixel pipeline from
+/// a cropped 16-bit sensor mosaic, plus the per-pixel read-out and the auto-stretch
+/// colour input.
+///
+/// The crop, the sample decode and the detection image all live in the shared
+/// ``RAWImageDecoder`` (SwiftAstro); this extension keeps only what exists because the
+/// app renders and presents — building the pipeline configuration, reading out a pixel
+/// under the cursor, and deriving the auto Screen Transfer colour source.
 public extension ImageProcessor
 {
     /// Renders a decoded RAW file's cropped mosaic into a displayable `CGImage`,
@@ -37,11 +42,11 @@ public extension ImageProcessor
     ///
     /// The bytes are the cropped, visible sensor mosaic — one 16-bit sample per pixel
     /// in host byte order, linear and undemosaiced. This decodes them into a single
-    /// plane, forms the pipeline input from the colour-filter array (a CFA mosaic is
-    /// debayered exactly as the FITS `BAYERPAT` path is, a monochrome sensor is
-    /// expanded to RGB), and runs the very same pipeline the FITS/XISF paths use. The
-    /// samples are raw sensor values, so no scaling applies; the display normalization
-    /// maps their range exactly as for a FITS light frame.
+    /// plane through the shared ``RAWImageDecoder``, forms the pipeline input from the
+    /// colour-filter array (a CFA mosaic is debayered exactly as the FITS `BAYERPAT`
+    /// path is, a monochrome sensor is expanded to RGB), and runs the very same pipeline
+    /// the FITS/XISF paths use. The samples are raw sensor values, so no scaling applies;
+    /// the display normalization maps their range exactly as for a FITS light frame.
     ///
     /// - Parameters:
     ///   - data:       The cropped mosaic's raw bytes.
@@ -49,11 +54,17 @@ public extension ImageProcessor
     ///   - settings:   The user-tunable render settings.
     /// - Returns: The ``RenderResult`` with the display image, its 8-bit bytes and
     ///   the input/output pixel formats.
-    /// - Throws: ``RuntimeError`` for invalid dimensions, truncated data, or an
-    ///   unsupported colour-filter-array pattern.
+    /// - Throws: An error for invalid dimensions, truncated data, or an unsupported
+    ///   colour-filter-array pattern.
     static func render( data: Data, raw properties: RAWImageProperties, settings: Settings = Settings() ) throws -> RenderResult
     {
-        try Self.render( plane: Self.rawImageSamples( data: data, properties: properties ), raw: properties, settings: settings )
+        guard let plane = try RAWImageDecoder.planeSamples( bytes: data, properties: properties ).first
+        else
+        {
+            throw RuntimeError( message: "The RAW sensor mosaic decoded to no samples." )
+        }
+
+        return try Self.render( plane: plane, raw: properties, settings: settings )
     }
 
     /// Renders a camera-RAW image from its already-decoded mosaic plane — the
@@ -69,87 +80,52 @@ public extension ImageProcessor
     /// - Throws: Any error building the configuration or running the pipeline.
     static func render( plane: [ Double ], raw properties: RAWImageProperties, settings: Settings ) throws -> RenderResult
     {
-        let config = try Self.rawImageConfig( properties: properties, settings: settings )
+        let config       = try Self.rawImageConfig( properties: properties, settings: settings )
+        let bitsPerPixel = RAWImageDecoder.bitsPerPixel( from: properties ) ?? .int16
 
-        return try Self.render( planes: [ plane ], width: properties.width, height: properties.height, bitsPerPixel: .int16, config: config )
+        return try Self.render( planes: [ plane ], width: properties.width, height: properties.height, bitsPerPixel: bitsPerPixel, config: config )
     }
 
     /// Builds the pipeline configuration for a RAW image, selecting the input layout
     /// from the colour-filter array (a CFA mosaic is debayered, a monochrome sensor is
-    /// expanded to RGB) and leaving the samples at their raw sensor values (scale 1,
-    /// offset 0).
+    /// expanded to RGB) and leaving the samples at their raw sensor values.
     ///
     /// - Parameters:
     ///   - properties: The image's pixel layout.
     ///   - settings:   The user-tunable render settings.
     /// - Returns: The configured `PixelPipeline.Config`.
-    /// - Throws: ``RuntimeError`` for an unsupported colour-filter-array pattern.
+    /// - Throws: An error for an unsupported colour-filter-array pattern.
     private static func rawImageConfig( properties: RAWImageProperties, settings: Settings ) throws -> PixelPipeline.Config
     {
-        // Scale the raw sensor counts into the native full-scale [0, 1] domain by
-        // their white level (e.g. 1 / 16383 for a 14-bit sensor), mirroring the XISF
-        // 1 / fullScale scaling. This is transparent to the default min/max path
-        // (min/max is scale-invariant), while letting an identity baseline — used
-        // when opening with an auto Screen Transfer — act on that full-scale domain.
-        // A sensor with no reported white level passes through unscaled.
-        let scale = properties.whiteLevel.map { $0 > 0 ? 1 / $0 : 1 } ?? 1
+        // Scale the raw sensor counts into the native full-scale [0, 1] domain by their
+        // white level (e.g. 1 / 16383 for a 14-bit sensor), taken from the shared
+        // decoder, mirroring the XISF 1 / fullScale scaling. This is transparent to the
+        // default min/max path (min/max is scale-invariant), while letting an identity
+        // baseline — used when opening with an auto Screen Transfer — act on that
+        // full-scale domain. A sensor with no reported white level passes through
+        // unscaled. The additive offset is the decoder's affine offset, 0 for RAW (the
+        // samples are the physical sensor counts).
+        let ( _, offset ) = RAWImageDecoder.scaling( from: properties )
+        let scale         = RAWImageDecoder.fullScale( from: properties ).map { $0 > 0 ? 1 / $0 : 1 } ?? 1
 
         guard let cfaPattern = properties.colorFilterArrayPattern
         else
         {
-            return settings.config( scale: scale, offset: 0, inputFormat: .mono )
+            return settings.config( scale: scale, offset: offset, inputFormat: .mono )
         }
 
         let bayer = try ColorFilterArray.pattern( named: cfaPattern )
 
-        return settings.config( scale: scale, offset: 0, headerPattern: bayer )
-    }
-
-    /// Decodes a RAW image's cropped mosaic into a single plane of raw sample values.
-    ///
-    /// - Parameters:
-    ///   - data:       The cropped mosaic's raw bytes.
-    ///   - properties: The image's pixel layout.
-    /// - Returns: The `width × height` samples, in row-major order.
-    /// - Throws: ``RuntimeError`` for an invalid geometry or truncated data.
-    ///
-    /// Exposed (not private) so ``RAWRenderSource/decoded()`` can decode the mosaic
-    /// once and render it without decoding the bytes a second time.
-    static func rawImageSamples( data: Data, properties: RAWImageProperties ) throws -> [ Double ]
-    {
-        guard properties.width > 0, properties.height > 0
-        else
-        {
-            throw RuntimeError( message: "Invalid RAW image geometry: \( properties.width ) × \( properties.height )." )
-        }
-
-        let count    = properties.width * properties.height
-        let required = count * MemoryLayout< UInt16 >.size
-        let bytes    = Data( data.prefix( required ) ) // re-wrap: startIndex may be non-zero, and trim trailing bytes
-
-        guard bytes.count == required
-        else
-        {
-            throw RuntimeError( message: "RAW pixel data too small: \( data.count ) < \( required )." )
-        }
-
-        // The mosaic bytes are produced and consumed in-process (the loader crops the
-        // sensor buffer to this Data), so they carry the host byte order and need no
-        // endianness swap.
-        return bytes.withUnsafeBytes
-        {
-            ( raw: UnsafeRawBufferPointer ) -> [ Double ] in
-
-            ( 0 ..< count ).map
-            {
-                Double( raw.loadUnaligned( fromByteOffset: $0 * MemoryLayout< UInt16 >.size, as: UInt16.self ) )
-            }
-        }
+        return settings.config( scale: scale, offset: offset, headerPattern: bayer )
     }
 
     /// The decoded sample at image coordinates `(x, y)` as a single-element array (a
     /// RAW mosaic is single-channel), for the cursor read-out, mirroring
     /// ``xisfPixelValues`` / ``imageIOPixelValues``.
+    ///
+    /// The byte offset and the single-sample decode both come from the shared
+    /// ``RAWImageDecoder``; this composes the presentation ``PixelValue`` from the
+    /// sample and the sensor's full scale.
     ///
     /// - Parameters:
     ///   - data:       The cropped mosaic's raw bytes.
@@ -160,48 +136,28 @@ public extension ImageProcessor
     ///   or truncated data.
     static func rawImagePixelValues( data: Data, properties: RAWImageProperties, x: Int, y: Int ) -> [ PixelValue ]?
     {
-        guard properties.width > 0, properties.height > 0,
-              x >= 0, x < properties.width, y >= 0, y < properties.height
+        guard let offsets = RAWImageDecoder.sampleByteOffsets( x: x, y: y, properties: properties )
         else
         {
             return nil
         }
 
-        let byteOffset = ( y * properties.width + x ) * MemoryLayout< UInt16 >.size
+        let fullScale = RAWImageDecoder.fullScale( from: properties )
 
-        guard byteOffset >= 0, byteOffset + MemoryLayout< UInt16 >.size <= data.count
-        else
+        let values = offsets.compactMap
         {
-            return nil
+            byteOffset -> PixelValue? in
+
+            guard let value = RAWImageDecoder.decodeSample( bytes: data, at: data.startIndex + byteOffset, properties: properties )
+            else
+            {
+                return nil
+            }
+
+            return PixelValue( value: value, fraction: fullScale.map { value / $0 } )
         }
 
-        let value = data.withUnsafeBytes
-        {
-            ( raw: UnsafeRawBufferPointer ) in Double( raw.loadUnaligned( fromByteOffset: byteOffset, as: UInt16.self ) )
-        }
-
-        return [ PixelValue( value: value, fraction: properties.whiteLevel.map { value / $0 } ) ]
-    }
-
-    /// The per-pixel linear image of a RAW mosaic — the raw single-channel samples —
-    /// as the basis for the detection input, mirroring the shared linear-luminance
-    /// decode. The loader demosaics this to a luminance channel for a CFA sensor
-    /// before detection.
-    ///
-    /// - Parameters:
-    ///   - data:       The cropped mosaic's raw bytes.
-    ///   - properties: The image's pixel layout.
-    /// - Returns: The image dimensions and the linear samples, or `nil` when the plane
-    ///   cannot be decoded.
-    static func rawImageLinearLuminance( data: Data, properties: RAWImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
-    {
-        guard let samples = try? Self.rawImageSamples( data: data, properties: properties )
-        else
-        {
-            return nil
-        }
-
-        return ( width: properties.width, height: properties.height, samples: samples )
+        return values.count == 1 ? values : nil
     }
 
     /// Builds the colour input an auto Screen Transfer derives a *per-channel*
@@ -213,7 +169,7 @@ public extension ImageProcessor
     /// and CFA pattern (split per channel by the derivation, no demosaic), while a
     /// monochrome sensor (no CFA pattern) returns `nil` so the caller falls back to the
     /// mono luminance and a uniform STF. The samples are the raw sensor counts, the
-    /// same domain ``rawImageLinearLuminance(data:properties:)`` produces, so the shared
+    /// same domain the shared decoder's linear image produces, so the shared
     /// derivation's `1 / fullScale` scaling (against the sensor's white level) lands
     /// them in `[0, 1]`.
     ///
@@ -228,7 +184,7 @@ public extension ImageProcessor
         // matching the fast path the caller relied on before the fromPlane split.
         guard let cfaPattern = properties.colorFilterArrayPattern,
               ( try? ColorFilterArray.pattern( named: cfaPattern ) ) != nil,
-              let mosaic      = Self.rawImageLinearLuminance( data: data, properties: properties )
+              let mosaic      = RAWImageDecoder.linearImage( bytes: data, properties: properties )
         else
         {
             return nil

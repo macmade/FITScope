@@ -30,7 +30,7 @@ import SwiftPixel
 /// single plane, rendered repeatedly without re-decoding the bytes.
 ///
 /// Built by ``RAWRenderSource/decoded()`` from
-/// ``ImageProcessor/rawImageSamples(data:properties:)``. A RAW frame is always a
+/// ``RAWImageDecoder/planeSamples(bytes:properties:)``. A RAW frame is always a
 /// single-sensor mosaic, so this never falls back to a byte path. A `Sendable`
 /// value dropped at the end of the render pass.
 public struct RAWDecodedRenderSource: DecodedRenderSource

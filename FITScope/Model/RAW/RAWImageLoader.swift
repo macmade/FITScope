@@ -25,7 +25,6 @@
 import Combine
 import Foundation
 import SwiftAstro
-import SwiftPixel
 import SwiftRAW
 import SwiftUtilities
 
@@ -144,7 +143,7 @@ public class RAWImageLoader: ObservableObject, ImageLoading
                         {
                             () -> any ImageRenderSource in
 
-                            try Self.renderSource( file: file, info: info )
+                            try Self.renderSource( file: file )
                         }
 
                         // The state the image opens in: an auto Screen Transfer when the
@@ -214,122 +213,30 @@ public class RAWImageLoader: ObservableObject, ImageLoading
         return ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
     }
 
-    /// Builds the render source for an unpacked RAW file: crops the sensor's 16-bit
-    /// Bayer buffer to the visible area and builds the detection image.
+    /// Builds the render source for an unpacked RAW file through the shared
+    /// ``RAWImageDecoder``: it enumerates the single frame (rejecting a sensor layout
+    /// it cannot read), crops the 16-bit Bayer buffer to the visible area, and builds
+    /// the detection image — so the rendered bytes and the detection input are exactly
+    /// the ones the library's star detection validates against.
     ///
-    /// - Parameters:
-    ///   - file: The opened, unpacked RAW file.
-    ///   - info: The file's metadata snapshot (holding the cropped layout).
+    /// - Parameter file: The opened, unpacked RAW file.
     /// - Returns: The RAW render source.
-    /// - Throws: ``RuntimeError`` for an unsupported sensor layout (a non-Bayer
+    /// - Throws: ``SwiftAstro/Error`` for an unsupported sensor layout (a non-Bayer
     ///   buffer, or an X-Trans mosaic the 2×2 debayer cannot describe), or truncated
     ///   sensor data.
-    private nonisolated static func renderSource( file: RAWFile, info: RAWImageInfo ) throws -> any ImageRenderSource
+    private nonisolated static func renderSource( file: RAWFile ) throws -> any ImageRenderSource
     {
-        guard file.sensorData.layout == .bayer
+        // `frames( in: )` yields exactly one frame or throws (an unsupported sensor
+        // layout throws there); the guard is a defensive unwrap of `first`.
+        guard let frame = try RAWImageDecoder.frames( in: file ).first
         else
         {
-            throw RuntimeError( message: "Unsupported RAW sensor layout: \( file.sensorData.layout ). Only a 16-bit Bayer/monochrome mosaic can be rendered." )
+            throw RuntimeError( message: "The RAW file holds no decodable image." )
         }
 
-        guard file.cfaPattern.kind != .xTrans
-        else
-        {
-            throw RuntimeError( message: "X-Trans RAW sensors are not supported." )
-        }
+        let ( bytes, properties ) = try RAWImageDecoder.contents( of: frame )
+        let detectionImage        = RAWImageDecoder.detectionImage( bytes: bytes, properties: properties )
 
-        guard let bytes = Self.croppedMosaic( file: file, sizes: file.imageSizes )
-        else
-        {
-            throw RuntimeError( message: "The RAW sensor mosaic could not be read." )
-        }
-
-        let detectionImage = Self.detectionImage( bytes: bytes, properties: info.imageProperties )
-
-        return RAWRenderSource( data: bytes, properties: info.imageProperties, detectionImage: detectionImage )
-    }
-
-    /// Crops the sensor's full 16-bit Bayer buffer to the visible area, dropping the
-    /// optical-black margins, into a tightly-packed row-major mosaic in host byte
-    /// order.
-    ///
-    /// - Parameters:
-    ///   - file:  The unpacked RAW file.
-    ///   - sizes: The image geometry (visible dimensions, margins, and row pitch).
-    /// - Returns: The cropped mosaic bytes, or `nil` for an invalid geometry or a
-    ///   buffer too small to hold the visible area.
-    private nonisolated static func croppedMosaic( file: RAWFile, sizes: RAWImageSizes ) -> Data?
-    {
-        let width         = sizes.width
-        let height        = sizes.height
-        let samplesPerRow = sizes.rawPitch / 2
-
-        guard width > 0, height > 0, sizes.leftMargin >= 0, sizes.topMargin >= 0, samplesPerRow >= sizes.leftMargin + width
-        else
-        {
-            return nil
-        }
-
-        // The vertical bound is enforced against the real buffer length below, once
-        // the zero-copy sensor buffer is in scope.
-
-        return file.withRawImage
-        {
-            ( buffer: UnsafeBufferPointer< UInt16 > ) -> Data? in
-
-            let lastSample = ( sizes.topMargin + height - 1 ) * samplesPerRow + sizes.leftMargin + width
-
-            guard lastSample <= buffer.count, let base = buffer.baseAddress
-            else
-            {
-                return nil
-            }
-
-            var mosaic = [ UInt16 ]()
-
-            mosaic.reserveCapacity( width * height )
-
-            ( 0 ..< height ).forEach
-            {
-                row in
-
-                let start = ( sizes.topMargin + row ) * samplesPerRow + sizes.leftMargin
-
-                mosaic.append( contentsOf: UnsafeBufferPointer( start: base + start, count: width ) )
-            }
-
-            return mosaic.withUnsafeBytes { Data( $0 ) }
-        } ?? nil
-    }
-
-    /// Builds the detection-ready single-channel linear image for a RAW mosaic,
-    /// mirroring the XISF/FITS detection input: a colour-filter-array mosaic is
-    /// demosaiced to a luminance channel via `BayerGrayscaleConverter` (feeding a raw
-    /// mosaic to the detector would inject the Bayer grid as false structure), while a
-    /// monochrome sensor is already a single luminance channel and is used directly.
-    /// Best-effort: any failure returns `nil`, so the load still succeeds and detection
-    /// is simply skipped.
-    ///
-    /// - Parameters:
-    ///   - bytes:      The cropped mosaic's raw bytes.
-    ///   - properties: The image's pixel layout.
-    /// - Returns: The detection image, or `nil` when it cannot be built.
-    private nonisolated static func detectionImage( bytes: Data, properties: RAWImageProperties ) -> PixelBuffer?
-    {
-        guard let luminance = ImageProcessor.rawImageLinearLuminance( data: bytes, properties: properties ),
-              let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false )
-        else
-        {
-            return nil
-        }
-
-        guard let cfaPattern = properties.colorFilterArrayPattern,
-              let pattern     = try? ColorFilterArray.pattern( named: cfaPattern )
-        else
-        {
-            return buffer
-        }
-
-        return ( try? BayerGrayscaleConverter( pattern: pattern ).grayscale( from: buffer ) ) ?? buffer
+        return RAWRenderSource( data: bytes, properties: properties, detectionImage: detectionImage )
     }
 }

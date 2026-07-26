@@ -126,19 +126,6 @@ struct ImageProcessorRAWTests
         #expect( ImageProcessor.rawImagePixelValues( data: data, properties: properties, x: 0, y: -1 ) == nil )
     }
 
-    /// The linear luminance is the raw mosaic samples, at the image geometry.
-    @Test
-    func linearLuminanceIsRawSamples() throws
-    {
-        let samples    = [ UInt16 ]( [ 10, 20, 30, 40, 50, 60 ] )
-        let properties = RAWImageProperties( width: 3, height: 2, colorFilterArrayPattern: "RGGB", whiteLevel: 65535 )
-        let luminance  = try #require( ImageProcessor.rawImageLinearLuminance( data: Self.data( samples ), properties: properties ) )
-
-        #expect( luminance.width == 3 )
-        #expect( luminance.height == 2 )
-        #expect( luminance.samples == samples.map { Double( $0 ) } )
-    }
-
     /// Truncated mosaic data is rejected rather than read out of bounds.
     @Test
     func rejectsTruncatedData() throws
