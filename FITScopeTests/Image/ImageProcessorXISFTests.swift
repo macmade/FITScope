@@ -229,17 +229,6 @@ struct ImageProcessorXISFTests
         #expect( values?.map { $0.value } == [ 4, 40, 400 ] )
     }
 
-    /// The detection luminance is the per-pixel mean of the channels.
-    @Test
-    func luminanceIsChannelMean() throws
-    {
-        let properties = XISFImageProperties( width: 1, height: 1, channelCount: 3, sampleFormat: .uInt16, byteOrder: .little, pixelStorage: .planar, colorSpace: .rgb, colorFilterArrayPattern: nil )
-        let planes     = XISFTestData.uInt16LE( [ 30 ] + [ 60 ] + [ 90 ] )
-        let luminance  = ImageProcessor.xisfLinearLuminance( data: Data( planes ), properties: properties )
-
-        #expect( luminance?.samples == [ 60 ] )
-    }
-
     /// An unsupported colour space is rejected at render, so the file still loads
     /// with its metadata but surfaces the error only when rendered.
     @Test

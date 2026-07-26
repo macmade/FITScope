@@ -184,8 +184,9 @@ public extension ImageProcessor
     }
 
     /// The per-pixel linear image of a RAW mosaic — the raw single-channel samples —
-    /// as the basis for the detection input, mirroring ``xisfLinearLuminance``. The
-    /// loader demosaics this to a luminance channel for a CFA sensor before detection.
+    /// as the basis for the detection input, mirroring the shared linear-luminance
+    /// decode. The loader demosaics this to a luminance channel for a CFA sensor
+    /// before detection.
     ///
     /// - Parameters:
     ///   - data:       The cropped mosaic's raw bytes.

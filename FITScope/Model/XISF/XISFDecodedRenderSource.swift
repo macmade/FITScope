@@ -30,7 +30,7 @@ import SwiftPixel
 /// planes, rendered repeatedly without re-decoding the bytes.
 ///
 /// Built by ``XISFRenderSource/decoded()`` from
-/// ``ImageProcessor/xisfPlaneSamples(data:properties:)``. Every XISF layout decodes
+/// ``XISFImageDecoder/planeSamples(bytes:properties:)``. Every XISF layout decodes
 /// to planes, so there is no byte fallback. A `Sendable` value dropped at the end
 /// of the render pass.
 public struct XISFDecodedRenderSource: DecodedRenderSource
@@ -72,7 +72,7 @@ public struct XISFDecodedRenderSource: DecodedRenderSource
             return colour.subsampled( maxDimension: maxDimension )
         }
 
-        guard let luminance = ImageProcessor.xisfLinearLuminance( fromPlanes: self.planes, properties: self.properties ),
+        guard let luminance = XISFImageDecoder.linearLuminance( fromPlanes: self.planes, properties: self.properties ),
               let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false )
         else
         {

@@ -48,7 +48,7 @@ public struct XISFRenderSource: ImageRenderSource
     /// floating-point sample format, which has no fixed full scale.
     public var fullScale: Double?
     {
-        ImageProcessor.xisfFullScale( self.properties.sampleFormat )
+        XISFImageDecoder.fullScale( from: self.properties )
     }
 
     /// The per-channel colour input for the auto Screen Transfer: a colour-filter-array
@@ -88,7 +88,7 @@ public struct XISFRenderSource: ImageRenderSource
     /// then falls back to the byte path.
     public func decoded() throws -> ( any DecodedRenderSource )?
     {
-        XISFDecodedRenderSource( planes: try ImageProcessor.xisfPlaneSamples( data: self.data, properties: self.properties ), properties: self.properties )
+        XISFDecodedRenderSource( planes: try XISFImageDecoder.planeSamples( bytes: self.data, properties: self.properties ), properties: self.properties )
     }
 
     /// The decoded sample(s) at image coordinates `(x, y)`: three per-channel values

@@ -624,7 +624,7 @@
             <div class="phase">Phase 2 &mdash; Per-format migration</div>
             <ul>
                 <li><span class="num">M4</span><span class="name"><a href="#m4">FITS &mdash; <code>FITSImageDecoder</code></a></span><span class="capsule completed">Completed</span></li>
-                <li><span class="num">M5</span><span class="name"><a href="#m5">XISF &mdash; <code>XISFImageDecoder</code></a></span><span class="capsule notstarted">Not started</span></li>
+                <li><span class="num">M5</span><span class="name"><a href="#m5">XISF &mdash; <code>XISFImageDecoder</code></a></span><span class="capsule completed">Completed</span></li>
                 <li><span class="num">M6</span><span class="name"><a href="#m6">RAW &mdash; <code>RAWImageDecoder</code></a></span><span class="capsule notstarted">Not started</span></li>
                 <li><span class="num">M7</span><span class="name"><a href="#m7">Photographic &mdash; <code>BitmapImageDecoder</code></a></span><span class="capsule notstarted">Not started</span></li>
             </ul>
@@ -1603,7 +1603,7 @@ xcodebuild test -scheme "FITScope - Debug" \
         <!-- ============================== M5 ============================== -->
 
         <section class="milestone" id="m5">
-            <h3><span class="m-num">M5.</span> XISF &mdash; <code>XISFImageDecoder</code> <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M5.</span> XISF &mdash; <code>XISFImageDecoder</code> <span class="capsule completed">Completed</span></h3>
 
             <h4>Goal</h4>
             <p>
@@ -1672,17 +1672,159 @@ xcodebuild test -scheme "FITScope - Debug" \
                 <li>The symmetry test now exercises two implemented formats and still passes.</li>
             </ul>
 
-            <p class="field"><span class="label">Status</span><span class="capsule notstarted">Not started</span></p>
-            <p class="field"><span class="label">Completed</span><span class="placeholder">&mdash;</span></p>
+            <p class="field"><span class="label">Status</span><span class="capsule completed">Completed</span></p>
+            <p class="field"><span class="label">Completed</span> 2026-07-26</p>
 
             <h4>Implementation notes</h4>
-            <p class="placeholder">To be filled in as work progresses.</p>
+
+            <p><strong>Implemented via TDD, in two phases</strong>, mirroring <a href="#m4">M4</a>. Phase&nbsp;A landed
+                the SwiftAstro decoder (tests written first, watched failing against the stubs, then made to pass);
+                Phase&nbsp;B switched the app onto it and deleted the moved copies. The <a href="#m2">M2</a> golden
+                suite is the standing byte-identity guard: the success criterion is that every committed XISF input
+                reproduces its detection-image <em>and</em> render digest unchanged.</p>
+
+            <p><strong>Design decisions the plan delegated</strong> (each recorded with its rationale):</p>
+            <ul>
+                <li><strong><code>xisfBitsPerPixel</code> moves into the decoder.</strong> <code>bitsPerPixel( from: )</code>
+                    is already a required <code>ImageDecoding</code> member (<a href="#m1">M1</a>), so the
+                    sample-format&nbsp;&rarr;&nbsp;<code>BitsPerPixel</code> mapping lands in <code>XISFImageDecoder</code>
+                    and the app's private copy is deleted; <code>render( planes:xisf: )</code> now reads it via
+                    <code>XISFImageDecoder.bitsPerPixel( from: ) ?? .float64</code>. Keeping a second app-side copy would
+                    be exactly the asymmetry <a href="#m8">M8</a> audits. The label is informational (the plane render
+                    consumes decoded <code>Double</code>s), so the <code>?? .float64</code> restores the old
+                    non-optional behaviour for every format (complex&nbsp;&rarr;&nbsp;<code>.float64</code>),
+                    byte-for-byte.</li>
+                <li><strong><code>scaling( from: )</code> is the identity <code>(1,&nbsp;0)</code>.</strong> XISF stores
+                    physical values; there is no <code>BSCALE</code>/<code>BZERO</code> to undo. The render config's
+                    <code>1/fullScale</code> normalisation and its additive offset are now sourced from the decoder's
+                    <code>fullScale</code>/<code>scaling</code> (offset&nbsp;=&nbsp;0), unchanged in value.</li>
+                <li><strong><code>linearImage( bytes:properties: )</code> is the equal-weight luminance.</strong> Unlike
+                    FITS's <code>linearImage</code> (the first raw plane of a cube), XISF's is the per-pixel mean of the
+                    channels — the domain the app's detection image and render statistics already work in — so it is a
+                    faithful port of the app's <code>xisfLinearLuminance( data: )</code>. <code>linearLuminance( fromPlanes: )</code>
+                    applies <em>no</em> affine multiply (the identity scaling would be a no-op), preserving the app's
+                    exact <code>reduce(0.0)</code> mean.</li>
+            </ul>
+
+            <div class="subhead">SwiftAstro &mdash; the decoder</div>
+            <p><code>XISFImageDecoder</code> is a verbatim port of the app's XISF decode: <code>frames( in: )</code>
+                (<code>file.images</code>, throwing on empty), <code>contents( of: )</code> (<code>image.data</code> +
+                <code>XISFImageProperties( image: )</code>), <code>planeSamples</code> (planar/interleaved split),
+                <code>linearImage</code>/<code>linearLuminance</code> (the mean), <code>scaling</code> (identity),
+                <code>fullScale</code> (<code>2ⁿ&nbsp;&minus;&nbsp;1</code>, including <code>UInt64</code>),
+                <code>bitsPerPixel</code>, <code>cfaPattern</code> (through the shared <code>ColorFilterArray</code> from
+                <a href="#m4">M4</a>), <code>dimensions</code>, <code>channelCount</code>, the bounds-checked,
+                byte-order-aware <code>decodeSample</code>, <code>sampleByteOffsets</code> (zero-based; the caller adds
+                <code>data.startIndex</code>), and both <code>detectionImage</code> overloads (luminance, then demosaic
+                when a CFA pattern is present). The private <code>samples( from: )</code>/<code>sampleValue( in: )</code>
+                helpers are character-for-character the former <code>xisfSamples</code>/<code>xisfDecodeSample</code>.</p>
+
+            <div class="subhead">FITScope &mdash; the app switch</div>
+            <p>Deleted from <code>ImageProcessor+XISF.swift</code>: <code>xisfPlaneSamples</code>, <code>xisfSamples</code>,
+                <code>xisfDecodeSample</code>, both <code>xisfLinearLuminance</code> overloads, <code>xisfFullScale</code>
+                and <code>xisfBitsPerPixel</code>. Kept and rewired onto the decoder: <code>render( data:xisf: )</code>
+                (uses <code>planeSamples</code>), <code>render( planes:xisf: )</code> and <code>xisfConfig</code> (use
+                <code>bitsPerPixel</code>/<code>fullScale</code>/<code>scaling</code>), <code>xisfPixelValues</code>
+                (uses <code>sampleByteOffsets</code>&nbsp;+&nbsp;<code>decodeSample</code>&nbsp;+&nbsp;<code>fullScale</code>,
+                composing <code>PixelValue</code> app-side), and both <code>xisfAutoStretchColorSource</code> overloads.
+                <code>XISFImageLoader</code> enumerates through <code>XISFImageDecoder.frames( in: )</code> and builds its
+                detection image with <code>XISFImageDecoder.detectionImage( bytes:properties: )</code> (its private
+                <code>detectionImage</code> deleted); <code>XISFRenderSource</code>/<code>XISFDecodedRenderSource</code>/<code>XISFPreviewRenderer</code>
+                obtain <code>fullScale</code>, the plane decode and the luminance fallback from the decoder. No forwarding
+                shims &mdash; the compiler proves the sweep (a grep for all six deleted names returns nothing). The app
+                shrank by <strong>~296 lines</strong> (361 deletions vs 65 insertions across the touched app files). Six
+                dangling DocC links to the deleted methods (in <code>ImageProcessor+ImageIO.swift</code>,
+                <code>+RAW.swift</code> and <code>XISFDecodedRenderSource.swift</code>) were de-linked or repointed at the
+                decoder.</p>
+
+            <p><strong>Empty-file error type.</strong> The empty-XISF and truncated-render paths now throw
+                <code>SwiftAstro.Error</code> (via the decoder) rather than <code>RuntimeError</code>; the reviewer
+                confirmed nothing depends on the type (the loader test asserts only <code>error != nil</code>; every
+                render-error test uses <code>throws: ( any Swift.Error ).self</code>; no <code>as? RuntimeError</code>
+                anywhere). <code>xisfConfig</code> still throws <code>RuntimeError</code> for the
+                unsupported-colour-space cases — app code, outside the decoder.</p>
+
+            <p><strong>Tests relocated / retargeted.</strong> New real-frame <code>XISFImageDecoderTests</code> (against
+                the committed <code>S30-M42-Corrected.xisf</code> plus synthetic layouts) and the now-behavioural
+                <code>DecoderSymmetryTests.xisfExposesEveryOperation()</code> cover the decoder directly; the app's
+                <code>luminanceIsChannelMean</code> test (which drove the deleted <code>xisfLinearLuminance</code>) is
+                superseded by them and was removed, and two <code>XISFPreviewRendererTests</code> call sites were
+                retargeted at the decoder. The new SwiftAstro test file was added to <code>SwiftAstro.xcodeproj</code>
+                (Decoding group + Sources phase; pbxproj lints).</p>
+
+            <div class="subhead">Verification</div>
+            <ul>
+                <li><strong>Golden suite green with identical digests</strong> — all 38 inputs (the three XISF frames of
+                    <code>MultiImage.xisf</code>, <code>RGBImage.xisf</code> and the <code>S30-M42-Corrected.xisf</code>
+                    capture included) reproduce their committed detection <em>and</em> render digests; no digest changed,
+                    no re-baseline. The byte-identity proof of the migration.</li>
+                <li>SwiftAstro SwiftPM: <strong>201 tests / 33 suites green</strong> (the new
+                    <code>XISFImageDecoderTests</code> included), with <code>RealFrameValidationTests</code> and the
+                    decode benchmark <strong>unchanged</strong>. <code>swift build</code> is clean.</li>
+                <li><code>FITScopeTests</code> (golden skipped): <strong>810 tests / 99 suites green</strong>
+                    (811&nbsp;&minus;&nbsp;1 relocated luminance test), covering the rewired
+                    <code>render</code>/<code>xisfPixelValues</code>/<code>xisfAutoStretchColorSource</code>, the loader,
+                    the render sources and the preview renderer.</li>
+                <li>App <code>xcodebuild build</code> of <code>FITScope - Debug</code> (Preview and Thumbnail extensions
+                    included): <strong>BUILD SUCCEEDED</strong>; both <code>project.pbxproj</code> files lint.</li>
+            </ul>
+
+            <div class="note-box">
+                <p><strong>Environmental &mdash; the full eight-target run cannot complete clean.</strong> A connected,
+                    passcode-protected device triggers the same <code>DTDKRemoteDeviceConnection &hellip; The device is
+                    passcode protected</code> storm recorded in <a href="#m1">M1</a>&ndash;<a href="#m4">M4</a>, making an
+                    app test-runner "hang before establishing connection" at launch. Each target passes when run on its
+                    own (golden, <code>FITScopeTests</code> and the SwiftAstro suite all green on isolated runs;
+                    <code>FITScopeTests</code> needed one retry past the launch storm), with zero assertion failures. M5
+                    changed no UI code.</p>
+            </div>
+
+            <p><strong>Automated review loop.</strong> One round; converged. A fresh-context reviewer (static only)
+                confirmed the migration byte-identical against each deleted method, the <code>decodeSample</code>
+                index/bounds arithmetic correct, the error-type change depended on by nothing, the tests
+                non-tautological and genuinely relocated, and the pbxproj edit sound — <strong>no Critical / High /
+                Medium findings</strong>. The one Low finding (an inaccurate <code>-0.0</code> claim in a doc comment)
+                was fixed; Info notes recorded below.</p>
 
             <h4>Automated review</h4>
-            <p class="placeholder">To be filled in by the automated review loop.</p>
+            <ul>
+                <li><strong>Round 1 &mdash;</strong> a fresh-context static reviewer verified byte-identity of every
+                    moved operation (<code>samples</code>/<code>sampleValue</code>, <code>planeSamples</code>,
+                    <code>sampleByteOffsets</code>, <code>fullScale</code>, <code>detectionImage</code>) against its
+                    deleted app counterpart, the <code>decodeSample</code>
+                    <code>offset&nbsp;=&nbsp;index&nbsp;&minus;&nbsp;startIndex</code> / bounds equivalence, the
+                    no-dependency error-type change, test quality and the pbxproj edit. <strong>No Critical / High /
+                    Medium findings.</strong>
+                    <ul>
+                        <li><em>Low</em> &mdash; <strong>inaccurate <code>-0.0</code> doc claim</strong> in
+                            <code>XISFImageDecoder.linearLuminance</code>: the comment said the mean "keeps a
+                            <code>-0.0</code>'s exact bit pattern", but the <code>reduce(0.0)</code> seed yields
+                            <code>0.0&nbsp;+&nbsp;(&minus;0.0)&nbsp;=&nbsp;+0.0</code>. Not a regression (the deleted app
+                            method used the identical seed, so golden digests are unaffected). <strong>Fixed</strong>
+                            &mdash; the comment now states only that no affine transform is applied and that it is a
+                            faithful <code>reduce(0.0)</code> port.</li>
+                        <li><em>Info</em> &mdash; <strong>cross-format <code>linearImage</code> semantics</strong>: XISF
+                            returns the luminance mean where FITS returns a cube's first plane. Coherent, documented,
+                            byte-identical to the app; no format-agnostic caller is affected today.
+                            <strong>Deferred</strong> — noted for <a href="#m8">M8</a>'s API audit.</li>
+                        <li><em>Info</em> &mdash; <strong>added equal-length guard</strong> in
+                            <code>linearLuminance</code> (<code>planes.allSatisfy</code>), which the app method lacked;
+                            never triggers for real inputs, byte-identical, and aligns XISF with the FITS decoder.
+                            <strong>No change needed.</strong></li>
+                        <li><em>Info</em> &mdash; <strong><code>bitsPerPixel</code> optionality</strong>
+                            (complex&nbsp;&rarr;&nbsp;<code>nil</code>) restored to the old <code>.float64</code> by the
+                            caller's <code>?? .float64</code>; informational label, no byte impact. <strong>No change
+                            needed.</strong></li>
+                    </ul>
+                </li>
+            </ul>
 
             <h4>Review comments</h4>
-            <p class="placeholder">To be filled in during human review.</p>
+            <ul>
+                <li><strong>Approved.</strong> The human reviewed the milestone and accepted it as-is
+                    (&ldquo;Looks good&rdquo;), including the Low <code>-0.0</code> doc-comment fix and the Info
+                    observations recorded in the Automated review.</li>
+            </ul>
         </section>
 
         <!-- ============================== M6 ============================== -->

@@ -108,7 +108,7 @@ public extension ImageProcessor
 
     /// Decodes a photographic image's samples into one plane per meaningful channel,
     /// reading the interleaved layout and skipping any padding component — the
-    /// ImageIO analogue of ``xisfPlaneSamples`` / ``rgbPlaneSamples``.
+    /// ImageIO analogue of the shared XISF plane extraction and ``rgbPlaneSamples``.
     ///
     /// - Parameters:
     ///   - data:       The image's decoded pixel bytes.
@@ -219,7 +219,7 @@ public extension ImageProcessor
 
     /// The per-pixel luminance (mean of the channels) of a photographic image, as a
     /// single-channel image for star detection and the sky-background measurement —
-    /// the ImageIO analogue of ``xisfLinearLuminance`` / the FITS linear-luminance decode. A
+    /// the ImageIO analogue of the shared linear-luminance decode. A
     /// grayscale image yields its single channel unchanged.
     ///
     /// Unlike the FITS/XISF luminance, these samples are display-encoded (gamma), not

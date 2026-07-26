@@ -141,17 +141,14 @@ public class XISFImageLoader: ObservableObject, ImageLoading
 
                         let file = try XISFFile( data: data, options: .lenient )
 
-                        guard file.images.isEmpty == false
-                        else
+                        // Frame enumeration goes through the shared `XISFImageDecoder`,
+                        // which throws when the file holds no image.
+                        let frames = try XISFImageDecoder.frames( in: file ).map
                         {
-                            throw RuntimeError( message: "XISF file contains no image" )
-                        }
+                            frame -> ( info: XISFImageInfo, source: Swift.Result< any ImageRenderSource, any Swift.Error >, opened: ImageProcessor.Settings? ) in
 
-                        let frames = file.images.map
-                        {
-                            image -> ( info: XISFImageInfo, source: Swift.Result< any ImageRenderSource, any Swift.Error >, opened: ImageProcessor.Settings? ) in
-
-                            let info = XISFImageInfo( url: self.url, file: file, image: image )
+                            let image = frame.image
+                            let info  = XISFImageInfo( url: self.url, file: file, image: image )
 
                             // Decode the pixels (and build the detection luminance)
                             // here, while the non-Sendable image is in scope; only the
@@ -163,7 +160,7 @@ public class XISFImageLoader: ObservableObject, ImageLoading
 
                                 let properties     = info.imageProperties
                                 let bytes          = try image.data
-                                let detectionImage = Self.detectionImage( bytes: bytes, properties: properties )
+                                let detectionImage = XISFImageDecoder.detectionImage( bytes: bytes, properties: properties )
 
                                 return XISFRenderSource( data: bytes, properties: properties, detectionImage: detectionImage )
                             }
@@ -265,42 +262,8 @@ public class XISFImageLoader: ObservableObject, ImageLoading
             return nil
         }
 
-        let domain = ImageProcessor.xisfFullScale( info.imageProperties.sampleFormat ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+        let domain = XISFImageDecoder.fullScale( from: info.imageProperties ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
 
         return ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
-    }
-
-    /// Builds the detection-ready single-channel linear image for an XISF image,
-    /// matching the FITS and RAW loaders: a colour-filter-array frame is
-    /// demosaiced to a luminance channel via `BayerGrayscaleConverter`
-    /// (feeding a raw mosaic to the detector would inject the Bayer grid as false
-    /// structure), while a grayscale or RGB frame is already luminance and is used
-    /// directly. Best-effort: any failure returns `nil`, so the load still succeeds
-    /// and detection is simply skipped.
-    ///
-    /// - Parameters:
-    ///   - bytes:      The image's raw pixel bytes.
-    ///   - properties: The image's pixel layout.
-    /// - Returns: The detection image, or `nil` when it cannot be built.
-    private nonisolated static func detectionImage( bytes: Data, properties: XISFImageProperties ) -> PixelBuffer?
-    {
-        guard let luminance = ImageProcessor.xisfLinearLuminance( data: bytes, properties: properties ),
-              let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false )
-        else
-        {
-            return nil
-        }
-
-        // A colour-filter-array frame is demosaiced to a luminance channel before
-        // detection, as the FITS path does; a grayscale or RGB frame is already a
-        // single luminance channel and needs no demosaicing.
-        guard let cfaPattern = properties.colorFilterArrayPattern,
-              let pattern     = try? ColorFilterArray.pattern( named: cfaPattern )
-        else
-        {
-            return buffer
-        }
-
-        return ( try? BayerGrayscaleConverter( pattern: pattern ).grayscale( from: buffer ) ) ?? buffer
     }
 }

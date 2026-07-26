@@ -70,7 +70,7 @@ public enum XISFPreviewRenderer
         // Decode the channel planes once and share them between the auto-stretch
         // statistics and the render, so a one-shot preview decodes the image a single
         // time (every XISF layout decodes to planes, so there is no fallback path).
-        let planes   = try ImageProcessor.xisfPlaneSamples( data: bytes, properties: properties )
+        let planes   = try XISFImageDecoder.planeSamples( bytes: bytes, properties: properties )
         let frame    = XISFDecodedRenderSource( planes: planes, properties: properties )
         let settings = Self.previewSettings( frame: frame, maxDimension: maxDimension, previewsDefaults: previewsDefaults )
 
@@ -134,7 +134,7 @@ public enum XISFPreviewRenderer
                 AutoStretchPreference.autoStretchPreviews( .xisf, in: defaults ),
                 let colorSource = Self.previewColorSource( data: data, properties: properties, maxDimension: maxDimension )
         {
-            let domain = ImageProcessor.xisfFullScale( properties.sampleFormat ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+            let domain = XISFImageDecoder.fullScale( from: properties ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
 
             if let derived = ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
             {
@@ -173,7 +173,7 @@ public enum XISFPreviewRenderer
                 AutoStretchPreference.autoStretchPreviews( .xisf, in: defaults ),
                 let colorSource = frame.autoStretchColorSource( maxDimension: maxDimension )
         {
-            let domain = ImageProcessor.xisfFullScale( properties.sampleFormat ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
+            let domain = XISFImageDecoder.fullScale( from: properties ).map { ImageProcessor.AutoStretchDomain.fullScale( $0 ) } ?? .minMax
 
             if let derived = ImageProcessor.autoStretchSettings( colorSource: colorSource, domain: domain )
             {
@@ -206,7 +206,7 @@ public enum XISFPreviewRenderer
             return colour.subsampled( maxDimension: maxDimension )
         }
 
-        guard let luminance = ImageProcessor.xisfLinearLuminance( data: data, properties: properties ),
+        guard let luminance = XISFImageDecoder.linearImage( bytes: data, properties: properties ),
               let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false )
         else
         {
