@@ -626,7 +626,7 @@
                 <li><span class="num">M4</span><span class="name"><a href="#m4">FITS &mdash; <code>FITSImageDecoder</code></a></span><span class="capsule completed">Completed</span></li>
                 <li><span class="num">M5</span><span class="name"><a href="#m5">XISF &mdash; <code>XISFImageDecoder</code></a></span><span class="capsule completed">Completed</span></li>
                 <li><span class="num">M6</span><span class="name"><a href="#m6">RAW &mdash; <code>RAWImageDecoder</code></a></span><span class="capsule completed">Completed</span></li>
-                <li><span class="num">M7</span><span class="name"><a href="#m7">Photographic &mdash; <code>BitmapImageDecoder</code></a></span><span class="capsule notstarted">Not started</span></li>
+                <li><span class="num">M7</span><span class="name"><a href="#m7">Photographic &mdash; <code>BitmapImageDecoder</code></a></span><span class="capsule completed">Completed</span></li>
             </ul>
 
             <div class="phase">Phase 3 &mdash; Closing</div>
@@ -2032,7 +2032,7 @@ xcodebuild test -scheme "FITScope - Debug" \
         <!-- ============================== M7 ============================== -->
 
         <section class="milestone" id="m7">
-            <h3><span class="m-num">M7.</span> Photographic &mdash; <code>BitmapImageDecoder</code> <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M7.</span> Photographic &mdash; <code>BitmapImageDecoder</code> <span class="capsule completed">Completed</span></h3>
 
             <h4>Goal</h4>
             <p>
@@ -2109,17 +2109,197 @@ xcodebuild test -scheme "FITScope - Debug" \
                     the framework is an implementation detail of one decoder, not a concept the API exposes.</li>
             </ul>
 
-            <p class="field"><span class="label">Status</span><span class="capsule notstarted">Not started</span></p>
-            <p class="field"><span class="label">Completed</span><span class="placeholder">&mdash;</span></p>
+            <p class="field"><span class="label">Status</span><span class="capsule completed">Completed</span></p>
+            <p class="field"><span class="label">Completed</span> 2026-07-26</p>
 
             <h4>Implementation notes</h4>
-            <p class="placeholder">To be filled in as work progresses.</p>
+
+            <p><strong>Implemented via TDD, in two phases</strong>, mirroring <a href="#m4">M4</a>&ndash;<a href="#m6">M6</a>.
+                Phase&nbsp;A landed the SwiftAstro decoder (tests written first, watched failing against the M1 stubs,
+                then made to pass); Phase&nbsp;B switched the app onto it, renamed the render-source types and deleted
+                the moved copies. The <a href="#m2">M2</a> golden suite is the standing byte-identity guard: the success
+                criterion is that every committed photographic input reproduces its detection-image <em>and</em> render
+                digest unchanged.</p>
+
+            <div class="note-box">
+                <p><strong>The <code>fullScale</code> decision &mdash; confirmed with the human before the app
+                    switch.</strong> There are two distinct notions sharing the name. The <em>sample-format span</em>
+                    (<code>BitmapImageProperties.fullScale</code> &mdash; 255 / 65535) normalises the drawn bytes into
+                    <code>[0, 1]</code> for the render and expresses the cursor read-out fraction; the shared
+                    <code>BitmapImageDecoder.fullScale( from: )</code> reports it, used exactly as before. The
+                    <em>auto Screen Transfer domain</em> selector (<code>ImageRenderSource.fullScale</code>) is a
+                    different question: it returns <code>nil</code> for a photographic source so a live &ldquo;Auto&rdquo;
+                    derives in the min/max domain, the deliberate choice for display-referred content. <strong>The
+                    decision was to keep it as-is (min/max):</strong> <code>BitmapRenderSource.fullScale</code> stays
+                    <code>nil</code>. This changes no rendered output &mdash; the golden digests hash the default
+                    <code>makeResult( settings: ImageProcessor.Settings() )</code>, which never invokes the auto-STF
+                    path &mdash; so nothing was re-baselined. The two <code>fullScale</code> notions coincide for the
+                    integer FITS / XISF / RAW formats but diverge here; the render source's doc now spells the
+                    distinction out, and <a href="#m8">M8</a> audits it.</p>
+            </div>
+
+            <div class="subhead">SwiftAstro &mdash; the decoder</div>
+            <p><code>BitmapImageDecoder</code> is a verbatim behavioural port of the app's photographic decode:
+                <code>frames( in: )</code> enumerates <code>CGImageSourceGetCount</code>, reading each frame's EXIF
+                orientation into a lazy <code>BitmapImageFrame</code> handle (throwing on an empty source);
+                <code>contents( of: )</code> draws the frame &mdash; the former <code>ImageIOImageLoader.decode</code> /
+                <code>upright</code> moved verbatim (the <code>noneSkipLast</code> / <code>byteOrder16Little</code> bitmap,
+                the sRGB / DeviceGray selection, the Core&nbsp;Image upright transform);
+                <code>planeSamples</code> is the former <code>imageIOPlaneSamples</code> (one plane per channel, the
+                padding component skipped); <code>linearImage</code> / <code>linearLuminance</code> are the channel mean;
+                <code>scaling</code> is the identity <code>(1,&nbsp;0)</code>; <code>fullScale</code> is the component
+                span (255 / 65535); <code>bitsPerPixel</code> is <code>.uint8</code> / <code>.int16</code>;
+                <code>cfaPattern</code> returns <code>nil</code> and never throws (a photographic frame is never a
+                mosaic &mdash; the uniform answer, present member); <code>decodeSample</code> is the bounds-checked,
+                host-order 1- or 2-byte read (the former <code>imageIOSample</code>);
+                <code>sampleByteOffsets</code> is the zero-based offset arithmetic (caller adds
+                <code>data.startIndex</code>); and both <code>detectionImage</code> overloads mirror the loader's
+                (luminance, no demosaic branch). The private <code>sample</code> helper is the former
+                <code>imageIOSample</code> character-for-character.</p>
+
+            <p><strong>One deliberate alignment beyond a pure copy:</strong> <code>linearLuminance( fromPlanes: )</code>
+                gained the equal-length guard (<code>planes.allSatisfy&nbsp;{&nbsp;$0.count&nbsp;==&nbsp;first.count&nbsp;}</code>)
+                that <code>XISFImageDecoder</code> / <code>RAWImageDecoder</code> already carry and the app's looser
+                original lacked. It is byte-identical for real inputs (planes from <code>planeSamples</code> are always
+                equal length) and turns a would-be trap on malformed input into a <code>nil</code> &mdash; matching the
+                shared-decoder convention rather than the app's original.</p>
+
+            <div class="note-box">
+                <p><strong>Test-target constraint &mdash; <code>NSBitmapImageRep</code>, not
+                    <code>CGImageDestination</code>.</strong> The <code>SwiftAstroTests</code> target enables
+                    <code>.interoperabilityMode( .Cxx )</code> (for LibRAW's C++ <code>libraw</code> module, from
+                    <a href="#m1">M1</a>), and under C++ interop the <code>CGImageDestination</code> family is not
+                    importable while <code>CGImageSource</code> still is &mdash; verified empirically. So the in-memory
+                    container fixtures (single PNG, grayscale PNG, multi-page TIFF) are authored with
+                    <code>NSBitmapImageRep</code>. It cannot tag an EXIF orientation, so the upright path is exercised
+                    by hand-building a <code>BitmapImageFrame( orientation: 6 )</code> over a plain source (a 4&nbsp;&times;&nbsp;2
+                    image comes back 2&nbsp;&times;&nbsp;4); the application's <code>OrientedPhoto.tiff</code> and
+                    <code>MultiImageHEIC.heic</code> golden digests cover the tagged-container and real-HEIC paths end
+                    to end. The synthetic PNG/TIFF/HEIC <em>fixtures</em> the plan names live in the application's
+                    <code>Test Files</code> (they stayed app-side in <a href="#m3">M3</a>), which this library target
+                    does not reach; the decoder tests reproduce their behaviours in memory plus an end-to-end pass over
+                    the committed <code>C6-ASI533-M104-Final.jpg</code> capture.</p>
+            </div>
+
+            <div class="subhead">FITScope &mdash; the app switch, rename and delete</div>
+            <p><code>ImageIOImageLoader</code> now enumerates through <code>BitmapImageDecoder.frames( in: )</code> and
+                builds each frame's bytes and detection image via <code>contents( of: )</code> /
+                <code>detectionImage( bytes:properties: )</code>; its private <code>decode</code>, <code>upright</code>
+                and <code>detectionImage</code> are deleted (and the now-unused <code>CoreGraphics</code> /
+                <code>CoreImage</code> imports with them). <code>ImageIORenderSource</code> &rarr;
+                <code>BitmapRenderSource</code> and <code>ImageIODecodedRenderSource</code> &rarr;
+                <code>BitmapDecodedRenderSource</code> (files, types and the test file renamed with
+                <code>git&nbsp;mv</code>); their <code>decoded()</code>, <code>pixelValues</code>, <code>makeResult</code>
+                and <code>autoStretchColorSource</code> are rewired onto the decoder, with <code>PixelValue</code> still
+                composed app-side. Deleted from <code>ImageProcessor+ImageIO.swift</code>:
+                <code>imageIOPlaneSamples</code>, <code>imageIOSample</code>, both <code>imageIOLinearLuminance</code>
+                overloads; kept and rewired: <code>render( data:imageIO: )</code>,
+                <code>render( planes:imageIO: )</code> (<code>bitsPerPixel</code> from the decoder),
+                <code>imageIOConfig</code> (<code>1&nbsp;/&nbsp;fullScale</code> scale and offset from the decoder's
+                <code>fullScale</code> / <code>scaling</code>) and <code>imageIOPixelValues</code>
+                (<code>sampleByteOffsets</code>&nbsp;+&nbsp;<code>decodeSample</code>&nbsp;+&nbsp;<code>fullScale</code>).
+                No forwarding shims &mdash; a grep for the deleted names and the old type names returns nothing. The app
+                shrank by <strong>~253 net lines</strong> (102 insertions vs 355 deletions across the touched app
+                files).</p>
+
+            <p><strong>Tests relocated / retargeted.</strong> <code>DecoderSymmetryTests.bitmapExposesEveryOperation()</code>
+                grew from asserting the stub throws to asserting real behaviour (and its now-unused
+                <code>expectUnimplemented</code> helper was removed); new
+                <code>BitmapImageDecoderTests</code> cover the decoder directly (synthetic layouts, in-memory PNG/TIFF
+                containers, orientation, and the real JPEG capture); the app's <code>luminanceIsTheChannelMean</code>
+                test (which drove the deleted <code>imageIOLinearLuminance</code>) is superseded by the decoder's
+                <code>linearImageIsTheLuminanceMean</code> and was removed. The new SwiftAstro test file was added to
+                <code>SwiftAstro.xcodeproj</code>; the three app renames were applied across
+                <code>FITScope.xcodeproj</code>. Both <code>project.pbxproj</code> files lint.</p>
+
+            <div class="subhead">Verification</div>
+            <ul>
+                <li><strong>Golden suite green with identical digests</strong> &mdash; every one of the 38 committed
+                    inputs (the five <code>*-Final.jpg</code> captures, <code>MultiImageHEIC.heic</code>,
+                    <code>OrientedPhoto.tiff</code>, <code>PhotoGray16.tiff</code>, <code>PhotoExif.jpeg</code>,
+                    <code>PhotoRGB.png</code>, <code>PhotoHEIC.heic</code> included) reproduces its committed detection
+                    <em>and</em> render digest; no digest changed, no re-baseline
+                    (<code>-only-testing:FITScopeTests/DetectionImageGoldenTests</code>, ~406&nbsp;s). The byte-identity
+                    proof of the migration.</li>
+                <li>SwiftAstro SwiftPM: <strong>246 tests / 35 suites green</strong> (the new
+                    <code>BitmapImageDecoderTests</code> included), with <code>RealFrameValidationTests</code> and the
+                    decode benchmark <strong>unchanged</strong>. <code>swift build</code> is clean.</li>
+                <li><code>FITScopeTests</code> (golden skipped): <strong>804 tests / 98 suites green</strong>
+                    (805&nbsp;&minus;&nbsp;1 removed luminance test), covering the rewired
+                    <code>render</code> / <code>imageIOPixelValues</code> / loader / render sources /
+                    decode-once path.</li>
+                <li>App <code>xcodebuild build</code> of <code>FITScope - Debug</code> (Preview and Thumbnail extensions
+                    included): <strong>BUILD SUCCEEDED</strong>; both <code>project.pbxproj</code> files lint.</li>
+            </ul>
+
+            <div class="note-box">
+                <p><strong>Environmental &mdash; the full eight-target run was not attempted clean.</strong> Consistent
+                    with <a href="#m1">M1</a>&ndash;<a href="#m6">M6</a>, each target was verified in isolation (the
+                    SwiftAstro SwiftPM suite, the golden guard, and <code>FITScopeTests</code> all green on their own
+                    runs); the multi-target Xcode plan and <code>FITScopeUITests</code> remain the human's clean-run
+                    gate before commit. M7 changed no UI code.</p>
+            </div>
+
+            <p><strong>Automated review loop.</strong> One round; converged. A fresh-context reviewer (which diffed the
+                new decoder line-by-line against the deleted app code across both repositories) found <strong>no
+                Critical / High / Medium issues</strong> &mdash; the port is byte-preserving, the unsafe reads are
+                bounds-safe, the sweep is complete and the tests are genuine. One Low doc-accuracy item was fixed; a
+                second Low (dead code) and three Info notes are recorded below.</p>
+
+            <p><strong>Post-review change (human feedback).</strong> On the human's request, the dead
+                <code>ImageDecoding.unimplemented( _: )</code> helper (Automated review, Low&nbsp;#2) was removed now
+                rather than deferred to <a href="#m8">M8</a>: its whole <code>internal</code> extension was deleted from
+                <code>ImageDecoding.swift</code>. It had no remaining callers once every decoder body landed; a grep
+                confirmed this, and <code>swift build</code> and the <code>DecoderSymmetryTests</code> /
+                <code>BitmapImageDecoderTests</code> suites (30 tests) stay green after the removal.</p>
 
             <h4>Automated review</h4>
-            <p class="placeholder">To be filled in by the automated review loop.</p>
+            <ul>
+                <li><strong>Round 1 &mdash;</strong> a fresh-context reviewer verified byte-identity of the draw
+                    (<code>draw</code> / <code>upright</code> / <code>sample</code> verbatim copies of the deleted
+                    <code>decode</code> / <code>upright</code> / <code>imageIOSample</code>), of <code>planeSamples</code>
+                    / <code>linearImage</code> / <code>detectionImage</code>, of the read-out fraction and the config
+                    scale/offset; confirmed the <code>loadUnaligned</code> / <code>load</code> reads are bounds-safe with
+                    no trap or UB, the rename/delete sweep leaves no leftover references, both <code>project.pbxproj</code>
+                    files are consistent, and the tests are non-tautological. <strong>No Critical / High / Medium
+                    findings.</strong>
+                    <ul>
+                        <li><em>Low</em> &mdash; <strong>stale <code>Throws:</code> doc naming <code>RuntimeError</code></strong>
+                            on <code>ImageProcessor.render( data:imageIO: )</code>: the truncation/dimension cases now
+                            come from <code>BitmapImageDecoder</code> as <code>SwiftAstro.Error</code>, only the
+                            channel-count case still throws <code>RuntimeError</code>. <strong>Fixed</strong> &mdash;
+                            reworded to the generic &ldquo;An error for&hellip;&rdquo; the RAW/XISF entries use.</li>
+                        <li><em>Low</em> &mdash; <strong><code>ImageDecoding.unimplemented( _: )</code> is now dead
+                            code</strong> (<code>BitmapImageDecoder</code> was its last caller now that every format's
+                            body has landed). Surfaced for the human, who asked to remove it now rather than defer to
+                            <a href="#m8">M8</a>. <strong>Fixed</strong> &mdash; the helper's <code>internal</code>
+                            extension was deleted (see Review comments); a grep confirmed no remaining callers, and
+                            <code>swift build</code> plus the decoder suites stay green.</li>
+                        <li><em>Info</em> &mdash; the empty-but-openable source now throws
+                            <code>SwiftAstro.Error</code> (via <code>frames( in: )</code>) rather than the loader's old
+                            <code>RuntimeError</code>; no code depends on the type (the loader test asserts only
+                            <code>error != nil</code>). Intended by the initiative. <strong>Deferred</strong> (no action).</li>
+                        <li><em>Info</em> &mdash; the added <code>linearLuminance</code> equal-length guard (positive
+                            hardening, identical to the sibling decoders, byte-identical for real inputs).
+                            <strong>No change needed.</strong></li>
+                        <li><em>Info</em> &mdash; <code>CGImageSourceCopyPropertiesAtIndex</code> is read twice per frame
+                            at load (once by the decoder for orientation, once by the loader for metadata); harmless,
+                            keeps the decoder's <code>Frame</code> free of a non-<code>Sendable</code> dictionary.
+                            <strong>No change needed.</strong></li>
+                    </ul>
+                </li>
+            </ul>
 
             <h4>Review comments</h4>
-            <p class="placeholder">To be filled in during human review.</p>
+            <ul>
+                <li><strong>Remove the dead code.</strong> Delete the now-orphaned
+                    <code>ImageDecoding.unimplemented( _: )</code> helper (Automated review, Round&nbsp;1, Low&nbsp;#2)
+                    rather than deferring it to <a href="#m8">M8</a>: with every format's decoder body landed, it has
+                    no remaining callers. <em>(Applied &mdash; see the implementation notes.)</em></li>
+                <li><strong>Approved.</strong> The human reviewed the milestone and accepted it as-is
+                    (&ldquo;Looks good&rdquo;), including the dead-code removal above and the Low/Info observations
+                    recorded in the Automated review.</li>
+            </ul>
         </section>
 
         <!-- ============================== M8 ============================== -->

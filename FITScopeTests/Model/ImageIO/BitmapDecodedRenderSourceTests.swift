@@ -27,11 +27,11 @@ import Foundation
 import SwiftAstro
 import Testing
 
-/// Tests for ``ImageIODecodedRenderSource`` and ``ImageIORenderSource/decoded()``:
+/// Tests for ``BitmapDecodedRenderSource`` and ``BitmapRenderSource/decoded()``:
 /// the decode-once render is byte-identical to the byte path for mono and RGB
 /// images, and the decoded auto-stretch colour source is the mono luminance.
-@Suite( "ImageIODecodedRenderSource" )
-struct ImageIODecodedRenderSourceTests
+@Suite( "BitmapDecodedRenderSource" )
+struct BitmapDecodedRenderSourceTests
 {
     /// A grayscale image renders identically through the decode-once frame and the
     /// byte path, for several settings.
@@ -40,7 +40,7 @@ struct ImageIODecodedRenderSourceTests
     {
         let data       = Data( [ 100, 125, 150 ] )
         let properties = BitmapImageProperties( width: 3, height: 1, channelCount: 1, componentsPerPixel: 1, bytesPerComponent: 1 )
-        let source     = ImageIORenderSource( data: data, properties: properties )
+        let source     = BitmapRenderSource( data: data, properties: properties )
         let decoded    = try #require( try source.decoded() )
 
         for settings in [ ImageProcessor.Settings(), ImageProcessor.Settings( normalize: .identity ) ]
@@ -61,7 +61,7 @@ struct ImageIODecodedRenderSourceTests
     {
         let data       = Data( [ 200, 10, 20, 255, 20, 200, 10, 255 ] )
         let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
-        let source     = ImageIORenderSource( data: data, properties: properties )
+        let source     = BitmapRenderSource( data: data, properties: properties )
         let decoded    = try #require( try source.decoded() )
 
         for settings in [ ImageProcessor.Settings(), ImageProcessor.Settings( normalize: .identity ) ]
@@ -81,7 +81,7 @@ struct ImageIODecodedRenderSourceTests
     {
         let data       = Data( [ 200, 10, 20, 255, 20, 200, 10, 255 ] )
         let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
-        let decoded    = try #require( try ImageIORenderSource( data: data, properties: properties ).decoded() )
+        let decoded    = try #require( try BitmapRenderSource( data: data, properties: properties ).decoded() )
         let colour     = try #require( decoded.autoStretchColorSource( maxDimension: nil ) )
 
         guard case .mono = colour

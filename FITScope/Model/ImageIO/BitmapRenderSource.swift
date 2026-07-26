@@ -26,14 +26,14 @@ import Foundation
 import SwiftAstro
 import SwiftPixel
 
-/// The ImageIO conformer of ``ImageRenderSource``: a decoded photographic image's
+/// The photographic conformer of ``ImageRenderSource``: a decoded image's
 /// canonically-laid-out pixel bytes and its layout, rendered through the
 /// ImageIO-aware ``ImageProcessor`` entry.
 ///
 /// A `Sendable` value type so it can cross the render concurrency boundary without
 /// sharing the non-`Sendable` `CGImage`. Mirrors ``XISFRenderSource`` /
-/// ``FITSRenderSource``.
-public struct ImageIORenderSource: ImageRenderSource
+/// ``RAWRenderSource`` / ``FITSRenderSource``.
+public struct BitmapRenderSource: ImageRenderSource
 {
     /// The image's decoded, canonically-laid-out pixel bytes.
     public let data: Data
@@ -46,8 +46,15 @@ public struct ImageIORenderSource: ImageRenderSource
     public let detectionImage: PixelBuffer?
 
     /// Always `nil`: a photographic source is already display-referred ("as
-    /// authored"), with no fixed linear full scale — so a live auto Screen Transfer
-    /// falls back to the min/max domain rather than a full-scale one.
+    /// authored"), so its live auto Screen Transfer is deliberately derived in the
+    /// min/max domain rather than a full-scale one.
+    ///
+    /// This is the *auto Screen Transfer domain* selector, a different question from
+    /// the sample-format span ``BitmapImageProperties/fullScale`` — which the shared
+    /// ``BitmapImageDecoder`` does report (`255` / `65535`), and which the render and
+    /// the cursor read-out scale by. The two coincide for the integer FITS / XISF /
+    /// RAW formats; for a display-referred photographic frame they do not, and this
+    /// member keeps the min/max auto-STF domain the format has always used.
     public var fullScale: Double? { nil }
 
     /// Creates a render source from a decoded image's bytes and layout.
@@ -70,14 +77,14 @@ public struct ImageIORenderSource: ImageRenderSource
         try ImageProcessor.render( data: self.data, imageIO: self.properties, settings: settings )
     }
 
-    /// Decodes the image's channel planes once into an ``ImageIODecodedRenderSource``,
+    /// Decodes the image's channel planes once into a ``BitmapDecodedRenderSource``,
     /// so the renderer can render the displayed result and the before/after original
     /// from the one decode. A photographic image always decodes to planes, so this
     /// never returns `nil`; it throws only when the bytes cannot be decoded, and the
     /// caller then falls back to the byte path.
     public func decoded() throws -> ( any DecodedRenderSource )?
     {
-        ImageIODecodedRenderSource( planes: try ImageProcessor.imageIOPlaneSamples( data: self.data, properties: self.properties ), properties: self.properties )
+        BitmapDecodedRenderSource( planes: try BitmapImageDecoder.planeSamples( bytes: self.data, properties: self.properties ), properties: self.properties )
     }
 
     /// The decoded sample(s) at image coordinates `(x, y)`: three per-channel values

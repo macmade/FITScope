@@ -32,7 +32,7 @@ import SwiftPixel
 ///
 /// A `Sendable` value type so it can cross the render concurrency boundary without
 /// sharing the non-`Sendable` `RAWFile`. Mirrors ``XISFRenderSource`` /
-/// ``ImageIORenderSource`` / ``FITSRenderSource``.
+/// ``BitmapRenderSource`` / ``FITSRenderSource``.
 public struct RAWRenderSource: ImageRenderSource
 {
     /// The cropped visible mosaic's raw bytes: one 16-bit sample per pixel, in

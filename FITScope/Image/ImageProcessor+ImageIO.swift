@@ -27,15 +27,20 @@ import SwiftAstro
 import SwiftPixel
 import SwiftUtilities
 
-/// ImageIO-specific rendering for ``ImageProcessor``: turns a photographic image's
-/// decoded, canonically-laid-out samples into channel planes and drives the shared
-/// pixel pipeline, plus the per-pixel read-out and detection luminance.
+/// ImageIO-specific rendering for ``ImageProcessor``: drives the shared pixel pipeline
+/// from a photographic image's decoded, canonically-laid-out samples, plus the
+/// per-pixel read-out.
 ///
-/// Photographic formats (TIFF, PNG, JPEG, and, later, RAW and HEIC) are already
-/// display-encoded, so unlike the linear FITS/XISF paths their samples are shown
-/// **as authored**: the bytes are scaled into `[0, 1]` by the sample format's full
-/// scale and the pipeline's identity normalization leaves them unchanged (the
-/// per-image baseline sets ``Processors/Normalize/Mode/identity``), rather than
+/// The draw, the sample decode and the detection image all live in the shared
+/// ``BitmapImageDecoder`` (SwiftAstro); this extension keeps only what exists because
+/// the app renders and presents — building the pipeline configuration and reading out
+/// a pixel under the cursor.
+///
+/// Photographic formats (TIFF, PNG, JPEG, and, through the same ImageIO path, RAW and
+/// HEIC) are already display-encoded, so unlike the linear FITS/XISF paths their
+/// samples are shown **as authored**: the bytes are scaled into `[0, 1]` by the sample
+/// format's full scale and the pipeline's identity normalization leaves them unchanged
+/// (the per-image baseline sets ``Processors/Normalize/Mode/identity``), rather than
 /// being range-stretched by a min/max normalization.
 public extension ImageProcessor
 {
@@ -44,10 +49,10 @@ public extension ImageProcessor
     /// ``render(data:xisf:settings:)`` for the ImageIO formats.
     ///
     /// The bytes are the image's samples as drawn by the loader into a canonical
-    /// interleaved layout; this decodes them into channel planes and runs the very
-    /// same pipeline the other formats use. The samples are scaled by the format's
-    /// full scale into `[0, 1]`, so a source whose baseline uses the identity
-    /// normalization displays exactly as authored.
+    /// interleaved layout; this decodes them into channel planes through the shared
+    /// ``BitmapImageDecoder`` and runs the very same pipeline the other formats use. The
+    /// samples are scaled by the format's full scale into `[0, 1]`, so a source whose
+    /// baseline uses the identity normalization displays exactly as authored.
     ///
     /// - Parameters:
     ///   - data:       The image's decoded, canonically-laid-out pixel bytes.
@@ -55,11 +60,11 @@ public extension ImageProcessor
     ///   - settings:   The user-tunable render settings.
     /// - Returns: The ``RenderResult`` with the display image, its 8-bit bytes and
     ///   the input/output pixel formats.
-    /// - Throws: ``RuntimeError`` for an unsupported channel count, invalid
-    ///   dimensions, or truncated data.
+    /// - Throws: An error for an unsupported channel count, invalid dimensions, or
+    ///   truncated data.
     static func render( data: Data, imageIO properties: BitmapImageProperties, settings: Settings = Settings() ) throws -> RenderResult
     {
-        try Self.render( planes: Self.imageIOPlaneSamples( data: data, properties: properties ), imageIO: properties, settings: settings )
+        try Self.render( planes: BitmapImageDecoder.planeSamples( bytes: data, properties: properties ), imageIO: properties, settings: settings )
     }
 
     /// Renders a photographic image from its already-decoded channel planes — the
@@ -78,8 +83,9 @@ public extension ImageProcessor
         let config = try Self.imageIOConfig( properties: properties, settings: settings )
 
         // The plane render path consumes decoded Doubles, so the bit depth is passed
-        // for information only; it never re-decodes bytes from this label.
-        let bitsPerPixel: BitsPerPixel = properties.bytesPerComponent >= 2 ? .int16 : .uint8
+        // for information only; it never re-decodes bytes from this label. The shared
+        // decoder answers every bitmap layout, so the 8-bit default is never taken.
+        let bitsPerPixel = BitmapImageDecoder.bitsPerPixel( from: properties ) ?? .uint8
 
         return try Self.render( planes: planes, width: properties.width, height: properties.height, bitsPerPixel: bitsPerPixel, config: config )
     }
@@ -96,84 +102,31 @@ public extension ImageProcessor
     /// - Throws: ``RuntimeError`` for an unsupported channel count.
     private static func imageIOConfig( properties: BitmapImageProperties, settings: Settings ) throws -> PixelPipeline.Config
     {
-        let scale = 1.0 / properties.fullScale
+        // Scale the drawn components into the native full-scale [0, 1] domain by the
+        // format's full scale (1 / 255 for 8-bit, 1 / 65535 for 16-bit), taken from the
+        // shared decoder, mirroring the XISF / RAW 1 / fullScale scaling. This is
+        // transparent to the default min/max path (min/max is scale-invariant), while
+        // letting an identity baseline — the as-authored photographic default — show
+        // the stored values unchanged. The additive offset is the decoder's affine
+        // offset, 0 for a drawn bitmap (the components are already their stored values).
+        let ( _, offset ) = BitmapImageDecoder.scaling( from: properties )
+        let scale         = BitmapImageDecoder.fullScale( from: properties ).map { $0 > 0 ? 1 / $0 : 1 } ?? 1
 
         switch properties.channelCount
         {
-            case 1:  return settings.config( scale: scale, offset: 0, inputFormat: .mono )
-            case 3:  return settings.config( scale: scale, offset: 0, inputFormat: .rgb )
+            case 1:  return settings.config( scale: scale, offset: offset, inputFormat: .mono )
+            case 3:  return settings.config( scale: scale, offset: offset, inputFormat: .rgb )
             default: throw RuntimeError( message: "Unsupported photographic channel count: \( properties.channelCount )." )
         }
     }
 
-    /// Decodes a photographic image's samples into one plane per meaningful channel,
-    /// reading the interleaved layout and skipping any padding component — the
-    /// ImageIO analogue of the shared XISF plane extraction and ``rgbPlaneSamples``.
-    ///
-    /// - Parameters:
-    ///   - data:       The image's decoded pixel bytes.
-    ///   - properties: The image's pixel layout.
-    /// - Returns: One plane per channel, each `width × height` samples.
-    /// - Throws: ``RuntimeError`` for an invalid geometry or truncated data.
-    ///
-    /// Exposed (not private) so ``ImageIORenderSource/decoded()`` can decode the
-    /// planes once and render them without decoding the bytes a second time.
-    static func imageIOPlaneSamples( data: Data, properties: BitmapImageProperties ) throws -> [ [ Double ] ]
-    {
-        guard properties.width > 0, properties.height > 0, properties.channelCount > 0,
-              properties.componentsPerPixel >= properties.channelCount, properties.bytesPerComponent > 0
-        else
-        {
-            throw RuntimeError( message: "Invalid photographic image geometry: \( properties.width ) × \( properties.height ) × \( properties.channelCount )." )
-        }
-
-        let pixelCount     = properties.width * properties.height
-        let bytesPerPixel  = properties.componentsPerPixel * properties.bytesPerComponent
-        let required       = pixelCount * bytesPerPixel
-        let bytes          = Data( data.prefix( required ) ) // re-wrap: startIndex may be non-zero, and trim trailing bytes
-
-        guard bytes.count == required
-        else
-        {
-            throw RuntimeError( message: "Photographic pixel data too small: \( data.count ) < \( required )." )
-        }
-
-        return bytes.withUnsafeBytes
-        {
-            ( raw: UnsafeRawBufferPointer ) -> [ [ Double ] ] in
-
-            ( 0 ..< properties.channelCount ).map
-            {
-                channel in ( 0 ..< pixelCount ).map
-                {
-                    pixel in Self.imageIOSample( raw, at: ( pixel * properties.componentsPerPixel + channel ) * properties.bytesPerComponent, bytesPerComponent: properties.bytesPerComponent )
-                }
-            }
-        }
-    }
-
-    /// Decodes a single sample from a raw byte buffer at a byte offset. The samples
-    /// are stored in the host byte order (little-endian on Apple platforms), matching
-    /// the bitmap the loader drew.
-    ///
-    /// - Parameters:
-    ///   - raw:               The byte buffer.
-    ///   - offset:            The sample's byte offset into the buffer.
-    ///   - bytesPerComponent: The number of bytes per component (`1` or `2`).
-    /// - Returns: The decoded value.
-    private static func imageIOSample( _ raw: UnsafeRawBufferPointer, at offset: Int, bytesPerComponent: Int ) -> Double
-    {
-        if bytesPerComponent >= 2
-        {
-            return Double( raw.loadUnaligned( fromByteOffset: offset, as: UInt16.self ) )
-        }
-
-        return Double( raw.load( fromByteOffset: offset, as: UInt8.self ) )
-    }
-
     /// The per-channel decoded samples of a photographic image at `(x, y)` — one
     /// ``PixelValue`` per meaningful channel (three for colour, one for grayscale) —
-    /// for the cursor read-out, mirroring ``xisfPixelValues`` / ``rgbPixelValues``.
+    /// for the cursor read-out, mirroring ``xisfPixelValues`` / ``rawImagePixelValues``.
+    ///
+    /// The byte offsets and the single-component decode both come from the shared
+    /// ``BitmapImageDecoder``; this composes the presentation ``PixelValue`` from the
+    /// sample and the format's full scale.
     ///
     /// - Parameters:
     ///   - data:       The image's decoded pixel bytes.
@@ -184,91 +137,27 @@ public extension ImageProcessor
     ///   truncated data.
     static func imageIOPixelValues( data: Data, properties: BitmapImageProperties, x: Int, y: Int ) -> [ PixelValue ]?
     {
-        guard properties.width > 0, properties.height > 0, properties.channelCount > 0,
-              x >= 0, x < properties.width, y >= 0, y < properties.height
+        guard let offsets = BitmapImageDecoder.sampleByteOffsets( x: x, y: y, properties: properties )
         else
         {
             return nil
         }
 
-        let pixelIndex = y * properties.width + x
-        let fullScale  = properties.fullScale
+        let fullScale = BitmapImageDecoder.fullScale( from: properties )
 
-        let values = ( 0 ..< properties.channelCount ).compactMap
+        let values = offsets.compactMap
         {
-            channel -> PixelValue? in
+            byteOffset -> PixelValue? in
 
-            let byteOffset = ( pixelIndex * properties.componentsPerPixel + channel ) * properties.bytesPerComponent
-
-            guard byteOffset >= 0, byteOffset + properties.bytesPerComponent <= data.count
+            guard let value = BitmapImageDecoder.decodeSample( bytes: data, at: data.startIndex + byteOffset, properties: properties )
             else
             {
                 return nil
             }
 
-            let value = data.withUnsafeBytes
-            {
-                ( raw: UnsafeRawBufferPointer ) in Self.imageIOSample( raw, at: byteOffset, bytesPerComponent: properties.bytesPerComponent )
-            }
-
-            return PixelValue( value: value, fraction: value / fullScale )
+            return PixelValue( value: value, fraction: fullScale.map { value / $0 } )
         }
 
         return values.count == properties.channelCount ? values : nil
-    }
-
-    /// The per-pixel luminance (mean of the channels) of a photographic image, as a
-    /// single-channel image for star detection and the sky-background measurement —
-    /// the ImageIO analogue of the shared linear-luminance decode. A
-    /// grayscale image yields its single channel unchanged.
-    ///
-    /// Unlike the FITS/XISF luminance, these samples are display-encoded (gamma), not
-    /// linear, since photographic formats are already display-ready; the detection
-    /// stages operate on the encoded values, which is acceptable for locating bright
-    /// features.
-    ///
-    /// - Parameters:
-    ///   - data:       The image's decoded pixel bytes.
-    ///   - properties: The image's pixel layout.
-    /// - Returns: The image dimensions and the linear luminance samples, or `nil`
-    ///   when the planes cannot be decoded.
-    static func imageIOLinearLuminance( data: Data, properties: BitmapImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
-    {
-        guard let planes = try? Self.imageIOPlaneSamples( data: data, properties: properties )
-        else
-        {
-            return nil
-        }
-
-        return Self.imageIOLinearLuminance( fromPlanes: planes, properties: properties )
-    }
-
-    /// The per-pixel luminance (mean of the channels) built from a photographic
-    /// image's already-decoded channel planes — the decode-free counterpart of
-    /// ``imageIOLinearLuminance(data:properties:)``, so the statistics reuse the
-    /// render's decode. A grayscale image yields its single channel unchanged.
-    ///
-    /// - Parameters:
-    ///   - planes:     The already-decoded channel planes.
-    ///   - properties: The image's pixel layout.
-    /// - Returns: The dimensions and averaged luminance samples, or `nil` when empty.
-    static func imageIOLinearLuminance( fromPlanes planes: [ [ Double ] ], properties: BitmapImageProperties ) -> ( width: Int, height: Int, samples: [ Double ] )?
-    {
-        guard let first = planes.first
-        else
-        {
-            return nil
-        }
-
-        let samples = ( 0 ..< first.count ).map
-        {
-            index -> Double in
-
-            let sum = planes.reduce( 0.0 ) { $0 + $1[ index ] }
-
-            return sum / Double( planes.count )
-        }
-
-        return ( width: properties.width, height: properties.height, samples: samples )
     }
 }

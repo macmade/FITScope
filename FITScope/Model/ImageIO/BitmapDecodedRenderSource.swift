@@ -26,14 +26,14 @@ import Foundation
 import SwiftAstro
 import SwiftPixel
 
-/// The ImageIO ``DecodedRenderSource``: a photographic image decoded once into its
-/// channel planes, rendered repeatedly without re-decoding the bytes.
+/// The photographic ``DecodedRenderSource``: an image decoded once into its channel
+/// planes, rendered repeatedly without re-decoding the bytes.
 ///
-/// Built by ``ImageIORenderSource/decoded()`` from
-/// ``ImageProcessor/imageIOPlaneSamples(data:properties:)``. A photographic image
+/// Built by ``BitmapRenderSource/decoded()`` from
+/// ``BitmapImageDecoder/planeSamples(bytes:properties:)``. A photographic image
 /// always decodes to planes, so this never falls back to a byte path. A `Sendable`
 /// value dropped at the end of the render pass.
-public struct ImageIODecodedRenderSource: DecodedRenderSource
+public struct BitmapDecodedRenderSource: DecodedRenderSource
 {
     /// The already-decoded channel planes.
     public let planes: [ [ Double ] ]
@@ -41,7 +41,7 @@ public struct ImageIODecodedRenderSource: DecodedRenderSource
     /// The image's pixel layout.
     public let properties: BitmapImageProperties
 
-    /// Creates a decoded ImageIO render source.
+    /// Creates a decoded photographic render source.
     ///
     /// - Parameters:
     ///   - planes:     The already-decoded channel planes.
@@ -54,7 +54,7 @@ public struct ImageIODecodedRenderSource: DecodedRenderSource
 
     /// Renders the already-decoded planes, driving the decode-free
     /// ``ImageProcessor/render(planes:imageIO:settings:)`` — the same core the
-    /// byte-based ``ImageIORenderSource/makeResult(settings:)`` reaches after
+    /// byte-based ``BitmapRenderSource/makeResult(settings:)`` reaches after
     /// decoding, so the result is identical without decoding twice.
     public func makeResult( settings: ImageProcessor.Settings ) throws -> ImageProcessor.RenderResult
     {
@@ -64,11 +64,12 @@ public struct ImageIODecodedRenderSource: DecodedRenderSource
     /// The auto Screen Transfer colour input from the already-decoded planes: a
     /// single-channel luminance (the mean of the channels), subsampled for a
     /// downsampled preview. A photographic source has no per-channel auto-stretch
-    /// input, so this mirrors the byte-based ``ImageIORenderSource`` default, whose
-    /// mono source is the detection image — itself the mean-of-channels luminance.
+    /// input, so this mirrors the byte-based ``BitmapRenderSource`` default, whose
+    /// mono source is the detection image — itself the mean-of-channels luminance —
+    /// built here through the shared ``BitmapImageDecoder``.
     public func autoStretchColorSource( maxDimension: Int? ) -> ImageProcessor.AutoStretchColorSource?
     {
-        guard let luminance = ImageProcessor.imageIOLinearLuminance( fromPlanes: self.planes, properties: self.properties ),
+        guard let luminance = BitmapImageDecoder.linearLuminance( fromPlanes: self.planes, properties: self.properties ),
               let buffer    = try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false )
         else
         {

@@ -23,8 +23,6 @@
  ******************************************************************************/
 
 import Combine
-import CoreGraphics
-import CoreImage
 import Foundation
 import ImageIO
 import SwiftAstro
@@ -36,9 +34,10 @@ import SwiftUtilities
 /// publishing the result or the failure for a view to observe. Mirrors
 /// ``XISFImageLoader`` / ``FITSImageLoader``.
 ///
-/// Decoding happens off the main actor via `CGImageSource`; the non-`Sendable`
-/// `CGImage` is drawn into a canonical bitmap there, and only the `Sendable`
-/// per-image info and render sources cross back.
+/// Decoding happens off the main actor through the shared ``BitmapImageDecoder``,
+/// which enumerates the source's frames and draws each non-`Sendable` `CGImage` into
+/// a canonical bitmap there, so only the `Sendable` per-image info and render sources
+/// cross back.
 ///
 /// Because photographic images are already display-encoded, each frame's renderer
 /// is seeded with an *as-authored* baseline (the identity normalization), so it
@@ -154,39 +153,32 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
                             data = try Data( contentsOf: self.url )
                         }
 
-                        guard let source = CGImageSourceCreateWithData( data as CFData, nil ), CGImageSourceGetCount( source ) > 0
+                        guard let source = CGImageSourceCreateWithData( data as CFData, nil )
                         else
                         {
                             throw RuntimeError( message: "The image could not be read." )
                         }
 
-                        let frames = ( 0 ..< CGImageSourceGetCount( source ) ).map
+                        let frames = try BitmapImageDecoder.frames( in: source ).map
                         {
-                            index -> ( info: ImageIOImageInfo, source: Swift.Result< any ImageRenderSource, any Swift.Error > ) in
+                            frame -> ( info: ImageIOImageInfo, source: Swift.Result< any ImageRenderSource, any Swift.Error > ) in
 
-                            let properties = CGImageSourceCopyPropertiesAtIndex( source, index, nil ) as? [ String: Any ] ?? [ : ]
+                            let properties = CGImageSourceCopyPropertiesAtIndex( source, frame.index, nil ) as? [ String: Any ] ?? [ : ]
                             let info       = ImageIOImageInfo( url: self.url, properties: properties, frameTitle: nil )
 
                             // Decode the pixels (and build the detection luminance)
-                            // here, while the non-Sendable CGImage is in scope; only
-                            // the Sendable render source crosses back. A decode failure
-                            // must not fail the load, so it is captured and surfaces at
-                            // render.
+                            // here, while the non-Sendable CGImageSource is in scope;
+                            // only the Sendable render source crosses back. A decode
+                            // failure must not fail the load, so it is captured and
+                            // surfaces at render.
                             let renderSource = Swift.Result
                             {
                                 () -> any ImageRenderSource in
 
-                                guard let cgImage = CGImageSourceCreateImageAtIndex( source, index, nil )
-                                else
-                                {
-                                    throw RuntimeError( message: "The image could not be decoded." )
-                                }
+                                let ( bytes, layout ) = try BitmapImageDecoder.contents( of: frame )
+                                let detectionImage    = BitmapImageDecoder.detectionImage( bytes: bytes, properties: layout )
 
-                                let orientation    = ( properties[ kCGImagePropertyOrientation as String ] as? NSNumber )?.intValue ?? 1
-                                let decoded        = try Self.decode( cgImage, orientation: orientation )
-                                let detectionImage = Self.detectionImage( bytes: decoded.bytes, properties: decoded.properties )
-
-                                return ImageIORenderSource( data: decoded.bytes, properties: decoded.properties, detectionImage: detectionImage )
+                                return BitmapRenderSource( data: bytes, properties: layout, detectionImage: detectionImage )
                             }
 
                             return ( info: info, source: renderSource )
@@ -233,133 +225,5 @@ public class ImageIOImageLoader: ObservableObject, ImageLoading
             self.error         = error
             self.imageObserver = nil
         }
-    }
-
-    /// Draws a decoded `CGImage` into a canonical, tightly-packed bitmap and captures
-    /// its layout, so the non-`Sendable` image need not cross the render concurrency
-    /// boundary.
-    ///
-    /// A grayscale image is drawn as a single channel; any other colour model is
-    /// drawn as `RGBX` in the sRGB space (the fourth component is unused padding
-    /// CoreGraphics requires). A source deeper than 8 bits per component is preserved
-    /// at 16 bits, stored little-endian to match the host byte order the decoder
-    /// reads. Alpha is not composited — the raw colour components are taken — so an
-    /// opaque image (the common case) is reproduced exactly.
-    ///
-    /// - Parameters:
-    ///   - cgImage:     The decoded image.
-    ///   - orientation: The image's EXIF orientation (`1`...`8`); the image is rotated
-    ///                 or flipped to upright before it is drawn, so a portrait phone
-    ///                 photo displays the right way up.
-    /// - Returns: The canonical layout and its bytes.
-    /// - Throws: ``RuntimeError`` for invalid dimensions or a bitmap context that
-    ///   cannot be created.
-    private nonisolated static func decode( _ cgImage: CGImage, orientation: Int = 1 ) throws -> ( properties: BitmapImageProperties, bytes: Data )
-    {
-        let image  = Self.upright( cgImage, orientation: orientation )
-        let width  = image.width
-        let height = image.height
-
-        guard width > 0, height > 0
-        else
-        {
-            throw RuntimeError( message: "Invalid image dimensions: \( width ) × \( height )." )
-        }
-
-        let isColor            = ( image.colorSpace?.model ?? .rgb ) != .monochrome
-        let bytesPerComponent  = image.bitsPerComponent > 8 ? 2 : 1
-        let channelCount       = isColor ? 3 : 1
-        let componentsPerPixel = isColor ? 4 : 1
-        let bitsPerComponent   = bytesPerComponent * 8
-        let bytesPerRow        = width * componentsPerPixel * bytesPerComponent
-        let colorSpace         = isColor ? ( CGColorSpace( name: CGColorSpace.sRGB ) ?? CGColorSpaceCreateDeviceRGB() ) : CGColorSpaceCreateDeviceGray()
-        var bitmapInfo         = ( isColor ? CGImageAlphaInfo.noneSkipLast : CGImageAlphaInfo.none ).rawValue
-
-        if bytesPerComponent >= 2
-        {
-            bitmapInfo |= CGBitmapInfo.byteOrder16Little.rawValue
-        }
-
-        var buffer = [ UInt8 ]( repeating: 0, count: bytesPerRow * height )
-        let drew   = buffer.withUnsafeMutableBytes
-        {
-            ( raw: UnsafeMutableRawBufferPointer ) -> Bool in
-
-            guard let base = raw.baseAddress,
-                  let context = CGContext( data: base, width: width, height: height, bitsPerComponent: bitsPerComponent, bytesPerRow: bytesPerRow, space: colorSpace, bitmapInfo: bitmapInfo )
-            else
-            {
-                return false
-            }
-
-            context.draw( image, in: CGRect( x: 0, y: 0, width: width, height: height ) )
-
-            return true
-        }
-
-        guard drew
-        else
-        {
-            throw RuntimeError( message: "The image could not be drawn into a bitmap context." )
-        }
-
-        let properties = BitmapImageProperties( width: width, height: height, channelCount: channelCount, componentsPerPixel: componentsPerPixel, bytesPerComponent: bytesPerComponent )
-
-        return ( properties, Data( buffer ) )
-    }
-
-    /// Returns the image rotated/flipped to upright per its EXIF orientation, so a
-    /// portrait phone photo (a non-`1` orientation, common in HEIC and JPEG) displays
-    /// the right way up rather than sideways.
-    ///
-    /// An orientation of `1` (the default and overwhelmingly common case) is returned
-    /// unchanged, so ordinary images take the exact same path as before. Any other
-    /// orientation is applied via Core Image's canonical `oriented(forExifOrientation:)`,
-    /// preserving the source's bit depth (a deeper-than-8-bit source stays 16-bit). If
-    /// the transform cannot be rendered, the original image is returned unchanged.
-    ///
-    /// - Parameters:
-    ///   - cgImage:     The decoded image, in its stored pixel orientation.
-    ///   - orientation: The EXIF orientation (`1`...`8`).
-    /// - Returns: The uprighted image, or `cgImage` when no transform applies.
-    private nonisolated static func upright( _ cgImage: CGImage, orientation: Int ) -> CGImage
-    {
-        guard ( 2 ... 8 ).contains( orientation )
-        else
-        {
-            return cgImage
-        }
-
-        let oriented   = CIImage( cgImage: cgImage ).oriented( forExifOrientation: Int32( orientation ) )
-        let colorSpace = cgImage.colorSpace ?? ( CGColorSpace( name: CGColorSpace.sRGB ) ?? CGColorSpaceCreateDeviceRGB() )
-        let format     = cgImage.bitsPerComponent > 8 ? CIFormat.RGBA16 : CIFormat.RGBA8
-
-        guard let uprighted = CIContext().createCGImage( oriented, from: oriented.extent, format: format, colorSpace: colorSpace )
-        else
-        {
-            return cgImage
-        }
-
-        return uprighted
-    }
-
-    /// Builds the detection-ready single-channel linear image for a photographic
-    /// image (the mean of its channels), mirroring the FITS/XISF detection input so
-    /// star detection and the sky-background measurement run identically. Best-effort:
-    /// any failure returns `nil`, so the load still succeeds and detection is skipped.
-    ///
-    /// - Parameters:
-    ///   - bytes:      The image's decoded pixel bytes.
-    ///   - properties: The image's pixel layout.
-    /// - Returns: The detection image, or `nil` when it cannot be built.
-    private nonisolated static func detectionImage( bytes: Data, properties: BitmapImageProperties ) -> PixelBuffer?
-    {
-        guard let luminance = ImageProcessor.imageIOLinearLuminance( data: bytes, properties: properties )
-        else
-        {
-            return nil
-        }
-
-        return try? PixelBuffer( width: luminance.width, height: luminance.height, channels: 1, pixels: luminance.samples, isNormalized: false )
     }
 }

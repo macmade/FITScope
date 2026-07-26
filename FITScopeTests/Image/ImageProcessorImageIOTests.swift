@@ -124,20 +124,6 @@ struct ImageProcessorImageIOTests
         #expect( Array( result.bytes ) == [ 0, 0, 0, 127, 127, 127, 255, 255, 255 ] )
     }
 
-    /// The luminance detection image is the per-pixel mean of the channels.
-    @Test
-    func luminanceIsTheChannelMean() throws
-    {
-        // Pixel 0 mean 0, pixel 1 mean (60 + 120 + 180) / 3 = 120.
-        let data       = Data( [ 0, 0, 0, 255, 60, 120, 180, 255 ] )
-        let properties = BitmapImageProperties( width: 2, height: 1, channelCount: 3, componentsPerPixel: 4, bytesPerComponent: 1 )
-        let luminance  = try #require( ImageProcessor.imageIOLinearLuminance( data: data, properties: properties ) )
-
-        #expect( luminance.width == 2 )
-        #expect( luminance.height == 1 )
-        #expect( luminance.samples == [ 0, 120 ] )
-    }
-
     /// An out-of-bounds read-out coordinate returns `nil`.
     @Test
     func outOfBoundsReadoutIsNil() throws
