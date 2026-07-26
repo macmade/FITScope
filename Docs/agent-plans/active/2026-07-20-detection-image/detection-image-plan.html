@@ -631,7 +631,7 @@
 
             <div class="phase">Phase 3 &mdash; Closing</div>
             <ul>
-                <li><span class="num">M8</span><span class="name"><a href="#m8">Symmetry check &mdash; no partial surfaces, no app vocabulary</a></span><span class="capsule notstarted">Not started</span></li>
+                <li><span class="num">M8</span><span class="name"><a href="#m8">Symmetry check &mdash; no partial surfaces, no app vocabulary</a></span><span class="capsule completed">Completed</span></li>
                 <li><span class="num">M9</span><span class="name"><a href="#m9">Cleanup &mdash; last in-app decode, scaffolding removal, seam confirmation</a></span><span class="capsule notstarted">Not started</span></li>
             </ul>
 
@@ -2305,7 +2305,7 @@ xcodebuild test -scheme "FITScope - Debug" \
         <!-- ============================== M8 ============================== -->
 
         <section class="milestone" id="m8">
-            <h3><span class="m-num">M8.</span> Symmetry check &mdash; no partial surfaces, no app vocabulary <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M8.</span> Symmetry check &mdash; no partial surfaces, no app vocabulary <span class="capsule completed">Completed</span></h3>
 
             <h4>Goal</h4>
             <p>
@@ -2356,17 +2356,147 @@ xcodebuild test -scheme "FITScope - Debug" \
                 <li>Any gap found here is fixed in this milestone, not deferred to cleanup.</li>
             </ul>
 
-            <p class="field"><span class="label">Status</span><span class="capsule notstarted">Not started</span></p>
-            <p class="field"><span class="label">Completed</span><span class="placeholder">&mdash;</span></p>
+            <p class="field"><span class="label">Status</span><span class="capsule completed">Completed</span></p>
+            <p class="field"><span class="label">Completed</span> 2026-07-26</p>
 
             <h4>Implementation notes</h4>
-            <p class="placeholder">To be filled in as work progresses.</p>
+
+            <p><strong>A verification milestone, implemented via TDD.</strong> M8 adds no production code: it grows
+                the symmetry suite, audits the shipped surface, and updates <a href="#appendix-a">Appendix A</a>. The
+                TDD framing here is the milestone's own test: the format-agnostic test was written to reach a
+                detection image through a single format-blind pipeline, and <em>that it compiles and passes for all
+                four formats is the proof the API is symmetric</em>. The source document's stated failure mode is
+                &ldquo;stopping early&rdquo;; had any format been left with a partial surface, the generic pipeline
+                would not have type-checked or would have needed per-format special-casing &mdash; the finding the
+                task calls for. No such gap was found.</p>
+
+            <div class="subhead">The end-to-end symmetry test (Tasks 1 &amp; 2)</div>
+            <p><code>DecoderSymmetryTests</code> gained a single generic helper,
+                <code>detectionImagesExercisingEveryOperation( in:using: )</code>, constrained only to
+                <code>&lt;D: ImageDecoding&gt;</code>: it enumerates frames, reads contents, decodes linearly, combines
+                planes to luminance, answers every header query
+                (<code>dimensions</code>/<code>channelCount</code>/<code>bitsPerPixel</code>/<code>fullScale</code>/<code>scaling</code>/<code>cfaPattern</code>),
+                reads a single sample through <code>sampleByteOffsets</code>&nbsp;+&nbsp;<code>decodeSample</code>, and
+                builds the detection image through <em>both</em> entry points &mdash; using nothing but protocol
+                requirements, never naming a concrete format. A URL-driven dispatch
+                (<code>detectionImages( fromCaptureNamed: )</code>) opens the right container by file extension and
+                hands it to that one helper. The <code>switch</code> is the entire extent of &ldquo;knowing the
+                format&rdquo;: it only chooses which container to parse, exactly as the app's
+                <code>ImageLoader.loader( for: )</code> selects a loader from a file's <code>UTType</code> &mdash;
+                container parsing is explicitly the consumer's job (<code>ImageDecoding.swift:67</code>), and the
+                accepted <a href="#m1">M1</a> decision that associated types make every call site name its format
+                statically. The parameterized <code>reachesADetectionImageForEveryFormatWithoutKnowingIt( capture: )</code>
+                drives one committed capture per format &mdash; <code>C6-ASI533-M104-Light.fits</code> (FITS),
+                <code>S30-M42-Corrected.xisf</code> (XISF), <code>C6-R7-M42-Light.cr3</code> (RAW),
+                <code>C6-ASI533-M104-Final.jpg</code> (photographic) &mdash; and asserts each reaches a valid,
+                single-channel detection image. This subsumes the &ldquo;every operation behaves on a real committed
+                frame&rdquo; task: the pre-existing <code>*ExposesEveryOperation</code> tests pin the shape on
+                synthetic layouts, and the new helper exercises the whole set on real frames, format-blind.</p>
+
+            <div class="subhead">Cross-format invariant (Task 7)</div>
+            <p><code>fitsAndXisfAgreeOnTheFullScaleSpan()</code> pins that
+                <code>FITSImageDecoder.fullScale</code> and <code>XISFImageDecoder.fullScale</code> still return the
+                same span for the integer formats they share &mdash; 255 / 65535 / 4294967295 for 8- / 16- / 32-bit,
+                and <code>nil</code> for floating point &mdash; so the migration did not quietly separate the two
+                paths. Verified against both implementations: FITS derives it from <code>BITPIX</code> via
+                <code>fullScale( for: )</code>, XISF from the sample format via <code>UIntN.max</code>; the 32-bit
+                unsigned span (<code>4294967295</code>) is the documented convention, applied after
+                <code>BZERO</code>/<code>BSCALE</code>.</p>
+
+            <div class="subhead">Audit results (Tasks 3&ndash;6) &mdash; all clean, no gap fixed here</div>
+            <ul>
+                <li><strong>No app vocabulary in SwiftAstro (Task 4).</strong> A grep of the whole SwiftAstro package
+                    source for <code>Settings</code>, <code>PixelPipeline.Config</code>, <code>RenderResult</code>,
+                    <code>PixelValue</code>, <code>ImageRenderSource</code>, <code>ImageLoading</code>,
+                    <code>Combine</code>, progress, cancellation and metadata types returns nothing from the decode
+                    surface. The only near-hits are benign: <code>BayerGrayscaleConverter.swift:87</code> uses
+                    <em>SwiftPixel</em>'s <code>PixelPipeline</code> (a dependency the demosaicer legitimately drives,
+                    predating this initiative &mdash; not the app's <code>ImageProcessor.PixelPipeline.Config</code>),
+                    and the words &ldquo;progress / cancellation / metadata&rdquo; appear only in
+                    <code>ImageDecoding.swift</code>'s doc comment, which <em>states</em> they are excluded.</li>
+                <li><strong>Public surface is all format vocabulary (Task 3).</strong> Every <code>public</code>
+                    declaration under <code>Preprocessing/Decoding/</code> is one of: the four decoders and the
+                    <code>ImageDecoding</code> protocol; the four <code>Container</code>/<code>Frame</code>/<code>Properties</code>
+                    triples (headers, sample formats, byte order, white level, component width, CFA pattern); and the
+                    shared <code>ColorFilterArray</code>. The results it produces name only library primitives
+                    (<code>PixelBuffer</code>, <code>BitsPerPixel</code>, <code>Processors.Debayer.Pattern</code>).
+                    Nothing knows a value is bound for a pipeline, a histogram or a tooltip.</li>
+                <li><strong>Uniform answers are present members (Task 5).</strong> Pinned by both the synthetic
+                    <code>rawExposesEveryOperation()</code>/<code>bitmapExposesEveryOperation()</code> (RAW
+                    <code>planeSamples</code> returns one plane; <code>BitmapImageDecoder.cfaPattern</code> returns
+                    <code>nil</code>) and the real-frame exercise (RAW's <code>frames</code> yields exactly one).</li>
+                <li><strong>Phase-2 judgement calls still read consistently (Task 6).</strong>
+                    <code>bitsPerPixel</code> is a uniform member every format answers &mdash; XISF's label moved into
+                    the decoder in <a href="#m5">M5</a> rather than staying a second app-side copy; the RAW layout
+                    guards live in <code>RAWImageDecoder.frames( in: )</code> (<a href="#m6">M6</a>), throwing
+                    <code>SwiftAstro.Error</code> where there are no decodable bytes; and the photographic
+                    <code>fullScale</code> distinction holds (<a href="#m7">M7</a>) &mdash; the decoder's
+                    <code>fullScale</code> is the component span for the read-out, while the app-side
+                    <code>BitmapRenderSource.fullScale</code> stays <code>nil</code> for the auto-STF domain. None
+                    reintroduces an asymmetry.</li>
+            </ul>
+
+            <div class="subhead">Appendix A updated (Task 8)</div>
+            <p><a href="#appendix-a">Appendix A</a> now documents the shipped <code>ImageDecoding</code> protocol
+                rather than the proposed <code>enum &lt;Format&gt;ImageDecoder</code> template, with a note on the
+                four ways it differs from the sketch (a protocol with associated types; <code>decodeSample</code>
+                returning <code>Double?</code>; <code>bitsPerPixel</code> a required member; throwing
+                container/frame operations with a non-<code>Sendable</code>, lazy <code>Frame</code>). The code block
+                is a faithful transcription of <code>ImageDecoding.swift</code>.</p>
+
+            <div class="subhead">Scope and verification</div>
+            <p>The only source change is <code>SwiftAstroTests/Preprocessing/Decoding/DecoderSymmetryTests.swift</code>
+                (an existing file already in <code>SwiftAstro.xcodeproj</code>), so <strong>no new files and no
+                <code>.pbxproj</code> change</strong>. Because M8 touches <em>no production code</em>, no
+                detection-image byte can move &mdash; the <a href="#m2">M2</a> golden baseline is unaffected by
+                construction, and was not re-run (it guards production decode paths, none of which changed).
+                Verified: <code>swift build</code> (SwiftAstro) clean; the full SwiftAstro SwiftPM suite
+                <strong>248 tests / 35 suites green</strong> (up from M7's 246 &mdash; the two additions are the
+                format-agnostic test and the full-scale agreement test), with <code>RealFrameValidationTests</code>
+                and the benchmark unchanged; Xcode <code>build-for-testing</code> <strong>TEST BUILD SUCCEEDED</strong>;
+                and Xcode <code>xcodebuild test -only-testing:SwiftAstroTests/DecoderSymmetryTests</code>
+                <strong>green</strong> &mdash; so both build systems compile and run the change. The full eight-target
+                app plan and <code>FITScopeUITests</code> are unaffected (no app code changed) and are the human's
+                clean-run gate, as in <a href="#m1">M1</a>&ndash;<a href="#m7">M7</a>.</p>
+
+            <p><strong>Automated review loop.</strong> One round; converged. A fresh-context reviewer (which
+                independently ran the Xcode suite and checked every assertion against the four decoder
+                implementations, the fixtures and the property types) found <strong>no Critical / High / Medium
+                findings</strong> and confirmed the test genuinely proves symmetry (not tautological), the container
+                dispatch is legitimate rather than smuggled decode special-casing, and Appendix A matches the shipped
+                protocol byte-for-byte. The one Low and one Info finding, both documentation-only, were applied
+                (see Automated review) and re-verified green.</p>
 
             <h4>Automated review</h4>
-            <p class="placeholder">To be filled in by the automated review loop.</p>
+            <ul>
+                <li><strong>Round 1 &mdash;</strong> converged; no Critical / High / Medium findings. The reviewer
+                    verified <code>planes.count == channelCount</code>, <code>offsets.count == channelCount</code>,
+                    the <code>bytes.startIndex + offset</code> read-out arithmetic and the full-scale expectations
+                    against all four decoders, and the valid Swift Testing usage of <code>#require</code>/<code>#expect</code>
+                    inside the generic <code>.map</code> closure.
+                    <ul>
+                        <li><em>Low</em> &mdash; <strong>helper doc overstated coverage</strong>: it claimed
+                            &ldquo;every operation is exercised&rdquo; while the body did not directly call
+                            <code>bitsPerPixel</code>, <code>linearLuminance( fromPlanes: )</code> or
+                            <code>detectionImage( bytes: )</code> (some were only transitive).
+                            <strong>Fixed &mdash; strengthened rather than softened</strong>: the helper now calls all
+                            three directly (asserting the luminance geometry and that both detection-image entry
+                            points agree in shape), so the &ldquo;every operation&rdquo; claim is literally true and
+                            the real-frame coverage is stronger.</li>
+                        <li><em>Info</em> &mdash; <strong>unresolvable DocC link</strong>: two doc comments linked
+                            <code>``ImageLoader/loader(for:)``</code>, an <em>app</em> symbol the SwiftAstro test
+                            module cannot resolve. <strong>Fixed</strong> &mdash; rendered as plain code
+                            <code>ImageLoader.loader( for: )</code>, matching how the plan HTML already refers to it.</li>
+                    </ul>
+                </li>
+            </ul>
 
             <h4>Review comments</h4>
-            <p class="placeholder">To be filled in during human review.</p>
+            <ul>
+                <li><strong>Approved.</strong> The human reviewed the milestone and accepted it as-is
+                    (&ldquo;Looks good&rdquo;), including the strengthened format-blind exercise and the two
+                    documentation fixes (Low and Info) recorded in the Automated review.</li>
+            </ul>
         </section>
 
         <!-- ============================== M9 ============================== -->
@@ -2446,50 +2576,83 @@ xcodebuild test -scheme "FITScope - Debug" \
         <h3 id="appendix-a">A &mdash; The shared shape, and its concrete instantiations</h3>
 
         <p>
-            The shape below is the source document's, annotated with the additions this plan proposes (marked
-            <span class="moves">&#9733;</span>). It is a starting point for <a href="#m1">M1</a>, not a settled
-            API &mdash; M1's job is to settle it, and <a href="#m8">M8</a> replaces this section with what shipped.
+            The shape below is the API <strong>as it shipped</strong> &mdash; settled in <a href="#m1">M1</a> and
+            unchanged through the per-format migrations. It is a single protocol,
+            <code>ImageDecoding</code>, that all four decoders conform to, rather than the four independent
+            <code>enum &lt;Format&gt;ImageDecoder</code> templates the source document originally sketched. A call
+            site names the concrete decoder for the format it holds
+            (<code>FITSImageDecoder</code>, <code>XISFImageDecoder</code>, <code>RAWImageDecoder</code>,
+            <code>BitmapImageDecoder</code>), exactly as the application's
+            <code>ImageLoader.loader( for: )</code> selects a loader from a file's <code>UTType</code>; everything
+            after the container is opened is identical across formats, which <a href="#m8">M8</a>'s
+            format-agnostic test (<code>DecoderSymmetryTests.reachesADetectionImageForEveryFormatWithoutKnowingIt</code>)
+            drives directly.
         </p>
 
-<pre><code>// Written once. Each format supplies its own Container, Frame and Properties.
+        <p>Where it differs from the sketch above, and why (each decision recorded in <a href="#m1">M1</a>):</p>
+        <ul>
+            <li>A <strong>protocol with associated <code>Container</code> / <code>Frame</code> /
+                <code>Properties</code></strong>, not four enums &mdash; an omitted operation is then a compile-time
+                conformance error on that format, not a test somebody forgets to extend.</li>
+            <li><code>decodeSample</code> returns <strong><code>Double?</code></strong>, not <code>Double</code>
+                &mdash; the public read-out is bounds-checked and answers <code>nil</code> past the end rather than
+                trapping.</li>
+            <li><code>bitsPerPixel( from: )</code> is a <strong>required member</strong> (one of the
+                <span class="moves">&#9733;</span> additions): every format already labels its sample width and the
+                render config needs it, so it is a uniform operation rather than a per-format detail.</li>
+            <li><code>frames</code>, <code>contents</code> and <code>detectionImage( of: )</code>
+                <strong>throw</strong>, and <code>Frame</code> is a <strong>lazy per-format handle</strong> that is
+                <em>not</em> required to be <code>Sendable</code> &mdash; three formats hand back reference types that
+                own parser or library state, so only <code>FITSImageFrame</code> is <code>Sendable</code> (a FITS
+                file is wholly in memory). Enumeration stays cheap; the crop, draw or decompress happens in
+                <code>contents( of: )</code>.</li>
+        </ul>
 
-public enum &lt;Format&gt;ImageDecoder
+<pre><code>// Written once, as a protocol every format conforms to. Each format supplies its
+// own Container, Frame and Properties.
+
+public protocol ImageDecoding
 {
-    // 1. Which frames does this container hold?
-    public static func frames( in container: Container ) throws -&gt; [ Frame ]
+    associatedtype Container              // the opened file; the consumer parses it
+    associatedtype Frame                  // an opaque per-format handle to one image
+    associatedtype Properties: Sendable   // the Sendable description of a frame's layout
+
+    // 1. Which frames does this container hold? (a single-image format answers one)
+    static func frames( in container: Container ) throws -&gt; [ Frame ]
 
     // 2. A frame's canonical bytes and properties.
     //    Where the RAW crop and the photographic draw live.
-    public static func contents( of frame: Frame ) throws -&gt; ( bytes: Data, properties: Properties )
+    static func contents( of frame: Frame ) throws -&gt; ( bytes: Data, properties: Properties )
 
     // 3. The linear decode — the app renders from this; the detection image is built on it.
-    public static func linearImage( bytes: Data, properties: Properties )
+    static func linearImage( bytes: Data, properties: Properties )
         -&gt; ( width: Int, height: Int, samples: [ Double ] )?
 
-    // 3b. Multi-plane frames. RAW answers with a single plane.
-    public static func planeSamples( bytes: Data, properties: Properties ) throws -&gt; [ [ Double ] ]
+    // 3b. Multi-plane frames. A monochrome frame or a CFA mosaic answers one plane.
+    static func planeSamples( bytes: Data, properties: Properties ) throws -&gt; [ [ Double ] ]
 
-    public static func linearLuminance( fromPlanes planes: [ [ Double ] ], properties: Properties )
+    static func linearLuminance( fromPlanes planes: [ [ Double ] ], properties: Properties )
         -&gt; ( width: Int, height: Int, samples: [ Double ] )?
 
     // 4. Header interpretation the app's pipeline configuration needs.
-    public static func scaling( from properties: Properties )      -&gt; ( scale: Double, offset: Double )
-    public static func fullScale( from properties: Properties )    -&gt; Double?
-    public static func cfaPattern( from properties: Properties )   throws -&gt; Processors.Debayer.Pattern?
-    public static func dimensions( from properties: Properties )   -&gt; ( width: Int, height: Int )?   // ★
-    public static func channelCount( from properties: Properties ) -&gt; Int                            // ★
+    static func scaling( from properties: Properties )      -&gt; ( scale: Double, offset: Double )
+    static func fullScale( from properties: Properties )    -&gt; Double?
+    static func bitsPerPixel( from properties: Properties ) -&gt; BitsPerPixel?                    // ★
+    static func cfaPattern( from properties: Properties )   throws -&gt; Processors.Debayer.Pattern?
+    static func dimensions( from properties: Properties )   -&gt; ( width: Int, height: Int )?     // ★
+    static func channelCount( from properties: Properties ) -&gt; Int                              // ★
 
     // 5. One sample at a byte offset — the app's pixel read-out calls these.
-    public static func decodeSample( bytes: Data, at index: Data.Index, properties: Properties ) -&gt; Double
+    static func decodeSample( bytes: Data, at index: Data.Index, properties: Properties ) -&gt; Double?
 
-    public static func sampleByteOffsets( x: Int, y: Int, properties: Properties )                   // ★
+    static func sampleByteOffsets( x: Int, y: Int, properties: Properties )                     // ★
         -&gt; [ Data.Index ]?
 
     // 6. The detector's input: the primitive the app calls with what it already has...
-    public static func detectionImage( bytes: Data, properties: Properties ) -&gt; PixelBuffer?
+    static func detectionImage( bytes: Data, properties: Properties ) -&gt; PixelBuffer?
 
-    // ...and the convenience the tests call to go end to end.
-    public static func detectionImage( of frame: Frame ) throws -&gt; PixelBuffer
+    // ...and the convenience a caller holding only a container reaches for.
+    static func detectionImage( of frame: Frame ) throws -&gt; PixelBuffer
 }</code></pre>
 
         <div class="table-wrap">
