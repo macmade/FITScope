@@ -160,9 +160,9 @@ struct FITSPreviewRendererTests
         defer { defaults.removePersistentDomain( forName: name ) }
 
         let file = try FITSFile( data: try Data( contentsOf: TestFixtures.rgbImage ), options: .lenient )
-        let hdu  = try FITSPreviewRenderer.imageHDU( from: file.sections )
+        let hdu  = try FITSImageDecoder.imageHDU( in: file.sections )
 
-        #expect( ImageProcessor.isRGBPlanes( properties: hdu.properties ), "the RGB fixture must take the RGB-planes colour branch" )
+        #expect( FITSImageDecoder.channelCount( from: hdu.properties ) == 3, "the RGB fixture must take the RGB-planes colour branch" )
 
         let settings = FITSPreviewRenderer.previewSettings( hdu: hdu, previewsDefaults: defaults )
 

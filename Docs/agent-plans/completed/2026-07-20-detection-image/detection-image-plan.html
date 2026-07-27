@@ -632,7 +632,7 @@
             <div class="phase">Phase 3 &mdash; Closing</div>
             <ul>
                 <li><span class="num">M8</span><span class="name"><a href="#m8">Symmetry check &mdash; no partial surfaces, no app vocabulary</a></span><span class="capsule completed">Completed</span></li>
-                <li><span class="num">M9</span><span class="name"><a href="#m9">Cleanup &mdash; last in-app decode, scaffolding removal, seam confirmation</a></span><span class="capsule notstarted">Not started</span></li>
+                <li><span class="num">M9</span><span class="name"><a href="#m9">Cleanup &mdash; last in-app decode, scaffolding removal, seam confirmation</a></span><span class="capsule completed">Completed</span></li>
             </ul>
 
         </div>
@@ -2502,7 +2502,7 @@ xcodebuild test -scheme "FITScope - Debug" \
         <!-- ============================== M9 ============================== -->
 
         <section class="milestone" id="m9">
-            <h3><span class="m-num">M9.</span> Cleanup &mdash; last in-app decode, scaffolding removal, seam confirmation <span class="capsule notstarted">Not started</span></h3>
+            <h3><span class="m-num">M9.</span> Cleanup &mdash; last in-app decode, scaffolding removal, seam confirmation <span class="capsule completed">Completed</span></h3>
 
             <h4>Goal</h4>
             <p>
@@ -2556,17 +2556,228 @@ xcodebuild test -scheme "FITScope - Debug" \
                     initiative, with the digests to back it.</li>
             </ul>
 
-            <p class="field"><span class="label">Status</span><span class="capsule notstarted">Not started</span></p>
-            <p class="field"><span class="label">Completed</span><span class="placeholder">&mdash;</span></p>
+            <p class="field"><span class="label">Status</span><span class="capsule completed">Completed</span></p>
+            <p class="field"><span class="label">Completed</span> 2026-07-27</p>
 
             <h4>Implementation notes</h4>
-            <p class="placeholder">To be filled in as work progresses.</p>
+
+            <p><strong>Scope confirmed with the human before touching production code.</strong> M9's task&nbsp;1
+                names <code>render( data:properties: )</code>, but the milestone goal (&ldquo;no header interpretation
+                survives anywhere in the app&rdquo;) and tasks&nbsp;2&ndash;3 imply more. Offered a
+                <em>full collapse</em> vs a <em>minimal</em> scope; the human chose full collapse. This is a
+                <strong>byte-preserving refactor</strong>: the standing guard is the <a href="#m2">M2</a> golden suite
+                (detection <em>and</em> render digests), run green <em>before</em> the scaffolding was removed &mdash;
+                the same red/green discipline the M4&ndash;M7 app switches used, so no new failing test is written for
+                a pure relocation.</p>
+
+            <div class="subhead">1 &mdash; The last in-app FITS decode, collapsed onto the decoder</div>
+            <p>The three app sites that hand-rolled a FITS decode
+                (<code>readRawPixels</code>&nbsp;+&nbsp;<code>BITPIX</code>/<code>BSCALE</code>/<code>BZERO</code>/<code>BLANK</code>
+                arithmetic) now obtain their raw samples from
+                <code>FITSImageDecoder.planeSamples( bytes:properties: )</code>:
+                <code>render( data:properties: )</code> (its 2-D branch &rarr; <code>planeSamples( &hellip; ).first</code>),
+                <code>decodedImageHDU</code> (same, returning <code>nil</code> on any failure), and the RGB
+                <code>rgbPlaneSamples</code> (&rarr; the decoder's three planes). <code>render( data:properties: )</code>
+                keeps its geometry <em>validation</em> (the <code>BITPIX</code>/<code>NAXIS</code>/<code>NAXIS1</code>/<code>NAXIS2</code>/<code>CTYPE3</code>
+                guards with their specific diagnostics, and the RGB-vs-cube dispatch via
+                <code>FITSImageDecoder.channelCount( from: ) == 3</code>) &mdash; that is routing and user-facing error
+                text, not a sample-producing decode. <code>render( rawSamples: )</code> and <code>renderRGBPlanes</code>
+                now source <code>scaling</code>/<code>cfaPattern</code>/<code>fullScale</code> from the decoder;
+                <code>fullScaleScaling</code> changed from <code>( &hellip;, bitsPerPixel: )</code> to
+                <code>( &hellip;, properties: )</code> and reads the span via
+                <code>FITSImageDecoder.fullScale( from: )</code> (identical 255/65535/4294967295/nil). Seven now-orphaned
+                app helpers were deleted &mdash; <code>isRGBPlanes</code>, <code>imageDimensions</code>,
+                <code>scaling</code>, <code>blankValue</code>, <code>bayerPattern</code>, <code>checkedProduct</code>,
+                <code>fullScale( for: )</code> &mdash; with no forwarding shims; the compiler proved the sweep.</p>
+
+            <div class="note-box">
+                <p><strong>Why the geometry guards stay.</strong> Two tests require axis- and value-specific
+                    diagnostics &mdash; <code>nonPositiveNAXIS2IsRejectedNamingTheAxis</code> asserts the error names
+                    &ldquo;NAXIS2&rdquo; and &ldquo;0&rdquo;; <code>nonTwoDimensionalGeometryIsRejected</code> /
+                    <code>physicalDataCubeIsRejected</code> assert &ldquo;NAXIS = 3&rdquo; and &ldquo;cube&rdquo;. The
+                    decoder's <code>dimensions( from: )</code> answers a single <code>nil</code>, so the app keeps its
+                    per-axis validation for the user-facing message. This is header <em>reading</em> for
+                    validation/routing, never a second decode &mdash; no <code>readRawPixels</code>, no
+                    <code>BSCALE</code>/<code>BZERO</code>/<code>BLANK</code> arithmetic remains in the app's
+                    raster/detection path.</p>
+            </div>
+
+            <div class="subhead">2 &mdash; The image-HDU selection rule consolidated (human decision)</div>
+            <p>The rule (&ldquo;first <code>.data</code> section at index&nbsp;&gt;&nbsp;0 + the preceding header&rdquo;)
+                already lived privately in <code>FITSImageDecoder.imageHDU( in: [ FITSSection ] )</code>; it was made
+                <code>public</code>, and the app's duplicate <code>FITSPreviewRenderer.imageHDU( from: )</code> was
+                <strong>deleted</strong>, its three callers (<code>FITSPreviewRenderer.render</code>,
+                <code>FITSRenderSource.init( sections: )</code>, one test) repointed to it. On the human's decision, the
+                <em>graph</em> path (<code>FITSImageLoader.decodeGraph</code>) keeps its own two-line selection: it needs
+                the raw <code>FITSSection</code> to build a <code>GraphSeries</code> (<code>header.naxis</code>,
+                <code>GraphSeries( oneDimensionalHeader: )</code>&hellip;), which the decoder's Sendable, snapshot-based
+                surface deliberately does not vend &mdash; the boundary <a href="#m4">M4</a> flagged. This is
+                documented at the call site; the graph/spectrum path produces no detection image, so it sits outside the
+                unified decode. Two retargeted tests move the deleted app helpers' coverage onto the decoder
+                (<code>FITSImageDecoder.scaling</code>; <code>channelCount( from: ) == 3</code> for the RGB-planes rule).</p>
+
+            <div class="subhead">3 &mdash; Golden scaffolding removed; benchmark re-checked</div>
+            <p><code>FITScopeTests/Golden/</code> (the temporary suite and its committed JSON) was deleted along with all
+                six <code>project.pbxproj</code> references (build file, two file refs, the group's child entry, the group
+                itself, the sources-phase entry); <code>plutil -lint</code> passes and a grep finds no dangling id. The
+                opt-in SwiftAstro decode benchmark was re-run in release (redirected to a scratch directory, so the
+                committed baseline was untouched) and compared: the code-determined <strong>allocation</strong> figures
+                are stable (<code>linearImage</code> identical at 158.25&nbsp;MB, <code>BayerGrayscale</code> identical at
+                253.16&nbsp;MB), while <em>every</em> timing &mdash; decode, detection, ephemeris, S/N alike &mdash; was
+                uniformly ~7&times; faster than the 2026-07-15 capture, i.e. machine/thermal variance, not a code change
+                (M9 altered no decoder decode logic). Per the plan's &ldquo;report deltas rather than quietly rewrite,&rdquo;
+                the committed baseline was <strong>left unchanged</strong>.</p>
+
+            <div class="subhead">Audit (tasks 2, 4, 7) and tallies</div>
+            <p>A grep of the app for sample-perturbing header interpretation
+                (<code>BSCALE</code>/<code>BZERO</code>/<code>BLANK</code>/<code>readRawPixels</code>) shows the
+                raster/detection path clean; the only remaining hits are doc comments, UI <em>metadata</em> display
+                (<code>ImageInformation+FITS</code>, <code>FITSImageInfo</code> read <code>BAYERPAT</code>/<code>NAXIS</code>
+                for the info panel), and the out-of-scope 1-D graph decode (<code>GraphSeries+FITS</code>). What was to
+                stay, stayed: <code>Settings</code>, every <code>render( &hellip; )</code>, <code>PixelValue</code>,
+                <code>RenderResult</code>, the auto Screen Transfer derivation, <code>previewBinFactor</code>, the loaders'
+                shells and metadata, and the render sources' stored <code>detectionImage</code> (804 app tests exercise
+                them, green). The FITS render cluster shrank by <strong>~163 net lines</strong>
+                (<code>ImageProcessor+FITS.swift</code> &minus;166), the golden scaffolding removed <strong>845
+                lines</strong>, and SwiftAstro grew by 5 (the exposed <code>imageHDU( in: )</code>). The other three
+                loaders were untouched (their decode moved in <a href="#m5">M5</a>&ndash;<a href="#m7">M7</a>).</p>
+
+            <div class="note-box">
+                <p><strong>Final byte-change statement for the whole initiative.</strong> Across <a href="#m1">M1</a>&ndash;M9,
+                    <strong>not one detection-image or render digest changed</strong>: all 38 committed inputs reproduced
+                    their <a href="#m2">M2</a> baseline digests at M3, M4, M5, M6, M7 and again at M9 (the last golden run
+                    before the scaffolding was removed). The single intended behavioural change &mdash; the uniform
+                    CFA-cube demosaic settled in <a href="#m4">M4</a> &mdash; is inert on the committed corpus (no committed
+                    cube carries <code>BAYERPAT</code>) and would affect only a future colour-filter-array cube. The
+                    initiative unified the decode with zero observable change to the bytes it produces.</p>
+            </div>
+
+            <div class="subhead">Verification</div>
+            <ul>
+                <li><strong>Golden byte-identity green</strong> with the full M9 change in place
+                    (<code>-only-testing:FITScopeTests/DetectionImageGoldenTests</code>, ~438&nbsp;s): every detection
+                    <em>and</em> render digest identical &mdash; the proof the collapse and HDU consolidation perturb no
+                    bytes &mdash; run before the scaffolding was deleted.</li>
+                <li><code>FITScopeTests</code> (golden scaffolding now removed): <strong>804 tests / 98 suites
+                    green</strong>, including the retargeted <code>scaling</code>/RGB-rule tests and the repointed
+                    preview/render-source paths.</li>
+                <li>SwiftAstro SwiftPM: <strong>248 tests / 35 suites green</strong> (the exposed
+                    <code>imageHDU( in: )</code> is trivially safe), with <code>RealFrameValidationTests</code> and the
+                    benchmark machinery unchanged; <code>swift build</code> clean.</li>
+                <li>Xcode <code>build-for-testing</code> of <code>FITScope - Debug</code>: <strong>TEST BUILD
+                    SUCCEEDED</strong> &mdash; the app, both Preview/Thumbnail extensions and every test bundle compile;
+                    both <code>project.pbxproj</code> files lint.</li>
+            </ul>
+
+            <p><strong>Automated review loop.</strong> One round; converged. A fresh-context reviewer independently
+                traced the collapse's byte-identity against the decoder (2-D, RGB, <code>decodedImageHDU</code>, the
+                <code>fullScaleScaling</code> span across every <code>BITPIX</code>), the HDU consolidation, the error
+                contract (every asserted message still produced; only error <em>types</em> shifted to
+                <code>SwiftAstro.Error</code>, which no test checks), the retargeted tests, and the clean golden/pbxproj
+                removal &mdash; <strong>no Critical / High / Medium findings</strong>. The one Low (a dangling DocC link)
+                was fixed.</p>
+
+            <p><strong>Post-review change (human feedback).</strong> The human flagged that a standalone,
+                reusable library must not name its consuming application in its comments. An audit of the whole
+                SwiftAstro package (source <em>and</em> tests, not only M9's change) found and reworded every such
+                reference to be consumer-agnostic: the four library-source doc/code comments that said &ldquo;the
+                application&rdquo; (<code>ImageDecoding</code>'s overview, <code>XISFImageDecoder.linearLuminance</code>,
+                <code>FITSImageDecoder.frames</code>, and the M9 <code>imageHDU( in: )</code> doc), two
+                <code>BitmapImageDecoder</code> comments that said &ldquo;the loader drew the bitmap&rdquo; (stale as
+                well as app-referencing &mdash; the draw now lives in <code>contents( of: )</code>), and nine test
+                comments across <code>FITSImageDecoderTests</code>, <code>XISFImageDecoderTests</code>,
+                <code>BitmapImageDecoderTests</code>, <code>DecoderSymmetryTests</code>, <code>RealFrameValidationTests</code>
+                and <code>FITSTestImage</code> (references to &ldquo;the application's golden baseline&rdquo;,
+                <code>ImageLoader</code>, <code>FITScope</code> by name, and a &ldquo;port of the application's&rdquo;
+                history phrasing). They now speak of &ldquo;a consumer&rdquo; / &ldquo;downstream end-to-end tests&rdquo;
+                / &ldquo;this repository&rdquo;. Comment-only: <code>swift build</code> and the full SwiftAstro suite
+                (<strong>248 tests</strong>) stay green.</p>
+
+            <p><strong>Post-review change (human feedback).</strong> The benchmark harness's app-named
+                <code>FITSCOPE_BENCH_OUT</code> environment variable &mdash; the one non-comment app reference, a real
+                interface predating this initiative &mdash; was surfaced to the human, who asked for it to be renamed.
+                It is now the neutral <code>SWIFTASTRO_BENCH_OUT</code> (the env-var read in
+                <code>BenchmarkOutput.swift</code>, its two doc comments, and the README), verified functionally by
+                capturing a baseline through the new variable (it wrote to the redirected directory; the committed
+                baseline was left untouched). The identically-named override in the nested <code>SwiftPixel</code>
+                submodule is a separate standalone library, outside this initiative's scope, and was left untouched
+                (its own neutral name would be <code>SWIFTPIXEL_BENCH_OUT</code>).</p>
+
+            <p><strong>Post-review change (human feedback) &mdash; SwiftPixel rename.</strong> On the human's
+                request, the same app-named override was renamed in the nested <code>SwiftPixel</code> submodule to
+                <em>its</em> neutral <code>SWIFTPIXEL_BENCH_OUT</code> (the env-var read, its two doc comments and the
+                README) &mdash; not <code>SWIFTASTRO_*</code>, since SwiftPixel is its own library. Independent copy;
+                no <code>FITSCOPE_BENCH_OUT</code> now remains anywhere in either package.</p>
+
+            <p><strong>Post-review change (human feedback) &mdash; CI repair.</strong> The human reported CI red for
+                FITScope and for SwiftAstro's SwiftPM job, with logs. Diagnosed from the logs, two independent
+                failures:</p>
+            <ul>
+                <li><strong>SwiftAstro SwiftPM (<code>swift build</code>) &mdash; fixed here.</strong> On the CI
+                    toolchain (Xcode&nbsp;16.4) the build failed with <em>ambiguous use of <code>abs</code></em> and a
+                    cascade (<em><code>Duration</code> has no member <code>squareRoot</code></em>) in
+                    <code>OrbitalElements</code>, <code>TwilightEvents</code> and <code>MatchedFilterStarDetector</code>.
+                    Root cause: the target-wide <code>.interoperabilityMode( .Cxx )</code> added in <a href="#m1">M1</a>
+                    (for SwiftRAW's C++ <code>libraw</code>) pulls the C <code>abs</code> from the C++ standard-library
+                    module into scope alongside <code>Swift.abs</code>, so a bare <code>abs( x )</code> is ambiguous;
+                    the mis-inference then made <code>( &hellip; ).squareRoot()</code> resolve against
+                    <code>Duration</code>. It is <em>pre-existing</em> astronomy/detector code, not the decoder work,
+                    and it slipped past M1 because the newer local toolchain resolves <code>abs</code> without
+                    complaint. Fix: qualified all <strong>13</strong> bare <code>abs( )</code> calls (across those
+                    three files) as <code>Swift.abs( )</code> &mdash; unambiguous by construction and behaviour-identical.
+                    <code>swift build</code> and the full SwiftAstro suite (<strong>248 tests</strong>) stay green
+                    locally. The exact CI toolchain (Xcode&nbsp;16.4) could not be reproduced here &mdash; local builds
+                    already pass either way &mdash; but <code>Swift.abs</code> removes the ambiguity definitionally.</li>
+                <li><strong>FITScope (<code>xcodebuild test</code>) &mdash; already resolved by M9.</strong> The sole
+                    failing test was <code>DetectionImageGoldenTests.detectionImagesMatchTheCommittedBaseline()</code>
+                    &mdash; the temporary golden suite tripping under the full CI test plan (its ~7-minute whole-corpus
+                    run against the per-test watchdog). M9 <em>deletes</em> that scaffolding (task&nbsp;3), so the
+                    failure disappears once M9 lands; no further change was needed. Every other FITScope suite passed.</li>
+            </ul>
 
             <h4>Automated review</h4>
-            <p class="placeholder">To be filled in by the automated review loop.</p>
+            <ul>
+                <li><strong>Round 1 &mdash;</strong> converged; no Critical / High / Medium findings. The reviewer
+                    confirmed <code>planeSamples( &hellip; ).first</code> is byte-identical to the deleted inline
+                    <code>readRawPixels</code> decode (same format, BLANK&rarr;NaN, trim, no premature scaling), the RGB
+                    and <code>decodedImageHDU</code> paths equivalent, <code>fullScaleScaling</code> span-preserving for
+                    every caller, the public <code>imageHDU( in: )</code> line-for-line identical to the deleted app
+                    copy, the <code>decodeGraph</code> exception justified, the golden pbxproj removal clean (plutil OK,
+                    no dangling id), and the retargeted tests semantically equivalent (not weakened).
+                    <ul>
+                        <li><em>Low</em> &mdash; <strong>dangling DocC link to the deleted
+                            <code>isRGBPlanes(properties:)</code></strong> in the <code>render( data:properties: )</code>
+                            doc comment (<code>ImageProcessor+FITS.swift:46</code>). <strong>Fixed</strong> &mdash;
+                            repointed to <code>SwiftAstro/FITSImageDecoder/channelCount(from:)</code>, the member the
+                            render body now dispatches on.</li>
+                        <li><em>Info</em> &mdash; raster truncation/overflow error <em>messages</em> changed (now the
+                            decoder's wording) and their <em>type</em> is now <code>SwiftAstro.Error</code>; no test
+                            asserts either. The overflow path is now bounds-checked (<code>checkedProduct</code>) rather
+                            than a potential <code>Int</code> trap &mdash; a small hardening, byte-identical for valid
+                            inputs. <strong>No change needed.</strong></li>
+                    </ul>
+                </li>
+            </ul>
 
             <h4>Review comments</h4>
-            <p class="placeholder">To be filled in during human review.</p>
+            <ul>
+                <li><strong>No app references in the standalone library's comments.</strong> SwiftAstro is a
+                    reusable, standalone library and must not mention its consuming application (FITScope) in its
+                    comments &mdash; a library should not know about its consumers. The doc comment added when
+                    <code>FITSImageDecoder.imageHDU( in: )</code> was made public referred to &ldquo;the application's
+                    preview and render paths&rdquo;. Remove that, and audit the comments <em>everywhere</em> in
+                    SwiftAstro (not only M9's change) for the same problem, rewording any that reference the app.
+                    <em>(Applied &mdash; see the implementation notes.)</em></li>
+                <li><strong>Rename the app-named benchmark environment variable.</strong> The benchmark harness's
+                    <code>FITSCOPE_BENCH_OUT</code> override embeds the consuming app's name in a standalone library;
+                    rename it to the neutral <code>SWIFTASTRO_BENCH_OUT</code>. <em>(Applied &mdash; see the
+                    implementation notes.)</em></li>
+                <li><strong>Rename the same variable in the nested SwiftPixel submodule too</strong> &mdash; to its own
+                    neutral <code>SWIFTPIXEL_BENCH_OUT</code>. <em>(Applied &mdash; see the implementation notes.)</em></li>
+                <li><strong>CI is broken for FITScope and for SwiftAstro (SwiftAstro only the SwiftPM job).</strong>
+                    Diagnose from the attached job logs and fix. <em>(Diagnosed and fixed &mdash; see the
+                    implementation notes.)</em></li>
+            </ul>
         </section>
 
         <!-- ============================== APPENDIX ============================== -->

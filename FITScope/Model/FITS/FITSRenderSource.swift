@@ -80,18 +80,18 @@ public struct FITSRenderSource: ImageRenderSource
     /// Selects the first renderable image HDU from a file's sections and snapshots
     /// it into a Sendable render source.
     ///
-    /// The HDU-selection rule lives in ``FITSPreviewRenderer/imageHDU(from:)`` so
-    /// the app's render path and the QuickLook extensions pick the same image HDU.
+    /// The HDU-selection rule lives in ``SwiftAstro/FITSImageDecoder/imageHDU(in:)``
+    /// so the app's render path and the QuickLook extensions pick the same image HDU.
     ///
     /// - Parameters:
     ///   - sections:       The file's sections, in file order.
     ///   - detectionImage: The detection-ready single-channel image to carry
     ///                     alongside the render bytes, or `nil` when star detection
     ///                     is not needed for this source.
-    /// - Throws: ``RuntimeError`` when the file contains no image data section.
+    /// - Throws: ``SwiftAstro/Error`` when the file contains no image data section.
     public init( sections: [ FITSSection ], detectionImage: PixelBuffer? = nil ) throws
     {
-        let hdu = try FITSPreviewRenderer.imageHDU( from: sections )
+        let hdu = try FITSImageDecoder.imageHDU( in: sections )
 
         self.init( data: hdu.data, properties: hdu.properties, detectionImage: detectionImage )
     }

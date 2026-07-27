@@ -279,8 +279,11 @@ public class FITSImageLoader: ObservableObject, ImageLoading
 
     /// Decodes an image HDU into a graph series when it is graph data rather than a
     /// raster image, matching the HDU-selection rule of
-    /// ``FITSPreviewRenderer/imageHDU(from:)`` (the first data section and its owning
-    /// header). A one-dimensional HDU (`NAXIS=1`) is always a graph; a two-dimensional
+    /// ``SwiftAstro/FITSImageDecoder/imageHDU(in:)`` (the first data section and its
+    /// owning header). The graph path keeps its own two-line section selection
+    /// because it needs the raw `FITSSection` to build a ``GraphSeries``, which the
+    /// decoder's snapshot-based surface does not vend. A one-dimensional HDU
+    /// (`NAXIS=1`) is always a graph; a two-dimensional
     /// HDU (`NAXIS=2`) is a graph only when it is a genuine stack of spectra (see
     /// ``GraphSeries/isSpectraStack(header:)``) — a normal 2-D image returns `nil` and
     /// the caller falls through to the raster path.

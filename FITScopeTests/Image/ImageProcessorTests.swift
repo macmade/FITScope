@@ -45,7 +45,7 @@ struct ImageProcessorTests
                 FITSPropertySnapshot( name: "BZERO",  value: .float( 0 ) ),
             ]
 
-        let scaling = ImageProcessor.scaling( from: properties )
+        let scaling = FITSImageDecoder.scaling( from: properties )
 
         #expect( scaling.scale == 1.5 )
         #expect( scaling.scale != 1, "a float BSCALE must not fall back to the default scale" )
@@ -375,7 +375,7 @@ struct ImageProcessorTests
                 FITSPropertySnapshot( name: "BSCALE", value: .integer( 1 ) ),
             ]
 
-        let scaling = ImageProcessor.scaling( from: properties )
+        let scaling = FITSImageDecoder.scaling( from: properties )
 
         #expect( scaling.offset == 32768 )
     }
@@ -475,12 +475,12 @@ struct ImageProcessorTests
             return props
         }
 
-        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3 ) ) )
-        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 5 ) ) == false, "the third axis must be 3" )
-        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype1: nil, ctype2: nil ) ), "a bare 3-plane cube (no WCS) is still RGB" )
-        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype2: "  " ) ), "a blank CTYPE2 no longer disqualifies RGB" )
-        #expect( ImageProcessor.isRGBPlanes( properties: properties( naxis3: 3, ctype3: "WAVE" ) ) == false, "a present CTYPE3 rules out the RGB-planes case" )
-        #expect( ImageProcessor.isRGBPlanes( properties: FITSTestData.gradient().properties ) == false, "a 2-D image is not RGB planes" )
+        #expect( FITSImageDecoder.channelCount( from: properties( naxis3: 3 ) ) == 3 )
+        #expect( FITSImageDecoder.channelCount( from: properties( naxis3: 5 ) ) == 1, "the third axis must be 3" )
+        #expect( FITSImageDecoder.channelCount( from: properties( naxis3: 3, ctype1: nil, ctype2: nil ) ) == 3, "a bare 3-plane cube (no WCS) is still RGB" )
+        #expect( FITSImageDecoder.channelCount( from: properties( naxis3: 3, ctype2: "  " ) ) == 3, "a blank CTYPE2 no longer disqualifies RGB" )
+        #expect( FITSImageDecoder.channelCount( from: properties( naxis3: 3, ctype3: "WAVE" ) ) == 1, "a present CTYPE3 rules out the RGB-planes case" )
+        #expect( FITSImageDecoder.channelCount( from: FITSTestData.gradient().properties ) == 1, "a 2-D image is not RGB planes" )
     }
 
     /// A multi-image `NAXIS=3` cube (third axis a plain frame index) expands to one
@@ -546,7 +546,7 @@ struct ImageProcessorTests
                 FITSPropertySnapshot( name: "CTYPE3", value: .string( "WAVE" ) ),
             ]
 
-        #expect( ImageProcessor.isRGBPlanes( properties: properties ) == false )
+        #expect( FITSImageDecoder.channelCount( from: properties ) == 1 )
 
         let error = try #require( throws: ( any Swift.Error ).self )
         {

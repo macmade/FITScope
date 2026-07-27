@@ -43,7 +43,8 @@ public extension ImageProcessor
     /// colour and geometry stages.
     ///
     /// Supports a two-dimensional image (`NAXIS = 2`) and an RGB colour-planes cube
-    /// (`NAXIS = 3` with a third axis of 3 — see ``isRGBPlanes(properties:)``),
+    /// (`NAXIS = 3` with a third axis of 3 — where
+    /// ``SwiftAstro/FITSImageDecoder/channelCount(from:)`` answers `3`),
     /// whose planes are combined into one colour image. A multi-image cube is split
     /// into per-plane 2-D sources by the loader, so each plane reaches here as a 2-D
     /// image; any remaining `NAXIS = 3`
@@ -56,10 +57,11 @@ public extension ImageProcessor
     /// - Returns: The ``RenderResult`` with the display image, its 8-bit bytes,
     ///   and the input/output pixel formats (the bytes and formats feed histogram
     ///   computation and the mono-vs-colour display choice).
-    /// - Throws: ``RuntimeError`` for a missing or unsupported `BITPIX`, an
-    ///   unsupported geometry (a non-2-D image that is not an RGB colour-planes
-    ///   cube), invalid dimensions, truncated data, an image byte size that
-    ///   overflows `Int`, or an unsupported `BAYERPAT`.
+    /// - Throws: An error for a missing or unsupported `BITPIX`, an unsupported
+    ///   geometry (a non-2-D image that is not an RGB colour-planes cube), invalid
+    ///   dimensions, truncated data, an image byte size that overflows `Int`, or an
+    ///   unsupported `BAYERPAT`. The geometry validation throws ``RuntimeError``;
+    ///   the shared decoder's decode throws ``SwiftAstro/Error``.
     static func render( data: Data, properties: [ FITSPropertySnapshot ], settings: Settings = Settings() ) throws -> RenderResult
     {
         guard let bitPix = properties.first( where: { $0.name == "BITPIX" } )?.value.integer
@@ -83,7 +85,7 @@ public extension ImageProcessor
         // A three-dimensional HDU whose third axis holds separate red, green and
         // blue planes is combined into a single colour image; any other NAXIS=3
         // shape (a multi-plane cube) is left for a later milestone.
-        if nAxis == 3, Self.isRGBPlanes( properties: properties )
+        if nAxis == 3, FITSImageDecoder.channelCount( from: properties ) == 3
         {
             return try Self.renderRGBPlanes( data: data, properties: properties, bitsPerPixel: bitsPerPixel, settings: settings )
         }
@@ -127,21 +129,14 @@ public extension ImageProcessor
             throw RuntimeError( message: "Invalid NAXIS2 value \( nAxis2 )" )
         }
 
-        guard let size = bitsPerPixel.size( numberOfPixels: width * height )
+        // The single-channel decode is the shared decoder's; the app no longer
+        // interprets BITPIX / BSCALE / BZERO / BLANK to produce samples. A 2-D frame
+        // yields exactly one plane.
+        guard let raw = try FITSImageDecoder.planeSamples( bytes: data, properties: properties ).first
         else
         {
-            throw RuntimeError( message: "FITS image byte size overflows Int" )
+            throw RuntimeError( message: "FITS image could not be decoded" )
         }
-
-        let pixelData = Data( data.prefix( size ) ) // re-wrap: startIndex may be non-zero
-
-        guard pixelData.count == size
-        else
-        {
-            throw RuntimeError( message: "Data too small: \( data.count ) < \( size )" )
-        }
-
-        let raw = try PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel, blank: Self.blankValue( from: properties ) )
 
         return try Self.render( rawSamples: raw, width: width, height: height, bitsPerPixel: bitsPerPixel, properties: properties, settings: settings )
     }
@@ -163,10 +158,10 @@ public extension ImageProcessor
     /// - Throws: Any error building the configuration or running the pipeline.
     static func render( rawSamples: [ Double ], width: Int, height: Int, bitsPerPixel: BitsPerPixel, properties: [ FITSPropertySnapshot ], settings: Settings ) throws -> RenderResult
     {
-        let bayerPattern = try Self.bayerPattern( from: properties )
+        let bayerPattern = try FITSImageDecoder.cfaPattern( from: properties )
 
-        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
-        let fullScale         = Self.fullScaleScaling( scale: scale, offset: offset, bitsPerPixel: bitsPerPixel )
+        let ( scale, offset ) = FITSImageDecoder.scaling( from: properties )
+        let fullScale         = Self.fullScaleScaling( scale: scale, offset: offset, properties: properties )
 
         // Bin the mosaic before the demosaic when heavily downsampling a colour-
         // filter-array preview, so the expensive debayer runs on a smaller mosaic.
@@ -189,27 +184,10 @@ public extension ImageProcessor
     /// - Returns: The raw samples with their geometry and sample format, or `nil`.
     static func decodedImageHDU( data: Data, properties: [ FITSPropertySnapshot ] ) -> ( samples: [ Double ], width: Int, height: Int, bitsPerPixel: BitsPerPixel )?
     {
-        guard let bitPix       = properties.first( where: { $0.name == "BITPIX" } )?.value.integer,
-              let bitsPerPixel = BitsPerPixel.from( value: bitPix ),
-              let nAxis        = properties.first( where: { $0.name == "NAXIS" } )?.value.integer,
-              nAxis == 2,
-              Self.isRGBPlanes( properties: properties ) == false,
-              let ( width, height ) = Self.imageDimensions( from: properties )
-        else
-        {
-            return nil
-        }
-
-        guard let size = bitsPerPixel.size( numberOfPixels: width * height )
-        else
-        {
-            return nil
-        }
-
-        let pixelData = Data( data.prefix( size ) )
-
-        guard pixelData.count == size,
-              let raw = try? PixelUtilities.readRawPixels( data: pixelData, width: width, height: height, bitsPerPixel: bitsPerPixel, blank: Self.blankValue( from: properties ) )
+        guard let bitsPerPixel = FITSImageDecoder.bitsPerPixel( from: properties ),
+              properties.first( where: { $0.name == "NAXIS" } )?.value.integer == 2,
+              let ( width, height ) = FITSImageDecoder.dimensions( from: properties ),
+              let raw = try? FITSImageDecoder.planeSamples( bytes: data, properties: properties ).first
         else
         {
             return nil
@@ -255,33 +233,6 @@ public extension ImageProcessor
         return .mono( buffer )
     }
 
-    /// Whether the header describes a three-dimensional HDU whose third axis holds
-    /// separate red, green and blue image planes.
-    ///
-    /// The rule: `NAXIS = 3`, the third axis `NAXIS3 = 3`, and no present, non-empty
-    /// `CTYPE3` (whose presence would mark the third axis as a genuine physical
-    /// coordinate — a data cube, not colour planes). The spatial coordinate types
-    /// `CTYPE1`/`CTYPE2` are deliberately *not* required: many real RGB FITS files
-    /// carry no world-coordinate system, so a bare three-plane cube is still colour.
-    /// Distinguishing three planes (colour) from any other plane count (a stack of
-    /// separate images) is the plane count.
-    ///
-    /// - Parameter properties: The image HDU's header properties.
-    /// - Returns: `true` when the header matches the RGB-planes shape.
-    static func isRGBPlanes( properties: [ FITSPropertySnapshot ] ) -> Bool
-    {
-        guard properties.first( where: { $0.name == "NAXIS"  } )?.value.integer == 3,
-              properties.first( where: { $0.name == "NAXIS3" } )?.value.integer == 3
-        else
-        {
-            return false
-        }
-
-        // A present, non-empty CTYPE3 marks the third axis as its own coordinate —
-        // that is a multi-plane cube, not colour planes.
-        return Self.trimmedString( named: "CTYPE3", in: properties ) == nil
-    }
-
     /// Renders an RGB `NAXIS=3` image HDU: the three band-sequential colour planes
     /// are decoded and passed through the pipeline as a genuine colour (`.rgb`)
     /// input (SwiftPixel interleaves them), so the colour-aware stretch, curves and
@@ -296,64 +247,43 @@ public extension ImageProcessor
     /// - Throws: ``RuntimeError`` for invalid dimensions, truncated data, or an image byte size that overflows `Int`.
     private static func renderRGBPlanes( data: Data, properties: [ FITSPropertySnapshot ], bitsPerPixel: BitsPerPixel, settings: Settings ) throws -> RenderResult
     {
-        let planes            = try Self.rgbPlaneSamples( data: data, properties: properties, bitsPerPixel: bitsPerPixel )
-        let ( scale, offset ) = ImageProcessor.scaling( from: properties )
-        let fullScale         = Self.fullScaleScaling( scale: scale, offset: offset, bitsPerPixel: bitsPerPixel )
+        let planes            = try Self.rgbPlaneSamples( data: data, properties: properties )
+        let ( scale, offset ) = FITSImageDecoder.scaling( from: properties )
+        let fullScale         = Self.fullScaleScaling( scale: scale, offset: offset, properties: properties )
         let config            = settings.config( scale: fullScale.scale, offset: fullScale.offset, inputFormat: .rgb )
 
         return try Self.render( planes: [ planes.red, planes.green, planes.blue ], width: planes.width, height: planes.height, bitsPerPixel: bitsPerPixel, config: config )
     }
 
     /// Decodes the three band-sequential colour planes of an RGB `NAXIS=3` image
-    /// HDU into raw (unscaled) sample arrays, one per plane.
+    /// HDU into raw (unscaled) sample arrays, one per plane, through the shared
+    /// decoder.
     ///
     /// The `BSCALE`/`BZERO` rescaling is left to the caller (the pipeline's scale
     /// stage for rendering, an explicit rescale for the detection luminance), so
     /// this returns the samples at their stored values.
     ///
     /// - Parameters:
-    ///   - data:         The image HDU's raw pixel bytes.
-    ///   - properties:   The owning header's property snapshots.
-    ///   - bitsPerPixel: The sample format of `data`.
+    ///   - data:       The image HDU's raw pixel bytes.
+    ///   - properties: The owning header's property snapshots.
     /// - Returns: The plane dimensions and the raw red, green and blue samples.
-    /// - Throws: ``RuntimeError`` for invalid dimensions, truncated data, or an image byte size that overflows `Int`.
-    private static func rgbPlaneSamples( data: Data, properties: [ FITSPropertySnapshot ], bitsPerPixel: BitsPerPixel ) throws -> ( width: Int, height: Int, red: [ Double ], green: [ Double ], blue: [ Double ] )
+    /// - Throws: ``RuntimeError`` for invalid dimensions or a frame that is not
+    ///   three-plane; ``SwiftAstro/Error`` for truncated data or an image byte size
+    ///   that overflows `Int`.
+    private static func rgbPlaneSamples( data: Data, properties: [ FITSPropertySnapshot ] ) throws -> ( width: Int, height: Int, red: [ Double ], green: [ Double ], blue: [ Double ] )
     {
-        guard let ( width, height ) = Self.imageDimensions( from: properties )
+        guard let ( width, height ) = FITSImageDecoder.dimensions( from: properties )
         else
         {
             throw RuntimeError( message: "Invalid or missing NAXIS1 / NAXIS2 for an RGB image" )
         }
 
-        guard let planeSize = bitsPerPixel.size( numberOfPixels: width * height )
+        let planes = try FITSImageDecoder.planeSamples( bytes: data, properties: properties )
+
+        guard planes.count == 3
         else
         {
-            throw RuntimeError( message: "FITS image byte size overflows Int" )
-        }
-
-        guard let total = Self.checkedProduct( planeSize, 3 )
-        else
-        {
-            throw RuntimeError( message: "FITS image byte size overflows Int" )
-        }
-
-        let pixelData = Data( data.prefix( total ) ) // re-wrap: startIndex may be non-zero, and trim block padding
-
-        guard pixelData.count == total
-        else
-        {
-            throw RuntimeError( message: "Data too small: \( data.count ) < \( total )" )
-        }
-
-        // Each plane is a contiguous single channel; re-wrap each slice into a fresh
-        // Data (zero-based indices) so readRawPixels reads it in isolation.
-        let planes = try ( 0 ..< 3 ).map
-        {
-            plane -> [ Double ] in
-
-            let slice = Data( pixelData.dropFirst( plane * planeSize ).prefix( planeSize ) )
-
-            return try PixelUtilities.readRawPixels( data: slice, width: width, height: height, bitsPerPixel: bitsPerPixel, blank: Self.blankValue( from: properties ) )
+            throw RuntimeError( message: "Expected three colour planes for an RGB image, found \( planes.count )" )
         }
 
         return ( width: width, height: height, red: planes[ 0 ], green: planes[ 1 ], blue: planes[ 2 ] )
@@ -459,72 +389,6 @@ public extension ImageProcessor
         return text
     }
 
-    /// Maps the header's `BAYERPAT` keyword to a debayer pattern.
-    ///
-    /// - Parameter properties: The image HDU's header properties.
-    /// - Returns: The colour-filter-array pattern, or `nil` when the header has
-    ///   no `BAYERPAT` keyword (i.e. the frame is monochrome).
-    /// - Throws: ``RuntimeError`` when `BAYERPAT` holds an unsupported value.
-    static func bayerPattern( from properties: [ FITSPropertySnapshot ] ) throws -> Processors.Debayer.Pattern?
-    {
-        guard let pattern = properties.first( where: { $0.name == "BAYERPAT" } )?.value.string
-        else
-        {
-            return nil
-        }
-
-        return try ColorFilterArray.pattern( named: pattern )
-    }
-
-    /// Reads the image dimensions from the header's `NAXIS1` / `NAXIS2`
-    /// keywords.
-    ///
-    /// - Parameter properties: The image HDU's header properties.
-    /// - Returns: The source `width` and `height`, or `nil` if either keyword is
-    ///   missing or non-positive.
-    static func imageDimensions( from properties: [ FITSPropertySnapshot ] ) -> ( width: Int, height: Int )?
-    {
-        guard let nAxis1 = properties.first( where: { $0.name == "NAXIS1" } )?.value.integer,
-              let nAxis2 = properties.first( where: { $0.name == "NAXIS2" } )?.value.integer,
-              let width  = Int( exactly: nAxis1 ), width  > 0,
-              let height = Int( exactly: nAxis2 ), height > 0
-        else
-        {
-            return nil
-        }
-
-        return ( width, height )
-    }
-
-    /// Reads the linear pixel-scaling keywords `BSCALE` and `BZERO`.
-    ///
-    /// - Parameter properties: The image HDU's header properties.
-    /// - Returns: The multiplicative `scale` (`BSCALE`, default 1) and additive
-    ///   `offset` (`BZERO`, default 0) to apply to raw pixel values.
-    static func scaling( from properties: [ FITSPropertySnapshot ] ) -> ( scale: Double, offset: Double )
-    {
-        let bZero  = properties.first { $0.name == "BZERO"  }
-        let bScale = properties.first { $0.name == "BSCALE" }
-
-        let offset = bZero?.value.float  ?? bZero?.value.integer.map( Double.init )  ?? 0
-        let scale  = bScale?.value.float ?? bScale?.value.integer.map( Double.init ) ?? 1
-
-        return ( scale: scale, offset: offset )
-    }
-
-    /// Reads the integer `BLANK` undefined-pixel sentinel (FITS 4.0 §5.4.2.2),
-    /// which `PixelUtilities.readRawPixels` maps to NaN for an integer image so
-    /// blanks are dropped by the non-finite-filtering statistics, exactly as a
-    /// float image's NaN blanks are.
-    ///
-    /// - Parameter properties: The image HDU's header properties.
-    /// - Returns: The `BLANK` value, or `nil` when the keyword is absent or not an
-    ///   integer (a floating-point image marks blanks with NaN directly).
-    static func blankValue( from properties: [ FITSPropertySnapshot ] ) -> Int64?
-    {
-        properties.first { $0.name == "BLANK" }?.value.integer
-    }
-
     /// Decodes the raw sample at image coordinates `(x, y)` from the HDU bytes,
     /// applying `BSCALE`/`BZERO`. Coordinates use a top-left origin matching the
     /// displayed image (the pipeline does not flip rows).
@@ -551,36 +415,6 @@ public extension ImageProcessor
         return PixelValue( value: scaled, fraction: FITSImageDecoder.fullScale( from: properties ).map { scaled / $0 } )
     }
 
-    /// Multiplies two counts, returning `nil` instead of trapping when the product
-    /// overflows `Int` — so a FITS header that declares an enormous geometry cannot
-    /// trap the byte-offset arithmetic.
-    ///
-    /// - Parameters:
-    ///   - a: The first factor.
-    ///   - b: The second factor.
-    /// - Returns: `a × b`, or `nil` on overflow.
-    private static func checkedProduct( _ a: Int, _ b: Int ) -> Int?
-    {
-        let ( product, overflow ) = a.multipliedReportingOverflow( by: b )
-
-        return overflow ? nil : product
-    }
-
-    /// The full-scale maximum used for the displayed fraction, or `nil` for
-    /// floating-point formats.
-    private static func fullScale( for bitsPerPixel: BitsPerPixel ) -> Double?
-    {
-        switch bitsPerPixel
-        {
-            case .uint8:             return 255
-            case .int16:             return 65535
-            case .int32:             return 4294967295
-            case .float32,
-                 .float64: return nil
-            @unknown default:        return nil
-        }
-    }
-
     /// Folds the format's full scale into the affine `BSCALE`/`BZERO` scaling, so
     /// integer samples render in their native full-scale `[0, 1]` domain — the same
     /// `1 / fullScale` scaling the XISF path applies.
@@ -593,13 +427,14 @@ public extension ImageProcessor
     /// Floating-point formats have no fixed full scale and pass through unchanged.
     ///
     /// - Parameters:
-    ///   - scale:        The multiplicative scale from `BSCALE`.
-    ///   - offset:       The additive offset from `BZERO`.
-    ///   - bitsPerPixel: The sample format.
+    ///   - scale:      The multiplicative scale from `BSCALE`.
+    ///   - offset:     The additive offset from `BZERO`.
+    ///   - properties: The frame's header — its `BITPIX` gives the full-scale span,
+    ///                 through the shared decoder.
     /// - Returns: The full-scale-folded scale and offset.
-    private static func fullScaleScaling( scale: Double, offset: Double, bitsPerPixel: BitsPerPixel ) -> ( scale: Double, offset: Double )
+    private static func fullScaleScaling( scale: Double, offset: Double, properties: [ FITSPropertySnapshot ] ) -> ( scale: Double, offset: Double )
     {
-        guard let fullScale = Self.fullScale( for: bitsPerPixel ), fullScale > 0
+        guard let fullScale = FITSImageDecoder.fullScale( from: properties ), fullScale > 0
         else
         {
             return ( scale: scale, offset: offset )

@@ -39,27 +39,6 @@ import SwiftUtilities
 /// SwiftUI/AppKit dependencies, so it compiles into the extension targets.
 public enum FITSPreviewRenderer
 {
-    /// Selects the first renderable image HDU and returns its bytes paired with
-    /// the owning header's property snapshots — the same selection rule the app's
-    /// renderer uses (first `.data` section, paired with the header that precedes
-    /// it in file order).
-    ///
-    /// - Parameter sections: The file's sections, in file order.
-    /// - Returns: The image data bytes and owning-header property snapshots.
-    /// - Throws: ``RuntimeError`` when the file contains no image data section.
-    public static func imageHDU( from sections: [ FITSSection ] ) throws -> ( data: Data, properties: [ FITSPropertySnapshot ] )
-    {
-        guard let dataIndex = sections.firstIndex( where: { $0.kind == .data } ), dataIndex > 0
-        else
-        {
-            throw RuntimeError( message: "FITS file contains no image HDU" )
-        }
-
-        let properties = sections[ dataIndex - 1 ].properties.map { FITSPropertySnapshot( name: $0.name, value: $0.value ) }
-
-        return ( try sections[ dataIndex ].data, properties )
-    }
-
     /// Renders the given FITS file bytes to a `CGImage`.
     ///
     /// - Parameters:
@@ -75,7 +54,7 @@ public enum FITSPreviewRenderer
     public static func render( data: Data, maxDimension: Int? = nil, previewsDefaults: UserDefaults? = AutoStretchPreference.sharedDefaults ) throws -> CGImage
     {
         let file = try FITSFile( data: data, options: .lenient )
-        let hdu  = try self.imageHDU( from: file.sections )
+        let hdu  = try FITSImageDecoder.imageHDU( in: file.sections )
 
         // Decode the raw samples once and share them between the auto-stretch
         // statistics and the render, so a one-shot preview decodes the frame a single
