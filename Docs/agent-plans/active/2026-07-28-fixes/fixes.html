@@ -116,7 +116,8 @@
 
     <p class="overview">
         A short backlog of defects observed while using FITScope: an overlay that is not always correctly
-        registered to the image right after loading, and an unexpected system permission prompt at launch.
+        registered to the image right after loading, an unexpected system permission prompt at launch, and
+        poor responsiveness when several images are loaded at once.
     </p>
 
     <h2 class="section">Backlog</h2>
@@ -132,6 +133,43 @@
             <h3>Unexpected "access data from other apps" prompt at launch</h3>
             <p>Launching the app now triggers the system prompt asking for permission to access data from other
             applications. FITScope should not require this, and the prompt should not appear at all.</p>
+        </li>
+        <li class="item">
+            <h3>Poor responsiveness while loading multiple images at once</h3>
+            <p>When several images are loaded in one go, the app does not stay responsive enough while they are
+            being processed. Selecting a file in the sidebar during that time does not immediately switch to it:
+            the view keeps showing a previously selected image instead. How it resolves has not been pinned down
+            &mdash; it is unclear whether the correct image eventually appears on its own or whether the selection
+            has to be made again.</p>
+        </li>
+        <li class="item">
+            <h3>Star detection blocks the file preparation pipeline</h3>
+            <p>Opening several images at once paints their previews far more slowly than rendering them requires:
+            the pipeline advances at the speed of star detection rather than of rendering.</p>
+            <p><code>OpenFile.prepare()</code> acquires a <code>RenderThrottle</code> slot and holds it across
+            load&nbsp;&rarr;&nbsp;render&nbsp;&rarr;&nbsp;<strong>star detection</strong>&nbsp;&rarr;&nbsp;thumbnail.
+            With the limit at <code>max(2,&nbsp;cores&minus;2)</code>, one file's detection therefore gates when the
+            <em>next</em> file may start loading and rendering at all, and detection is by far the longest of those
+            stages. <code>prepareSelectedFrame()</code> has the same shape for carousel frames, holding a
+            <code>high</code>-priority slot across detection. A file's own thumbnail does <em>not</em> wait on its
+            own detection &mdash; the render commit starts it concurrently &mdash; so this is a throughput problem
+            across files rather than a per-file one. Likely related to item&nbsp;3.</p>
+            <p><strong>What needs to be done.</strong> Detection should run as its own task so a preparation slot
+            covers load&nbsp;&rarr;&nbsp;render&nbsp;&rarr;&nbsp;thumbnail only. Four constraints shape that:</p>
+            <ul>
+                <li>The analysis must stay CPU-bounded &mdash; detaching it outright lets a session folder spawn a
+                    detection per file and saturate the machine, which is what the throttle exists to prevent.</li>
+                <li>It must inherit the priority of the work that spawned it. The selected file prepares at
+                    <code>high</code>; queuing its analysis at <code>normal</code> leaves the stars for the frame on
+                    screen waiting behind every background file's preparation.</li>
+                <li>It must be enqueued immediately after the render, not after the thumbnail wait:
+                    <code>makeThumbnail</code> resizes on the global utility queue, which a folder of opening files
+                    saturates, so anything sequenced after it inherits that delay.</li>
+                <li><code>LoadedImage.isDetectingStars</code> drives the toolbar's star-detection indicator and is
+                    set only once detection actually starts. It has to mean "queued or running" &mdash; set when the
+                    work is enqueued, cleared if it is abandoned in the queue &mdash; or the indicator reads as idle
+                    for the whole wait.</li>
+            </ul>
         </li>
     </ol>
 </div>
