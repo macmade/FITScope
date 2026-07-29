@@ -115,8 +115,8 @@
     </header>
 
     <p class="overview">
-        A short backlog of defects observed while using FITScope: an overlay that is not always correctly
-        registered to the image right after loading, an unexpected system permission prompt at launch, and
+        A short backlog of defects observed while using FITScope: an unexpected system permission prompt at
+        launch, an overlay that is not always correctly registered to the image right after loading, and
         poor responsiveness when several images are loaded at once.
     </p>
 
@@ -124,15 +124,17 @@
 
     <ol class="backlog">
         <li class="item">
+            <h3>Unexpected "access data from other apps" prompt at launch</h3>
+            <p>Launching the app now triggers the system prompt asking for permission to access data from other
+            applications. FITScope should not require this, and the prompt should not appear at all.</p>
+            <p>This is recent behavior. The app group has been in place for a long time and the prompt was not
+            appearing back then, so unless something environmental has changed, this looks like a regression.</p>
+        </li>
+        <li class="item">
             <h3>Stars overlay is sometimes misaligned right after loading an image</h3>
             <p>After loading an image and toggling the stars overlay on, the star markers are sometimes drawn
             slightly off from the stars they mark. Zooming in or out corrects the alignment, and it stays correct
             afterwards. Whether the other canvas overlays are affected in the same way has not been checked.</p>
-        </li>
-        <li class="item">
-            <h3>Unexpected "access data from other apps" prompt at launch</h3>
-            <p>Launching the app now triggers the system prompt asking for permission to access data from other
-            applications. FITScope should not require this, and the prompt should not appear at all.</p>
         </li>
         <li class="item">
             <h3>Poor responsiveness while loading multiple images at once</h3>

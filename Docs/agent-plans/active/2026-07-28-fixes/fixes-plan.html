@@ -1,0 +1,1864 @@
+<meta charset="utf-8">
+<title>Fixes — Implementation Plan</title>
+<style>
+    :root {
+        --bg:        #0d1117;
+        --panel:     #161b22;
+        --panel-2:   #11161d;
+        --border:    #2b3440;
+        --text:      #e6edf3;
+        --muted:     #9da7b3;
+        --accent:    #58a6ff;
+        --accent-2:  #7ee787;
+        --code-bg:   #1c2129;
+
+        --status-not-started-bg:   #30363d;
+        --status-not-started-fg:   #c9d1d9;
+        --status-in-progress-bg:   #7a5200;
+        --status-in-progress-fg:   #ffd97d;
+        --status-completed-bg:     #1a5c2e;
+        --status-completed-fg:     #9ff0b5;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin:           0;
+        padding:          2.5rem 1.25rem 4rem;
+        background:       var(--bg);
+        color:            var(--text);
+        font-family:      -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        line-height:      1.6;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+        max-width: 900px;
+        margin:    0 auto;
+    }
+
+    header.doc {
+        border-bottom:  1px solid var(--border);
+        padding-bottom: 1.5rem;
+        margin-bottom:  2rem;
+    }
+
+    h1 {
+        font-size:      2.25rem;
+        margin:         0 0 .35rem;
+        letter-spacing: -0.02em;
+    }
+
+    .meta {
+        color:     var(--muted);
+        font-size: .9rem;
+    }
+
+    .meta a {
+        color: var(--accent);
+    }
+
+    h2.section {
+        font-size:      1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color:          var(--accent-2);
+        margin:         2.75rem 0 1.25rem;
+        padding-top:    1.25rem;
+        border-top:     1px solid var(--border);
+    }
+
+    h2.section:first-of-type {
+        border-top:  none;
+        padding-top: 0;
+        margin-top:  0;
+    }
+
+    h3.phase {
+        font-size:      .95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color:          var(--accent);
+        margin:         2rem 0 .9rem;
+    }
+
+    p {
+        margin: 0 0 1rem;
+    }
+
+    .overview p {
+        color:     var(--muted);
+        font-size: 1.02rem;
+    }
+
+    code {
+        background:    var(--code-bg);
+        border:        1px solid var(--border);
+        border-radius: 4px;
+        padding:       .08em .35em;
+        font-family:   ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size:     .88em;
+    }
+
+    pre {
+        background:    var(--code-bg);
+        border:        1px solid var(--border);
+        border-radius: 8px;
+        padding:       .9rem 1rem;
+        overflow-x:    auto;
+        font-size:     .85rem;
+        line-height:   1.5;
+    }
+
+    pre code {
+        background: none;
+        border:     none;
+        padding:    0;
+        font-size:  1em;
+    }
+
+    /* --- Status capsules ---------------------------------------------- */
+
+    .status {
+        display:        inline-block;
+        border-radius:  999px;
+        padding:        .12rem .7rem;
+        font-size:      .74rem;
+        font-weight:    700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        white-space:    nowrap;
+        vertical-align: middle;
+    }
+
+    .status.not-started {
+        background: var(--status-not-started-bg);
+        color:      var(--status-not-started-fg);
+    }
+
+    .status.in-progress {
+        background: var(--status-in-progress-bg);
+        color:      var(--status-in-progress-fg);
+    }
+
+    .status.completed {
+        background: var(--status-completed-bg);
+        color:      var(--status-completed-fg);
+    }
+
+    /* --- Q & A --------------------------------------------------------- */
+
+    .qa {
+        background:    var(--panel);
+        border:        1px solid var(--border);
+        border-radius: 10px;
+        padding:       1rem 1.15rem;
+        margin-bottom: .9rem;
+    }
+
+    .qa .question {
+        font-weight:   600;
+        margin-bottom: .4rem;
+    }
+
+    .qa .answer {
+        color:  var(--muted);
+        margin: 0;
+    }
+
+    .qa .answer::before {
+        content:      "→ ";
+        color:        var(--accent-2);
+        font-weight:  700;
+    }
+
+    /* --- Notes --------------------------------------------------------- */
+
+    .notes {
+        background:    var(--panel-2);
+        border:        1px solid var(--border);
+        border-radius: 10px;
+        padding:       1.15rem 1.35rem;
+    }
+
+    .notes h4,
+    .appendix h4 {
+        margin:         1.4rem 0 .5rem;
+        font-size:      .95rem;
+        color:          var(--accent);
+        letter-spacing: 0.02em;
+    }
+
+    .notes h4:first-child,
+    .appendix h4:first-child {
+        margin-top: 0;
+    }
+
+    .notes ul,
+    .appendix ul {
+        margin:       0 0 .9rem;
+        padding-left: 1.25rem;
+    }
+
+    .notes li,
+    .appendix li {
+        margin-bottom: .35rem;
+    }
+
+    .flag {
+        display:       inline-block;
+        border-radius: 4px;
+        padding:       .02em .4em;
+        font-size:     .74rem;
+        font-weight:   700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        background:    #4a2418;
+        color:         #ffb59b;
+        margin-right:  .35rem;
+    }
+
+    .flag.verified {
+        background: #133d24;
+        color:      #8de0a8;
+    }
+
+    /* --- Table of contents --------------------------------------------- */
+
+    nav.toc {
+        background:    var(--panel);
+        border:        1px solid var(--border);
+        border-radius: 10px;
+        padding:       1.1rem 1.35rem;
+    }
+
+    nav.toc ol {
+        list-style:   none;
+        margin:       0;
+        padding:      0;
+        counter-reset: toc;
+    }
+
+    nav.toc > ol > li.phase-group {
+        margin-bottom: 1rem;
+    }
+
+    nav.toc > ol > li.phase-group:last-child {
+        margin-bottom: 0;
+    }
+
+    nav.toc .phase-name {
+        display:        block;
+        font-size:      .8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color:          var(--accent);
+        margin-bottom:  .4rem;
+    }
+
+    nav.toc li.entry {
+        display:         flex;
+        align-items:     baseline;
+        justify-content: space-between;
+        gap:             .75rem;
+        padding:         .3rem 0;
+        border-bottom:   1px dashed rgba(255, 255, 255, .06);
+    }
+
+    nav.toc li.entry:last-child {
+        border-bottom: none;
+    }
+
+    nav.toc a {
+        color:           var(--text);
+        text-decoration: none;
+    }
+
+    nav.toc a:hover {
+        color:           var(--accent);
+        text-decoration: underline;
+    }
+
+    /* --- Milestones ----------------------------------------------------- */
+
+    section.milestone {
+        background:    var(--panel);
+        border:        1px solid var(--border);
+        border-radius: 10px;
+        padding:       1.25rem 1.4rem;
+        margin-bottom: 1.1rem;
+    }
+
+    section.milestone > h4 {
+        margin:      0 0 .75rem;
+        font-size:   1.15rem;
+        display:     flex;
+        align-items: baseline;
+        gap:         .7rem;
+        flex-wrap:   wrap;
+    }
+
+    section.milestone .num {
+        color:       var(--accent);
+        font-weight: 700;
+    }
+
+    .field {
+        margin-top: 1rem;
+    }
+
+    .field > .label {
+        display:        block;
+        font-size:      .74rem;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color:          var(--accent-2);
+        margin-bottom:  .3rem;
+        font-weight:    700;
+    }
+
+    .field p {
+        margin: 0;
+    }
+
+    .field ul {
+        margin:       0;
+        padding-left: 1.3rem;
+    }
+
+    .field li {
+        margin-bottom: .3rem;
+    }
+
+    ul.tasks {
+        list-style:   none;
+        margin:       0;
+        padding-left: 0;
+    }
+
+    ul.tasks li {
+        position:      relative;
+        padding-left:  1.6rem;
+        margin-bottom: .4rem;
+    }
+
+    ul.tasks li::before {
+        content:       "";
+        position:      absolute;
+        left:          0;
+        top:           .42em;
+        width:         .85rem;
+        height:        .85rem;
+        border:        1px solid var(--accent);
+        border-radius: 3px;
+        background:    var(--bg);
+    }
+
+    ul.tasks li.done::before {
+        content:     "✓";
+        color:       var(--status-completed-fg);
+        background:  var(--status-completed-bg);
+        border-color: var(--status-completed-fg);
+        font-size:   .7rem;
+        line-height: .85rem;
+        text-align:  center;
+    }
+
+    .placeholder {
+        color:      var(--muted);
+        font-style: italic;
+    }
+
+    table {
+        width:           100%;
+        border-collapse: collapse;
+        font-size:       .9rem;
+        margin-bottom:   1rem;
+    }
+
+    th, td {
+        border:     1px solid var(--border);
+        padding:    .45rem .6rem;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    th {
+        background: var(--code-bg);
+        color:      var(--accent-2);
+        font-size:  .8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .appendix {
+        background:    var(--panel-2);
+        border:        1px solid var(--border);
+        border-radius: 10px;
+        padding:       1.15rem 1.35rem;
+    }
+</style>
+
+<div class="wrap">
+
+    <header class="doc">
+        <h1>Fixes — Implementation Plan</h1>
+        <div class="meta">
+            Generated 2026-07-29 &nbsp;·&nbsp;
+            Source: <a href="fixes.html">Docs/agent-plans/active/2026-07-28-fixes/fixes.html</a>
+        </div>
+    </header>
+
+    <h2 class="section">Overview</h2>
+
+    <div class="overview">
+        <p>
+            The source backlog records four defects observed while using FITScope: an unexpected
+            <em>“access data from other apps”</em> system prompt at launch, a stars overlay that is not always
+            registered to the image right after loading, poor responsiveness while several images load at once,
+            and star detection gating the file-preparation pipeline. Only the fourth arrives with a worked-out
+            design; the other three describe symptoms whose cause has not been established.
+        </p>
+        <p>
+            The plan therefore alternates <strong>diagnosis</strong> and <strong>fix</strong> milestones rather
+            than assuming a cause. It runs in the order the permission prompt forces: item&nbsp;1 first, because
+            the prompt blocks test runs and nothing else can be verified until it is gone; then item&nbsp;2; then
+            item&nbsp;4; and finally item&nbsp;3, re-measured after item&nbsp;4 lands, since the backlog itself
+            notes the two are likely the same problem. Each milestone is scoped to be reviewable and committable
+            on its own, and carries its own status, implementation notes and review fields, which the implement
+            command updates in place as work progresses.
+        </p>
+    </div>
+
+    <h2 class="section">Questions &amp; answers</h2>
+
+    <div class="qa">
+        <div class="question">
+            Items 1–3 need diagnosis before a fix can be specified, while item 4 comes with a concrete design.
+            How should the plan be ordered?
+        </div>
+        <p class="answer">
+            Item&nbsp;1 needs to be fixed first, as it affects testing — the prompt prevents tests from running.
+            Then item&nbsp;2. Then item&nbsp;4. Then evaluate / re-measure item&nbsp;3 and fix if necessary.
+        </p>
+    </div>
+
+    <div class="qa">
+        <div class="question">
+            Item 1’s likely suspects include SwiftUtilities (the embedded, unsandboxed <code>Updater.xpc</code>
+            service and the launch-time update check). May the plan propose changes inside the submodules?
+        </div>
+        <p class="answer">
+            Propose, but ask before changing. The plan may identify a submodule as the root cause and describe
+            the change; every submodule edit is put to the user for approval before it is made.
+        </p>
+    </div>
+
+    <div class="qa">
+        <div class="question">
+            Item 2 notes that whether the other canvas overlays are affected “has not been checked”. What should
+            the fix cover?
+        </div>
+        <p class="answer">
+            The shared displayed-rect plumbing. All overlays draw through the same <code>displayedImageRect</code>
+            published by <code>ZoomableImageView</code>, so fix it once at the source and verify every overlay
+            (stars, objects, grid, reticle, scale bar, north) registers correctly.
+        </p>
+    </div>
+
+    <div class="qa">
+        <div class="question">What verification should each milestone require?</div>
+        <p class="answer">
+            Unit tests plus a manual check: XCTest coverage for the testable logic (queue behaviour, geometry,
+            indicator state) and hand-verification of the visible symptoms in the running app.
+        </p>
+    </div>
+
+    <h2 class="section">Notes</h2>
+
+    <div class="notes">
+
+        <h4>Evidence gathered while planning</h4>
+
+        <p>
+            Everything below was read from the working tree or dumped from the built products on 2026-07-29.
+            Items marked <span class="flag">unverified</span> are hypotheses to be confirmed by the diagnosis
+            milestones, not conclusions.
+        </p>
+
+        <ul>
+            <li>
+                <span class="flag verified">verified</span>
+                The app is signed <strong>sandboxed</strong> in both Debug and Release, with
+                <code>com.apple.security.application-groups → group.com.xs-labs.FITScope</code>
+                (see <a href="#appendix-a">Appendix A</a>).
+            </li>
+            <li>
+                <span class="flag verified">verified</span>
+                <code>FITScope.app/Contents/XPCServices/Updater.xpc</code> is signed with
+                <strong>no sandbox entitlement at all</strong> — in Release it carries only
+                <code>com.apple.security.get-task-allow</code>. Its source entitlements file,
+                <code>Submodules/SwiftUtilities/UpdaterService/Updater.entitlements</code>, is an empty
+                <code>&lt;dict/&gt;</code>. It is unsandboxed code nested inside a sandboxed app.
+            </li>
+            <li>
+                <span class="flag verified">verified</span>
+                That service was embedded on <strong>2026-07-20</strong> by commit <code>5509176</code>
+                (<em>feat: In-app updates</em>), which added the <code>Copy Files</code> phase into
+                <code>$(CONTENTS_FOLDER_PATH)/XPCServices</code>.
+                <strong>Superseded by milestone&nbsp;1:</strong> this bullet originally added that the app
+                group “predates it by far”, which is wrong. The group was added on 2026-07-11 by
+                <code>083c28f</code> — nine days earlier, not long before — and it, not the updater, is
+                the cause. See milestone&nbsp;1's implementation notes.
+            </li>
+            <li>
+                <span class="flag verified">verified</span>
+                <code>AppDelegate.preferences</code> is a stored property, so
+                <code>UserDefaults(suiteName: "group.com.xs-labs.FITScope")</code> is opened during
+                <code>AppDelegate</code> initialisation on <em>every</em> launch — before the
+                <code>isRunningTests</code> guard in <code>applicationDidFinishLaunching</code>.
+            </li>
+            <li>
+                <span class="flag verified">verified</span>
+                The launch-time background update check is <em>not</em> reached during a test run: the
+                <code>#if DEBUG</code> <code>isRunningTests</code> guard returns from
+                <code>applicationDidFinishLaunching</code> before
+                <code>AppUpdater().checkForUpdatesInBackground()</code> is scheduled. <strong>So if the prompt
+                also appears while running tests, the update check is ruled out</strong> — but the embedded
+                service and the app-group read are not.
+            </li>
+            <li>
+                <span class="flag verified">verified</span>
+                Whether <code>Updater.xpc</code> is actually spawned at launch, and which process TCC names as
+                the requester. <strong>Settled by milestone&nbsp;1:</strong> the service is never spawned —
+                <code>launchd</code> records only “will attach … next time it's created”. TCC names
+                <code>com.apple.sandboxd</code> as the requester and <code>com.xs-labs.FITScope</code> itself
+                as responsible. See milestone&nbsp;1's implementation notes.
+            </li>
+            <li>
+                <span class="flag verified">verified</span>
+                The signed app’s <code>com.apple.application-identifier</code> prefix
+                (<code>M2S7CSUC5Z</code>) differs from its <code>com.apple.developer.team-identifier</code>
+                (<code>326Y53CJMD</code>). <strong>Settled by milestone&nbsp;1:</strong> it is a harmless
+                legacy App&nbsp;ID prefix. Dumping the embedded profile shows the app is signed with the
+                wildcard <em>“Mac Team Provisioning Profile: *”</em>, whose
+                <code>com.apple.application-identifier</code> is <code>M2S7CSUC5Z.*</code>. It matters only
+                indirectly — that profile authorises no app-groups entitlement. See milestone&nbsp;1's
+                implementation notes.
+            </li>
+        </ul>
+
+        <h4>Key files</h4>
+
+        <table>
+            <tr><th>Area</th><th>Files</th></tr>
+            <tr>
+                <td>Permission prompt (item 1)</td>
+                <td>
+                    <code>FITScope/FITScope.entitlements</code>,
+                    <code>FITScope/Application/AppDelegate.swift</code>,
+                    <code>FITScope/Application/AppUpdater.swift</code>,
+                    <code>FITScope/Model/Preferences/AutoStretchPreference.swift</code>,
+                    <code>Submodules/SwiftUtilities/UpdaterService/Updater.entitlements</code>,
+                    <code>Submodules/SwiftUtilities/SwiftUtilities/Updater/XPC/…</code>,
+                    <code>FITScope.xcodeproj/project.pbxproj</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Overlay registration (item 2)</td>
+                <td>
+                    <code>FITScope/Views/Canvas/ZoomableImageView.swift</code>,
+                    <code>FITScope/Views/Canvas/CanvasGeometry.swift</code>,
+                    <code>FITScope/Views/Canvas/ImageCanvasView.swift</code>,
+                    <code>FITScope/Views/Overlays/CanvasOverlayLayer.swift</code>,
+                    <code>FITScope/Views/Overlays/StarsOverlay.swift</code> (and the other overlays),
+                    <code>FITScope/Application/MainWindowView.swift</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Preparation pipeline (items 3 &amp; 4)</td>
+                <td>
+                    <code>FITScope/Model/OpenFile.swift</code>,
+                    <code>FITScope/Model/RenderThrottle.swift</code>,
+                    <code>FITScope/Model/LoadedImage.swift</code>,
+                    <code>FITScope/Model/WindowModel.swift</code>,
+                    <code>FITScope/Model/ImageRenderer.swift</code>,
+                    <code>FITScope/Views/Canvas/ImageToolbarView.swift</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Tests</td>
+                <td>
+                    <code>FITScopeTests/Model/OpenFileTests.swift</code>,
+                    <code>FITScopeTests/Model/OpenFileFramesTests.swift</code>,
+                    <code>FITScopeTests/Model/WindowModelTests.swift</code>,
+                    <code>FITScope.xctestplan</code>
+                </td>
+            </tr>
+        </table>
+
+        <h4>Conventions to follow</h4>
+
+        <ul>
+            <li>
+                The Xcode project is authoritative: build and test through
+                <code>xcodebuild</code> with <code>FITScope.xcodeproj</code>, not <code>swift build</code>.
+                Keep <code>project.pbxproj</code> in sync with any file added or moved.
+            </li>
+            <li>
+                Match the surrounding style: <code>let</code> over <code>var</code>, no force-unwraps, aligned
+                <code>=</code>, early returns, one type per file, doc comments on private members too.
+            </li>
+            <li>
+                Comments describe the code as it is — never what changed. Rationale for changes belongs in the
+                commit message and in this plan’s implementation notes.
+            </li>
+            <li>
+                Submodule edits (<code>SwiftUtilities</code>, <code>SwiftAstro</code>, <code>xcconfig</code>) are
+                proposed here but must be approved before they are made.
+            </li>
+            <li>
+                Never commit, push, or run <code>git pull</code> / <code>git submodule update</code>; leave that
+                to the user. Never skip or delete a test to make a milestone pass.
+            </li>
+        </ul>
+
+        <h4>Risks</h4>
+
+        <ul>
+            <li>
+                <strong>Item 1 may be environmental.</strong> The backlog allows for that (“unless something
+                environmental has changed”). Milestone&nbsp;1 must be able to conclude “not a code defect” and
+                say so, rather than forcing a code change.
+            </li>
+            <li>
+                <strong>Sandboxing the updater service may break in-app updates</strong>, since replacing the
+                application bundle is exactly what a sandbox forbids. Milestone&nbsp;2 carries an explicit
+                fallback for that outcome.
+            </li>
+            <li>
+                <strong>Two concurrent pools can oversubscribe the CPU.</strong> Splitting detection out of the
+                render throttle means preparation and analysis run side by side; if their limits are not chosen
+                together, item&nbsp;4’s fix could make item&nbsp;3 worse rather than better.
+            </li>
+            <li>
+                <strong>Detaching detection changes observable ordering.</strong> Weights, the sidebar pill and
+                the Analysis tab all key off metrics that arrive from detection; they will now settle later than
+                the render. Existing tests that await <code>preparation</code> to observe a star field will need
+                a new await point rather than a relaxed assertion.
+            </li>
+        </ul>
+
+        <h4>Open questions</h4>
+
+        <ul>
+            <li>
+                Whether the analysis queue should be a second <code>RenderThrottle</code> instance or a new type.
+                The existing throttle already provides bounded concurrency, FIFO ordering and promotion; the only
+                gap is that a caller cancelled while suspended still consumes a slot hand-off. Milestone&nbsp;5
+                decides, preferring reuse.
+            </li>
+            <li>
+                Whether <code>LoadedImage.detectStars()</code> should keep owning the
+                <code>isDetectingStars</code> / <code>hasDetectedStars</code> transitions, or expose them so the
+                enqueuing caller can drive the “queued” state. Milestone&nbsp;6 decides.
+            </li>
+        </ul>
+
+    </div>
+
+    <h2 class="section">Table of contents</h2>
+
+    <nav class="toc">
+        <ol>
+            <li class="phase-group">
+                <span class="phase-name">Phase 1 — Unblock testing (backlog item 1)</span>
+                <ol>
+                    <li class="entry">
+                        <a href="#m1">1. Identify what triggers the launch-time permission prompt</a>
+                        <span class="status in-progress">In progress</span>
+                    </li>
+                    <li class="entry">
+                        <a href="#m2">2. Eliminate the prompt and restore a clean test run</a>
+                        <span class="status not-started">Not started</span>
+                    </li>
+                </ol>
+            </li>
+            <li class="phase-group">
+                <span class="phase-name">Phase 2 — Overlay registration (backlog item 2)</span>
+                <ol>
+                    <li class="entry">
+                        <a href="#m3">3. Characterise the overlay misregistration after loading</a>
+                        <span class="status not-started">Not started</span>
+                    </li>
+                    <li class="entry">
+                        <a href="#m4">4. Publish a correct displayed-image rectangle for every overlay</a>
+                        <span class="status not-started">Not started</span>
+                    </li>
+                </ol>
+            </li>
+            <li class="phase-group">
+                <span class="phase-name">Phase 3 — Detection off the preparation path (backlog item 4)</span>
+                <ol>
+                    <li class="entry">
+                        <a href="#m5">5. Introduce a bounded, priority-inheriting analysis queue</a>
+                        <span class="status not-started">Not started</span>
+                    </li>
+                    <li class="entry">
+                        <a href="#m6">6. Make the detection indicator mean “queued or running”</a>
+                        <span class="status not-started">Not started</span>
+                    </li>
+                    <li class="entry">
+                        <a href="#m7">7. Take star detection off the preparation slot</a>
+                        <span class="status not-started">Not started</span>
+                    </li>
+                    <li class="entry">
+                        <a href="#m8">8. Measure the preparation throughput gain</a>
+                        <span class="status not-started">Not started</span>
+                    </li>
+                </ol>
+            </li>
+            <li class="phase-group">
+                <span class="phase-name">Phase 4 — Responsiveness re-assessment (backlog item 3)</span>
+                <ol>
+                    <li class="entry">
+                        <a href="#m9">9. Re-measure multi-file responsiveness and pin down the selection behaviour</a>
+                        <span class="status not-started">Not started</span>
+                    </li>
+                    <li class="entry">
+                        <a href="#m10">10. Fix the remaining responsiveness defect</a>
+                        <span class="status not-started">Not started</span>
+                    </li>
+                </ol>
+            </li>
+        </ol>
+    </nav>
+
+    <h2 class="section">Milestones</h2>
+
+    <h3 class="phase">Phase 1 — Unblock testing (backlog item 1)</h3>
+
+    <section class="milestone" id="m1">
+        <h4><span class="num">1.</span> Identify what triggers the launch-time permission prompt
+            <span class="status in-progress">In progress</span></h4>
+
+        <div class="field">
+            <span class="label">Goal</span>
+            <p>
+                Establish, from the system’s own record rather than from inference, which process asks for
+                <em>“access data from other apps”</em>, which application TCC holds responsible, and what it was
+                trying to read. Nothing else in the plan can be verified until the prompt is gone, so this is the
+                first milestone — and it deliberately changes no code.
+            </p>
+        </div>
+
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul class="tasks">
+                <li>Reproduce deliberately: reset the decision with
+                    <code>tccutil reset SystemPolicyAppData com.xs-labs.FITScope</code>, then record whether the
+                    prompt appears on a plain launch, on a <code>xcodebuild test</code> run, or on both.</li>
+                <li>Capture the TCC decision while launching:
+                    <code>log stream --predicate 'subsystem == "com.apple.TCC"' --info --debug</code>. Record the
+                    service name (expected <code>kTCCServiceSystemPolicyAppData</code>), the <em>requesting</em>
+                    process, the <em>responsible</em> process, and the path that triggered it.</li>
+                <li>Determine whether <code>Updater.xpc</code> is spawned at launch — watch for the
+                    <code>Updater</code> process in the log or in Activity Monitor. It is unsandboxed, so any read
+                    it makes under <code>~/Library/Containers</code> or <code>~/Library/Group Containers</code> is
+                    TCC-gated, and prompts would be attributed to FITScope as the responsible app.</li>
+                <li>Use the test run as a discriminator: <code>applicationDidFinishLaunching</code> returns early
+                    under <code>isRunningTests</code>, so the 5-second background update check never runs during
+                    tests. If the prompt still appears there, the update check is ruled out.</li>
+                <li>Check the app-group read: <code>AppDelegate.preferences</code> opens
+                    <code>UserDefaults(suiteName: "group.com.xs-labs.FITScope")</code> during
+                    <code>AppDelegate</code> init on every launch. Confirm from the log whether the requester is
+                    the app itself or the nested service.</li>
+                <li>Rule out a provisioning problem: confirm that the
+                    <code>com.apple.application-identifier</code> prefix <code>M2S7CSUC5Z</code> against team
+                    <code>326Y53CJMD</code> is a legacy App&nbsp;ID prefix, by checking the profile the app is
+                    signed with.</li>
+                <li>Note whether Debug and Release differ — the Debug build additionally carries the
+                    test-injected <code>com.apple.security.temporary-exception.files.absolute-path.read-only</code>
+                    for <code>/</code> (see <a href="#appendix-a">Appendix A</a>), which widens the sandbox and
+                    may change what TCC gates.</li>
+                <li>Write the conclusion into <em>Implementation notes</em> below, including the possibility that
+                    this is environmental and no code change is warranted.</li>
+            </ul>
+        </div>
+
+        <div class="field"><span class="label">Status</span><p><span class="status in-progress">In progress</span></p></div>
+        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+
+            <p>
+                No code was changed. The cause was established from the system log, which had already
+                recorded every prompt: the persisted store still held the events, so nothing had to be
+                reproduced and no TCC decision had to be reset. All evidence below is from
+                <code>log show --last 3d</code> read on 2026-07-29, covering 2026-07-26 → 2026-07-29.
+            </p>
+
+            <p>
+                <strong>The <code>tccd</code> evidence is perishable — read this before trying to
+                re-run the queries.</strong> <code>com.apple.TCC:access</code> debug records are pruned
+                far more aggressively than <code>containermanagerd</code>'s. Quotes captured here
+                between 10:19 and 11:13 on 2026-07-29 were already unreproducible by 11:45 the same
+                morning: the retained <code>tccd</code> window had rolled forward to begin at
+                2026-07-28 18:54, dropping the 18:27 and 18:38 launches quoted below. They were verified
+                against the raw dumps taken at capture time, and the conclusions they support are each
+                independently corroborated by <code>containermanagerd</code> or <code>launchd</code>
+                records, which survive. Anything below timestamped before 18:54 on 2026-07-28 should be
+                treated as a capture-time quote, not a live query.
+            </p>
+
+            <p>
+                <strong>Root cause — the App Group identifier is not team-ID-prefixed.</strong>
+                <code>containermanagerd</code> treats every app-group container as protected and grants
+                access silently only when the requestor's signature passes “strict scrutiny”. FITScope
+                passes none of the tests it is put through, so the request is escalated to TCC and
+                becomes the <em>“access data from other apps”</em> prompt.
+            </p>
+
+            <p>
+                Apple documents the behaviour exactly, in the
+                <a href="https://developer.apple.com/documentation/macos-release-notes/macos-15-release-notes">macOS
+                Sequoia 15 release notes</a> (this machine runs macOS 26.5.1):
+            </p>
+
+            <blockquote style="margin:0 0 1rem; padding-left:1rem; border-left:3px solid var(--border); color:var(--muted)">
+                “To protect users' privacy, app group containers (in <code>~/Library/Group Containers</code>)
+                are now protected by System Integrity Protection. […] the app must use
+                <code>containerURL</code> to get the app group container path and meet one of the
+                following requirements: the app is deployed through Mac App Store; <strong>the app group
+                identifier is prefixed with the app's Team ID</strong>; or the app group identifier is
+                authorised by a provisioning profile embedded within the app. If the app doesn't meet
+                these requirements, the system might present the user a prompt to authorize the app's use
+                of the app group container. <strong>If granted, that consent applies only for the duration
+                of that app instance.</strong> This restriction also applies to app extensions, although
+                in that case the system won't prompt the user for consent but will instead just deny the
+                access. (114586798)”
+            </blockquote>
+
+            <p>
+                (The two emphasised passages are this document's emphasis, not Apple's.) Those three
+                requirements are precisely the three <code>containermanagerd</code> tests that matter,
+                and FITScope meets none of them. The log below is abridged for reading: each line's
+                trailing <code>, error = (n) &lt;private&gt;</code> suffix is elided, the REJECTED line is
+                reflowed, and in the last two lines the <code>msgID</code> and the
+                <code>Resp:{TCCDProcess: …}</code> attribute list are collapsed to the identifier alone.
+                The wording is otherwise unaltered; the unabridged <code>tccd</code> line reads
+                <code>AUTHREQ_PROMPTING: msgID=60261.2561, service=…, subject=Sub:{com.xs-labs.FITScope}Resp:{TCCDProcess:
+                identifier=com.xs-labs.FITScope, pid=92393, auid=501, euid=501, binary_path=…}</code>.
+            </p>
+
+<pre><code>containermanagerd  [com.apple.containermanager:sandbox]
+  Signature insufficient for strict scrutiny; test = platform binary,                pid = 68126
+  Signature insufficient for strict scrutiny; test = MAS,                            pid = 68126
+  Signature insufficient for strict scrutiny; test = profile validated entitlements, pid = 68126
+  Signature insufficient for strict scrutiny; test = iPad app,                       pid = 68126
+  Signature insufficient for strict scrutiny; test = TestFlight,                     pid = 68126
+  Requestor's signature did not pass strict scrutiny; pid = 68126
+  [com.xs-labs.FITScope] requesting [group.com.xs-labs.FITScope]: REJECTED.
+      Requestor's signature does not allow it to access a TCC-protected group container.
+      Group containers identifiers should be prefixed by requestor's team ID
+      to allow access on this platform.
+
+sandboxd    request approval / (TCC) tcc_send_request_authorization() IPC
+tccd        AUTHREQ_PROMPTING: service=kTCCServiceSystemPolicyAppData,
+                subject=Sub:{com.xs-labs.FITScope}Resp:{com.xs-labs.FITScope}</code></pre>
+
+            <p>
+                <strong>There is a sixth test, and it is the one that matters.</strong> FITScope's
+                sequence jumps from <em>profile validated entitlements</em> straight to <em>iPad app</em>:
+                the <code>team ID prefix</code> test is never even evaluated, because the identifier has
+                no prefix to test. It appears only for requestors that have one — where it is decisive:
+            </p>
+
+<pre><code>  Signature insufficient for strict scrutiny; test = platform binary,                pid = 1028
+  Signature insufficient for strict scrutiny; test = MAS,                            pid = 1028
+  Signature insufficient for strict scrutiny; test = profile validated entitlements, pid = 1028
+  Signature passed strict scrutiny;           test = team ID prefix,                 pid = 1028
+  [com.xs-labs.XcodeFormat] requesting [326Y53CJMD.com.xs-labs.XcodeFormat.Shared]: APPROVED.</code></pre>
+
+            <p>
+                Over the three days that test is evaluated 380 times and <strong>passes every
+                time — it never once fails</strong>. That is the direct, positive evidence that
+                milestone&nbsp;2's fix works, rather than merely an argument that the present state is
+                broken.
+            </p>
+
+            <p>
+                <strong>The exact path.</strong> The sandbox violation report names the file, together
+                with the checker and the storage class, closing the milestone's “what was it trying to
+                read” question with a path rather than a description:
+            </p>
+
+<pre><code>System Policy: FITScopeThumbnailExtension(68229) deny(1) file-read-data
+    /Users/macmade/Library/Group Containers/group.com.xs-labs.FITScope/
+        Library/Preferences/group.com.xs-labs.FITScope.plist
+    "checker":"cfprefsd"   "storage-class":"kTCCServiceSystemPolicyAppData"</code></pre>
+
+            <h4 style="margin-top:1.2rem">Answers to the milestone's questions</h4>
+
+            <table>
+                <tr><th>Question</th><th>Answer</th></tr>
+                <tr>
+                    <td>Service</td>
+                    <td><code>kTCCServiceSystemPolicyAppData</code> — as expected.</td>
+                </tr>
+                <tr>
+                    <td>Requesting process</td>
+                    <td><code>com.apple.sandboxd</code> (<code>/usr/libexec/sandboxd</code>), acting for the app.</td>
+                </tr>
+                <tr>
+                    <td>Responsible / accessing process</td>
+                    <td>
+                        <code>com.xs-labs.FITScope</code> itself — the main app binary.
+                        <strong>Not</strong> <code>Updater.xpc</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td>What it was reading</td>
+                    <td>
+                        Its own app-group container, <code>group.com.xs-labs.FITScope</code>, opened by
+                        <code>UserDefaults(suiteName:)</code>.
+                    </td>
+                </tr>
+            </table>
+
+            <h4>Hypotheses ruled out</h4>
+
+            <ul>
+                <li>
+                    <strong>The embedded <code>Updater.xpc</code> is exonerated.</strong> A 3-day query
+                    on <code>processImagePath CONTAINS "Updater.xpc"</code> returns no entries, and the
+                    service's bundle identifier never appears in the TCC log — but that alone is only
+                    absence of evidence, since a process emitting no <code>os_log</code> output would
+                    look the same. The positive evidence is <code>launchd</code>'s own record, which
+                    states the service was registered and <em>not</em> created:
+                    <code>[pid/11512 [FITScope]:] will attach to com.xs-labs.SwiftUtilities.Updater
+                    next time it's created</code> — one of 16 such messages, every one of them
+                    “next time it's created”, never a creation. That it is genuinely on-demand is
+                    confirmed from the
+                    bundle (<code>CFBundlePackageType XPC!</code>, <code>ServiceType Application</code>)
+                    and the source (<code>NSXPCListener.service()</code>), and
+                    <code>UpdaterServiceLocator.isAvailable</code> is a pure
+                    <code>FileManager.fileExists</code> check that opens no connection — so even a
+                    background update check could not have spawned it. It remains unsandboxed nested
+                    code, a separate concern noted below, but it does not cause this prompt.
+                </li>
+                <li>
+                    <strong>The launch-time update check is ruled out</strong>, on three independent
+                    grounds. Timing: the app's sandbox is initialised at 18:27:27.885 and the prompt
+                    fires at 18:27:28.106 — about 0.2 s after launch, whereas
+                    <code>backgroundUpdateCheckDelay</code> schedules the check at +5 s. That launch has
+                    since been pruned, but the same 0.2 s gap is reproducible on a launch inside the
+                    retained window: <code>launchd</code> registers the service at 20:23:54.493,
+                    <code>containermanagerd</code> rejects at 20:23:54.513 and 20:23:54.681,
+                    <code>sandboxd</code> raises the request at 20:23:54.692 and <code>tccd</code>
+                    prompts at 20:23:54.702 — <strong>0.21 s</strong>, an order of magnitude inside the
+                    5 s delay. Test runs: the
+                    prompt fires there too, where the <code>isRunningTests</code> guard returns from
+                    <code>applicationDidFinishLaunching</code> before the check is ever scheduled. And
+                    reach: the check is gated on <code>automaticallyCheckForUpdates</code>, which
+                    <code>Preferences</code> reads from <code>defaults</code>, not
+                    <code>sharedDefaults</code> — so it never touches the App Group even when it does run.
+                </li>
+                <li>
+                    <strong>Provisioning is not itself a defect.</strong> The
+                    <code>M2S7CSUC5Z</code> / <code>326Y53CJMD</code> mismatch flagged while planning is
+                    benign: the app is signed with the wildcard <em>“Mac Team Provisioning Profile: *”</em>,
+                    whose <code>com.apple.application-identifier</code> is <code>M2S7CSUC5Z.*</code> — a
+                    legacy App ID prefix — while <code>com.apple.developer.team-identifier</code> is
+                    <code>326Y53CJMD</code>. It is relevant only indirectly: that wildcard profile carries
+                    no <code>com.apple.security.application-groups</code> entitlement — confirmed by
+                    dumping the embedded profile — which is almost certainly why
+                    <code>containermanagerd</code>'s <em>profile validated entitlements</em> test fails.
+                    The log reports only that the test failed, not why, so that last step is a
+                    well-founded inference rather than something the log states.
+                </li>
+                <li>
+                    <strong>This is not environmental, and the backlog's premise is mistaken.</strong>
+                    The backlog reasons that “the app group has been in place for a long time and the
+                    prompt was not appearing back then, so unless something environmental has changed,
+                    this looks like a regression”. The App Group has <em>not</em> been in place for a
+                    long time: <code>git log -S</code> on the entitlements file returns exactly one
+                    commit, <code>083c28f</code> <em>feat(preferences): add per-format auto-stretch
+                    preferences</em>, dated <strong>2026-07-11</strong> — seventeen days before the
+                    report, and nine days <em>before</em> the updater was embedded. The defect arrived
+                    with the feature that introduced the App Group; nothing environmental changed. The
+                    outcome is also deterministic rather than incidental: the check is decided by the
+                    code signature, so it cannot vary between runs of the same binary.
+                </li>
+                <li>
+                    <strong>Why the prompt returns on every launch.</strong> Not a stale or corrupted
+                    TCC record: Apple's release note states that consent, once granted, “applies only
+                    for the duration of that app instance”. This rests on the documentation, not on the
+                    rejection counts below — <code>containermanagerd</code> rejects on every container
+                    lookup regardless of TCC state, and there are several lookups per launch, so those
+                    counts are not prompt counts and cannot carry the point. The consequence for
+                    milestone&nbsp;2 is that its acceptance criterion cannot be “I clicked Allow and it
+                    stopped” — consent never persists anyway. Only a launch with no prompt at all counts.
+                </li>
+            </ul>
+
+            <h4>Why it reaches the user before any guard can help</h4>
+
+            <p>
+                <code>AppDelegate.preferences</code> is a stored property, so
+                <code>Preferences()</code> → <code>AutoStretchPreference.sharedDefaults</code> →
+                <code>UserDefaults(suiteName: "group.com.xs-labs.FITScope")</code> runs while
+                <code>AppDelegate</code> is being initialised — before
+                <code>applicationDidFinishLaunching</code>, and therefore before the
+                <code>isRunningTests</code> guard. That is why the prompt blocks <em>unit</em>-test runs:
+                <code>testmanagerd</code> begins a <code>FITScopeTests</code> run at 20:30:37.942 and the
+                prompt fires at 20:30:39.252 against the Debug binary. The same pairing repeats at
+                20:33:50 → 20:33:51 and 20:37:34 → 20:37:35.
+            </p>
+
+            <p>
+                UI tests are unaffected, and it is worth being precise about why rather than claiming the
+                whole test plan is blocked. <code>UITestSupport</code> always launches the app with
+                <code>-uiTestingIsolatedDefaults</code>, under which
+                <code>AppDelegate.makePreferences()</code> backs the store with private suites and never
+                opens the App Group at all. So the blocker is the <code>FITScopeTests</code> host
+                specifically — which is what the log shows.
+            </p>
+
+            <h4>Debug versus Release</h4>
+
+            <p>
+                No difference in outcome. Both are rejected identically; the Debug build's
+                test-injected temporary exceptions widen the <em>sandbox</em> but do not affect the
+                <em>app-group</em> check, which is decided by the signature, not by file-path
+                exceptions. Prompts were recorded against both binaries.
+            </p>
+
+            <h4>Control case — the same team, prefixed versus unprefixed</h4>
+
+            <p>
+                <em>Selected</em> rows from the app-group grant decisions on this machine — 9 of the 30
+                distinct requestor/group/decision combinations, chosen to cover both outcomes. Counts
+                are from a <code>--last 3d</code> query run on 2026-07-29 and drift with the sliding
+                window; a re-run a few hours later returned 113 and 111 for the two Adobe rows. The
+                strongest row is the user's own other app, signed by the <em>same</em> team
+                <code>326Y53CJMD</code>. The final column names the test that actually decided each
+                row, which is not the same mechanism throughout:
+            </p>
+
+            <table>
+                <tr><th>Requestor</th><th>Group container</th><th>Decision</th><th>Count</th><th>Deciding test</th></tr>
+                <tr><td><code>com.xs-labs.XcodeFormat</code></td><td><code>326Y53CJMD.com.xs-labs.XcodeFormat.Shared</code></td><td>APPROVED</td><td>252</td><td>team ID prefix</td></tr>
+                <tr><td><code>com.xs-labs.FITScope</code></td><td><code>group.com.xs-labs.FITScope</code></td><td>REJECTED</td><td>112</td><td>— (none passed)</td></tr>
+                <tr><td><code>…FITScopePreviewExtension</code></td><td><code>group.com.xs-labs.FITScope</code></td><td>REJECTED</td><td>36</td><td>— (none passed)</td></tr>
+                <tr><td><code>…FITScopeThumbnailExtension</code></td><td><code>group.com.xs-labs.FITScope</code></td><td>REJECTED</td><td>4</td><td>— (none passed)</td></tr>
+                <tr><td><code>com.adobe.…AdobeContextMenuExtension</code></td><td><code>JQ525L2MZD.com.adobe.CreativeCloudDesktop</code></td><td>APPROVED</td><td>112</td><td>team ID prefix</td></tr>
+                <tr><td><code>com.adobe.accmac.ACCFinderSync</code></td><td><code>Adobe-Hub-App</code></td><td>REJECTED</td><td>110</td><td>— (none passed)</td></tr>
+                <tr><td><code>com.adobe.accmac.ACCFinderSync</code></td><td><code>com.adobe.accmac.explinder</code></td><td>REJECTED</td><td>110</td><td>— (none passed)</td></tr>
+                <tr><td><code>com.openai.sky.CUAService.cli</code></td><td><code>2DC432GLL2.com.openai.sky.CUAService</code></td><td>APPROVED</td><td>33</td><td>profile validated entitlements</td></tr>
+                <tr><td><code>com.ulyssesapp.mac</code></td><td><code>X5AZV975AG.com.soulmen.shared</code></td><td>APPROVED</td><td>2</td><td>MAS</td></tr>
+            </table>
+
+            <p>
+                No third-party group lacking a team-ID prefix is approved. The converse does not hold as
+                neatly, and the table should not be read as saying it does: a prefix correlates with
+                approval, but Ulysses is rescued by <em>MAS</em> and OpenAI by <em>profile validated
+                entitlements</em>, not by their prefixes. Apple's own unprefixed
+                <code>group.com.apple.*</code> containers pass <em>platform binary</em>. The three
+                approval routes are the same three Apple's release note lists, and the team-ID prefix is
+                simply the only one available to this project.
+            </p>
+
+            <h4>What Apple documents</h4>
+
+            <p>
+                The <a href="https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.application-groups">App
+                Groups entitlement</a> reference states that macOS accepts two forms:
+                <code>group.&lt;name&gt;</code>, which <em>requires registration on the Apple Developer
+                website</em>, and <code>&lt;team identifier&gt;.&lt;name&gt;</code>, which does not.
+                FITScope uses the first form without the registration and profile validation that form
+                depends on, which is what the strict-scrutiny failure reports.
+            </p>
+
+            <h4>Additional defect found — the extensions are hit too, in two different ways</h4>
+
+            <p>
+                The same root cause reaches both app extensions, but <em>not</em> identically, and the
+                difference matters for how milestone&nbsp;2 is verified. Apple's release note says the
+                restriction “applies to app extensions, although in that case the system won't prompt
+                the user for consent but will instead just deny the access”. That is true of the
+                <strong>thumbnail</strong> extension and false of the <strong>preview</strong> one —
+                the behaviour is a property of the extension <em>point</em>, not of extensions in
+                general, and the log settles it:
+            </p>
+
+            <table>
+                <tr><th>Extension</th><th>AUTHREQ_PROMPTING events</th><th>Outcome</th></tr>
+                <tr><td><code>FITScopePreviewExtension</code></td><td>9</td><td>Prompts the user separately, on its own</td></tr>
+                <tr><td><code>FITScopeThumbnailExtension</code></td><td>0</td><td>Refused outright, silently</td></tr>
+            </table>
+
+            <p>
+                So there are <em>two</em> user-visible prompts, not one: the app's and the preview
+                extension's. Milestone&nbsp;2's “no prompt at all” criterion therefore has to include a
+                Finder/QuickLook pass, not just an app launch.
+            </p>
+
+            <p>
+                The thumbnail extension, meanwhile, is refused without ever being offered the choice:
+            </p>
+
+<pre><code>tccd  Refusing TCCAccessRequest for service kTCCServiceSystemPolicyAppData
+      from extension …FITScopeThumbnailExtension…, extension point disallows prompting</code></pre>
+
+            <p>
+                The consequence is visible in the extension's own fault-level output — the most direct
+                proof of the functional bug, since it is the extension itself reporting that it could
+                not read the preference:
+            </p>
+
+<pre><code>F FITScopeThumbnailExtension[68229] [com.apple.defaults:User Defaults]
+  Couldn't read values in CFPrefsPlistSource&lt;0x846c59280&gt;
+    (Domain: group.com.xs-labs.FITScope, User: kCFPreferencesCurrentUser, …):
+    accessing preferences outside an application's container requires
+    user-preference-read or file-read-data sandbox access</code></pre>
+
+            <p>
+                <code>FITScopeThumbnailExtension</code> therefore never reads the shared per-format
+                auto-stretch preference and silently falls back to its default, whatever the user set.
+                This is a real functional bug, not only a nuisance prompt, and it is fixed by the same
+                change. All three targets — app, preview extension, thumbnail extension — declare the
+                same unprefixed group.
+            </p>
+
+            <h4>Recommendation carried into milestone 2</h4>
+
+            <p>
+                Rename the group to the team-ID-prefixed form,
+                <code>326Y53CJMD.com.xs-labs.FITScope</code>, in all three entitlements files and in
+                <code>AutoStretchPreference.appGroupID</code>. It needs no portal registration and no
+                change of provisioning profile, and it is the form already proven for this team ID on
+                this machine — though on a differently-signed binary: Xcode Format is Developer&nbsp;ID
+                signed with no embedded profile, whereas FITScope is Apple&nbsp;Development signed with a
+                wildcard profile. The inference still holds, because the test keys off the signature's
+                <code>TeamIdentifier</code>, which <code>codesign</code> confirms is
+                <code>326Y53CJMD</code> for FITScope too.
+            </p>
+
+            <p>
+                It is <strong>not</strong> a submodule change: the identifier occurs in exactly four
+                places, all in this repository — the three entitlements files and
+                <code>AutoStretchPreference.swift:41</code>. It does <em>not</em> appear in
+                <code>project.pbxproj</code>, so no Xcode-project sync is required. One remark for
+                milestone&nbsp;2 rather than a blocker: <code>DEVELOPMENT_TEAM = 326Y53CJMD</code> is
+                defined in the <code>xcconfig</code> <em>submodule</em>
+                (<code>Common/Signing.xcconfig:26</code>), so writing the literal team ID into the
+                entitlements duplicates a submodule-owned value. <code>$(TeamIdentifierPrefix)</code> is
+                an option for the entitlements files, though the Swift constant needs a literal either
+                way.
+            </p>
+
+            <p>
+                Scope confirmed while reviewing: only two values can live in the shared suite, written
+                under the keys <code>autoStretchPreviews.fits</code> and
+                <code>autoStretchPreviews.xisf</code> (built by
+                <code>AutoStretchPreference.previewsKey(_:)</code>; <code>autoStretchPreviewsFITS</code>
+                and <code>autoStretchPreviewsXISF</code> are the <code>Preferences</code> property names,
+                not the stored keys). Both default to <code>true</code>, and the container currently holds
+                just one of them. No test hardcodes the group ID — the tests inject their own suites. The
+                user has since decided against migration on the grounds that the app is not yet in
+                production (see <em>Review comments</em>), which this scope makes an easy call.
+            </p>
+
+            <p>
+                One caveat milestone&nbsp;2 should not be surprised by: the release note's requirement is
+                that the app “use <code>containerURL</code> to get the app group container path”
+                <em>and</em> meet one of the three conditions. FITScope uses
+                <code>UserDefaults(suiteName:)</code>, not <code>containerURL</code>. The rename is
+                expected to be sufficient regardless — the log shows <code>UserDefaults</code> driving
+                the same container lookup that strict scrutiny gates, and Xcode Format is approved on
+                exactly that path — but that is an inference, not something the log or the documentation
+                states outright. If the rename alone does not silence the prompt, this is the first
+                thing to look at.
+            </p>
+
+            <p>
+                The unsandboxed <code>Updater.xpc</code> remains a genuine hardening concern — an
+                empty <code>&lt;dict/&gt;</code> entitlements file nesting unsandboxed code inside a
+                sandboxed app — but it is unrelated to this prompt and out of scope for this plan's
+                phase 1 goal. Recorded here so it is not lost.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+
+            <p>
+                <strong>Round 1</strong> — a fresh-context reviewer re-ran every log query independently,
+                read every cited source file, dumped the signature and provisioning profile itself, and
+                checked the Apple documentation claim. It <strong>confirmed the root cause</strong> and
+                every quoted log line, timestamp and control count, and raised no <em>Critical</em> or
+                <em>High</em> finding. Its findings concerned gaps in the written record rather than the
+                conclusion. Each was verified here before acting on it — including the two most
+                valuable, which were re-run and confirmed directly.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td>A <em>sixth</em> strict-scrutiny test exists — <code>team ID prefix</code> — never evaluated for FITScope because there is no prefix to test. “Fails all five tests” was wrong, and the decisive positive evidence was missing.</td><td>Medium</td><td><strong>Fixed.</strong> Verified independently: the test is evaluated 380 times in the window and passes every time, never failing once. Added with the XcodeFormat passing block.</td></tr>
+                <tr><td>2</td><td>“This is not environmental” was asserted with no evidence, leaving the backlog's actual premise unanswered; the OS-side mechanism was never named.</td><td>Medium</td><td><strong>Fixed.</strong> The backlog's premise is factually wrong — the App Group is 17 days old (<code>083c28f</code>, 2026-07-11), not long-standing. Added, with Apple's macOS&nbsp;15 SIP release note quoted as the mechanism.</td></tr>
+                <tr><td>3</td><td>The milestone asked for “the path that triggered it”; the notes described a container, never a path.</td><td>Low</td><td><strong>Fixed.</strong> Sandbox violation report quoted with the exact <code>.plist</code> path, checker and storage class.</td></tr>
+                <tr><td>4</td><td>The control table claimed to tally “every decision”; it was a selection of 8 of 30, omitted a confirming rejection, and its counts drift with the query window.</td><td>Low</td><td><strong>Fixed.</strong> Relabelled as selected rows, omitted Adobe rejection added, drift and query date noted.</td></tr>
+                <tr><td>5</td><td>The table conflated three approval mechanisms under one cause — Ulysses passes via <em>MAS</em>, OpenAI via <em>profile validated entitlements</em>, not via prefixes.</td><td>Low</td><td><strong>Fixed.</strong> Deciding-test column added; the over-broad converse claim withdrawn.</td></tr>
+                <tr><td>6</td><td>“Proven to work for this signing team” overstated: Xcode Format is Developer&nbsp;ID signed with no embedded profile, FITScope is Apple&nbsp;Development signed with a wildcard one.</td><td>Low</td><td><strong>Fixed.</strong> Softened, with the reason the inference still holds made explicit.</td></tr>
+                <tr><td>7</td><td>“Verbatim” overstated (error suffixes elided, one line reflowed) and “reproducible by construction” contradicted the note that nothing was reproduced.</td><td>Low</td><td><strong>Fixed.</strong> Elision stated; the claim replaced with the determinism argument.</td></tr>
+                <tr><td>8</td><td>“Blocks test runs” imprecise — UI tests launch with <code>-uiTestingIsolatedDefaults</code> and never open the App Group.</td><td>Low</td><td><strong>Fixed.</strong> Narrowed to unit-test runs, with the reason UI tests are immune.</td></tr>
+                <tr><td>9</td><td>Missing: why the prompt recurs on every launch, which milestone&nbsp;2 needs for its acceptance criterion.</td><td>Info</td><td><strong>Fixed.</strong> Apple's “consent applies only for the duration of that app instance” recorded, with the consequence for how milestone&nbsp;2 must be verified.</td></tr>
+                <tr><td>10</td><td>Migration consequence real but unquantified — only two values live in the shared suite, both defaulting to <code>true</code>; no test hardcodes the group ID.</td><td>Info</td><td><strong>Fixed.</strong> Scope recorded; it also makes the user's no-migration decision an easy call.</td></tr>
+                <tr><td>11</td><td><code>DEVELOPMENT_TEAM</code> is defined in the <code>xcconfig</code> submodule, so a literal team ID in the entitlements duplicates a submodule-owned value. Confirms “not a submodule change” and that <code>project.pbxproj</code> needs no sync.</td><td>Info</td><td><strong>Fixed.</strong> Recorded as a remark for milestone&nbsp;2, with <code>$(TeamIdentifierPrefix)</code> noted as an option.</td></tr>
+                <tr><td>12</td><td>The provisioning causal claim (“which is precisely why the test fails”) is an inference stated as fact; the log reports only that the test failed.</td><td>Info</td><td><strong>Fixed.</strong> Hedged, with the profile dump cited as what the inference rests on.</td></tr>
+                <tr><td>—</td><td>The <code>Updater.xpc</code> exoneration rested on absence of evidence; stronger positive evidence exists.</td><td>Info</td><td><strong>Fixed.</strong> Verified independently: <code>launchd</code> records “will attach … next time it's created”, plus the on-demand bundle type and the connection-free <code>isAvailable</code>. A third ground for ruling out the update check was added too.</td></tr>
+            </table>
+
+            <p>
+                <strong>Round 2</strong> — a second, independent fresh-context reviewer re-verified the
+                corrected notes from scratch. It <strong>again confirmed the root cause</strong> and
+                every round-1 fix as substantively right, re-deriving the 380-pass
+                <code>team ID prefix</code> result (374 in its own window, 0 failures), the
+                <code>083c28f</code> dating, all three deciding-test attributions, the Apple quote
+                verbatim, and the four-site milestone-2 scope. No <em>Critical</em> or <em>High</em>
+                finding. It raised three <em>Medium</em>s, one of which caught a real error of fact.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td>Two quoted blocks — the sandbox deny path and the “extension point disallows prompting” refusal — could not be reproduced from a fresh <code>log show</code>.</td><td>Medium</td><td><strong>Fixed.</strong> Both were verified against the raw dumps taken at capture time and were accurate when written; <code>tccd</code> debug records had simply been pruned in the interim (the retained window rolled forward to 2026-07-28 18:54 within 30 minutes). Added an explicit perishability warning, and added the extension's own <code>CFPrefsPlistSource</code> fault as durable corroboration of the same defect.</td></tr>
+                <tr><td>2</td><td>The 18:27:27.885 → 18:27:28.106 timing pair is likewise no longer reproducible.</td><td>Medium</td><td><strong>Fixed.</strong> Kept, and paired with an equivalent sequence inside the retained window (20:23:54.493 → 20:23:54.702 = 0.21 s), so the argument no longer depends on a pruned record.</td></tr>
+                <tr><td>3</td><td><strong>Genuine error of fact.</strong> “An app extension may not put a TCC prompt on screen” is false: <code>FITScopePreviewExtension</code> prompts 9 times in the window. The behaviour is a property of the extension <em>point</em>, not of extensions generally.</td><td>Medium</td><td><strong>Fixed.</strong> Confirmed independently (preview 9 prompts, thumbnail 0). The over-generalisation came from reading Apple's wording rather than the captured data, which showed it. Rewritten as a two-row table, and milestone&nbsp;2's acceptance criterion widened to require a Finder/QuickLook pass, since the preview extension raises a <em>second</em> user-visible prompt.</td></tr>
+                <tr><td>4</td><td>“112 rejections rather than one” cannot evidence per-instance consent — <code>containermanagerd</code> rejects on every lookup regardless of TCC state, several times per launch.</td><td>Low</td><td><strong>Fixed.</strong> Reasoning withdrawn; the claim now rests on Apple's documentation alone, which states it directly.</td></tr>
+                <tr><td>5</td><td>“8 of the 30” while the table has 9 rows — an error introduced by the round-1 fix that added a row.</td><td>Low</td><td><strong>Fixed.</strong></td></tr>
+                <tr><td>6</td><td>The stated elision rule (“nothing else is altered”) is violated inside the block it governs: <code>msgID</code> dropped, <code>Resp:{…}</code> collapsed, one line editorialised; and the emphasis added inside the Apple quote was not flagged.</td><td>Low</td><td><strong>Fixed.</strong> Abridgement described accurately, unabridged line given, added emphasis flagged.</td></tr>
+                <tr><td>7</td><td>The <code>launchd</code> quote's <code>pid/72493</code> no longer occurs (same pruning).</td><td>Low</td><td><strong>Fixed.</strong> Requoted with a pid inside the retained window, noting all 16 messages say “next time it's created”.</td></tr>
+                <tr><td>8</td><td>The plan's own <em>Evidence gathered while planning</em> still claims the app group “predates it by far” with a <code>verified</code> flag — the exact premise this milestone overturns.</td><td>Low</td><td><strong>Fixed</strong> at the source bullet, marked superseded and cross-referenced, so a top-down reader does not hit the stale claim first.</td></tr>
+                <tr><td>9</td><td>The quoted release note also requires the app to use <code>containerURL</code>; FITScope uses <code>UserDefaults(suiteName:)</code> and the notes never addressed it.</td><td>Info</td><td><strong>Fixed.</strong> Recorded as an explicit caveat with the reason the rename is still expected to suffice, flagged as inference and as the first thing to check if it does not.</td></tr>
+                <tr><td>10</td><td>Minor imprecisions: preference property names given as stored keys; the claim that Xcode's capability editor cannot itself register a group; the entitlement-doc paraphrase slightly strengthened.</td><td>Info</td><td><strong>Fixed</strong> for the first two, including in the answer previously given to the user. The paraphrase was left as-is: it is fair, and the decision does not turn on it.</td></tr>
+            </table>
+
+            <p>
+                Round 2 closed with <em>Medium</em> findings outstanding, so a third and final round was
+                run against the corrected state, as the iteration cap allows.
+            </p>
+
+            <p>
+                <strong>Round 3</strong> — a third independent reviewer confirmed the conclusion and the
+                milestone-2 recommendation once more, with no <em>Critical</em> or <em>High</em>
+                finding. It re-derived live the strict-scrutiny block, the XcodeFormat control, the
+                <code>team ID prefix</code> result (377/377 in its window), the 30-combination count and
+                the <code>CFPrefsPlistSource</code> fault, and confirmed every code claim including the
+                four edit sites and the preference-key naming.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td>Milestone&nbsp;2 never actually received the widened acceptance criterion. Round&nbsp;2 recorded it as done, but it was written only into milestone&nbsp;1's notes — milestone&nbsp;2's own Goal and Tasks still said “launch, run tests”, with no QuickLook check and no thumbnail-extension check.</td><td>Medium</td><td><strong>Fixed</strong>, and it was the finding worth having: an implementer working from milestone&nbsp;2's field list would have missed both halves. Its Goal and Tasks are rewritten — the superseded updater-hypothesis tasks struck through, the rename spelled out across its four sites, and explicit verification steps added for the preview extension's prompt and the thumbnail extension's preference read.</td></tr>
+                <tr><td>2</td><td>The replacement timing sequence (20:23:54) is itself now pruned, and the fixed “before 18:54” perishability boundary no longer covers what it was written to cover.</td><td>Medium</td><td><strong>Not fixed — accepted as a limit of the medium.</strong> Chasing each expiry with a fresh quote is a treadmill: this is the second such rotation in ninety minutes and the third round of documentation churn on a milestone that changed no code. The conclusion does not depend on it — the update check is ruled out by the surviving <code>containermanagerd</code> lookup, by the test-run pairing, and by the permanent code fact that <code>automaticallyCheckForUpdates</code> reads <code>defaults</code>, never the shared suite. The durable remedy is archiving the raw excerpts, which is left to the user (see below).</td></tr>
+                <tr><td>3–7</td><td>Documentation polish: the perishability caveat is over-broad and wrongly sweeps in the two most durable quotes; “prompts separately” slightly over-separates two prompts that are both TCC-attributed to <code>com.xs-labs.FITScope</code>; the <code>M2S7CSUC5Z</code> planning bullet still reads <code>unverified</code> though milestone&nbsp;1 settled it; the 0.2 s comparison swaps anchor events; two stray imprecisions (“18:38 launches quoted below” — none is; “the two Adobe rows” — there are three).</td><td>Low / Info</td><td><strong>Deferred</strong>, except the stale <code>unverified</code> bullet, which is a live contradiction inside the plan and is fixed. The rest are real but cosmetic, and none touches the conclusion or milestone&nbsp;2. Recorded here rather than acted on, so the judgement is visible and reversible.</td></tr>
+            </table>
+
+            <p>
+                <strong>Outcome — loop closed at the three-round cap.</strong> Three independent
+                reviewers reached the same root cause and the same recommendation. Across all three, no
+                finding challenged the diagnosis; the two that changed anything material were round&nbsp;2's
+                correction of a false claim about app extensions and round&nbsp;3's catch that
+                milestone&nbsp;2 had not inherited its consequence. Remaining findings are documentation
+                quality and are deliberately left open rather than silently dropped.
+            </p>
+
+            <p>
+                <strong>Left for the user.</strong> Whether to archive the raw log excerpts alongside
+                this plan. It matters more than it first appeared: <code>tccd</code>, <code>launchd</code>
+                and sandbox-report records expired within tens of minutes here, so the excerpts are now
+                the only way any of those quotes stays checkable. <code>containermanagerd</code>'s
+                records — which carry the load-bearing evidence — survived all three rounds and remain
+                directly queryable.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+
+            <ul>
+                <li>
+                    <strong>Clarification asked:</strong> is the choice simply between prefixing with the
+                    team ID and having the group managed by Xcode, or declaring it on the Apple Developer
+                    portal? Answered: the two routes are real, but the “managed by Xcode” side belongs to
+                    the <em>other</em> one. The team-ID-prefixed form is validated from the code signature
+                    alone — Apple's documentation states that “macOS checks that the code signature of
+                    processes that try to access the app group container contains the same
+                    <code>Developer-Team-ID</code> as app group container ID” — so it needs no portal
+                    registration, no explicit App ID and no entitlement in the provisioning profile. The
+                    <code>group.</code> form is the portal-backed one: it must be registered against the
+                    developer account — Xcode's App Groups capability editor can both list the account's
+                    existing groups and create a new one, so this need not mean visiting the portal by
+                    hand — and the entitlement must then be authorised by the provisioning profile the
+                    app is signed with. FITScope currently declares the <code>group.</code> form without
+                    either half of what it depends on.
+                </li>
+                <li>
+                    <strong>Decision — use the team-ID-prefixed form.</strong> Milestone 2 renames the
+                    group to <code>326Y53CJMD.com.xs-labs.FITScope</code> rather than registering
+                    <code>group.com.xs-labs.FITScope</code> on the developer portal.
+                </li>
+                <li>
+                    <strong>No preference migration is required.</strong> The app is not yet in
+                    production, so values left behind in the old container may simply be abandoned.
+                    Milestone 2 therefore carries no migration step, and the old container needs no
+                    read-and-copy path.
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="milestone" id="m2">
+        <h4><span class="num">2.</span> Eliminate the prompt and restore a clean test run
+            <span class="status not-started">Not started</span></h4>
+
+        <div class="field">
+            <span class="label">Goal</span>
+            <p>
+                Apply the fix indicated by milestone&nbsp;1 so a first launch on a machine that has never approved
+                the prompt shows nothing, and so <code>xcodebuild test</code> completes without being blocked.
+                That test run is the gate the rest of the plan depends on. Milestone&nbsp;1 established that
+                the app is not the only thing prompting — the preview extension raises its own prompt and
+                the thumbnail extension is denied silently — so “shows nothing” has to be verified through
+                Finder and QuickLook as well as through an app launch, and the thumbnail extension's
+                shared-preference read has to be confirmed working rather than merely quiet.
+            </p>
+        </div>
+
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul class="tasks">
+                <li><strong>Superseded by milestone&nbsp;1:</strong> the first three tasks below were written
+                    against the unsandboxed-updater hypothesis, which milestone&nbsp;1 disproved — the service
+                    never runs and plays no part. No submodule change is required, and no approval is needed
+                    for the fix itself. They are kept only so the plan's original reasoning stays legible;
+                    the live task list starts at <em>Rename the App Group</em>.</li>
+                <li><s>Apply the fix milestone&nbsp;1 identified. If it confirms the leading hypothesis — unsandboxed
+                    nested code — give
+                    <code>Submodules/SwiftUtilities/UpdaterService/Updater.entitlements</code> the App Sandbox
+                    entitlement plus only what the service genuinely needs.</s></li>
+                <li><s>If sandboxing the service breaks in-app updates, fall back to not embedding
+                    <code>Updater.xpc</code> at all, or embedding it only in Release.</s></li>
+                <li><s>If milestone&nbsp;1 instead points at the app-group read or at provisioning, fix that
+                    accordingly.</s></li>
+
+                <li><strong>Rename the App Group to the team-ID-prefixed form</strong>
+                    <code>326Y53CJMD.com.xs-labs.FITScope</code>, in all four places milestone&nbsp;1 identified:
+                    <code>FITScope/FITScope.entitlements</code>,
+                    <code>FITScopePreviewExtension/FITScopePreviewExtension.entitlements</code>,
+                    <code>FITScopeThumbnailExtension/FITScopeThumbnailExtension.entitlements</code> and
+                    <code>FITScope/Model/Preferences/AutoStretchPreference.swift</code>
+                    (<code>appGroupID</code>). The identifier does not occur in
+                    <code>project.pbxproj</code>, so no Xcode-project sync is needed — confirm that rather than
+                    assume it. Consider <code>$(TeamIdentifierPrefix)</code> for the entitlements files, since
+                    <code>DEVELOPMENT_TEAM</code> is owned by the <code>xcconfig</code> submodule; the Swift
+                    constant needs the literal either way.</li>
+                <li><strong>No migration.</strong> The user has decided that values left in the old container
+                    may be abandoned, the app not being in production. Do not add a read-and-copy path.</li>
+                <li>Verify: <code>tccutil reset SystemPolicyAppData com.xs-labs.FITScope</code>, clean build,
+                    launch — no prompt. Note that TCC consent for a group container lasts only for the
+                    lifetime of the app instance, so “I clicked Allow and it stopped” proves nothing; only a
+                    launch with no prompt at all counts.</li>
+                <li><strong>Verify the preview extension raises no prompt</strong> — browse a folder of FITS/XISF
+                    files in Finder and invoke QuickLook. It prompted 9 times in milestone&nbsp;1's window, so an
+                    app-launch check alone would miss it.</li>
+                <li><strong>Verify the thumbnail extension now reads the shared preference</strong> — it was being
+                    denied silently, never prompting. Confirm it no longer emits the
+                    <code>Couldn't read values in CFPrefsPlistSource … requires user-preference-read or
+                    file-read-data sandbox access</code> fault, and that it actually honours
+                    <code>autoStretchPreviews.fits</code> / <code>.xisf</code> rather than falling back to the
+                    default. This is the functional half of the bug; a quiet launch does not demonstrate it.</li>
+                <li>Verify: <code>xcodebuild test -project FITScope.xcodeproj -scheme 'FITScope - Debug'</code>
+                    runs the whole test plan to completion without a prompt. Record the outcome, including any
+                    pre-existing failures, honestly.</li>
+                <li>Confirm the app still signs and the entitlement survives. Expected to be a non-issue: the
+                    current build already carries <code>com.apple.security.application-groups</code> while its
+                    wildcard profile authorises no such entitlement, so codesign does not require profile
+                    authorisation for it here — the prefixed form should sign identically.</li>
+                <li>Confirm the in-app update path still behaves as intended after the change (manual check of
+                    <em>Check for Updates…</em>). Unrelated to the fix, but it is the one path that touches the
+                    embedded service.</li>
+                <li>If the prompt survives the rename, look first at the <code>containerURL</code> caveat in
+                    milestone&nbsp;1's notes before assuming the diagnosis was wrong.</li>
+            </ul>
+        </div>
+
+        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
+        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
+        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
+        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+    </section>
+
+    <h3 class="phase">Phase 2 — Overlay registration (backlog item 2)</h3>
+
+    <section class="milestone" id="m3">
+        <h4><span class="num">3.</span> Characterise the overlay misregistration after loading
+            <span class="status not-started">Not started</span></h4>
+
+        <div class="field">
+            <span class="label">Goal</span>
+            <p>
+                Pin down the shape of the error — a translation, a scale, or a flip — and which of the two
+                candidate causes produces it: a stale <code>displayedImageRect</code>, or the image-point mapping
+                in the overlay itself. The distinction decides where the fix goes, and the backlog leaves it open.
+            </p>
+        </div>
+
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul class="tasks">
+                <li>Reproduce: open a single image, toggle Stars on immediately, and record the offset’s direction
+                    and magnitude; then zoom and confirm it corrects and stays corrected.</li>
+                <li>Classify the error. A uniform translation points at a stale rectangle; a scale or mirror error
+                    points at <code>StarsOverlay.displayedImagePoint(x:y:displayedImageSize:orientation:)</code>
+                    and the orientation applied to the detection image.</li>
+                <li>Instrument <code>Coordinator.reportDisplayedImageRect(deferred:)</code> and
+                    <code>ImageCanvasView.displayedImageRect</code>: log the rect published by <code>fit()</code>
+                    and the rect the first zoom publishes, and diff them.</li>
+                <li>Test the leading hypothesis: <code>fit()</code> calls
+                    <code>reportDisplayedImageRect()</code> with the default <code>deferred: true</code>
+                    unconditionally, so it computes the rectangle synchronously (right after
+                    <code>scrollView.magnification = fit</code> and <code>recenter()</code>) but writes it a
+                    run-loop turn later — whereas <code>magnificationChanged()</code> and
+                    <code>clipBoundsChanged()</code> pass <code>deferred: self.isApplyingViewUpdate</code> and so
+                    publish synchronously when outside SwiftUI’s update pass. That asymmetry matches the symptom:
+                    wrong on the fit that follows a load, correct from the first zoom onward.</li>
+                <li>Check every other overlay with the same image — Objects, Equatorial grid, Reticle, Scale bar,
+                    North. They all draw through <code>CanvasOverlayLayer</code>’s single
+                    <code>displayedRect</code>, so a stale rectangle must affect all of them; if only Stars is
+                    wrong, the cause is in the overlay, not the plumbing.</li>
+                <li>Check the file-switch path: <code>MainWindowView</code> builds
+                    <code>ImageDetailView( file: file, actions: fileActions )</code> with no
+                    <code>.id( file.id )</code>, so SwiftUI reuses the same view — and therefore the same
+                    <code>@State displayedImageRect</code>, <code>NSScrollView</code> and
+                    <code>Coordinator</code> — across files, while <code>updateNSView</code> only calls
+                    <code>refit()</code> when the pixel <em>dimensions</em> change.</li>
+                <li>Check the carousel-frame path too, where <code>selectFrame(_:)</code> swaps the image without
+                    a new view.</li>
+                <li>Record the finding in <em>Implementation notes</em>; make no fix in this milestone.</li>
+            </ul>
+        </div>
+
+        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
+        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
+        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
+        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+    </section>
+
+    <section class="milestone" id="m4">
+        <h4><span class="num">4.</span> Publish a correct displayed-image rectangle for every overlay
+            <span class="status not-started">Not started</span></h4>
+
+        <div class="field">
+            <span class="label">Goal</span>
+            <p>
+                Fix the registration once, at the source, so every overlay is correct from the moment it is turned
+                on — with no zoom needed to settle it — and stays correct across file switches, frame switches,
+                resizes and orientation changes.
+            </p>
+        </div>
+
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul class="tasks">
+                <li>Fix in <code>ZoomableImageView.Coordinator</code>, so every path that changes the geometry
+                    publishes a rectangle that reflects the settled layout.</li>
+                <li>Make the deferred write read the geometry <em>inside</em> the deferred block rather than
+                    capturing a rectangle computed before AppKit has settled, and/or make <code>fit()</code> use
+                    the same <code>deferred: self.isApplyingViewUpdate</code> rule as the other callers — whichever
+                    milestone&nbsp;3 showed to be the actual defect.</li>
+                <li>Ensure a rectangle is published when a new image with the <em>same</em> pixel dimensions is
+                    shown, and when the file selection changes, since the reused coordinator otherwise keeps the
+                    previous file’s geometry.</li>
+                <li>If milestone&nbsp;3 found the error in the overlay instead, fix
+                    <code>StarsOverlay.displayedImagePoint</code> and check the other overlays for the same
+                    mapping mistake.</li>
+                <li>Add unit tests over the pure geometry in <code>CanvasGeometry</code>:
+                    <code>viewPoint(forImagePoint:…)</code> ↔ <code>imagePoint(forViewPoint:…)</code> round-trip,
+                    <code>displayScale</code>, and the degenerate-rect guards — plus tests for any new pure helper
+                    introduced for the publication rule.</li>
+                <li>Verify by hand with every overlay (Stars, Objects, Equatorial grid, Reticle, Scale bar, North)
+                    after: a fresh load, switching to a same-size file, switching to a different-size file,
+                    switching carousel frames, resizing the window, and rotating/flipping.</li>
+                <li>Update the doc comments on the changed members so they describe the new behaviour, with no
+                    reference to what it used to do.</li>
+                <li>Run the full test plan and report the result.</li>
+            </ul>
+        </div>
+
+        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
+        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
+        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
+        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+    </section>
+
+    <h3 class="phase">Phase 3 — Detection off the preparation path (backlog item 4)</h3>
+
+    <section class="milestone" id="m5">
+        <h4><span class="num">5.</span> Introduce a bounded, priority-inheriting analysis queue
+            <span class="status not-started">Not started</span></h4>
+
+        <div class="field">
+            <span class="label">Goal</span>
+            <p>
+                Give star detection a queue of its own, so it can be lifted out of the preparation slot without
+                letting a session folder spawn one detection per file. This milestone adds and tests the queue in
+                isolation; nothing is rewired onto it yet, so it can be reviewed on its own.
+            </p>
+        </div>
+
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul class="tasks">
+                <li>Decide between a second <code>RenderThrottle</code> instance and a new type. <code>RenderThrottle</code>
+                    already gives bounded concurrency, FIFO order among equals, and promotion by key; prefer reusing
+                    it over duplicating that logic, and add only what is missing. Record the decision and its
+                    reasoning.</li>
+                <li>Choose the analysis limit <em>together with</em> the preparation limit. The preparation
+                    throttle is <code>max( 2, ProcessInfo.processInfo.activeProcessorCount - 2 )</code>; the two
+                    pools will now run concurrently, so their combined ceiling must still leave the main thread
+                    headroom. Document the arithmetic in the type’s doc comment.</li>
+                <li>Support the two priorities already modelled by <code>RenderThrottle.Priority</code>, so work
+                    enqueued from a <code>.high</code> preparation is served ahead of work from a background one.</li>
+                <li>Support abandonment: work cancelled while queued must not run, and must be observable as
+                    abandoned so milestone&nbsp;6 can clear the indicator. Note that <code>RenderThrottle</code>
+                    currently resumes a cancelled waiter on the next <code>release()</code> and expects it to bail —
+                    decide whether that is sufficient or whether the queue needs to drop it outright.</li>
+                <li>Unit-test the queue: bounded concurrency, priority ordering, FIFO among equal priorities,
+                    promotion, and cancellation while queued.</li>
+                <li>Add the new file to the Xcode project and keep <code>project.pbxproj</code> in sync.</li>
+            </ul>
+        </div>
+
+        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
+        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
+        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
+        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+    </section>
+
+    <section class="milestone" id="m6">
+        <h4><span class="num">6.</span> Make the detection indicator mean “queued or running”
+            <span class="status not-started">Not started</span></h4>
+
+        <div class="field">
+            <span class="label">Goal</span>
+            <p>
+                <code>LoadedImage.isDetectingStars</code> is set inside <code>detectStarField(in:)</code>, so it
+                only becomes true once detection actually starts. Once detection is queued, that would leave the
+                toolbar indicator reading idle for the whole wait. Give the flag the meaning the new pipeline
+                needs before anything is enqueued against it.
+            </p>
+        </div>
+
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul class="tasks">
+                <li>Redefine <code>isDetectingStars</code> as “queued or running”: set when the analysis is
+                    enqueued, cleared when detection finishes <em>or</em> when queued work is abandoned.</li>
+                <li>Keep <code>hasDetectedStars</code> meaning “detection actually completed at least once”.
+                    Abandoned work must not set it, or the Stars overlay would wrongly report “ran and found
+                    nothing” — the exact distinction its doc comment says the flag exists to make.</li>
+                <li>Expose the enqueue and abandon transitions on <code>LoadedImage</code> so
+                    <code>OpenFile</code> can drive them, since <code>detectStars()</code> currently owns both
+                    flags privately. Keep the public surface coherent and documented.</li>
+                <li>Check every reader of the flag — the toolbar’s star-detection indicator in
+                    <code>ImageToolbarView</code>, and whatever else <code>grep</code> turns up — and confirm each
+                    still reads correctly under the new meaning.</li>
+                <li>Unit tests: enqueued → indicator on, <code>hasDetectedStars</code> still false; abandoned →
+                    indicator off, <code>hasDetectedStars</code> still false; completed → indicator off,
+                    <code>hasDetectedStars</code> true.</li>
+                <li>Update the doc comments on both flags to state the new meaning.</li>
+            </ul>
+        </div>
+
+        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
+        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
+        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
+        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+    </section>
+
+    <section class="milestone" id="m7">
+        <h4><span class="num">7.</span> Take star detection off the preparation slot
+            <span class="status not-started">Not started</span></h4>
+
+        <div class="field">
+            <span class="label">Goal</span>
+            <p>
+                Make a preparation slot cover load&nbsp;→&nbsp;render&nbsp;→&nbsp;thumbnail only, so one file’s
+                detection no longer gates when the <em>next</em> file may start loading. This is the change the
+                backlog asks for; milestones&nbsp;5 and&nbsp;6 exist to make it safe.
+            </p>
+        </div>
+
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul class="tasks">
+                <li>In <code>OpenFile.prepare(throttle:priority:)</code>, enqueue the analysis on the new queue
+                    immediately after <code>await self.image?.renderer.render()</code> returns — <em>before</em>
+                    the <code>await self.thumbnailTask?.value</code> wait, because <code>makeThumbnail</code>
+                    resizes on the global <code>.utility</code> queue, which a folder of opening files saturates,
+                    so anything sequenced after it inherits that delay.</li>
+                <li>Release the preparation slot without waiting on the analysis, keeping the slot’s span at
+                    load&nbsp;→&nbsp;render&nbsp;→&nbsp;thumbnail (see <a href="#appendix-b">Appendix B</a> for the
+                    span as it stands today).</li>
+                <li>Inherit the preparation’s priority when enqueuing — <code>.high</code> for the selected file,
+                    <code>.normal</code> otherwise — so the stars for the frame on screen are not left waiting
+                    behind every background file’s analysis.</li>
+                <li>Apply the same change to <code>prepareSelectedFrame()</code>, which currently holds a
+                    <code>.high</code> slot across render <em>and</em> detection for carousel frames.</li>
+                <li>Extend <code>cancelPreparation()</code> so it also abandons any queued analysis, and confirm
+                    the abandon path clears the indicator as milestone&nbsp;6 specified.</li>
+                <li>Re-check <code>prepareFramePreviews()</code>, which is spawned at the tail of
+                    <code>prepare()</code> and acquires the throttle once per frame — confirm it is still correct
+                    once the slot is released earlier.</li>
+                <li>Consider whether <code>detectStarField</code>’s <code>Task.detached</code> should carry an
+                    explicit priority: a detached task does not inherit the caller’s. Verify against the
+                    documented behaviour of <code>Task.detached</code> before changing it.</li>
+                <li>Update the doc comments on <code>prepare(throttle:priority:)</code>,
+                    <code>prepareSelectedFrame()</code> and <code>RenderThrottle</code> to describe the new
+                    division of work.</li>
+                <li>Extend <code>OpenFileTests</code>, <code>OpenFileFramesTests</code> and
+                    <code>WindowModelTests</code> for the new sequencing — in particular that a second file’s
+                    load/render is no longer gated by the first file’s detection. Existing tests that await
+                    <code>preparation</code> to observe a star field will need a new await point; do not weaken
+                    their assertions to make them pass.</li>
+                <li>Run the full test plan and report the result.</li>
+            </ul>
+        </div>
+
+        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
+        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
+        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
+        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+    </section>
+
+    <section class="milestone" id="m8">
+        <h4><span class="num">8.</span> Measure the preparation throughput gain
+            <span class="status not-started">Not started</span></h4>
+
+        <div class="field">
+            <span class="label">Goal</span>
+            <p>
+                Confirm with numbers that previews now advance at render speed rather than detection speed, that
+                the user-facing priorities still hold, and that the CPU stays bounded. The backlog’s complaint is
+                a throughput one, so it is closed by measurement, not by inspection.
+            </p>
+        </div>
+
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul class="tasks">
+                <li>Pick a fixed reproduction — a folder of N images from <code>Test Files/</code> or a real
+                    session — and use the same set before and after.</li>
+                <li>Record wall-clock time to first preview painted, to all previews painted, and to all
+                    detections finished. Compare against the pre-change baseline, capturing the baseline first if
+                    it was not recorded during milestone&nbsp;7.</li>
+                <li>Confirm the selected file’s stars still appear promptly while background files load — the
+                    priority-inheritance requirement.</li>
+                <li>Confirm the toolbar detection indicator stays on for the whole queued-plus-running wait, with
+                    no idle-looking gap.</li>
+                <li>Confirm CPU stays bounded with a large folder: no saturation, and the machine stays usable.</li>
+                <li>Record the numbers in <em>Implementation notes</em>, including any case where the improvement
+                    is smaller than expected.</li>
+            </ul>
+        </div>
+
+        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
+        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
+        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
+        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+    </section>
+
+    <h3 class="phase">Phase 4 — Responsiveness re-assessment (backlog item 3)</h3>
+
+    <section class="milestone" id="m9">
+        <h4><span class="num">9.</span> Re-measure multi-file responsiveness and pin down the selection behaviour
+            <span class="status not-started">Not started</span></h4>
+
+        <div class="field">
+            <span class="label">Goal</span>
+            <p>
+                With phase 3 in place, re-run the original complaint and establish what — if anything — is left.
+                The backlog explicitly leaves the resolution unknown (“it is unclear whether the correct image
+                eventually appears on its own or whether the selection has to be made again”), so the first job is
+                to observe it precisely.
+            </p>
+        </div>
+
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul class="tasks">
+                <li>Reproduce: open several images at once and click a different file in the sidebar while they
+                    are still processing.</li>
+                <li>Answer the open question — does the correct image appear on its own, and after how long, or
+                    must the selection be made again?</li>
+                <li>Determine what is actually on screen during the delay. <code>ImageCanvasView.canvasContent</code>
+                    shows <code>ZoomableImageView</code> only when <code>image.renderer.result != nil</code>, so a
+                    genuinely unrendered new selection should show the loading placeholder — <em>not</em> a
+                    previous image. Seeing a previous image would mean the selection or the view identity is at
+                    fault, not merely the speed.</li>
+                <li>Check the view-identity angle: <code>MainWindowView</code> builds
+                    <code>ImageDetailView( file: file, actions: fileActions )</code> with no
+                    <code>.id( file.id )</code>, so SwiftUI reuses the view tree across file switches.</li>
+                <li>Check main-actor contention: <code>WindowModel.observeFilesForWeighting()</code> subscribes to
+                    every open file’s <code>objectWillChange</code>, and every such notification schedules a weight
+                    recompute — a multi-file load produces a notification storm on the main actor. Confirm whether
+                    <code>scheduleWeightRecompute()</code>’s coalescing is sufficient under that load.</li>
+                <li>Confirm the load and render paths really are off the main thread — both
+                    <code>FITSImageLoader.load()</code> and <code>ImageRenderer.render()</code> hop to
+                    <code>DispatchQueue.global</code>, so main-thread work should be limited to publishing — and
+                    profile with Instruments if the main thread is nonetheless blocked.</li>
+                <li>Decide whether a fix is still needed. If phase 3 resolved it, close the item here with the
+                    measurement recorded, and mark milestone&nbsp;10 accordingly.</li>
+            </ul>
+        </div>
+
+        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
+        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
+        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
+        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+    </section>
+
+    <section class="milestone" id="m10">
+        <h4><span class="num">10.</span> Fix the remaining responsiveness defect
+            <span class="status not-started">Not started</span></h4>
+
+        <div class="field">
+            <span class="label">Goal</span>
+            <p>
+                Address whatever milestone&nbsp;9 identified, so selecting a file in the sidebar switches to it
+                immediately even while other files are still processing. Conditional by design: if milestone&nbsp;9
+                concludes phase 3 already resolved the complaint, this milestone is closed with that finding rather
+                than with invented work.
+            </p>
+        </div>
+
+        <div class="field">
+            <span class="label">Tasks</span>
+            <ul class="tasks">
+                <li>Implement the fix for the cause milestone&nbsp;9 established, and state that cause in the
+                    implementation notes.</li>
+                <li>Add unit tests wherever the responsible logic is testable — selection to displayed file,
+                    weight-recompute coalescing, or whatever the cause turns out to involve.</li>
+                <li>Verify by hand against the original reproduction from milestone&nbsp;9, using the same file
+                    set.</li>
+                <li>Confirm the fix did not regress phase 2 or phase 3: overlays still register on load, and the
+                    throughput numbers from milestone&nbsp;8 still hold.</li>
+                <li>Run the full test plan and report the result.</li>
+                <li>If milestone&nbsp;9 concluded no fix is needed, mark this milestone <em>Completed</em> with a
+                    note saying exactly that, and leave the code untouched.</li>
+            </ul>
+        </div>
+
+        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
+        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
+        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
+        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+    </section>
+
+    <h2 class="section">Appendix</h2>
+
+    <div class="appendix">
+
+        <h4 id="appendix-a">A — Signed entitlements, as dumped on 2026-07-29</h4>
+
+        <p>
+            Read with <code>codesign -d --entitlements :- &lt;bundle&gt;</code> from
+            <code>~/Library/Developer/Xcode/DerivedData/FITScope-…/Build/Products/</code>. The app is properly
+            sandboxed with its app group; the nested XPC service is not sandboxed at all.
+        </p>
+
+<pre><code>Release/FITScope.app
+    com.apple.application-identifier      M2S7CSUC5Z.com.xs-labs.FITScope
+    com.apple.developer.team-identifier   326Y53CJMD
+    com.apple.security.app-sandbox        true
+    com.apple.security.application-groups [ group.com.xs-labs.FITScope ]
+    com.apple.security.files.user-selected.read-write  true
+    com.apple.security.get-task-allow     true
+    com.apple.security.network.client     true
+
+Release/FITScope.app/Contents/XPCServices/Updater.xpc
+    com.apple.security.get-task-allow     true
+    (no app-sandbox, no application-groups)
+
+Debug/FITScope.app                        — as Release, plus the test-injected:
+    com.apple.security.temporary-exception.files.absolute-path.read-only  [ / ]
+    com.apple.security.temporary-exception.mach-lookup.global-name
+        [ com.apple.testmanagerd, com.apple.dt.testmanagerd.runner, com.apple.coresymbolicationd ]
+
+Debug/…/Updater.xpc                       — the same temporary exceptions, still no sandbox</code></pre>
+
+        <p>
+            Source: <code>Submodules/SwiftUtilities/UpdaterService/Updater.entitlements</code> is an empty
+            <code>&lt;dict/&gt;</code>. The service is copied into
+            <code>$(CONTENTS_FOLDER_PATH)/XPCServices</code> by a <code>Copy Files</code> phase added in commit
+            <code>5509176</code> on 2026-07-20.
+        </p>
+
+        <h4 id="appendix-b">B — What a preparation slot covers today</h4>
+
+        <p>
+            The span held by one slot of the render throttle, which is sized
+            <code>max( 2, ProcessInfo.processInfo.activeProcessorCount - 2 )</code> in
+            <code>WindowModel.init()</code>. Star detection sits inside the span, which is why one file’s
+            detection gates the next file’s load.
+        </p>
+
+<pre><code>OpenFile.prepare( throttle:priority: )
+    await throttle.acquire( key: id, priority: priority )   ← slot taken
+    defer { throttle.release() }                            ← slot held to the end of the task
+        await self.load()                                   load
+        await self.image?.renderer.render()                 render
+        await self.image?.detectStars()                     ← detection: the longest stage
+        await self.thumbnailTask?.value                     thumbnail
+        self.prepareFramePreviews()                         carousel previews (own acquisitions)
+
+OpenFile.prepareSelectedFrame()
+    await throttle?.acquire( key: id, priority: .high )     ← high-priority slot taken
+    defer { throttle?.release() }
+        await image.renderer.render()                       render
+        await image.detectStars()                           ← detection, still inside the slot</code></pre>
+
+        <p>
+            Target shape after milestone&nbsp;7: the slot covers load&nbsp;→&nbsp;render&nbsp;→&nbsp;thumbnail,
+            and the analysis is enqueued on its own bounded queue right after the render returns — before the
+            thumbnail wait, because <code>makeThumbnail</code> resizes on
+            <code>DispatchQueue.global( qos: .utility )</code>, which a folder of opening files saturates.
+        </p>
+
+        <h4>C — Build and test commands</h4>
+
+<pre><code>xcodebuild build -project FITScope.xcodeproj -scheme 'FITScope - Debug'
+xcodebuild test  -project FITScope.xcodeproj -scheme 'FITScope - Debug'</code></pre>
+
+        <p>
+            Schemes: <code>FITScope - Debug</code>, <code>FITScope - Release</code>,
+            <code>FITScopePreviewExtension</code>, <code>FITScopeThumbnailExtension</code>. The test plan
+            <code>FITScope.xctestplan</code> also runs <code>SwiftFITSTests</code>,
+            <code>SwiftAstroTests</code>, <code>SwiftPixelTests</code> and <code>FITScopeUITests</code> alongside
+            <code>FITScopeTests</code> — which is why milestone&nbsp;2’s clean run matters to everything after it.
+        </p>
+
+    </div>
+
+</div>
