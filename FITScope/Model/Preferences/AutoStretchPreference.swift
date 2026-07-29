@@ -38,7 +38,16 @@ public enum AutoStretchPreference
 {
     /// The App Group suite the app and its extensions share for the preview
     /// preferences.
-    public static let appGroupID = "group.com.xs-labs.FITScope"
+    ///
+    /// Prefixed with the development team ID, which is what lets macOS grant
+    /// access to the group container from the code signature alone. App group
+    /// containers are protected by System Integrity Protection, and a bare
+    /// `group.`-prefixed identifier would additionally have to be registered with
+    /// the developer account and authorised by the embedded provisioning profile.
+    /// Without one of those, the system prompts the user on every launch — such
+    /// consent lasts only for the lifetime of the app instance — and denies the
+    /// thumbnail extension outright, since its extension point may not prompt.
+    public static let appGroupID = "326Y53CJMD.com.xs-labs.FITScope"
 
     /// A linear image format whose auto-stretch is user-configurable.
     public enum Format: String, CaseIterable, Sendable

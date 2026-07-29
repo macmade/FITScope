@@ -678,11 +678,11 @@
                 <ol>
                     <li class="entry">
                         <a href="#m1">1. Identify what triggers the launch-time permission prompt</a>
-                        <span class="status in-progress">In progress</span>
+                        <span class="status completed">Completed</span>
                     </li>
                     <li class="entry">
                         <a href="#m2">2. Eliminate the prompt and restore a clean test run</a>
-                        <span class="status not-started">Not started</span>
+                        <span class="status in-progress">In progress</span>
                     </li>
                 </ol>
             </li>
@@ -742,7 +742,7 @@
 
     <section class="milestone" id="m1">
         <h4><span class="num">1.</span> Identify what triggers the launch-time permission prompt
-            <span class="status in-progress">In progress</span></h4>
+            <span class="status completed">Completed</span></h4>
 
         <div class="field">
             <span class="label">Goal</span>
@@ -788,8 +788,8 @@
             </ul>
         </div>
 
-        <div class="field"><span class="label">Status</span><p><span class="status in-progress">In progress</span></p></div>
-        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Status</span><p><span class="status completed">Completed</span></p></div>
+        <div class="field"><span class="label">Completed</span><p>2026-07-29</p></div>
         <div class="field">
             <span class="label">Implementation notes</span>
 
@@ -1315,13 +1315,21 @@ tccd        AUTHREQ_PROMPTING: service=kTCCServiceSystemPolicyAppData,
                     Milestone 2 therefore carries no migration step, and the old container needs no
                     read-and-copy path.
                 </li>
+                <li>
+                    <strong>Asked what the archiving question was about</strong>, and on the answer
+                    decided to <strong>skip it</strong>. The raw log excerpts are not archived beside the
+                    plan. Milestone&nbsp;2's rename is the verification that matters — the prompt either
+                    stops or it does not — and the load-bearing <code>containermanagerd</code> evidence
+                    remains queryable regardless. If the rename fails, capture fresh evidence about that
+                    failure rather than relying on a stale snapshot.
+                </li>
             </ul>
         </div>
     </section>
 
     <section class="milestone" id="m2">
         <h4><span class="num">2.</span> Eliminate the prompt and restore a clean test run
-            <span class="status not-started">Not started</span></h4>
+            <span class="status in-progress">In progress</span></h4>
 
         <div class="field">
             <span class="label">Goal</span>
@@ -1394,10 +1402,184 @@ tccd        AUTHREQ_PROMPTING: service=kTCCServiceSystemPolicyAppData,
             </ul>
         </div>
 
-        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
+        <div class="field"><span class="label">Status</span><p><span class="status in-progress">In progress</span></p></div>
         <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
-        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
-        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+
+            <p>
+                Implemented test-first. The guard test was written and watched fail before the
+                identifier was changed, then watched pass — the red/green pair is quoted below.
+            </p>
+
+            <h4>The change</h4>
+
+            <p>
+                The App Group identifier moved from <code>group.com.xs-labs.FITScope</code> to
+                <code>326Y53CJMD.com.xs-labs.FITScope</code> in the four places milestone&nbsp;1
+                identified, and nowhere else — a repo-wide grep for the old identifier now returns
+                nothing outside this plan's own prose:
+            </p>
+
+            <ul>
+                <li><code>FITScope/FITScope.entitlements</code></li>
+                <li><code>FITScopePreviewExtension/FITScopePreviewExtension.entitlements</code></li>
+                <li><code>FITScopeThumbnailExtension/FITScopeThumbnailExtension.entitlements</code></li>
+                <li><code>FITScope/Model/Preferences/AutoStretchPreference.swift</code> — <code>appGroupID</code>,
+                    whose doc comment now explains why the prefix is load-bearing</li>
+            </ul>
+
+            <p>
+                <code>project.pbxproj</code> needed no change, as predicted: the identifier never appeared
+                in it. No migration was written, per the user's decision. The old container is left on
+                disk, abandoned.
+            </p>
+
+            <h4>Decision — literal team ID rather than <code>$(TeamIdentifierPrefix)</code></h4>
+
+            <p>
+                The plan asked that the build variable be considered. It was rejected: the Swift constant
+                has to be a literal either way, so using a variable in the entitlements would leave the
+                two halves of the same identifier expressed differently and free to drift, with the
+                failure mode being a silent return of the original bug. A literal in all four places
+                keeps them greppable and lets the guard test pin the exact value. Recorded as a decision
+                rather than a default, since the plan raised the alternative.
+            </p>
+
+            <h4>Test-first evidence</h4>
+
+            <p>
+                The guard test asserts the identifier is team-ID-prefixed and documents why. It lives in
+                <code>PreferencesTests</code>, which already covers <code>AutoStretchPreference</code>'s
+                helpers throughout, rather than in a new file — the project lists test files explicitly
+                in <code>project.pbxproj</code> (no file-system-synchronised groups, objectVersion 77),
+                so a new file would have meant a hand-edit of the project for a single test.
+            </p>
+
+<pre><code>before the change
+  ✘ Test appGroupIdentifierIsPrefixedWithTheTeamID() recorded an issue at PreferencesTests.swift:667:9:
+    Expectation failed: (AutoStretchPreference.appGroupID → "group.com.xs-labs.FITScope")
+                        .hasPrefix("\( teamID )." → "326Y53CJMD.")
+  ✘ Test run with 31 tests in 1 suite failed after 0.029 seconds with 1 issue.
+
+after the change
+  ✔ Test appGroupIdentifierIsPrefixedWithTheTeamID() passed after 0.001 seconds.
+  ✔ Test run with 31 tests in 1 suite passed after 0.027 seconds.</code></pre>
+
+            <h4>Verification — the system's own record</h4>
+
+            <p>
+                The decisive check is <code>containermanagerd</code>'s decision, since that is what
+                milestone&nbsp;1 established as the gate. The <code>team ID prefix</code> test — the
+                sixth test, which was previously never even reached — now runs for FITScope and passes:
+            </p>
+
+<pre><code>12:50:36  [com.xs-labs.FITScope] requesting [group.com.xs-labs.FITScope]:      REJECTED   ← before
+12:51:04  [com.xs-labs.FITScope] requesting [group.com.xs-labs.FITScope]:      REJECTED   ← before
+12:52:12  Signature passed strict scrutiny; test = team ID prefix
+12:52:12  [com.xs-labs.FITScope] requesting [326Y53CJMD.com.xs-labs.FITScope]: APPROVED   ← after</code></pre>
+
+            <p>
+                Over the 90 minutes following the change, covering the full test plan and 40 UI-test app
+                launches, every decision for every target is an approval and there is not one rejection:
+            </p>
+
+            <table>
+                <tr><th>Target</th><th>Decision</th><th>Count</th></tr>
+                <tr><td><code>com.xs-labs.FITScope</code></td><td>APPROVED</td><td>44</td></tr>
+                <tr><td><code>…FITScopePreviewExtension</code></td><td>APPROVED</td><td>6</td></tr>
+                <tr><td><code>…FITScopeThumbnailExtension</code></td><td>APPROVED</td><td>2</td></tr>
+                <tr><td>any target</td><td>REJECTED</td><td><strong>0</strong></td></tr>
+            </table>
+
+            <p>
+                <strong>TCC prompts over the same 90 minutes: none.</strong> This is the criterion that
+                matters, given that consent would only have lasted for the lifetime of an app instance
+                anyway. Before the change the app prompted on essentially every launch; the two prompts
+                recorded today are both from the pre-change test runs at 12:50:36 and 12:51:04.
+            </p>
+
+            <p>
+                <strong>The thumbnail extension's functional bug is fixed, not merely quiet.</strong>
+                Its container request is now approved, and the sandbox-denial fault that proved it could
+                not read the shared preference —
+                <code>… requires user-preference-read or file-read-data sandbox access</code> — no longer
+                occurs at all. The only remaining <code>CFPrefsPlistSource</code> messages are the benign
+                <code>kCFPreferencesAnyUser with a container is only allowed for System Containers</code>
+                notice, which also occurred before the change and is unrelated to sandboxing.
+            </p>
+
+            <h4>Test plan</h4>
+
+            <p>
+                <strong>2,315 tests across 7 suites pass, with zero recorded issues</strong>, and the 40
+                UI tests pass, for 2,355 in total.
+            </p>
+
+            <p>
+                Reported honestly: the <em>first</em> full-plan run was marked
+                <code>** TEST FAILED **</code> even though no test failed. The cause was the UI-test
+                runner never starting — <em>“The test runner failed to initialize for UI testing.
+                Underlying Error: Timed out while enabling automation mode.”</em> Re-running
+                <code>FITScopeUITests</code> alone passed all 40 in 602 s with no automation error, so
+                the failure was a transient initialisation timeout rather than a defect. It cannot be
+                attributed to this change on the evidence either: every UI-test launch appends
+                <code>-uiTestingIsolatedDefaults</code> (<code>UITestSupport.swift:105,132</code>), under
+                which <code>AppDelegate.makePreferences()</code> uses private suites and never reads the
+                App Group at all — so the one Swift symbol this milestone touched is unreachable from a
+                UI test, and the failure occurred before any test code ran.
+            </p>
+
+            <p>
+                A clean full-plan re-run then confirmed it end to end:
+                <strong><code>** TEST SUCCEEDED **</code></strong> — the same 2,315 tests across 7 suites
+                plus all 40 UI tests in 546 s, with <strong>0 recorded issues and no automation
+                error</strong>. The flake did not recur, and the whole plan now runs to completion
+                without a prompt, which is the gate the rest of this plan depended on.
+            </p>
+
+            <p>
+                No pre-change baseline for the full plan exists to compare against, because the prompt
+                this milestone removes was itself blocking those runs — which is the whole reason
+                phase&nbsp;1 was ordered first.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+
+            <p>
+                <strong>Round 1</strong> — a fresh-context reviewer confirmed the rename is complete,
+                consistent and correct against Apple's documentation, and verified it in the built
+                products itself: all three signed binaries carry the new entitlement, the team ID is
+                independently confirmed as <code>326Y53CJMD</code> via
+                <code>security find-identity</code>, and the new container exists with
+                <code>containermanagerd</code>'s metadata. No <em>Critical</em> or <em>High</em> finding.
+                One <em>Medium</em>, which was a fair hit on the test this milestone added.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td><strong>The guard test checked the weak invariant.</strong> It compared one literal in the repo against another literal in the same repo, so it passed whenever both were self-consistently wrong, while the failure that can actually happen — the Swift constant drifting from the three entitlements files — went unguarded. That drift fails <em>silently</em>: <code>UserDefaults(suiteName:)</code> returns a store even for an unentitled group, whose reads yield <code>nil</code> and whose writes are dropped, so every preview toggle would quietly report its default.</td><td>Medium</td><td><strong>Fixed.</strong> The test now reads the <em>signed</em> entitlement back out of the host application (<code>SecStaticCodeCreateWithPath</code> / <code>SecCodeCopySigningInformation</code>; the tests are hosted in <code>FITScope.app</code>, so <code>Bundle.main</code> is the app) and asserts it declares <code>appGroupID</code>. The team-ID prefix is now checked against <code>kSecCodeInfoTeamIdentifier</code> rather than a literal, so a build signed by another team is checked against <em>its</em> team; that half is skipped when the signature names no team, as on ad-hoc-signed CI. The hardcoded team ID is gone from the test.</td></tr>
+                <tr><td>2</td><td>The team ID is hardcoded in several places, duplicating <code>DEVELOPMENT_TEAM</code> which the <code>xcconfig</code> submodule owns; <code>$(TeamIdentifierPrefix)</code> in the entitlements would track the signing team automatically.</td><td>Low</td><td><strong>Partly addressed.</strong> The test's copy is gone with finding&nbsp;1, and the new test now detects the very breakage this finding worries about — a build signed by a different team fails the prefix assertion instead of silently reprising the bug. The entitlements keep the literal, per the decision recorded above; the reviewer also flagged that it has not confirmed <code>TeamIdentifierPrefix</code> resolves under this project's configuration, so adopting it would need verifying first. Left for the user.</td></tr>
+                <tr><td>3</td><td>The doc comments on <code>AutoStretchPreference.sharedDefaults</code> and <code>Preferences.init</code> describe a <code>nil</code> fallback “when the App Group entitlement is missing” that cannot actually occur — <code>UserDefaults(suiteName:)</code> returns non-nil regardless, making the <code>?? defaults</code> branch dead in the case it was written for.</td><td>Low</td><td><strong>Deferred</strong>, and worth raising with the user. It is pre-existing and outside this milestone's change, but this milestone's own diagnosis is what refutes it. Fixing it means either correcting both comments or implementing a real probe — Apple's <code>containerURL</code> documentation notes a URL is returned even for an invalid group, so detection requires an access test on the directory.</td></tr>
+                <tr><td>4</td><td>Two nested submodules (<code>SwiftFITS</code>, <code>SwiftXISF</code> under <code>SwiftAstro</code>) carry uncommitted Xcode-injected <code>DEVELOPMENT_TEAM</code> lines, though the plan states this is not a submodule change.</td><td>Low</td><td><strong>Not this milestone's doing.</strong> <code>Submodules/SwiftAstro</code> was already modified at the start of the session, before any work here. Left untouched: submodule changes need the user's approval. Flagged for the user to revert if unwanted.</td></tr>
+                <tr><td>5–7</td><td>Migration verified genuinely harmless — the abandoned container holds one key, <code>autoStretchPreviews.xisf = true</code>, identical to the built-in default. The <code>appGroupID</code> doc comment complies with the project rule and is accurate against three Apple sources, with two wording nits. Test placement and Swift Testing style acceptable.</td><td>Info</td><td><strong>Acknowledged.</strong> No action needed. Two residual notes recorded: a user who had turned a preview toggle <em>off</em> silently gets it back <em>on</em>, and the old container directory is orphaned permanently, macOS never removing it.</td></tr>
+            </table>
+
+            <p>
+                <strong>The fix was verified by mutation, not just by passing.</strong> With the constant
+                deliberately set to <code>326Y53CJMD.com.xs-labs.FITScope.DIVERGED</code> the new test
+                fails — <code>Expectation failed: (groups?.contains( AutoStretchPreference.appGroupID ) →
+                false) == true</code> — while the <em>old</em> test would have passed, since that value
+                is still team-ID-prefixed. That is the finding demonstrated rather than assumed. The
+                constant was restored and the app suite re-run: 805 tests, all passing.
+            </p>
+
+            <p>
+                <strong>Outcome.</strong> One round, converged: the only <em>Medium</em> is fixed and no
+                finding challenged the change itself.
+            </p>
+        </div>
         <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
     </section>
 

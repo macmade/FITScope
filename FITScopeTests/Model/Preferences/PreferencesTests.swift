@@ -24,6 +24,7 @@
 
 @testable import FITScope
 import Foundation
+import Security
 import Testing
 
 /// Tests for `Preferences`: the typed, `UserDefaults`-backed settings store. The
@@ -643,6 +644,77 @@ struct PreferencesTests
         #expect( AutoStretchPreference.autoStretchOnOpen( .fits, in: defaults ) )
         #expect( AutoStretchPreference.autoStretchOnOpen( .xisf, in: defaults ) )
         #expect( AutoStretchPreference.autoStretchOnOpen( .raw, in: defaults ) )
+    }
+
+    /// The code-signing information of the host application — the tests are hosted
+    /// in `FITScope.app`, so `Bundle.main` is the app itself.
+    ///
+    /// - Returns: The signing information dictionary.
+    private func hostApplicationSigningInformation() throws -> [ String: Any ]
+    {
+        var staticCode: SecStaticCode?
+
+        let creation = SecStaticCodeCreateWithPath( Bundle.main.bundleURL as CFURL, [], &staticCode )
+
+        try #require( creation == errSecSuccess, "the host application's code object should be readable" )
+
+        let code  = try #require( staticCode )
+        let flags = SecCSFlags( rawValue: kSecCSSigningInformation | kSecCSRequirementInformation )
+
+        var information: CFDictionary?
+
+        let copy = SecCodeCopySigningInformation( code, flags, &information )
+
+        try #require( copy == errSecSuccess, "the host application's signing information should be readable" )
+
+        return try #require( information as? [ String: Any ] )
+    }
+
+    /// The App Group the application is actually *signed* with is the one
+    /// ``AutoStretchPreference/appGroupID`` names, and carries the signing team's
+    /// identifier as its prefix.
+    ///
+    /// Both halves matter, and neither can be checked by comparing one constant in
+    /// the repository against another. The entitlement and the constant are edited
+    /// in separate files, and nothing fails loudly when they diverge:
+    /// `UserDefaults(suiteName:)` still hands back a store for a group the process
+    /// is not entitled to, whose reads all return `nil` and whose writes are
+    /// dropped — so every preview toggle would silently report its default. This
+    /// reads the entitlement back out of the signed bundle instead, which is the
+    /// only place the two can be compared.
+    ///
+    /// The prefix is what lets macOS grant the container from the signature alone:
+    /// app group containers are protected by System Integrity Protection, and
+    /// without it the system prompts the user on every launch and denies the
+    /// thumbnail extension outright, since app extensions are never prompted.
+    /// Taking the team identifier from the signature rather than a literal means a
+    /// build signed by a different team is checked against *its* team, which is
+    /// the invariant that actually holds.
+    @Test
+    func theSignedAppGroupEntitlementMatchesTheIdentifier() throws
+    {
+        let information  = try self.hostApplicationSigningInformation()
+        let entitlements = information[ kSecCodeInfoEntitlementsDict as String ] as? [ String: Any ]
+        let groups       = entitlements?[ "com.apple.security.application-groups" ] as? [ String ]
+
+        #expect(
+            groups?.contains( AutoStretchPreference.appGroupID ) == true,
+            "the signed App Group entitlement must declare AutoStretchPreference.appGroupID, or the shared preferences silently read as their defaults"
+        )
+
+        // Ad-hoc signed builds — CI has no signing identity — carry the
+        // entitlement but no team identifier, so this half only applies when the
+        // signature actually names a team.
+        guard let teamID = information[ kSecCodeInfoTeamIdentifier as String ] as? String
+        else
+        {
+            return
+        }
+
+        #expect(
+            AutoStretchPreference.appGroupID.hasPrefix( "\( teamID )." ),
+            "the App Group must be prefixed with the signing team identifier or macOS gates it behind a per-launch consent prompt"
+        )
     }
 
     /// Writes a raw `infoPanelFields` payload — `(fieldRawValue, visible)` pairs,
