@@ -682,7 +682,7 @@
                     </li>
                     <li class="entry">
                         <a href="#m2">2. Eliminate the prompt and restore a clean test run</a>
-                        <span class="status in-progress">In progress</span>
+                        <span class="status completed">Completed</span>
                     </li>
                 </ol>
             </li>
@@ -1329,7 +1329,7 @@ tccd        AUTHREQ_PROMPTING: service=kTCCServiceSystemPolicyAppData,
 
     <section class="milestone" id="m2">
         <h4><span class="num">2.</span> Eliminate the prompt and restore a clean test run
-            <span class="status in-progress">In progress</span></h4>
+            <span class="status completed">Completed</span></h4>
 
         <div class="field">
             <span class="label">Goal</span>
@@ -1402,8 +1402,8 @@ tccd        AUTHREQ_PROMPTING: service=kTCCServiceSystemPolicyAppData,
             </ul>
         </div>
 
-        <div class="field"><span class="label">Status</span><p><span class="status in-progress">In progress</span></p></div>
-        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
+        <div class="field"><span class="label">Status</span><p><span class="status completed">Completed</span></p></div>
+        <div class="field"><span class="label">Completed</span><p>2026-08-01</p></div>
         <div class="field">
             <span class="label">Implementation notes</span>
 
@@ -1412,7 +1412,13 @@ tccd        AUTHREQ_PROMPTING: service=kTCCServiceSystemPolicyAppData,
                 identifier was changed, then watched pass — the red/green pair is quoted below.
             </p>
 
-            <h4>The change</h4>
+            <h4>The change <span class="status not-started" style="vertical-align:middle">First pass</span></h4>
+
+            <p>
+                This section and the two that follow describe the milestone's first pass, shipped as
+                <code>030daeb</code>. The <em>Follow-up</em> section at the end records how the
+                identifier is expressed today; the effective value is unchanged.
+            </p>
 
             <p>
                 The App Group identifier moved from <code>group.com.xs-labs.FITScope</code> to
@@ -1435,7 +1441,14 @@ tccd        AUTHREQ_PROMPTING: service=kTCCServiceSystemPolicyAppData,
                 disk, abandoned.
             </p>
 
-            <h4>Decision — literal team ID rather than <code>$(TeamIdentifierPrefix)</code></h4>
+            <h4>Decision — literal team ID rather than <code>$(TeamIdentifierPrefix)</code>
+                <span class="status not-started" style="vertical-align:middle">Superseded</span></h4>
+
+            <p>
+                <strong>Superseded by the follow-up below</strong>, which reversed it: the identifier is
+                now derived from a single build setting and appears as a literal nowhere. The reasoning
+                as it stood at the time is kept for legibility.
+            </p>
 
             <p>
                 The plan asked that the build variable be considered. It was rejected: the Swift constant
@@ -1444,6 +1457,13 @@ tccd        AUTHREQ_PROMPTING: service=kTCCServiceSystemPolicyAppData,
                 failure mode being a silent return of the original bug. A literal in all four places
                 keeps them greppable and lets the guard test pin the exact value. Recorded as a decision
                 rather than a default, since the plan raised the alternative.
+            </p>
+
+            <p>
+                What it missed: the premise that “the Swift constant has to be a literal either way” was
+                false. Reading the identifier from the running bundle's <code>Info.plist</code> — which
+                expands the same build setting as the entitlement — removes the literal from the Swift
+                side too, and with it the drift the decision was trying to guard against.
             </p>
 
             <h4>Test-first evidence</h4>
@@ -1543,6 +1563,161 @@ after the change
                 this milestone removes was itself blocking those runs — which is the whole reason
                 phase&nbsp;1 was ordered first.
             </p>
+
+            <h4 style="margin-top:1.6rem">Follow-up — the guard test turned CI red, and fixing it
+                removed the duplication behind it</h4>
+
+            <p>
+                Shipped as <code>9097d16</code>, after <code>030daeb</code> had landed. The first
+                pass's guard read the App Group back out of the host application's <em>signed</em>
+                entitlement, which works only where there is a signature to read. CI has none: the
+                build is unsigned, so no <code>codesign</code> step runs and on arm64 the only
+                signature is the linker's ad-hoc one, which carries no entitlements at all —
+                <code>kSecCodeInfoEntitlementsDict</code> is absent, the group list reads
+                <code>nil</code>, and the expectation fails on every run. The test's early return
+                anticipated a signature naming no <em>team</em>, but not one carrying no
+                <em>entitlements</em>, so it covered only the prefix half of the invariant.
+            </p>
+
+            <p>
+                The remedy was to stop expressing the identifier four times. <code>FITSCOPE_APP_GROUP_ID</code>
+                is now defined once, at project level in both Debug and Release, as
+                <code>$(DEVELOPMENT_TEAM).com.xs-labs.FITScope</code>, and expanded from all three
+                entitlements files <em>and</em> all three <code>Info.plist</code>s — Xcode substitutes
+                build settings in both. <code>appGroupID</code> became a computed <code>String?</code>
+                that reads the <code>FITScopeAppGroupID</code> key from the running bundle instead of
+                repeating a literal, so the identifier the code opens and the one the bundle is signed
+                with come from the same setting and cannot name different groups. It is <code>nil</code>
+                when a bundle carries no such key, rather than falling back to a literal that could name
+                a group the bundle is not entitled to; <code>sharedDefaults</code> guards on it, and
+                <code>Preferences</code> already degraded to its app-only store in that case.
+            </p>
+
+            <p>
+                The single signature-reading test was replaced by two that need no signature:
+            </p>
+
+            <ul>
+                <li><code>everyBundleDeclaresTheSameAppGroup</code> — reads the built bundles and
+                    requires the application and both embedded extensions to declare the same
+                    identifier. This finally covers the two appex whose entitlements the old check never
+                    inspected, even though the thumbnail extension is what the rename was for.</li>
+                <li><code>everyEntitlementsFileTemplatesTheAppGroup</code> — reads the repository
+                    sources and requires each entitlements file to declare the group through the build
+                    setting rather than a literal. Entitlements live only in the code signature, and CI
+                    signs nothing, so the built bundles cannot answer this one.</li>
+            </ul>
+
+            <p>
+                Net effect on the decision recorded above: reversed. The identifier is a literal in
+                exactly one place — the build setting's own definition — and the team ID is no longer
+                written out anywhere in Swift or in the entitlements.
+            </p>
+
+            <p>
+                Verified here on 2026-08-01 by dumping the built products rather than trusting the
+                templating: the application and both extensions each carry
+                <code>326Y53CJMD.com.xs-labs.FITScope</code> in both the signed
+                <code>com.apple.security.application-groups</code> entitlement and the
+                <code>FITScopeAppGroupID</code> <code>Info.plist</code> key, signed with
+                <code>TeamIdentifier=326Y53CJMD</code>. <code>Updater.xpc</code> declares no app group
+                at all. One claim is <em>not</em> independently verified: that CI builds with
+                <code>CODE_SIGNING_ALLOWED=NO</code>. It comes from <code>9097d16</code>'s own commit
+                message — <code>ci-mac.yaml</code> delegates to <code>macmade/action-xcodebuild@v1.0.0</code>,
+                whose internals were not inspected.
+            </p>
+
+            <h4 style="margin-top:1.6rem">Clean-state verification — 2026-08-01, 12:23:30 → 12:36:53</h4>
+
+            <p>
+                Run after the report that a prompt had appeared, to settle the milestone on a fresh
+                observation rather than on a reading of records from runs that had already happened.
+                <code>tccutil reset SystemPolicyAppData com.xs-labs.FITScope</code> (successful; the two
+                appex bundle identifiers are not registered standalone with LaunchServices, so
+                <code>tccutil</code> cannot resolve them and they are covered through the host),
+                <code>xcodebuild clean</code>, then the whole test plan from scratch.
+            </p>
+
+            <table>
+                <tr><th>Requestor</th><th>Group container</th><th>Decision</th><th>Count</th></tr>
+                <tr><td><code>com.xs-labs.FITScope</code></td><td><code>326Y53CJMD.com.xs-labs.FITScope</code></td><td>APPROVED</td><td>42</td></tr>
+                <tr><td><code>…FITScopePreviewExtension</code></td><td><code>326Y53CJMD.com.xs-labs.FITScope</code></td><td>APPROVED</td><td>6</td></tr>
+                <tr><td><code>…FITScopeThumbnailExtension</code></td><td><code>326Y53CJMD.com.xs-labs.FITScope</code></td><td>APPROVED</td><td>4</td></tr>
+                <tr><td>any of the three</td><td>any</td><td><strong>REJECTED</strong></td><td><strong>0</strong></td></tr>
+            </table>
+
+            <p>
+                <strong>Zero <code>AUTHREQ_PROMPTING</code> events in the window — from any application
+                on the machine, not merely from these three.</strong> FITScope appears in tccd's
+                attribution chains 750 times over the run (404 <code>AUTHREQ_ATTRIBUTION</code>, 346
+                <code>AUTHREQ_SUBJECT</code>) without one of them reaching a prompt, a refusal or a
+                denial. This is the criterion milestone&nbsp;1 established as the only one that counts,
+                since consent for a group container would have lasted only for the lifetime of an app
+                instance.
+            </p>
+
+            <p>
+                <strong>Both extensions are exercised and approved here, which earlier windows never
+                showed.</strong> The preview and thumbnail extensions had not run at all in the periods
+                examined before, so their approvals were inferred from carrying the same entitlement.
+                They are now observed directly — 6 and 4 approvals respectively — which is the
+                thumbnail extension's functional bug, the half that never prompted and simply fell back
+                to unstretched previews, confirmed fixed rather than assumed.
+            </p>
+
+            <p>
+                <strong>Test plan: <code>** TEST SUCCEEDED **</code></strong> — 2,316 tests across 7
+                test runs (270 suites), zero recorded issues, including all 40 UI tests
+                (<code>Executed 40 tests, with 0 failures</code>) with no automation-initialisation
+                error. One test more than the previous full run's 2,315, which is
+                <code>9097d16</code> replacing a single signature-reading test with two signature-free
+                ones.
+            </p>
+
+            <p>
+                The terminal-attributed prompt described in <em>Review comments</em> did not recur,
+                its denial having been recorded. That is a separate matter from this milestone and no
+                code change here affects it.
+            </p>
+
+            <h4 style="margin-top:1.6rem">Doc-comment correction — round-1 finding 3 closed</h4>
+
+            <p>
+                Two comments still described a <code>nil</code> case that cannot occur. Both now
+                describe the one that can. The claim was re-verified from primary sources first rather
+                than taken from the earlier finding — the macOS 26.5 SDK's
+                <code>NSUserDefaults.h</code> documents the failure cases of
+                <code>-initWithSuiteName:</code> as “the current application's bundle identifier,
+                <code>NSGlobalDomain</code>, or the corresponding CFPreferences constants”, and Apple's
+                reference mentions entitlements only as governing whether another app's settings can be
+                <em>searched</em>, not whether the object is created. A missing App Group entitlement
+                is in neither list.
+            </p>
+
+            <ul>
+                <li><code>AutoStretchPreference.sharedDefaults</code> — was “<code>nil</code> when it
+                    cannot be opened (e.g. the bundle declares no <code>appGroupID</code>, or the App
+                    Group entitlement is missing)”. Now states that a missing
+                    <code>appGroupID</code> is the <em>only</em> such case, and that a bundle naming a
+                    group it is not entitled to still receives a store whose reads yield
+                    <code>nil</code> and whose writes are dropped — which is what makes the
+                    single-build-setting arrangement load-bearing rather than merely tidy.</li>
+                <li><code>Preferences.init</code>'s <code>sharedDefaults</code> parameter — was
+                    “falling back to <code>defaults</code> if it cannot be opened, e.g. the entitlement
+                    is missing”. Now names the real condition and cross-references
+                    <code>AutoStretchPreference.sharedDefaults</code> rather than restating it.</li>
+            </ul>
+
+            <p>
+                <strong>Comment-only.</strong> Confirmed by diffing: no non-comment line changed in
+                either file. TDD does not apply to a documentation correction — there is no behaviour
+                to drive out, and the claim being corrected is about a framework guarantee, so a test
+                would assert Apple's behaviour rather than this project's. Verified by compiling
+                instead: <code>** TEST SUCCEEDED **</code>, 806 tests across 98 suites, zero errors.
+                SourceKit reported a burst of “cannot find type in scope” diagnostics against
+                <code>Preferences.swift</code> immediately after the edit; they were a stale index
+                following the earlier <code>clean</code>, and the real compile shows none.
+            </p>
         </div>
         <div class="field">
             <span class="label">Automated review</span>
@@ -1579,8 +1754,112 @@ after the change
                 <strong>Outcome.</strong> One round, converged: the only <em>Medium</em> is fixed and no
                 finding challenged the change itself.
             </p>
+
+            <h4 style="margin-top:1.4rem">Where the follow-up left the round-1 findings</h4>
+
+            <p>
+                <code>9097d16</code> landed <em>after</em> this loop had closed and did not itself pass
+                through a review round — recorded so the gap is visible rather than implied. It moves
+                two of the findings above:
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Was</th><th>Now</th></tr>
+                <tr>
+                    <td>1</td>
+                    <td><strong>Fixed</strong> by reading the signed entitlement back out of the host application.</td>
+                    <td><strong>Still fixed, by different means.</strong> The signature-reading test is gone — it was what turned CI red. The invariant it guarded is now held structurally: one build setting feeds both the entitlement and the <code>Info.plist</code>, so the two cannot diverge in the first place, and two signature-free tests check that every bundle and every entitlements file goes through it. Coverage is <em>wider</em> than before: the old check inspected the application alone, the new one inspects both extensions too.</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><strong>Partly addressed</strong> — the team ID stayed hardcoded in the entitlements; adopting a build variable was left for the user.</td>
+                    <td><strong>Resolved.</strong> Not via <code>$(TeamIdentifierPrefix)</code>, which was never verified to resolve under this project, but via <code>FITSCOPE_APP_GROUP_ID</code> deriving from <code>DEVELOPMENT_TEAM</code> — so the identifier tracks the signing team automatically and the literal survives in one place only.</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td><strong>Deferred</strong> — the <code>nil</code>-fallback doc comments describe a case that cannot occur.</td>
+                    <td><strong>Half of it is now accurate, half is still wrong.</strong> A genuine <code>nil</code> path exists today: a bundle carrying no <code>FITScopeAppGroupID</code> key. But both comments still offer “the entitlement is missing” as the example — <code>AutoStretchPreference.sharedDefaults</code> (“or the App Group entitlement is missing”) and <code>Preferences.init</code>'s <code>sharedDefaults</code> parameter (“e.g. the entitlement is missing”) — and that remains the case finding&nbsp;3 showed cannot happen, since <code>UserDefaults(suiteName:)</code> returns a store regardless. <strong>Fixed on review request</strong> — see <em>Implementation notes</em> → <em>Doc-comment correction</em>.</td>
+                </tr>
+            </table>
         </div>
-        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+        <div class="field">
+            <span class="label">Review comments</span>
+
+            <ul>
+                <li>
+                    <strong>The prompt still appears.</strong> Reported after the rename and its
+                    follow-up had both shipped: the <em>“access data from other apps”</em> prompt was
+                    raised again, during a <code>xcodebuild test</code> run.
+
+                    <p style="margin:.5rem 0 0">
+                        <strong>Answered — it is a different prompt, and not FITScope's.</strong> The
+                        same <code>kTCCServiceSystemPolicyAppData</code> service, so the same wording,
+                        but a different subject, a different requestor and a different path. It names
+                        the <em>terminal</em>, not the app, and no code change can remove it. Traced
+                        through <code>msgID=425.2623</code> on 2026-08-01:
+                    </p>
+
+<pre style="margin:.6rem 0 0"><code>12:15:32.401  tccd  AUTHREQ_CTX: service=kTCCServiceSystemPolicyAppData, preflight=no
+12:15:32.401  tccd  AUTHREQ_ATTRIBUTION: responsible={identifier=net.kovidgoyal.kitty, pid=5195,
+                        binary_path=/Applications/kitty.app/Contents/MacOS/kitty}
+12:15:32.406  tccd  AUTHREQ_SUBJECT: subject=net.kovidgoyal.kitty
+12:15:32.420  tccd  AUTHREQ_PROMPTING: subject=Sub:{net.kovidgoyal.kitty}Resp:{…kitty…}
+12:15:48.805  tccd  AUTHREQ_RESULT: authValue=0        ← denied
+
+kernel (Sandbox)  sandboxd rejected approval request from xcodebuild for
+                  kTCCServiceSystemPolicyAppData
+                  (/Users/macmade/Library/Containers/com.xs-labs.FITScope/Data/
+                      BD94818F-6310-4CA6-9236-4BF2C68B7253-12987-000003C8E3E8C55F): denied</code></pre>
+
+                    <p style="margin:.6rem 0 0">
+                        The accessing process is <code>xcodebuild</code> (pid 12987 — the test run
+                        itself), attributed to its responsible ancestor <code>kitty</code>, the
+                        terminal the run was launched from. The path is FITScope's <em>own private</em>
+                        container under <code>~/Library/Containers</code> — not the App Group container
+                        under <code>~/Library/Group&nbsp;Containers</code> that this milestone
+                        addressed. It fired at 12:15:32.42, which is when the test session
+                        <em>ended</em>, so it is <code>xcodebuild</code> collecting results rather than
+                        anything the app did.
+                    </p>
+
+                    <p style="margin:.6rem 0 0">
+                        The milestone's own fix is confirmed working over the same period. Every
+                        app-group decision for FITScope on 2026-08-01 is an approval —
+                        <strong>14 of 14</strong>, each passing on <code>test = team ID prefix</code>
+                        — with <strong>zero</strong> rejections, for any requestor system-wide. Across
+                        tccd's whole retained window (from 09:19 that day) there is <strong>no
+                        <code>AUTHREQ</code> event naming FITScope, its preview extension or its
+                        thumbnail extension at all</strong>.
+                    </p>
+
+                    <p style="margin:.6rem 0 0">
+                        The prompt was denied (<code>authValue=0</code>). It did not affect the run,
+                        which reported <code>** TEST SUCCEEDED **</code> with 806 tests across 98
+                        suites passing; the denied accesses all follow the session's completion.
+                    </p>
+                </li>
+                <li>
+                    <strong>Verify from a clean state before closing.</strong> Rather than accept the
+                    analysis above on its own, reset the TCC decisions for the app and both extensions,
+                    clean, rebuild and re-run the tests — so the milestone is closed on a fresh
+                    observation rather than on a reading of records from runs that had already happened.
+
+                    <p style="margin:.5rem 0 0">
+                        <strong>Done — clean, and it strengthened the evidence rather than merely
+                        repeating it.</strong> 52 approvals, no rejection, no prompt from any
+                        application on the machine, and both extensions observed being approved for the
+                        first time. Full detail under <em>Implementation notes</em> →
+                        <em>Clean-state verification</em>.
+                    </p>
+                </li>
+                <li>
+                    <strong>Correct the stale doc comments before closing.</strong> Round-1 finding&nbsp;3
+                    was deferred, and the follow-up left it half true: fix the two comments that still
+                    give “the entitlement is missing” as the case in which the shared suite cannot be
+                    opened, since this milestone's own diagnosis is what refutes it.
+                </li>
+            </ul>
+        </div>
     </section>
 
     <h3 class="phase">Phase 2 — Overlay registration (backlog item 2)</h3>

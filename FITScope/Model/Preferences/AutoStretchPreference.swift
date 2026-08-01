@@ -139,8 +139,16 @@ public enum AutoStretchPreference
         ( defaults.object( forKey: self.previewsKey( format ) ) as? Bool ) ?? true
     }
 
-    /// The shared App Group suite, or `nil` when it cannot be opened (e.g. the
-    /// bundle declares no ``appGroupID``, or the App Group entitlement is missing).
+    /// The shared App Group suite, or `nil` when the running bundle declares no
+    /// ``appGroupID``.
+    ///
+    /// That is the only case in which this is `nil`. A bundle that names the group
+    /// without being entitled to it still gets a store back, whose reads yield
+    /// `nil` and whose writes are dropped: `UserDefaults` documents its failure
+    /// cases as the app's own bundle identifier, `NSGlobalDomain` and the
+    /// corresponding CFPreferences constants, not a missing entitlement. Nothing
+    /// surfaces that divergence, which is why the identifier and the entitlement
+    /// both expand one build setting.
     ///
     /// The app's ``Preferences`` falls back to its app-only store when this is
     /// `nil`; the sandboxed extensions, which have no other store, render linear

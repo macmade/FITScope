@@ -251,8 +251,9 @@ public final class Preferences: ObservableObject
     ///                     tests inject an isolated suite.
     ///   - sharedDefaults: The shared App Group backing store for the extension-
     ///                     readable preview preferences. Defaults to the App Group
-    ///                     suite (falling back to `defaults` if it cannot be opened,
-    ///                     e.g. the entitlement is missing); tests inject an
+    ///                     suite, falling back to `defaults` when the running bundle
+    ///                     declares no App Group identifier — see
+    ///                     ``AutoStretchPreference/sharedDefaults``; tests inject an
     ///                     isolated suite.
     public init( defaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil )
     {
