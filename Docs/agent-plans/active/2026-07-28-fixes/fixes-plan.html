@@ -691,7 +691,7 @@
                 <ol>
                     <li class="entry">
                         <a href="#m3">3. Characterise the overlay misregistration after loading</a>
-                        <span class="status not-started">Not started</span>
+                        <span class="status completed">Completed</span>
                     </li>
                     <li class="entry">
                         <a href="#m4">4. Publish a correct displayed-image rectangle for every overlay</a>
@@ -1866,7 +1866,7 @@ kernel (Sandbox)  sandboxd rejected approval request from xcodebuild for
 
     <section class="milestone" id="m3">
         <h4><span class="num">3.</span> Characterise the overlay misregistration after loading
-            <span class="status not-started">Not started</span></h4>
+            <span class="status completed">Completed</span></h4>
 
         <div class="field">
             <span class="label">Goal</span>
@@ -1912,11 +1912,727 @@ kernel (Sandbox)  sandboxd rejected approval request from xcodebuild for
             </ul>
         </div>
 
-        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
-        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
-        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
-        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
-        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+        <div class="field"><span class="label">Status</span><p><span class="status completed">Completed</span></p></div>
+        <div class="field"><span class="label">Completed</span><p>2026-08-01</p></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+
+            <p>
+                No code was changed, as the milestone requires. Everything below was obtained by
+                instrumenting the coordinator temporarily, running it under a real SwiftUI host and
+                under the real application, then reverting the instrumentation — the working tree is
+                clean. The diff is kept out of the repository; the instrumentation is
+                <em>described</em>, not reproduced verbatim, under <em>How to reproduce this</em>
+                below.
+            </p>
+
+            <p>
+                <strong>What was not achieved: the milestone's first task.</strong> “Open a single
+                image, toggle Stars on immediately, and record the offset's direction and magnitude”
+                was not done — the symptom was never reproduced by hand, and no observed on-screen
+                offset is recorded anywhere below. Every real-application load that was traced settled
+                correctly. So what follows establishes a defect that produces exactly the reported
+                signature, and establishes that its code path runs on every load; it does
+                <em>not</em> establish by observation that this is what the user saw. That gap is
+                stated here rather than buried, and the section <em>What moves the geometry during
+                that turn</em> is where it bites.
+            </p>
+
+            <p>
+                <strong>And a smaller substitution, in the third task.</strong> It asks for the rect
+                published by <code>fit()</code> and “the rect the first zoom publishes”, diffed. The
+                transcripts below diff <code>fit()</code>'s rect against the <em>settled live
+                geometry</em> instead. That is the stronger comparison — the live geometry is what the
+                overlay should have been given — but it is not literally what was asked. The zoom
+                figures do exist in the fresh-load transcript (<code>fit()</code> published
+                <code>(133.33, 0, 533.33 × 400)</code>, the first zoom published
+                <code>(80, −40, 640 × 480)</code>), but there the zoom itself moved the geometry, so
+                their difference measures the zoom rather than the staleness. Recorded so the
+                substitution is visible rather than silent.
+            </p>
+
+            <h4>Answer — mechanism confirmed in the plumbing; the causal link to the report inferred</h4>
+
+            <p>
+                The defect is a <strong>stale <code>displayedImageRect</code></strong>, in the
+                plumbing rather than in <code>StarsOverlay</code>'s mapping. The specific defect is the
+                one the milestone named:
+                <code>fit()</code> calls <code>reportDisplayedImageRect()</code> with the default
+                <code>deferred: true</code> <em>unconditionally</em>, so it measures the geometry
+                synchronously and writes that measurement a run-loop turn later — while
+                <code>magnificationChanged()</code> and <code>clipBoundsChanged()</code> pass
+                <code>deferred: self.isApplyingViewUpdate</code> and therefore publish
+                <strong>synchronously</strong> whenever they fire outside SwiftUI's update pass.
+            </p>
+
+            <p>
+                Two consequences follow, and it is the second that produces the bug:
+            </p>
+
+            <ul>
+                <li>The deferred write carries a rectangle captured <em>before</em> the delay, and never
+                    re-reads the geometry at delivery. Whatever moved in between is not seen.</li>
+                <li>Because the other two callers publish synchronously, a deferred write scheduled
+                    earlier can land <em>after</em> them. <code>DispatchQueue.main.async</code> is FIFO
+                    against other async blocks, but it has no ordering at all against a synchronous
+                    call — so the older measurement overwrites the newer one and <strong>wins</strong>.
+                    Nothing publishes again until the next zoom, pan or resize, which is exactly the
+                    reported “zooming corrects it and it stays corrected”.</li>
+            </ul>
+
+            <h4>The shape of the error</h4>
+
+            <p>
+                <strong>Translation and scale together — never a mirror or a flip.</strong> The
+                milestone's classification rule (“a uniform translation points at a stale rectangle; a
+                scale or mirror error points at the overlay”) is too narrow and should not be applied
+                as written: a stale rectangle produces a pure translation only when the viewport
+                <em>size</em> was unchanged between the measurement and the delivery. When the size
+                changed too — the common case, since a resize is what moves the geometry — the stale
+                rectangle differs in width and height as well, and the on-screen error is affine, not
+                uniform. In the reproduction below the overlay was registered to
+                <code>(100, 0, 400 × 300)</code> while the image occupied
+                <code>(166.5, 0, 666.67 × 500)</code>: a star at the image's own origin is off by
+                66.5 pt, one at its centre by (200, 100) pt. The error grows with distance from the
+                rectangle's origin. In <em>this</em> reproduction the stale rectangle is the smaller
+                and the further left, so the markers bunch toward the top-left; a stale rectangle
+                inherited from a <em>larger</em> earlier viewport spreads them outward instead. The
+                direction is not a property of the defect, only the growth with distance is.
+            </p>
+
+            <p>
+                A mirror or a quarter-turn error is impossible from this cause, because
+                <code>displayedRect</code> enters <code>CanvasGeometry.viewPoint</code> only as an
+                origin and a positive extent, so no stale value can flip an axis.
+            </p>
+
+            <h4>Why it is not the overlay — the decisive argument</h4>
+
+            <p>
+                <code>StarsOverlay.displayedImagePoint(x:y:displayedImageSize:orientation:)</code>
+                depends on three things only: the star's source-space centroid, the displayed image's
+                pixel dimensions, and the orientation. <strong>None of the three changes when the user
+                zooms.</strong> A mapping error is therefore a fixed offset <em>in image pixels</em>,
+                which on screen scales with the magnification: zooming <em>in</em> would make it
+                worse, never correct it. The backlog reports that zooming corrects it, so the overlay
+                is ruled out on the symptom alone, before any measurement. Two nuances, so the
+                argument is used at its real strength and no more: a zoom <em>out</em> would shrink
+                such an offset toward invisibility rather than correct it, so “in or out” alone would
+                not close the case — but the backlog also says the alignment “stays correct
+                afterwards”, and an offset merely shrunk by zooming out would reappear on zooming
+                back in. The full sentence therefore does close both directions.
+            </p>
+
+            <p>
+                Its 44 existing tests (<code>StarsOverlayTests</code> + <code>CanvasGeometryTests</code>)
+                were run and all pass, including
+                <code>displayedImagePointMapsThroughAQuarterTurn</code> and
+                <code>imagePointInvertsViewPoint</code>. That is corroboration, not proof of absence,
+                and it is weaker corroboration than it first looked: <strong>the mirror branch is not
+                covered at all.</strong> The only orientation case in <code>StarsOverlayTests</code>
+                passes <code>mirroredHorizontally: false</code>
+                (<code>StarsOverlayTests.swift:156</code>), so
+                <code>StarsOverlay.swift:181</code>'s mirror term and two of the four rotation
+                branches (<code>.rotate180</code>, <code>.counterClockwise90</code>) are untested.
+                Milestone 4's “add unit tests over the pure geometry” task should pick them up. The
+                exoneration above does not lean on these tests — it rests on the zoom argument — so
+                the gap weakens the corroboration without touching the conclusion.
+            </p>
+
+            <h4>Reproduction — a real SwiftUI host, not a mock</h4>
+
+            <p>
+                The canvas was hosted in an <code>NSHostingView</code> inside a real <code>NSWindow</code>,
+                so <code>makeNSView</code>, <code>updateNSView</code> and the AppKit notifications run
+                for real; only the enclosing <code>ImageCanvasView</code> is replaced by a minimal
+                equivalent. A 400 × 300 image was used with a deliberately mismatched viewport, so a
+                stale rectangle reads as a visible offset rather than hiding inside an aspect-matched
+                fit.
+            </p>
+
+            <p>
+                The sequence is: fit at a 600 × 300 viewport, then grow the viewport to 1000 × 500
+                within the same run-loop turn — a live resize, which publishes synchronously — then let
+                the deferred write land.
+            </p>
+
+<pre><code>  [0] fit-at-600x300:          (100.00,  0.00,  400.00 x 300.00)
+  [1] live-resize-to-1000x500: (166.67,  0.00,  666.67 x 500.00)
+  [2..6] (same)
+  [7] deferred-writes-land:    (166.50,  0.00,  666.67 x 500.00)
+  [8] deferred-writes-land:    (166.50,  0.00,  666.67 x 500.00)
+  [9] deferred-writes-land:    (100.00,  0.00,  400.00 x 300.00)   &lt;- the stale fit(), landing last
+
+  truth once settled:          (166.50,  0.00,  666.67 x 500.00)
+  last published:              (100.00,  0.00,  400.00 x 300.00)</code></pre>
+
+            <p>
+                The overlay is left registered to a rectangle the image has not occupied since before
+                the resize, and stays there until something publishes again.
+            </p>
+
+            <p>
+                <strong>This is not a race, and there is only one condition.</strong> An earlier draft
+                claimed the ordering was timing-dependent — a second, independent source of the
+                backlog's “sometimes” — on the strength of one harness run that ended on the correct
+                rectangle. That claim is withdrawn: a later run of the same scenario six times over
+                ended on the stale rectangle every time, and the mechanism says it must.
+                <code>DispatchQueue.main.async</code> blocks run only when the main queue next drains,
+                which cannot happen until the current turn's synchronous work has finished — so a
+                block scheduled during a turn is always delivered <em>after</em> every synchronous
+                write made in that same turn. Nothing is being won or lost.
+            </p>
+
+            <p>
+                What actually decides the outcome is a single question: <strong>did the geometry move
+                between <code>fit()</code>'s measurement and the end of that run-loop turn?</strong>
+                If it did, the stale write lands last and the overlay is left wrong. If it moves
+                later — the next turn, or when the user zooms — the deferred write has already landed
+                and the newer synchronous write supersedes it, which is the reported correction.
+            </p>
+
+            <p>
+                One consequence for milestone 4 survives the correction and is worth keeping:
+                <strong>a regression test must assert the fixed behaviour, never the presence of the
+                defect.</strong> The assertion should be that the last published rectangle equals a
+                <em>live re-read of the same conversion</em> — which holds exactly, with no tolerance
+                at all, once the fix is in. Do <em>not</em> assert against a hand-computed geometric
+                expectation with a tolerance sized from backing alignment: the quiet-load residue
+                below is 0.167 pt and backing alignment is of the same order, so such a tolerance
+                would pass an unfixed build.
+            </p>
+
+            <h4>The same code path, observed in the running application</h4>
+
+            <p>
+                The instrumented build was launched through LaunchServices with
+                <code>-uiTestingIsolatedDefaults -uiTestingOpenFixture</code>, and the trace read back
+                from the unified log. Every load shows the asymmetry the hypothesis rests on —
+                <code>fit()</code> running <em>outside</em> the update pass and deferring anyway:
+            </p>
+
+<pre><code>fit() enter — applyingViewUpdate = true,  clip (   0.00,   0.00,    0.00 x   0.00)   &lt;- updateNSView -&gt; apply( .fit )
+clipBoundsChanged — hasFitted = false, applyingViewUpdate = false, clip (0, 0, 672 x 788)
+fit() enter — applyingViewUpdate = false, clip (   0.00,   0.00,  672.00 x 788.00)
+PUBLISH sync   from magnificationChanged() rect (0.00, 205.00, 672.00 x 378.00)   x3
+SCHEDULE defer from fit()                 rect (0.00, 205.00, 672.00 x 378.00)
+PUBLISH sync   from magnificationChanged() rect (0.00, 205.00, 672.00 x 378.00)   x6
+PUBLISH defer  from fit()                 rect (0.00, 205.00, 672.00 x 378.00)    &lt;- last write of the load</code></pre>
+
+            <p>
+                The first line is <em>not</em> <code>makeNSView</code>, which is what it was first
+                annotated as. <code>makeNSView</code> reaches <code>fit()</code> only through
+                <code>fitWhenReady()</code>, which guards on non-zero clip bounds and so does not call
+                it here; and only <code>applyingViewUpdate(_:)</code>, called exclusively from
+                <code>updateNSView</code>, sets that flag. It is the first <code>updateNSView</code>
+                running <code>apply( command: )</code>, because
+                <code>ImageCanvasController.command</code> is seeded
+                <code>CanvasCommand( kind: .fit, token: 0 )</code>
+                (<code>ImageCanvasController.swift:53</code>) while <code>lastCommandToken</code>
+                starts <code>nil</code> — so a <code>.fit</code> is applied once, harmlessly, before
+                the clip view has a size. Milestone 4 needs the entry points named correctly, hence
+                the correction rather than a silent edit.
+            </p>
+
+            <p>
+                <strong>Reported honestly: on a quiet load the stale write is harmless.</strong> Four
+                real-app launches were captured — <code>RGBImage.fits</code>,
+                <code>MonoImage.fits</code>, <code>C6-ASI585-M42-Light.fits</code> and the multi-frame
+                <code>MultiImage.xisf</code>. In each, nothing user-visible moved the viewport between
+                <code>fit()</code>'s measurement and its delivery, so the stale rectangle differed from
+                the live one by less than 10<sup>-4</sup> pt — invisible. The instrumentation's
+                “stale” marker used exact equality and so flagged those as differing; that was
+                over-sensitive and is not evidence of a visible defect in those launches.
+            </p>
+
+            <p>
+                <strong>But “harmless” is not the same as “not stale”, and the residue is
+                fixture-specific.</strong> The <em>hazard</em> is present on every load — the
+                measurement is always taken a turn before it is delivered. What varies is the residue,
+                across three regimes now measured:
+            </p>
+
+            <table>
+                <tr><th>Regime</th><th>Residue</th><th>Visible?</th></tr>
+                <tr>
+                    <td>Fit lands on already-aligned geometry — all four traced fixtures</td>
+                    <td>Floating-point noise, below 10<sup>-4</sup> pt</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td>Non-integral fit, quiet load, no resize (617 × 383 viewport, 400 × 300 image)</td>
+                    <td><strong>0.167 pt</strong> — <code>fit()</code> publishes <code>x = 53.1667</code>
+                        against a settled <code>x = 53.0</code>, across thirteen writes. AppKit's
+                        backing-store alignment moves the geometry within the same turn.</td>
+                    <td>Marginal</td>
+                </tr>
+                <tr>
+                    <td>Viewport moves during the turn — the reproduction above</td>
+                    <td>Tens of points, affine</td>
+                    <td>Grossly</td>
+                </tr>
+            </table>
+
+            <p>
+                So the 10<sup>-4</sup> figure is a property of four fixtures that happened to fit on
+                integral geometry, not of the code, and must not be read as “the defect is usually
+                nil”. Nor should any of these numbers become a test tolerance — see the assertion rule
+                above, which needs none.
+            </p>
+
+            <p>
+                What the application traces <em>do</em> establish is the part that cannot be argued
+                from a harness: that the defective path is the real one. On every load,
+                <code>fit()</code> runs outside the update pass yet defers, its write is the last
+                publish of the load, and nothing publishes again until the user acts. The magnitude of
+                the error is then decided entirely by whether the geometry moved during that one
+                run-loop turn.
+            </p>
+
+            <h4>What moves the geometry during that turn</h4>
+
+            <p>
+                This is where the backlog's “sometimes” comes from, and it is <em>inferred</em> rather
+                than observed: the four deterministic load paths were traced and all are clean, so the
+                trigger has to be something concurrent with the load.
+            </p>
+
+            <p>
+                <strong>The backlog's own wording is the best evidence available for ranking them, and
+                it argues against the one that was easiest to reproduce.</strong> The markers are
+                “slightly off” — so the trigger has to move the geometry by a few points, not by tens.
+                That is a reason to rank the two triggers that need no user action <em>above</em> the
+                hand resize, not below it:
+            </p>
+
+            <ul>
+                <li><strong>Scroller tiling.</strong> <span class="flag">speculative</span> The scroll
+                    view sets <code>hasHorizontalScroller</code> / <code>hasVerticalScroller</code>
+                    with <code>autohidesScrollers</code> (<code>ZoomableImageView.swift:85–87</code>).
+                    Under the system setting <em>Show scroll bars: Always</em>, legacy scrollers inset
+                    the clip view by roughly 15 pt, so a scroller appearing or vanishing during the fit
+                    changes <code>contentView.frame</code> inside the same run-loop turn — an error of
+                    the right order, and needing no user action. Not tested: it is a global system
+                    preference and this machine is not set that way.</li>
+                <li><strong>Split-view or inspector settling.</strong> <span class="flag">speculative</span>
+                    <code>MainWindowView</code> uses <code>NavigationSplitView( .balanced )</code> with
+                    an <code>.inspector</code> (<code>MainWindowView.swift:138–139</code>); the detail
+                    column's width settles around the moment the canvas first appears, by a few points.
+                    Also the right order, also needing no user action. Not observed in the four traces,
+                    whose windows settled in one step.</li>
+                <li><strong>A window resize or full-screen transition while the image renders.</strong>
+                    Demonstrated — it is the reproduction above — but it is the <em>worst</em> fit for
+                    the report on two counts: it needs deliberate user action during a load, and it
+                    produces a gross misregistration of tens of points rather than a slight one. It
+                    earned its former top billing by being reproducible, which is not the same as being
+                    likely.</li>
+            </ul>
+
+            <p>
+                Neither speculative trigger was reproduced, and the demonstrated one could not be
+                driven in the application here: scripted window resizing needs assistive access, which
+                <code>osascript</code> was refused (<code>-1719</code>), and a drag timed inside a
+                single run-loop turn is not something a UI test can place reliably. In the harness,
+                <code>NSWindow.setContentSize</code> drives it directly and needs no such access — the
+                route to use if this is revisited.
+            </p>
+
+            <p>
+                The practical consequence for milestone 4: its hand-verification should be looking for
+                an error of <em>a few points</em>, not for something obvious. That is one more reason
+                to use the reticle as the instrument (below) rather than judging by eye against a star
+                field.
+            </p>
+
+            <p>
+                <strong>The inferential claims in these notes, stated together.</strong> Three, not
+                one: <em>(a)</em> which real-world action moves the geometry during that turn, above;
+                <em>(b)</em> that every overlay misregisters together, which is read off the code
+                structure rather than seen on screen (below); and <em>(c)</em> that this defect is
+                what produced the user's report at all, since the symptom was never reproduced by
+                hand. What is <em>observed</em> is narrower and firmer: the hazard exists and
+                reproduces on demand, and its code path runs on every load. Milestone 4 does not
+                depend on any of the three — the fix is the same whatever moves the geometry.
+            </p>
+
+            <h4>Every overlay is affected, and the cursor read-out is not</h4>
+
+            <p>
+                Verified from the code rather than by eye, because the structure settles it.
+                <code>ImageCanvasView</code> holds one <code>@State displayedImageRect</code>
+                (<code>ImageCanvasView.swift:61</code>), writes it from the single
+                <code>onDisplayedImageRectChange</code> callback (<code>:187</code>) and passes that one
+                value to <code>CanvasOverlayLayer</code> (<code>:222</code>), which forwards the same
+                <code>displayedRect</code> to every overlay's <code>draw</code>
+                (<code>CanvasOverlayLayer.swift:68</code>). Stars, Objects, Equatorial grid, Reticle,
+                Scale bar and North therefore all receive the same rectangle and all misregister
+                together. The before/after comparison wipe reads the same state (<code>:211</code>)
+                and is affected too.
+            </p>
+
+            <p>
+                They do not misregister <em>equally</em>, though, and milestone 4's hand-verification
+                list needs the difference — the six are not interchangeable witnesses:
+            </p>
+
+            <table>
+                <tr><th>Overlay</th><th>How it consumes the rectangle</th><th>As a witness</th></tr>
+                <tr>
+                    <td>Reticle</td>
+                    <td>Strokes <code>Path( displayedRect )</code> outright
+                        (<code>ReticleOverlay.swift:140</code>).</td>
+                    <td><strong>The instrument to use.</strong> It draws the rectangle itself, so a
+                        stale one reads immediately as a border sitting off the image's edges — no
+                        star field needed, and the error is legible rather than inferred. Had this
+                        been used for the milestone's first task, the symptom would likely have been
+                        visible by hand.</td>
+                </tr>
+                <tr>
+                    <td>Stars, Objects, Equatorial grid</td>
+                    <td>Map image points through <code>CanvasGeometry.viewPoint</code>
+                        (<code>StarsOverlay.swift:215</code>, <code>ObjectsOverlay.swift:156</code>,
+                        <code>EquatorialGridOverlay.swift:424</code>).</td>
+                    <td>Positional offset growing with distance from the rectangle's origin — what the
+                        user reported.</td>
+                </tr>
+                <tr>
+                    <td>Scale bar, North</td>
+                    <td>The scale bar uses <code>displayScale</code> and
+                        <code>displayedRect.intersection( viewport )</code>
+                        (<code>ScaleBarOverlay.swift:190,198</code>); the north marker uses the
+                        intersection alone (<code>NorthOverlay.swift:263</code>) and no
+                        <code>displayScale</code> at all.</td>
+                    <td><strong>Weakest.</strong> A stale rectangle changes their length and their
+                        anchor, not their registration against any image feature — so “these two look
+                        fine” proves nothing.</td>
+                </tr>
+            </table>
+
+            <p>
+                The status-bar pixel read-out is <em>not</em>: it comes from
+                <code>HoverImageNSView.mouseMoved</code>, which converts the event location in the
+                document view directly and never consults the published rectangle. That makes a useful
+                discriminator by hand — when the bug is present, the read-out under the cursor stays
+                correct while the markers are off.
+            </p>
+
+            <h4>The file-switch and carousel paths</h4>
+
+            <p>
+                <code>MainWindowView</code> builds <code>ImageDetailView( file:actions: )</code> with no
+                <code>.id( file.id )</code> (<code>MainWindowView.swift:134</code>), so the same
+                <code>ImageCanvasView</code>, its <code>@State</code>, the same
+                <code>NSScrollView</code> and the same <code>Coordinator</code> are reused across
+                files — <strong>but only while the target is already rendered.</strong>
+                <code>canvasContent</code> emits <code>ZoomableImageView</code> only when
+                <code>image.renderer.result != nil</code>
+                (<code>ImageCanvasView.swift:177–181</code>) and a <code>LoadingView</code> otherwise,
+                so a switch to something not yet rendered flips that branch, tears the representable
+                down, and builds a <em>new</em> scroll view and coordinator when the result arrives.
+                Every frame is its own <code>LoadedImage</code> with its own renderer, and
+                <code>OpenFile.prepareSelectedFrame()</code> renders lazily on first visit
+                (<code>if image.renderer.result == nil, image.renderer.error == nil</code>), so this is
+                the ordinary case for a first visit, not an edge case. Traced in the host:
+            </p>
+
+            <table>
+                <tr><th>Path</th><th>What is published</th><th>Verdict</th></tr>
+                <tr>
+                    <td>Switch to an <strong>already-rendered, different</strong>-size file</td>
+                    <td>
+                        <code>updateNSView</code> resizes the document view and calls
+                        <code>refit()</code>, all inside <code>applyingViewUpdate</code>, so every write
+                        defers. Six writes, all scheduled deferred: one or more transient rectangles —
+                        the first being the intermediate <code>(200, 0, 400 × 533.33)</code>, document
+                        resized but not yet re-fitted — then the correct
+                        <code>(250, 0, 300 × 400)</code> last.
+                    </td>
+                    <td>Transient wrong frames, then correct. FIFO ordering saves it because
+                        <em>all</em> the writes on this path defer. Not the reported defect.</td>
+                </tr>
+                <tr>
+                    <td>Switch to an <strong>already-rendered, same</strong>-size file</td>
+                    <td><code>updateNSView</code> swaps the <code>CGImage</code> but the
+                        <code>sizeChanged</code> guard is false, so <code>refit()</code> is not called
+                        and <strong>nothing at all is published</strong> — confirmed: zero writes
+                        recorded.</td>
+                    <td>The geometry genuinely did not change, and a retained zoom or pan is still
+                        described by the standing rectangle — so correct, <em>provided the standing
+                        rectangle was</em>. See the recovery-point note below.</td>
+                </tr>
+                <tr>
+                    <td>Switch to a file or frame <strong>not yet rendered</strong></td>
+                    <td>The canvas is removed while <code>LoadingView</code> shows, then rebuilt: a
+                        fresh <code>makeNSView</code>, a fresh <code>Coordinator</code>, and the
+                        fresh-load <code>fit()</code> path re-runs in full.</td>
+                    <td><strong>The defective path, reached again.</strong> Meanwhile
+                        <code>ImageCanvasView</code>'s <code>@State displayedImageRect</code>
+                        (<code>:61</code>) survives the teardown still holding the previous file's
+                        rectangle, so the overlays draw against it until the new canvas publishes.</td>
+                </tr>
+                <tr>
+                    <td>Carousel frame switch</td>
+                    <td><code>OpenFile.selectFrame(_:)</code> swaps <code>image</code>. Which of the
+                        three rows above applies is decided by whether that frame has been rendered
+                        before, and then by its dimensions.</td>
+                    <td>A <em>revisit</em> takes the publish-nothing row when the frames share
+                        dimensions — true of a FITS cube, but <em>not</em> guaranteed in general: both
+                        loaders build one <code>LoadedImage</code> per contained image
+                        (<code>XISFImageLoader.swift:47–51</code>,
+                        <code>FITSImageLoader.swift:46–51</code>), and nothing constrains a multi-image
+                        file to uniform geometry, so a revisit to a differently-sized frame takes the
+                        different-size row instead. A <em>first</em> visit takes the not-yet-rendered
+                        row — which is why milestone 4's by-hand carousel check has to be a first
+                        visit, not a revisit.</td>
+                </tr>
+            </table>
+
+            <p>
+                So the reused coordinator is <em>not</em> a second root cause: where it is reused, the
+                standing rectangle still describes the geometry, and the publish-nothing case is
+                correct rather than an omission. What the table does change is the <em>reach</em> of
+                the one defect — the fresh-load <code>fit()</code> path is not entered once per window
+                but once per unrendered file and once per unrendered frame.
+            </p>
+
+            <p>
+                <strong>Milestone 4 should nevertheless keep its “publish on a same-size image” task,
+                reframed.</strong> An earlier draft of these notes argued it away as publishing a
+                duplicate — which is circular, since it assumes the standing rectangle is right, and a
+                standing rectangle being wrong is this milestone's whole finding. If file A's load
+                left a stale rectangle, switching to a same-size file B inherits it verbatim: nothing
+                is published, so there is no recovery point until the user zooms. A freshly
+                <em>measured</em> publish whenever the displayed image changes is therefore worth
+                having — not as a fix for a second defect, but as the recovery point that path
+                currently lacks. Defence in depth, and cheap.
+            </p>
+
+            <h4>How to reproduce this</h4>
+
+            <p>
+                The instrumentation was: a <code>site: String = #function</code> parameter on
+                <code>reportDisplayedImageRect</code> so each publish names its caller; a trace of the
+                captured rectangle at <em>schedule</em> time and again at <em>delivery</em> time,
+                alongside the geometry re-read at delivery; and entry traces on <code>fit()</code>,
+                <code>refit()</code> and <code>clipBoundsChanged()</code> recording
+                <code>isApplyingViewUpdate</code> and the clip size. Output went to
+                <code>print</code> for the hosted harness and to <code>Logger( subsystem:
+                "com.xs-labs.FITScope", category: "rect" )</code> for the application, read back with
+                <code>log show --predicate 'subsystem == "com.xs-labs.FITScope" AND category ==
+                "rect"'</code>. Two notes for anyone repeating it: the application must be built with
+                <code>build-for-testing</code>, since only that build carries the
+                <code>temporary-exception.files.absolute-path.read-only</code> entitlement the fixture
+                argument needs; and the harness must flush the main queue with an awaited
+                <code>DispatchQueue.main.async</code> hop rather than
+                <code>RunLoop.run(until:)</code>, which does not drain deferred blocks under Swift
+                Testing.
+            </p>
+
+            <h4>What milestone 4 has to fix</h4>
+
+            <p>
+                One thing: <code>fit()</code> must stop publishing a measurement it took a run-loop turn
+                earlier. Re-reading the geometry <em>inside</em> the deferred block fixes both halves at
+                once — the capture is no longer stale, and a late-landing block can no longer overwrite
+                a newer synchronous write with an older value, because it would write the current
+                geometry. Giving <code>fit()</code> the same <code>deferred:
+                self.isApplyingViewUpdate</code> rule as the other two callers is a smaller change that
+                fixes the fresh-load path (where <code>fit()</code> demonstrably runs outside the update
+                pass), but on its own it leaves the update-pass callers still capturing early. The two
+                are complementary rather than alternatives.
+            </p>
+
+            <p>
+                Two implementation details, so neither option starts with a false step. For the
+                re-read: <code>reportDisplayedImageRect</code>'s <code>guard let scrollView =
+                self.scrollView, let documentView = scrollView.documentView</code> currently runs at
+                <em>schedule</em> time, and <code>scrollView</code> is a <code>weak</code> reference,
+                so a block that re-reads at delivery time must re-guard inside the block rather than
+                reuse the schedule-time bindings.
+            </p>
+
+            <p>
+                For the complementary option: <code>isApplyingViewUpdate</code> is not a general “am I
+                inside SwiftUI's pass” signal. It is also <code>false</code> during
+                <code>makeNSView</code>, and what keeps <code>fit()</code> from publishing
+                synchronously from there today is not the flag but
+                <code>fitWhenReady()</code>'s zero-clip-bounds guard
+                (<code>ZoomableImageView.swift:103, 367–373</code>) — which is why the very first
+                <code>fit()</code> of a load comes from <code>updateNSView</code> instead. If
+                <code>fit()</code> is given the flag's rule, that dependency becomes load-bearing and
+                should be made deliberate rather than inherited.
+            </p>
+
+            <p>
+                Two neighbouring facts, noted because milestone 4 will be editing within a few lines
+                of both:
+            </p>
+
+            <ul>
+                <li><code>reportZoom(_:)</code> and <code>reportCanZoomOut(_:)</code>
+                    (<code>ZoomableImageView.swift:220–230</code>) carry the <em>same</em>
+                    unconditional-defer pattern as the defect. They are not a registration bug — a
+                    zoom read-out one turn late is invisible — but the pattern should not be copied
+                    forward, and if it is changed it should be changed deliberately.</li>
+                <li><code>Coordinator.parent</code> is captured once at <code>makeCoordinator()</code>
+                    and never refreshed, whereas <code>onHover</code> <em>is</em> re-assigned on every
+                    <code>updateNSView</code> (<code>:118</code>). So
+                    <code>onDisplayedImageRectChange</code> is always the closure from the first
+                    <code>body</code> evaluation. Harmless while it only writes
+                    <code>@State</code> — but worth knowing before changing what that callback
+                    does.</li>
+            </ul>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+
+            <p>
+                <strong>Round 1</strong> — a fresh-context reviewer read the cited sources, checked
+                every file:line reference, built its own <code>NSHostingView</code> harness and
+                <strong>reproduced the defect independently</strong>, obtaining numerically identical
+                results (including the <code>166.5</code> backing-alignment value). It confirmed the
+                root cause, the file-switch table row by row, the 44-test figure — and ran
+                <code>StarsOverlayTests</code>, <code>CanvasGeometryTests</code> and
+                <code>ZoomableImageViewTests</code> for 47 passing tests across 3 suites. No
+                <em>Critical</em> or <em>High</em> finding. Three <em>Medium</em>s, all about the
+                <em>write-up</em> rather than the diagnosis; one of them caught a reasoning defect that
+                would have removed a task from milestone 4.
+            </p>
+
+            <p>
+                It also ruled out an alternative the notes had not considered, by checking
+                empirically that <code>NSScrollView.isFlipped</code> is genuinely <code>true</code>, so
+                the mirror branch of <code>reportDisplayedImageRect</code> is dead code rather than a
+                hidden second cause. Recorded because it was a live alternative and is now closed.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td>The milestone's first task — reproduce by hand and record the offset — was never answered by observation, and the notes did not say so up front. Every traced real-app load settled correctly, so the link between the confirmed hazard and what the user saw stays inferential.</td><td>Medium</td><td><strong>Fixed.</strong> A “what was not achieved” paragraph now opens the notes and states it plainly. The reviewer's instrument suggestion is adopted too: <code>ReticleOverlay</code> strokes <code>Path( displayedRect )</code> directly, so it makes the rectangle visible without needing a star field — verified at <code>ReticleOverlay.swift:140</code> and carried into milestone 4's checklist.</td></tr>
+                <tr><td>2</td><td>The headline (“the error <em>is</em> a stale rectangle”) overstated what was observed, and the disclaimer “this is the one claim resting on reasoning” was itself wrong — at least three claims are inferential.</td><td>Medium</td><td><strong>Fixed.</strong> Retitled to separate the confirmed mechanism from the inferred causal link, and the disclaimer replaced by an explicit list of all three inferential claims set against the narrower observed ones.</td></tr>
+                <tr><td>3</td><td><strong>Error of fact.</strong> The application trace's first line was annotated <code>makeNSView</code>. It cannot be: <code>fitWhenReady()</code> guards on non-zero clip bounds, and only <code>applyingViewUpdate(_:)</code> — called solely from <code>updateNSView</code> — sets that flag.</td><td>Low</td><td><strong>Fixed</strong>, and verified independently rather than taken on trust: <code>ImageCanvasController.command</code> is seeded <code>CanvasCommand( kind: .fit, token: 0 )</code> (<code>ImageCanvasController.swift:53</code>) against a <code>nil</code> <code>lastCommandToken</code>, so the first <code>updateNSView</code> applies a <code>.fit</code>. Corrected in place with the reasoning shown, since milestone 4 must name the entry points correctly.</td></tr>
+                <tr><td>4</td><td><strong>Circular reasoning with downstream cost.</strong> The notes told milestone 4 to drop its “publish when a same-size image is shown” task because it would publish a duplicate — which assumes the standing rectangle is correct, the very thing this milestone shows cannot be assumed. A stale rectangle survives a same-size switch with no recovery point.</td><td>Medium</td><td><strong>Fixed</strong>, and it was the finding worth having. The task is kept, reframed as the missing recovery point rather than as a second root cause. The factual half — a same-size switch publishes nothing — was independently confirmed by the reviewer and stands.</td></tr>
+                <tr><td>5</td><td>“All overlays misregister together” is true but flattens a distinction milestone 4's by-hand checklist needs: the reticle draws the rectangle itself, three overlays map points through it, and the scale bar and north marker use it only for length and anchor.</td><td>Low</td><td><strong>Fixed.</strong> Added as a three-row table, each row's consumption verified in the source. The scale-bar / north row matters most: “those two look fine” proves nothing.</td></tr>
+                <tr><td>6</td><td>The 10<sup>-4</sup> pt noise figure is a property of the four fixtures traced, all of which fitted on integral geometry; a non-integral fit shows 0.17 pt between two <em>synchronous</em> publishes. It must not become a test tolerance.</td><td>Low</td><td><strong>Fixed.</strong> Qualified as fixture-specific, with the 0.17 pt counter-example and an explicit warning to milestone 4.</td></tr>
+                <tr><td>7</td><td>“The diff … is reproduced in <em>How to reproduce this</em>” — that section describes the instrumentation, it does not contain the diff.</td><td>Low</td><td><strong>Fixed</strong> by correcting the word to “described”. The diff is not pasted in: it is a throwaway of no lasting value, and the description is enough to rebuild it.</td></tr>
+                <tr><td>8</td><td>Stray DocC double-backtick markup rendering literally in the HTML.</td><td>Low</td><td><strong>Fixed.</strong></td></tr>
+                <tr><td>9</td><td>“Three real-app launches” while four fixtures are listed, contradicting “the four deterministic load paths” later.</td><td>Info</td><td><strong>Fixed.</strong> Four.</td></tr>
+                <tr><td>10</td><td>Two triggers the notes never considered, both needing no user action and so fitting “sometimes, right after loading” better than a hand resize: scroller tiling under <em>Show scroll bars: Always</em>, and split-view / inspector settling.</td><td>Info</td><td><strong>Fixed.</strong> Both added, explicitly flagged <span class="flag">speculative</span> — neither was reproduced, and the scroller one cannot be tested without changing a global system preference.</td></tr>
+                <tr><td>11</td><td>Two adjacent facts milestone 4 will want: <code>reportZoom</code> / <code>reportCanZoomOut</code> carry the same unconditional-defer pattern, and <code>Coordinator.parent</code> is captured once while <code>onHover</code> is refreshed every update.</td><td>Info</td><td><strong>Fixed.</strong> Both added, verified in the source, with the reason each is benign today.</td></tr>
+                <tr><td>12</td><td>Plan-document consistency: no defects. Status, table-of-contents entry and milestone header all read “In progress” consistently; nothing contradicts the Overview, Q&amp;A or file map.</td><td>Info</td><td><strong>Acknowledged.</strong> No action.</td></tr>
+            </table>
+
+            <p>
+                <strong>What the reviewer could not verify</strong>, recorded so the gap is visible:
+                the application's unified-log traces, since the instrumentation was reverted and no
+                diff kept — it judged their shape consistent with the code and with its own harness,
+                and the one annotation it could check independently was wrong (finding 3). Also
+                unverified: the <code>osascript</code> refusal, the claim that
+                <code>RunLoop.run( until: )</code> does not drain deferred blocks under Swift Testing,
+                and which build action injects the read-only file exception. It noted that its own
+                harness reproduced the resize with <code>NSWindow.setContentSize</code> and needed no
+                assistive access at all — a better route than <code>osascript</code> if this is
+                revisited.
+            </p>
+
+            <p>
+                <strong>Round 2</strong> — a second, independent fresh-context reviewer worked from the
+                corrected notes, was told to treat round 1's recorded resolutions as claims rather than
+                facts, and <strong>reproduced the defect again</strong> in its own harness with
+                identical numbers. It confirmed the root cause, the affine-not-mirror classification,
+                the exoneration of the overlay, the fix recommendation, every one of the fourteen
+                <code>file:line</code> references, the 44/47 test figures, and the HTML's
+                well-formedness. It independently re-derived round 1's finding 3 (the
+                <code>updateNSView → apply( .fit )</code> correction) and confirmed
+                <code>RunLoop.run( until: )</code> does not drain deferred blocks under Swift Testing —
+                one of the claims round 1 had listed as unverified. No <em>Critical</em> or
+                <em>High</em>. Three <em>Medium</em>s, two of which found real errors in the notes.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td><strong>Error of fact.</strong> “The mirror cases” were cited among the passing tests that corroborate the overlay's mapping. No such test exists: <code>StarsOverlayTests</code>' only orientation case passes <code>mirroredHorizontally: false</code>, so the mirror term and two of four rotation branches are untested.</td><td>Medium</td><td><strong>Fixed</strong>, verified before acting — grepping the whole test target for <code>mirroredHorizontally: true</code> returns hits only in <code>ImageRendererTests</code> and <code>NorthOverlayTests</code>, neither of which touches <code>StarsOverlay.displayedImagePoint</code>. The claim is withdrawn, the gap recorded, and closing it added to milestone 4's test task. The exoneration does not lean on these tests — it rests on the zoom argument — so the conclusion is untouched.</td></tr>
+                <tr><td>2</td><td><strong>The file-switch table was wrong for anything not yet rendered.</strong> <code>canvasContent</code> emits the canvas only when <code>renderer.result != nil</code>, and frames render lazily on first visit — so a first visit tears the representable down and re-runs the defective fresh-load path, rather than taking the safe publish-nothing row the table assigned it. Meanwhile the surviving <code>@State</code> still holds the previous file's rectangle.</td><td>Medium</td><td><strong>Fixed</strong>, and confirmed independently in the source (<code>ImageCanvasView.swift:177–181</code>; <code>OpenFile.prepareSelectedFrame()</code>'s <code>renderer.result == nil</code> guard; one renderer per <code>LoadedImage</code>). The table gains a not-yet-rendered row and the carousel row is rewritten. This widens the defect's reach — the fresh-load path is entered once per unrendered file and frame, not once per window — and milestone 4's by-hand carousel check now specifies a <em>first</em> visit.</td></tr>
+                <tr><td>3</td><td>“Carried into milestone 4's checklist” was untrue of the document: the reticle-as-instrument guidance existed only inside milestone 3's own notes. Exactly the defect milestone 1's round 3 caught, where milestone 2 never received its widened acceptance criterion.</td><td>Medium</td><td><strong>Fixed properly rather than by rewording the claim.</strong> Milestone 4's Tasks are rewritten: the settled diagnosis, the <code>weak</code> re-guard, the reframed same-size publish, the struck-through overlay contingency, the mirror-coverage gap, the assert-the-fix-not-the-defect rule, the reticle instrument, the weak-witness warning and the first-visit carousel check are all now in its own field list.</td></tr>
+                <tr><td>4</td><td>Whether the stale write lands <em>last</em> is timing-dependent: the reviewer got stale-last with tracing enabled and stale-first without. The notes presented one ordering as the outcome.</td><td>Low</td><td><strong>Fixed</strong>, and it is a genuinely useful addition rather than a correction — it is a <em>second</em> source of the backlog's “sometimes”, independent of whether the geometry moved. Recorded with its consequence: milestone 4's regression test must assert the fixed behaviour, never the defect, which would be flaky in precisely this way.</td></tr>
+                <tr><td>5</td><td>“Nothing moved … so the stale rectangle happened to equal the live one” is not generally true. With a non-integral viewport a quiet load with no resize still ends 0.167 pt stale — AppKit's backing alignment moves the geometry within the same turn.</td><td>Low</td><td><strong>Fixed</strong>, and the framing strengthened rather than merely corrected: the write is stale on <em>every</em> load and only the magnitude varies. The 10<sup>-4</sup> figure is now explicitly a property of four integral-geometry fixtures.</td></tr>
+                <tr><td>6</td><td>The different-size switch row claimed the previous file's rectangle is published first. The reviewer could not reproduce it and showed there is no publish site in <code>updateNSView</code> before <code>setFrameSize</code>.</td><td>Low</td><td><strong>Fixed.</strong> Re-reading the original capture confirms the reviewer: the recorder's first entry on that path is the intermediate rectangle, and the previous file's value appeared only in the raw trace as the prior load's undrained deferred write. A misreading of my own transcript. The row now says “one or more transient rectangles, then correct”; the verdict is unchanged.</td></tr>
+                <tr><td>7</td><td>“Markers bunch toward the top-left” generalises a property of the one reproduction; a rectangle inherited from a larger viewport spreads them outward.</td><td>Info</td><td><strong>Fixed.</strong> Only the growth with distance from the origin is a property of the defect.</td></tr>
+                <tr><td>8</td><td>The zoom-direction caveat is more conservative than the backlog warrants: “stays correct afterwards” closes the zoom-out direction too, since an offset merely shrunk would reappear on zooming back in.</td><td>Info</td><td><strong>Fixed.</strong> A fair catch in the unusual direction — the notes were understating a sound argument.</td></tr>
+                <tr><td>9</td><td>The fix guidance omits that <code>scrollView</code> is <code>weak</code> and the present guard runs at schedule time, so a re-reading block must re-guard.</td><td>Info</td><td><strong>Fixed</strong> in both milestone 3's guidance and milestone 4's task.</td></tr>
+            </table>
+
+            <p>
+                <strong>Round 3</strong> — a third independent reviewer, told to attack the claims the
+                two earlier rounds had added, since those had had the least scrutiny. It
+                <strong>reproduced both regimes to the digit</strong> — the resize case's
+                <code>(100, 0, 400 × 300)</code> against a live <code>(166.5, 0, 666.67 × 500)</code>,
+                and the quiet non-integral load's thirteen writes ending <code>x = 53.1667</code>
+                against <code>x = 53.0</code> — confirmed all three file-switch rows empirically
+                (0 publishes, 6 publishes, and a genuinely different <code>NSScrollView</code>
+                instance after a not-yet-rendered switch, with the <code>@State</code> surviving),
+                re-derived the mirror-coverage gap by grep, and checked all fifteen
+                <code>file:line</code> references. It also <strong>implemented the recommended fix
+                temporarily and verified it works</strong>: with the deferred block re-reading the
+                geometry behind the <code>weak</code> re-guard, the last published rectangle equalled
+                the live one <em>exactly</em> in both scenarios. No <em>Critical</em> or
+                <em>High</em>. Two <em>Medium</em>s.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td><strong>Round 2's “the stale write landing last is timing-dependent” does not reproduce.</strong> Six runs with tracing removed ended on the stale rectangle every time — and the mechanism says they must: a <code>DispatchQueue.main.async</code> block cannot run until the current turn's synchronous work has finished, so it always lands after same-turn synchronous writes. There is no race to win.</td><td>Medium</td><td><strong>Fixed — the claim is withdrawn.</strong> Round 3 is right, and its mechanical argument is checkable from the dispatch semantics alone rather than resting on run counts; round 2 had generalised from a single run whose harness most likely drained the queue between the fit and the resize. The notes now state the single real condition — did the geometry move before the end of that turn — and the disagreement is recorded here rather than silently flipped. The advice derived from it (assert the fix, never the defect) was sound for other reasons and is kept.</td></tr>
+                <tr><td>2</td><td><strong>The tolerance advice would have let an unfixed build pass.</strong> The notes told milestone 4 to size a tolerance “from the geometry, not from 10<sup>-4</sup>”, citing 0.17 pt of backing alignment — but the quiet-load defect is 0.167 pt, the same order, so such a tolerance masks exactly what the test is for.</td><td>Medium</td><td><strong>Fixed</strong>, in both milestone 3's notes and milestone 4's task. The rule is now to assert the last published rectangle against a <em>live re-read of the same conversion</em>, which round 3 confirmed holds with exact equality once fixed and needs no tolerance at all; a tolerance is only ever for a hand-computed geometric expectation.</td></tr>
+                <tr><td>3</td><td>“The write is stale on every load” contradicted the paragraph above it, which had just dismissed the same residue as over-sensitive noise.</td><td>Low</td><td><strong>Fixed.</strong> Replaced by the narrower defensible statement — the <em>hazard</em> is present on every load, while the residue spans three measured regimes — set out as a table rather than a slogan.</td></tr>
+                <tr><td>4</td><td>The trigger ranking was at odds with the reported magnitude: the backlog says “slightly off”, but the top-ranked candidate (a hand resize mid-load) produces a gross error of tens of points, while the two flagged speculative move the geometry by a few points and need no user action.</td><td>Low</td><td><strong>Fixed</strong>, and it is a better reading of the evidence than the original: the hand resize had earned its billing by being reproducible, which is not the same as being likely. Re-ranked, with the magnitude argument stated and carried into milestone 4's hand-verification as “expect a few points, not something obvious”.</td></tr>
+                <tr><td>5</td><td>The milestone's third task — diff <code>fit()</code>'s rect against the rect the first zoom publishes — was answered by substituting the settled live geometry, without saying so. Inconsistent with how scrupulously task 1's gap was flagged.</td><td>Low</td><td><strong>Fixed.</strong> The substitution is now stated, with the reason it is the stronger comparison and the actual zoom figures given.</td></tr>
+                <tr><td>6</td><td>“Frames of one file share dimensions” is unsupported and false in general — both loaders build one <code>LoadedImage</code> per contained image, and nothing constrains a multi-image file to uniform geometry.</td><td>Low</td><td><strong>Fixed</strong>, verified in <code>XISFImageLoader.swift:47–51</code> and <code>FITSImageLoader.swift:46–51</code>. True of a cube, not of a multi-image file; a revisit to a differently-sized frame takes the different-size row. Milestone 4's first-visit instruction is unaffected.</td></tr>
+                <tr><td>7</td><td><code>NorthOverlay</code> does not use <code>displayScale</code>; the witness table said both it and the scale bar do.</td><td>Info</td><td><strong>Fixed</strong> — confirmed by grep, no <code>displayScale</code> in that file. The “weakest witness” verdict is unchanged.</td></tr>
+                <tr><td>8</td><td><code>isApplyingViewUpdate</code> is <code>false</code> during <code>makeNSView</code> too, so it is not a general “inside SwiftUI's pass” signal; what prevents a synchronous publish from there is <code>fitWhenReady()</code>'s zero-clip-bounds guard.</td><td>Info</td><td><strong>Fixed</strong> in both milestone 3's guidance and milestone 4's task, so that dependency is deliberate rather than inherited if the complementary option is taken.</td></tr>
+            </table>
+
+            <p>
+                <strong>Outcome — three rounds run, the loop's cap, and nothing left open above
+                <em>Info</em>.</strong> Three independent reviewers each reproduced the defect from
+                scratch and reached the same root cause, the same classification and the same fix;
+                none challenged the diagnosis. Round 3 went further and verified the prescribed fix
+                actually works. Everything the three raised concerned the accuracy of the write-up or
+                the completeness of what milestone 4 inherits. The findings that changed something
+                material were round 1's circular argument about the same-size publish, round 2's
+                discovery that the not-yet-rendered path re-enters the defect and that milestone 4 had
+                never received its guidance, and round 3's catch that a forwarded tolerance rule would
+                have let an unfixed build pass its own regression test.
+            </p>
+
+            <p>
+                <strong>Still unverified after all three rounds.</strong> The four real-application
+                unified-log traces: the instrumentation was reverted and no diff kept, so the fixture
+                names and publish counts cannot be re-derived. All three reviewers judged their shape
+                consistent with the code and with their own harnesses, and the one annotation that
+                could be checked independently was wrong and has been corrected. Round 2 also noted
+                that <code>C6-ASI585-M42-Light.fits</code> lives in the <code>SwiftAstro</code>
+                submodule rather than this repository's <code>Test Files</code>. Nothing in the
+                diagnosis rests on those traces alone. Also unverified by any round: the
+                <code>osascript</code> refusal, and the claim that <code>RunLoop.run( until: )</code>
+                does not drain deferred blocks under Swift Testing — though round 2 did confirm that
+                one independently.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+
+            <ul>
+                <li>
+                    <strong>Approved to continue, with no changes requested.</strong> The pause
+                    surfaced three things for the user to weigh: that the milestone's first task was
+                    not achieved and the causal link to the report therefore remains inferential; that
+                    the reported “slightly off” magnitude argues against the one trigger that could be
+                    demonstrated; and that <strong>milestone 4's Tasks had been edited</strong> to
+                    carry this milestone's findings forward, offered for reversal if that overreached.
+                    None was objected to, so the milestone-4 edit stands.
+                </li>
+            </ul>
+        </div>
     </section>
 
     <section class="milestone" id="m4">
@@ -1937,23 +2653,49 @@ kernel (Sandbox)  sandboxd rejected approval request from xcodebuild for
             <ul class="tasks">
                 <li>Fix in <code>ZoomableImageView.Coordinator</code>, so every path that changes the geometry
                     publishes a rectangle that reflects the settled layout.</li>
-                <li>Make the deferred write read the geometry <em>inside</em> the deferred block rather than
-                    capturing a rectangle computed before AppKit has settled, and/or make <code>fit()</code> use
-                    the same <code>deferred: self.isApplyingViewUpdate</code> rule as the other callers — whichever
-                    milestone&nbsp;3 showed to be the actual defect.</li>
-                <li>Ensure a rectangle is published when a new image with the <em>same</em> pixel dimensions is
-                    shown, and when the file selection changes, since the reused coordinator otherwise keeps the
-                    previous file’s geometry.</li>
-                <li>If milestone&nbsp;3 found the error in the overlay instead, fix
+                <li><strong>Settled by milestone&nbsp;3:</strong> the defect is a stale
+                    <code>displayedImageRect</code>, in the plumbing, not in the overlay. Make the deferred write
+                    read the geometry <em>inside</em> the deferred block rather than publishing a rectangle
+                    measured a run-loop turn earlier. Re-guard on <code>self.scrollView</code> inside the block —
+                    it is <code>weak</code>, and the present guard runs at schedule time. Giving <code>fit()</code>
+                    the same <code>deferred: self.isApplyingViewUpdate</code> rule as the other callers is
+                    complementary, not an alternative: it fixes the fresh-load path, where <code>fit()</code>
+                    demonstrably runs outside the update pass, but leaves the update-pass callers capturing early.
+                    If that option is taken, note that the flag is <code>false</code> during <code>makeNSView</code>
+                    too — what prevents a synchronous publish there today is <code>fitWhenReady()</code>'s
+                    zero-clip-bounds guard, not the flag.</li>
+                <li>Publish a freshly <em>measured</em> rectangle whenever the displayed image changes, including
+                    when the new image has the <em>same</em> pixel dimensions and when the file selection changes.
+                    Milestone&nbsp;3 confirmed that path currently publishes nothing at all, so a stale rectangle
+                    left by an earlier load survives it with no recovery point. Defence in depth rather than a
+                    second root cause.</li>
+                <li><s>If milestone&nbsp;3 found the error in the overlay instead, fix
                     <code>StarsOverlay.displayedImagePoint</code> and check the other overlays for the same
-                    mapping mistake.</li>
+                    mapping mistake.</s> Milestone&nbsp;3 ruled the overlay out.</li>
                 <li>Add unit tests over the pure geometry in <code>CanvasGeometry</code>:
                     <code>viewPoint(forImagePoint:…)</code> ↔ <code>imagePoint(forViewPoint:…)</code> round-trip,
                     <code>displayScale</code>, and the degenerate-rect guards — plus tests for any new pure helper
-                    introduced for the publication rule.</li>
+                    introduced for the publication rule. <strong>Also close the coverage gap milestone&nbsp;3
+                    found:</strong> <code>StarsOverlay.displayedImagePoint</code> has no test with
+                    <code>mirroredHorizontally: true</code>, nor for <code>.rotate180</code> or
+                    <code>.counterClockwise90</code>. Any regression test for the publication rule must assert the
+                    <em>fixed</em> behaviour, never the presence of the defect. Assert that the last published
+                    rectangle equals a <em>live re-read of the same conversion</em> — that holds exactly, with no
+                    tolerance. Do not assert against a hand-computed geometric expectation with a tolerance sized
+                    from backing alignment: milestone&nbsp;3 measured the quiet-load residue at 0.167 pt, the same
+                    order as the alignment itself, so such a tolerance would pass an unfixed build.</li>
                 <li>Verify by hand with every overlay (Stars, Objects, Equatorial grid, Reticle, Scale bar, North)
                     after: a fresh load, switching to a same-size file, switching to a different-size file,
-                    switching carousel frames, resizing the window, and rotating/flipping.</li>
+                    switching carousel frames, resizing the window, and rotating/flipping. <strong>Use the
+                    Reticle as the instrument:</strong> it strokes <code>Path( displayedRect )</code> outright
+                    (<code>ReticleOverlay.swift:140</code>), so a stale rectangle reads directly as a border
+                    sitting off the image's edges — no star field needed. The Scale bar and North marker are the
+                    weakest witnesses, using the rectangle only for length and anchor, so “those two look fine”
+                    proves nothing. The carousel check must be a <em>first</em> visit to a frame: milestone&nbsp;3
+                    found that a revisit to a same-size frame reuses the coordinator and publishes nothing, while
+                    a first visit tears the canvas down and re-runs the defective fresh-load path. Expect an error
+                    of <em>a few points</em> rather than something obvious — the backlog reports the markers as
+                    “slightly off”, which is why the reticle is the instrument and a star field is not.</li>
                 <li>Update the doc comments on the changed members so they describe the new behaviour, with no
                     reference to what it used to do.</li>
                 <li>Run the full test plan and report the result.</li>
