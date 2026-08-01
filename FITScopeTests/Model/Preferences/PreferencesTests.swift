@@ -24,7 +24,6 @@
 
 @testable import FITScope
 import Foundation
-import Security
 import Testing
 
 /// Tests for `Preferences`: the typed, `UserDefaults`-backed settings store. The
@@ -646,75 +645,80 @@ struct PreferencesTests
         #expect( AutoStretchPreference.autoStretchOnOpen( .raw, in: defaults ) )
     }
 
-    /// The code-signing information of the host application — the tests are hosted
-    /// in `FITScope.app`, so `Bundle.main` is the app itself.
+    /// Every bundle that reads the shared preview preferences — the application and
+    /// both embedded QuickLook extensions — declares the same App Group under
+    /// ``AutoStretchPreference/appGroupIDKey``.
     ///
-    /// - Returns: The signing information dictionary.
-    private func hostApplicationSigningInformation() throws -> [ String: Any ]
-    {
-        var staticCode: SecStaticCode?
-
-        let creation = SecStaticCodeCreateWithPath( Bundle.main.bundleURL as CFURL, [], &staticCode )
-
-        try #require( creation == errSecSuccess, "the host application's code object should be readable" )
-
-        let code  = try #require( staticCode )
-        let flags = SecCSFlags( rawValue: kSecCSSigningInformation | kSecCSRequirementInformation )
-
-        var information: CFDictionary?
-
-        let copy = SecCodeCopySigningInformation( code, flags, &information )
-
-        try #require( copy == errSecSuccess, "the host application's signing information should be readable" )
-
-        return try #require( information as? [ String: Any ] )
-    }
-
-    /// The App Group the application is actually *signed* with is the one
-    /// ``AutoStretchPreference/appGroupID`` names, and carries the signing team's
-    /// identifier as its prefix.
+    /// That key and the `com.apple.security.application-groups` entitlement both
+    /// expand the `FITSCOPE_APP_GROUP_ID` build setting, so their values cannot
+    /// name different groups. What a target can still get wrong is never picking
+    /// the setting up at all — an `Info.plist` that predates the template, or a new
+    /// extension that copied one. Nothing fails loudly when that happens:
+    /// ``AutoStretchPreference/sharedDefaults`` merely turns `nil`, and every
+    /// preview toggle silently reports its default.
     ///
-    /// Both halves matter, and neither can be checked by comparing one constant in
-    /// the repository against another. The entitlement and the constant are edited
-    /// in separate files, and nothing fails loudly when they diverge:
-    /// `UserDefaults(suiteName:)` still hands back a store for a group the process
-    /// is not entitled to, whose reads all return `nil` and whose writes are
-    /// dropped — so every preview toggle would silently report its default. This
-    /// reads the entitlement back out of the signed bundle instead, which is the
-    /// only place the two can be compared.
-    ///
-    /// The prefix is what lets macOS grant the container from the signature alone:
-    /// app group containers are protected by System Integrity Protection, and
-    /// without it the system prompts the user on every launch and denies the
-    /// thumbnail extension outright, since app extensions are never prompted.
-    /// Taking the team identifier from the signature rather than a literal means a
-    /// build signed by a different team is checked against *its* team, which is
-    /// the invariant that actually holds.
+    /// Read from the built bundles rather than from the code signature, so this
+    /// holds for unsigned builds too — CI signs nothing.
     @Test
-    func theSignedAppGroupEntitlementMatchesTheIdentifier() throws
+    func everyBundleDeclaresTheSameAppGroup() throws
     {
-        let information  = try self.hostApplicationSigningInformation()
-        let entitlements = information[ kSecCodeInfoEntitlementsDict as String ] as? [ String: Any ]
-        let groups       = entitlements?[ "com.apple.security.application-groups" ] as? [ String ]
-
-        #expect(
-            groups?.contains( AutoStretchPreference.appGroupID ) == true,
-            "the signed App Group entitlement must declare AutoStretchPreference.appGroupID, or the shared preferences silently read as their defaults"
+        // The tests are hosted in FITScope.app, so Bundle.main is the app itself.
+        let appGroupID = try #require(
+            AutoStretchPreference.appGroupID,
+            "the application must declare \( AutoStretchPreference.appGroupIDKey ) in its Info.plist"
         )
 
-        // Ad-hoc signed builds — CI has no signing identity — carry the
-        // entitlement but no team identifier, so this half only applies when the
-        // signature actually names a team.
-        guard let teamID = information[ kSecCodeInfoTeamIdentifier as String ] as? String
-        else
+        #expect( appGroupID.hasPrefix( "." ) == false, "an empty DEVELOPMENT_TEAM would leave the identifier without its team prefix" )
+
+        let plugIns    = try #require( Bundle.main.builtInPlugInsURL )
+        let extensions = try FileManager.default.contentsOfDirectory( at: plugIns, includingPropertiesForKeys: nil ).filter
         {
-            return
+            $0.pathExtension == "appex"
         }
 
-        #expect(
-            AutoStretchPreference.appGroupID.hasPrefix( "\( teamID )." ),
-            "the App Group must be prefixed with the signing team identifier or macOS gates it behind a per-launch consent prompt"
-        )
+        #expect( extensions.count == 2, "the preview and thumbnail extensions should both be embedded" )
+
+        try extensions.forEach
+        {
+            let bundle = try #require( Bundle( url: $0 ) )
+            let group  = bundle.object( forInfoDictionaryKey: AutoStretchPreference.appGroupIDKey ) as? String
+
+            #expect( group == appGroupID, "\( $0.lastPathComponent ) must declare the same App Group as the application" )
+        }
+    }
+
+    /// Every target's entitlements file declares the App Group through the
+    /// `FITSCOPE_APP_GROUP_ID` build setting rather than through a literal, which
+    /// is what keeps the signed entitlement and ``AutoStretchPreference/appGroupID``
+    /// in step. A hard-coded identifier would compile, sign and run, and surface
+    /// only as previews quietly reverting to their defaults.
+    ///
+    /// Checks the repository sources: entitlements live in the code signature, and
+    /// CI builds are unsigned, so the built bundles cannot answer this.
+    @Test
+    func everyEntitlementsFileTemplatesTheAppGroup() throws
+    {
+        let root = URL( filePath: #filePath )
+            .deletingLastPathComponent() // Preferences
+            .deletingLastPathComponent() // Model
+            .deletingLastPathComponent() // FITScopeTests
+            .deletingLastPathComponent() // repository root
+
+        let files =
+            [
+                "FITScope/FITScope.entitlements",
+                "FITScopePreviewExtension/FITScopePreviewExtension.entitlements",
+                "FITScopeThumbnailExtension/FITScopeThumbnailExtension.entitlements",
+            ]
+
+        try files.forEach
+        {
+            let data     = try Data( contentsOf: root.appending( path: $0 ) )
+            let plist    = try PropertyListSerialization.propertyList( from: data, format: nil ) as? [ String: Any ]
+            let declared = plist?[ "com.apple.security.application-groups" ] as? [ String ]
+
+            #expect( declared == [ "$(FITSCOPE_APP_GROUP_ID)" ], "\( $0 ) must declare the App Group through the build setting" )
+        }
     }
 
     /// Writes a raw `infoPanelFields` payload — `(fieldRawValue, visible)` pairs,

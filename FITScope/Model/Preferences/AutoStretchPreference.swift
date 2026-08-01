@@ -36,18 +36,44 @@ import Foundation
 /// on, so astro images open and preview stretched out of the box.
 public enum AutoStretchPreference
 {
+    /// The `Info.plist` key under which every bundle that shares the preview
+    /// preferences — the app and both QuickLook extensions — carries its App Group
+    /// identifier.
+    public static let appGroupIDKey = "FITScopeAppGroupID"
+
     /// The App Group suite the app and its extensions share for the preview
-    /// preferences.
+    /// preferences, read from the running bundle's `Info.plist`.
     ///
-    /// Prefixed with the development team ID, which is what lets macOS grant
-    /// access to the group container from the code signature alone. App group
-    /// containers are protected by System Integrity Protection, and a bare
-    /// `group.`-prefixed identifier would additionally have to be registered with
-    /// the developer account and authorised by the embedded provisioning profile.
-    /// Without one of those, the system prompts the user on every launch — such
-    /// consent lasts only for the lifetime of the app instance — and denies the
-    /// thumbnail extension outright, since its extension point may not prompt.
-    public static let appGroupID = "326Y53CJMD.com.xs-labs.FITScope"
+    /// Both that key and the `com.apple.security.application-groups` entitlement
+    /// expand the same `FITSCOPE_APP_GROUP_ID` build setting, so the identifier the
+    /// code opens and the one the bundle is signed with cannot name different
+    /// groups. That matters because nothing fails loudly when they do:
+    /// `UserDefaults(suiteName:)` still returns a store for a group the process is
+    /// not entitled to, whose reads yield `nil` and whose writes are dropped.
+    ///
+    /// The setting prefixes the identifier with the development team ID, which is
+    /// what lets macOS grant access to the group container from the code signature
+    /// alone. App group containers are protected by System Integrity Protection,
+    /// and a bare `group.`-prefixed identifier would additionally have to be
+    /// registered with the developer account and authorised by the embedded
+    /// provisioning profile. Without one of those, the system prompts the user on
+    /// every launch — such consent lasts only for the lifetime of the app instance
+    /// — and denies the thumbnail extension outright, since its extension point may
+    /// not prompt.
+    ///
+    /// `nil` when the bundle carries no such key, rather than falling back to a
+    /// literal that could name a group this bundle is not entitled to.
+    public static var appGroupID: String?
+    {
+        guard let identifier = Bundle.main.object( forInfoDictionaryKey: self.appGroupIDKey ) as? String,
+              identifier.isEmpty == false
+        else
+        {
+            return nil
+        }
+
+        return identifier
+    }
 
     /// A linear image format whose auto-stretch is user-configurable.
     public enum Format: String, CaseIterable, Sendable
@@ -114,13 +140,19 @@ public enum AutoStretchPreference
     }
 
     /// The shared App Group suite, or `nil` when it cannot be opened (e.g. the
-    /// App Group entitlement is missing).
+    /// bundle declares no ``appGroupID``, or the App Group entitlement is missing).
     ///
     /// The app's ``Preferences`` falls back to its app-only store when this is
     /// `nil`; the sandboxed extensions, which have no other store, render linear
     /// when they cannot open the suite.
     public static var sharedDefaults: UserDefaults?
     {
-        UserDefaults( suiteName: self.appGroupID )
+        guard let appGroupID = self.appGroupID
+        else
+        {
+            return nil
+        }
+
+        return UserDefaults( suiteName: appGroupID )
     }
 }

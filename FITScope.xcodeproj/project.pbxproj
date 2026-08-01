@@ -2753,6 +2753,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 056E5C362DDF1041003254C7 /* Debug.xcconfig */;
 			buildSettings = {
+				FITSCOPE_APP_GROUP_ID = "$(DEVELOPMENT_TEAM).com.xs-labs.FITScope";
 				GCC_INSTRUMENT_PROGRAM_FLOW_ARCS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				SWIFT_VERSION = 6.0;
@@ -2763,6 +2764,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 056E5C3B2DDF1041003254C7 /* Release.xcconfig */;
 			buildSettings = {
+				FITSCOPE_APP_GROUP_ID = "$(DEVELOPMENT_TEAM).com.xs-labs.FITScope";
 				GCC_INSTRUMENT_PROGRAM_FLOW_ARCS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				SWIFT_VERSION = 6.0;
