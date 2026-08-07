@@ -159,6 +159,51 @@ struct StarsOverlayTests
     }
 
     @Test
+    func displayedImagePointMapsThroughAHorizontalMirror() throws
+    {
+        // A mirror keeps the dimensions and reflects across the width, so the
+        // source top-left corner (0,0) of a 4×2 image lands on the displayed
+        // top-right column (3,0), at its pixel centre (3.5, 0.5).
+        let point = StarsOverlay.displayedImagePoint( x: 0, y: 0, displayedImageSize: CGSize( width: 4, height: 2 ), orientation: .init( rotation: .none, mirroredHorizontally: true ) )
+
+        #expect( point == CGPoint( x: 3.5, y: 0.5 ) )
+    }
+
+    @Test
+    func displayedImagePointMapsThroughAHalfTurn() throws
+    {
+        // 180° also keeps the dimensions, and sends the source top-left corner to
+        // the opposite corner (3,1) of a 4×2 image, at its centre (3.5, 1.5).
+        let point = StarsOverlay.displayedImagePoint( x: 0, y: 0, displayedImageSize: CGSize( width: 4, height: 2 ), orientation: .init( rotation: .rotate180, mirroredHorizontally: false ) )
+
+        #expect( point == CGPoint( x: 3.5, y: 1.5 ) )
+    }
+
+    @Test
+    func displayedImagePointMapsThroughACounterClockwiseQuarterTurn() throws
+    {
+        // A 4×2 source rotated 90° counter-clockwise displays as 2×4, and the
+        // source top-left corner swings to the displayed bottom-left pixel (0,3),
+        // at its centre (0.5, 3.5) — the mirror image of the clockwise case above.
+        let point = StarsOverlay.displayedImagePoint( x: 0, y: 0, displayedImageSize: CGSize( width: 2, height: 4 ), orientation: .init( rotation: .counterClockwise90, mirroredHorizontally: false ) )
+
+        #expect( point == CGPoint( x: 0.5, y: 3.5 ) )
+    }
+
+    @Test
+    func displayedImagePointAppliesTheMirrorBeforeTheRotation() throws
+    {
+        // Order matters: the mirror is taken across the *source* width and only
+        // then rotated. A 4×2 source mirrored and turned 90° clockwise displays as
+        // 2×4; the source top-left (0,0) mirrors to (3,0), which the turn sends to
+        // the displayed (1,3) — centre (1.5, 3.5). Applying the turn first would
+        // put it at (1.5, 0.5) instead.
+        let point = StarsOverlay.displayedImagePoint( x: 0, y: 0, displayedImageSize: CGSize( width: 2, height: 4 ), orientation: .init( rotation: .clockwise90, mirroredHorizontally: true ) )
+
+        #expect( point == CGPoint( x: 1.5, y: 3.5 ) )
+    }
+
+    @Test
     func displayedImagePointClampsOutOfRangeCentroids() throws
     {
         // A centroid past the image bounds is clamped into range rather than

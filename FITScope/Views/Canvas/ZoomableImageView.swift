@@ -49,9 +49,10 @@ public struct ZoomableImageView: NSViewRepresentable
     public let onCanZoomOutChange: ( Bool ) -> Void
 
     /// Called with the on-screen rectangle the full image currently occupies, in
-    /// the canvas's top-left coordinate space, whenever zoom, pan or the viewport
-    /// changes. Overlays map image-space points into this rectangle, so it already
-    /// carries magnification, pan and the centering of a small image.
+    /// the canvas's top-left coordinate space, whenever zoom, pan, the viewport or
+    /// the displayed image changes. Overlays map image-space points into this
+    /// rectangle, so it already carries magnification, pan and the centering of a
+    /// small image.
     public let onDisplayedImageRectChange: ( CGRect ) -> Void
 
     /// Creates the canvas.
@@ -128,6 +129,14 @@ public struct ZoomableImageView: NSViewRepresentable
                     {
                         imageView.setFrameSize( NSSize( width: self.image.width, height: self.image.height ) )
                         context.coordinator.refit()
+                    }
+                    else
+                    {
+                        // Same pixel dimensions, so there is nothing to re-fit and
+                        // no AppKit notification to report from — but the overlays
+                        // still need a rectangle measured for this image rather
+                        // than the one the previous image left behind.
+                        context.coordinator.republishDisplayedImageRect()
                     }
                 }
             }
@@ -232,23 +241,61 @@ public struct ZoomableImageView: NSViewRepresentable
         /// Reports the on-screen rectangle the full image occupies, in the
         /// canvas's top-left coordinate space, for overlays to draw into.
         ///
-        /// The geometry is read now — from the document view's bounds converted up
-        /// through the magnifying clip view, then flipped from the scroll view's
-        /// bottom-left space to the overlay's top-left space.
+        /// The geometry is read at the moment the write is made, so a deferred
+        /// write describes the layout as it stands a run-loop turn later rather
+        /// than as it stood when the write was requested. That distinction is
+        /// load-bearing: the synchronous callers report in between, and a
+        /// rectangle measured early would be delivered after them — leaving every
+        /// overlay registered to a rectangle the image no longer occupies, with
+        /// nothing to correct it until the next zoom, pan or resize.
         ///
         /// - Parameter deferred: Whether to defer the SwiftUI write to the next
         ///   run-loop turn (for the same reason as ``reportZoom(_:)``: the caller
-        ///   runs inside SwiftUI's update pass). Live AppKit callbacks — resize and
-        ///   magnification — pass `false` so the overlays are re-registered in the
-        ///   same pass as the image and track it without lag; the update-pass
-        ///   callers keep the default `true`.
+        ///   runs inside SwiftUI's update pass). The callers that can run either way
+        ///   — resize, magnification and a new image — pass
+        ///   ``isApplyingViewUpdate``, so a live AppKit callback reports
+        ///   synchronously and re-registers the overlays in the same pass as the
+        ///   image, while the same code path defers when driven from an update.
         private func reportDisplayedImageRect( deferred: Bool = true )
         {
-            guard let scrollView = self.scrollView,
-                  let documentView = scrollView.documentView
+            guard deferred
+            else
+            {
+                self.publishDisplayedImageRect()
+
+                return
+            }
+
+            DispatchQueue.main.async { self.publishDisplayedImageRect() }
+        }
+
+        /// Measures the displayed-image rectangle and hands it to SwiftUI, doing
+        /// nothing when there is no longer a scroll view to measure.
+        private func publishDisplayedImageRect()
+        {
+            guard let rect = self.displayedImageRect()
             else
             {
                 return
+            }
+
+            self.parent.onDisplayedImageRectChange( rect )
+        }
+
+        /// The on-screen rectangle the full image currently occupies, in the
+        /// canvas's top-left coordinate space, or `nil` when the scroll view or its
+        /// document view is gone.
+        ///
+        /// ``scrollView`` is weak and this is read from deferred blocks as well as
+        /// synchronously, so it is resolved on every call rather than captured by
+        /// the caller.
+        private func displayedImageRect() -> CGRect?
+        {
+            guard let scrollView   = self.scrollView,
+                  let documentView = scrollView.documentView
+            else
+            {
+                return nil
             }
 
             // `convert(_:from:)` walks the document view up through the magnifying
@@ -258,19 +305,26 @@ public struct ZoomableImageView: NSViewRepresentable
             // converted rect is used as-is; the non-flipped case is handled for
             // completeness by mirroring the y axis about the scroll view's height.
             let inScroll = scrollView.convert( documentView.bounds, from: documentView )
-            let rect      = scrollView.isFlipped
+
+            return scrollView.isFlipped
                 ? inScroll
                 : CGRect( x: inScroll.minX, y: scrollView.bounds.height - inScroll.maxY, width: inScroll.width, height: inScroll.height )
+        }
 
-            guard deferred
-            else
-            {
-                self.parent.onDisplayedImageRectChange( rect )
-
-                return
-            }
-
-            DispatchQueue.main.async { self.parent.onDisplayedImageRectChange( rect ) }
+        /// Publishes the displayed-image rectangle again, from a fresh
+        /// measurement, for a newly shown image that left the geometry unchanged.
+        ///
+        /// An image of new pixel dimensions re-fits, and the re-fit publishes once
+        /// the clip view has a size (otherwise the first frame change does); an
+        /// image of the same dimensions re-fits not at all, so nothing else would
+        /// publish for it. Since the
+        /// coordinator and the reported rectangle are both reused across files and
+        /// carousel frames, the overlays would otherwise go on registering against
+        /// whatever the previous image left behind, with no point at which a wrong
+        /// rectangle is ever recovered from.
+        func republishDisplayedImageRect()
+        {
+            self.reportDisplayedImageRect( deferred: self.isApplyingViewUpdate )
         }
 
         @objc
@@ -419,9 +473,8 @@ public struct ZoomableImageView: NSViewRepresentable
             // A live window resize drives this through AppKit's frame-change
             // notification, outside SwiftUI's update pass, so report synchronously:
             // the overlays are re-registered in the same pass as the image and
-            // track it without the one-turn lag the deferred write introduced. A
-            // resize driven from within `updateNSView` defers instead, to avoid
-            // "Modifying state during view update".
+            // track it without lag. A resize driven from within `updateNSView`
+            // defers instead, to avoid "Modifying state during view update".
             self.reportDisplayedImageRect( deferred: self.isApplyingViewUpdate )
         }
 

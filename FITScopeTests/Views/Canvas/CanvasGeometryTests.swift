@@ -287,4 +287,21 @@ struct CanvasGeometryTests
         #expect( CanvasGeometry.displayScale( imageSize: .zero, displayedRect: CGRect( x: 0, y: 0, width: 200, height: 200 ) ) == 0 )
         #expect( CanvasGeometry.imagePoint( forViewPoint: CGPoint( x: 10, y: 10 ), imageSize: .zero, displayedRect: CGRect( x: 0, y: 0, width: 200, height: 200 ) ) == .zero )
     }
+
+    /// The forward transform collapses to the rectangle's origin for a degenerate
+    /// image size rather than dividing by zero — the state an overlay draws in
+    /// before the canvas has measured anything.
+    @Test
+    func viewPointGuardsDegenerateImageSize() throws
+    {
+        #expect( CanvasGeometry.viewPoint( forImagePoint: CGPoint( x: 10, y: 10 ), imageSize: .zero, displayedRect: CGRect( x: 5, y: 7, width: 200, height: 200 ) ) == CGPoint( x: 5, y: 7 ) )
+    }
+
+    /// The inverse transform collapses for a degenerate displayed rectangle, which
+    /// is what the canvas reports before it has laid out.
+    @Test
+    func imagePointGuardsDegenerateDisplayedRect() throws
+    {
+        #expect( CanvasGeometry.imagePoint( forViewPoint: CGPoint( x: 10, y: 10 ), imageSize: CGSize( width: 100, height: 100 ), displayedRect: .zero ) == .zero )
+    }
 }

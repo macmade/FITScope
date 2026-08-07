@@ -58,7 +58,15 @@ public struct ImageCanvasView: View
 
     /// The on-screen rectangle the displayed image currently occupies, reported
     /// by the canvas and used to register overlays to image space.
-    @State private var displayedImageRect = CGRect.zero
+    ///
+    /// `nil` until the canvas has measured a rectangle *for the image now shown*:
+    /// this view outlives the canvas, which SwiftUI tears down and rebuilds
+    /// whenever the rendered image is replaced by a placeholder, so a rectangle
+    /// left over from a previous image would otherwise register the overlays
+    /// against geometry that no longer applies. Cleared on every change of the
+    /// rendered image and set again by the canvas a moment later; the overlays and
+    /// the comparison wipe are not drawn while it is `nil`.
+    @State private var displayedImageRect: CGRect?
 
     /// Whether the floating bars are currently shown.
     @State private var barsVisible = true
@@ -187,6 +195,16 @@ public struct ImageCanvasView: View
                     onDisplayedImageRectChange: { self.displayedImageRect = $0 }
                 )
                 .accessibilityIdentifier( AccessibilityIdentifier.ImageCanvasView.canvas )
+                // Drop the standing rectangle the moment a different rendered image
+                // is shown, so the overlays below wait for one measured against it
+                // rather than drawing against the previous image's geometry. The
+                // canvas publishes again for every new image — re-fitting when the
+                // dimensions change and re-measuring when they do not — so this
+                // never leaves them hidden.
+                .onChange( of: ObjectIdentifier( result.image ) )
+                {
+                    _, _ in self.displayedImageRect = nil
+                }
                 .overlay
                 {
                     // The before/after comparison wipe: reveals the captured
@@ -202,13 +220,14 @@ public struct ImageCanvasView: View
                     // and registered with the result — the comparison needs no
                     // on-demand preparation when it is entered.
                     if self.controller.isComparing,
+                       let displayedRect = self.displayedImageRect,
                        let before = image.renderer.originalImage,
                        before.width  == result.image.width,
                        before.height == result.image.height
                     {
                         ImageComparisonLayer(
                             beforeImage:      before,
-                            displayedRect:    self.displayedImageRect,
+                            displayedRect:    displayedRect,
                             fraction:         self.controller.comparisonFraction,
                             onFractionChange: { self.controller.setComparisonFraction( $0 ) }
                         )
@@ -219,7 +238,11 @@ public struct ImageCanvasView: View
                     // The annotation overlays, registered to image space through
                     // the reported displayed-image rectangle. Hit-test transparent,
                     // so the cursor read-out and panning underneath keep working.
-                    CanvasOverlayLayer( overlays: self.activeOverlays, imageSize: CGSize( width: result.image.width, height: result.image.height ), displayedRect: self.displayedImageRect )
+                    // Drawn only once a rectangle has been measured for this image.
+                    if let displayedRect = self.displayedImageRect
+                    {
+                        CanvasOverlayLayer( overlays: self.activeOverlays, imageSize: CGSize( width: result.image.width, height: result.image.height ), displayedRect: displayedRect )
+                    }
                 }
                 .overlay
                 {

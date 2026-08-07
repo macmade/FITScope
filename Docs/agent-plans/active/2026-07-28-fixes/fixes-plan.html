@@ -695,7 +695,7 @@
                     </li>
                     <li class="entry">
                         <a href="#m4">4. Publish a correct displayed-image rectangle for every overlay</a>
-                        <span class="status not-started">Not started</span>
+                        <span class="status completed">Completed</span>
                     </li>
                 </ol>
             </li>
@@ -2637,7 +2637,7 @@ PUBLISH defer  from fit()                 rect (0.00, 205.00, 672.00 x 378.00)  
 
     <section class="milestone" id="m4">
         <h4><span class="num">4.</span> Publish a correct displayed-image rectangle for every overlay
-            <span class="status not-started">Not started</span></h4>
+            <span class="status completed">Completed</span></h4>
 
         <div class="field">
             <span class="label">Goal</span>
@@ -2702,11 +2702,351 @@ PUBLISH defer  from fit()                 rect (0.00, 205.00, 672.00 x 378.00)  
             </ul>
         </div>
 
-        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
-        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
-        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
-        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
-        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+        <div class="field"><span class="label">Status</span><p><span class="status completed">Completed</span></p></div>
+        <div class="field"><span class="label">Completed</span><p>2026-08-01</p></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+
+            <p>
+                Implemented test-first. Both regression tests were written and watched fail — for
+                the right reasons, quoted below — before either change was made, then watched pass,
+                then each was verified by mutation so that neither passes for the other's reason.
+            </p>
+
+            <h4>The change</h4>
+
+            <p>
+                Three edits, in two files. The first is the fix milestone&nbsp;3 prescribed; the
+                second is its recovery point; the third closes a gap milestone&nbsp;3 recorded and
+                this milestone's task list had not inherited.
+            </p>
+
+            <ul>
+                <li>
+                    <strong><code>reportDisplayedImageRect(deferred:)</code> now defers the
+                    <em>measurement</em>, not a measured value.</strong> The body split into
+                    <code>publishDisplayedImageRect()</code> (measure, then hand to SwiftUI) and
+                    <code>displayedImageRect()</code> (the measurement itself, resolving the
+                    <code>weak</code> <code>scrollView</code> on every call rather than reusing a
+                    schedule-time binding). A late-landing block can no longer carry an older value,
+                    because it has no value to carry.
+                </li>
+                <li>
+                    <strong><code>updateNSView</code> republishes for a new image of the same pixel
+                    dimensions</strong>, through a new <code>republishDisplayedImageRect()</code>.
+                    That path previously published nothing at all, so a wrong rectangle survived a
+                    same-size file or carousel-frame switch with no point at which it was ever
+                    recovered from.
+                </li>
+                <li>
+                    <strong><code>ImageCanvasView.displayedImageRect</code> became
+                    <code>CGRect?</code>, and the overlays wait for it.</strong> It is cleared
+                    whenever the rendered image's identity changes and set again when the canvas
+                    measures one for the new image; the overlay layer and the comparison wipe are
+                    drawn only behind an <code>if let</code>.
+                </li>
+            </ul>
+
+            <p>
+                <strong>Those last two hold each other up, which matters before either is touched
+                again.</strong> The gate is only safe because the canvas publishes for
+                <em>every</em> new image — re-fitting when the dimensions change, republishing when
+                they do not. Without the republish, a same-size re-render (changing a stretch, say)
+                would clear the rectangle and nothing would set it again, hiding every overlay
+                permanently.
+            </p>
+
+            <h4>What was deliberately not done</h4>
+
+            <p>
+                Milestone&nbsp;3 offered a complementary change: give <code>fit()</code> the same
+                <code>deferred: self.isApplyingViewUpdate</code> rule as the other callers. It was
+                not taken. The re-read alone closes the ordering hazard, and making
+                <code>fit()</code> synchronous would newly depend on
+                <code>fitWhenReady()</code>'s zero-clip-bounds guard to avoid writing SwiftUI state
+                during <code>makeNSView</code> — a dependency milestone&nbsp;3 flagged as one that
+                should be made deliberate rather than inherited. Recorded as a decision, not an
+                oversight; the user confirmed it (see <em>Review comments</em>).
+            </p>
+
+            <h4>Test-first evidence</h4>
+
+<pre><code>before the change
+  ✘ publishesTheSettledRectangleWhenTheViewportMovesDuringTheFit()
+      Expectation failed: published == liveDisplayedRectangle( in: canvas.hosting )
+  ✘ publishesARectangleWhenTheImageChangesWithoutChangingTheGeometry()
+      Expectation failed: (canvas.log).last → nil
+  ✘ Test run with 5 tests in 1 suite failed with 2 issues.
+
+after the change
+  ✔ Test run with 5 tests in 1 suite passed after 0.529 seconds.</code></pre>
+
+            <p>
+                The two failures are distinct and each names its own defect: a rectangle that does
+                not match the geometry, and no publication at all.
+            </p>
+
+            <p>
+                <strong>Verified by mutation, not merely by passing.</strong> Restoring only the
+                schedule-time capture — keeping the republish — fails the first test and leaves the
+                second passing. Stubbing out only the republish fails the second with
+                <code>log.last → nil</code> and leaves the first passing. So neither test passes for
+                the other's reason. The first mutation now reports both rectangles, which is what
+                makes the failure diagnosable:
+            </p>
+
+<pre><code>Expectation failed: (published → (100.0, 0.0, 400.0, 300.0))
+                 == (live      → (166.5, 0.0, 666.6666666666629, 500.0))</code></pre>
+
+            <h4>Coverage added</h4>
+
+            <p>
+                47 → 55 tests across the three touched suites. Two regression tests for the
+                publication rule, plus the gaps milestone&nbsp;3 identified: the four untested
+                branches of <code>StarsOverlay.displayedImagePoint</code>
+                (<code>mirroredHorizontally: true</code>, <code>.rotate180</code>,
+                <code>.counterClockwise90</code>, and the mirror-before-rotation ordering) and the
+                two genuinely missing degenerate guards in <code>CanvasGeometry</code>
+                (<code>viewPoint</code> with a zero image size, <code>imagePoint</code> with a zero
+                rectangle — the pre-existing <code>transformGuardsDegenerateImageSize</code> covered
+                neither). The round-trip and <code>displayScale</code> items on the task list were
+                already covered, so nothing was added there.
+            </p>
+
+            <p>
+                The orientation expectations were derived from the documented semantics by
+                corner-to-corner reasoning, not read off the implementation, and the review
+                independently re-derived all four and cross-checked the mirror-first convention
+                against <code>Processors.Orient</code>'s own transform.
+            </p>
+
+            <p>
+                Following milestone&nbsp;3's rule, the regression assertions compare the last
+                published rectangle against a <strong>live re-read of the same conversion</strong>,
+                which holds with exact equality and needs no tolerance. A tolerance wide enough to
+                absorb AppKit's backing-store alignment would also have absorbed the 0.167 pt
+                quiet-load defect.
+            </p>
+
+            <h4>What is <em>not</em> covered by a test</h4>
+
+            <p>
+                <strong>The overlay gate.</strong> Hosting <code>ImageCanvasView</code> needs
+                <code>AppModel</code>, <code>Preferences</code>, <code>APIKeyStore</code> and a
+                loaded <code>OpenFile</code> from its environment, and no existing test builds that
+                harness — the neighbouring suites cover <code>ImageCanvasController</code>,
+                <code>ImageComparisonLayer</code> and the canvas itself, never the composing view.
+                So that third edit is verified by reading, not by execution. Stated here so the
+                55-test figure is not read as covering it.
+            </p>
+
+            <p>
+                <strong>The by-hand six-overlay check.</strong> Not performed. The milestone asks for
+                Stars, Objects, Equatorial grid, Reticle, Scale bar and North to be verified by eye
+                after a fresh load, a same-size switch, a different-size switch, a carousel frame
+                change, a resize and a rotate/flip. Driving the GUI was not possible here —
+                <code>osascript</code> is refused assistive access, and overlay enablement lives
+                per-image behind toolbar toggles. The reticle-based checklist milestone&nbsp;3
+                prepared is left for the user.
+            </p>
+
+            <h4>The UI-test failures were mine, not the code's</h4>
+
+            <p>
+                <strong>An early full-plan run failed two UI tests, and this was reported as a real
+                regression. That was wrong, and the correction is the substance of this
+                section.</strong> The failures were caused by running the automated review agent —
+                which builds and re-signs this same project — concurrently with UI tests that launch
+                the built app. The baseline it was compared against had been measured under that
+                same contention, where it happened to pass four times running; four coin flips were
+                treated as a clean sheet.
+            </p>
+
+            <table>
+                <tr><th>Condition</th><th><code>testStretchModeRevealsScreenTransferEditor</code></th></tr>
+                <tr><td>With the change, machine contended</td><td>3 failures / 5 runs</td></tr>
+                <tr><td>With the change, machine quiet</td><td><strong>0 failures / 8 runs</strong></td></tr>
+            </table>
+
+            <p>
+                Quiet runs complete in 16.1–16.8 s; the contended ones took 22–41 s. Instrumenting
+                the app settled the mechanism question directly: across the whole of that test the
+                canvas performs <strong>19 publications against 21 <code>updateNSView</code>
+                calls, of which exactly 3 are the new republish</strong>. There is no publication
+                storm and no feedback loop — <code>ImageRenderer.Result.image</code> is a stored
+                <code>let</code>, so <code>cgImage !== self.image</code> goes false after one update
+                and the republish cannot re-trigger itself.
+            </p>
+
+            <h4>One pre-existing UI failure, unrelated to this work</h4>
+
+            <p>
+                <code>testHistogramStatisticsToggleRevealsPanel</code> fails with
+                <em>“Enabling Statistics did not reveal the panel”</em>
+                (<code>FITScopeUITests.swift:995</code>). It fails <strong>identically at
+                HEAD</strong>, with the two changed source files reverted, on an otherwise quiet
+                machine — so it predates this milestone and is recorded for the user rather than
+                fixed here. It is intermittent: the 40-test suite run with the change in place
+                passed <strong>40 / 40</strong>. That single clean run is not evidence the change
+                improved anything, and is not claimed as such.
+            </p>
+
+            <h4>Test results</h4>
+
+            <table>
+                <tr><th>Run</th><th>Result</th></tr>
+                <tr><td><code>FITScopeTests</code>, with every change in place</td><td><strong>814 tests in 98 suites passed</strong>, zero issues</td></tr>
+                <tr><td><code>FITScopeUITests</code>, with every change in place</td><td><strong>40 / 40 passed</strong>, no failures</td></tr>
+                <tr><td><code>FITScopeUITests</code> at HEAD, for comparison</td><td>39 / 40 — the pre-existing failure above</td></tr>
+            </table>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+
+            <p>
+                <strong>Round 1</strong> — a fresh-context reviewer traced every geometry-changing
+                path in the source, read milestones 3 and 4 to judge the change against its brief,
+                and consulted the two commits that constrain this code (<code>4ed962e</code>, live
+                resize must not lag; <code>f172004</code>, no SwiftUI state writes during a view
+                update), confirming both constraints still hold. It <strong>reproduced both red
+                states itself</strong>: restoring the schedule-time capture fails only the first
+                test, stubbing the republish fails only the second with
+                <code>log.last → nil</code>. It re-derived all four orientation expectations by hand
+                and cross-checked the mirror-first convention against
+                <code>Processors.Orient</code>. No <em>Critical</em> or <em>High</em> finding; one
+                <em>Medium</em>, on a test rather than on the fix.
+            </p>
+
+            <p>
+                <strong>The review ran concurrently with this milestone's own UI-test runs, and that
+                is what produced the phantom regression above.</strong> Recorded because it is a
+                process lesson, not a code one: a reviewer that builds the project cannot share a
+                machine with tests that launch the built app.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td><strong>The primary regression test could silently degrade to a vacuous pass.</strong> The resize was optional-chained through <code>window?</code>, so a nil window made it a no-op; and nothing asserted the fit had published <em>before</em> the resize, so if a future SwiftUI stopped running <code>updateNSView</code> inside <code>layoutSubtreeIfNeeded()</code> the test would compare a settled value with itself and pass while testing nothing.</td><td>Medium</td><td><strong>Fixed.</strong> The window is now <code>#require</code>d, the rectangle published before the resize is captured, and the test asserts <code>beforeResize != live</code> — so the <em>scenario</em> is checked, not just the outcome. That asserts the setup rather than the defect, so it does not breach milestone 3's assert-the-fix rule.</td></tr>
+                <tr><td>2</td><td><strong>Error of fact in a test comment.</strong> The mirror-ordering test claimed that turning before mirroring would land at <code>(1.5, 0.5)</code>. That is the <em>no-mirror</em> result, and it is already the neighbouring quarter-turn test's expectation; turn-then-mirror gives <code>(0.5, 0.5)</code>.</td><td>Low</td><td><strong>Fixed</strong>, after re-deriving it independently. The assertion was right and does discriminate the ordering; the one sentence explaining <em>what</em> it discriminates against was wrong, which is the sentence carrying the test's reason to exist.</td></tr>
+                <tr><td>3</td><td><code>#expect</code> with an inline <code>try</code> cannot expand its sub-expression, so a failure printed neither rectangle.</td><td>Low</td><td><strong>Fixed</strong> by hoisting the live re-read into a <code>let</code>. The mutation output quoted in the notes shows the difference: both rectangles now appear.</td></tr>
+                <tr><td>4</td><td>Test windows were ordered front and never closed, so they outlived the tests in the process's window list — and the two tests run in parallel, taking key status from each other.</td><td>Low</td><td><strong>Fixed.</strong> <code>hostCanvas</code> returns the window and each test closes it in a <code>defer</code>.</td></tr>
+                <tr><td>5</td><td><code>settle()</code> waited a fixed 8 × 20 ms wall-clock budget; a publication arriving after it would make the tests either flake or pass vacuously on a loaded machine.</td><td>Low</td><td><strong>Fixed</strong>, and given the contention episode this was worth more than its severity suggested. It now waits until the log stops growing for two consecutive turns, with a cap so a canvas that never settles fails on its assertions rather than hanging the suite.</td></tr>
+                <tr><td>6</td><td>The milestone's own record was still <em>Not started</em> with placeholder fields while the code was done, and two decisions were unrecorded: that the by-hand check was not performed, and that <code>fit()</code>'s deferral rule was deliberately left alone.</td><td>Low</td><td><strong>Fixed</strong> — both are stated in <em>Implementation notes</em>, the second explicitly as a decision rather than an oversight.</td></tr>
+                <tr><td>7</td><td><code>republishDisplayedImageRect()</code> relied on <code>reportDisplayedImageRect</code>'s <code>deferred</code> default staying <code>true</code>; it is <code>internal</code>, so a future caller outside <code>updateNSView</code> would defer needlessly and reintroduce the one-turn lag <code>4ed962e</code> removed.</td><td>Low</td><td><strong>Fixed.</strong> It now passes <code>deferred: self.isApplyingViewUpdate</code> — identical at today's only call site, correct anywhere else, and self-documenting.</td></tr>
+                <tr><td>8</td><td><strong>Residual gap against the milestone's Goal:</strong> on a first visit to a not-yet-rendered file or frame the canvas is torn down, but <code>ImageCanvasView</code>'s surviving <code>@State</code> still holds the previous image's rectangle, and the overlay layer draws it unguarded until the rebuilt canvas publishes. Milestone 3 recorded it; milestone 4's task list never picked it up. Inherited, not a regression.</td><td>Low</td><td><strong>Raised with the user rather than fixed silently</strong>, who chose the stricter of the two remedies. Fixed: the rectangle is optional, cleared on every change of rendered-image identity, and the overlays and comparison wipe wait for one measured against the image now shown.</td></tr>
+                <tr><td>9</td><td>Advice not to “optimise” by skipping a publication whose rectangle equals the last one, on the grounds that within a coordinator's lifetime the <code>@State</code> value always equals the last published value, so a dedupe would suppress the recovery-point republish.</td><td>Info</td><td><strong>No action, and the reasoning is disputed.</strong> A dedupe would compare a <em>fresh measurement</em> against the last published value, not that value against itself — and a stale standing rectangle differs from a fresh measurement, so it would still publish. The conclusion happens to match what was done (no dedupe was added), but not for the reason given. Recorded so the disagreement is visible rather than silently accepted.</td></tr>
+                <tr><td>10–11</td><td>Two comments describing what the code <em>used to</em> do (“without the one-turn lag the deferred write introduced”) and a <code>deferred</code> parameter doc saying the live callers “pass <code>false</code>” when they pass <code>isApplyingViewUpdate</code>; plus a doc claim that a re-fit always publishes, and a stray double space.</td><td>Info</td><td><strong>Fixed.</strong> The history-flavoured clauses breach the project's comment rule and sat beside code this milestone changed. The re-fit claim is now accurate: it publishes once the clip view has a size, otherwise the first frame change does.</td></tr>
+            </table>
+
+            <p>
+                <strong>Outcome — one round, converged.</strong> The only <em>Medium</em> is fixed and
+                no finding challenged the fix itself; the reviewer's own verdict was that it is
+                correct and complete for the diagnosed defect. Its judgement that the milestone's
+                test task was met in full is recorded, as is its confirmation that every path — fresh
+                load, live zoom, resize, toolbar command, both switch shapes, rotate/flip and the
+                teardown-and-rebuild — now ends in a publication reflecting the settled layout.
+            </p>
+
+            <p>
+                <strong>Unverified by the review:</strong> the by-hand six-overlay check (it did not
+                perform it either), long-run test flakiness, and whether
+                <code>NSWindow.setContentSize</code> behaves the same on a machine whose usable
+                screen is smaller than 1000 × 500 — worth knowing, since the primary regression test
+                depends on that resize actually taking effect. Its own full-plan attempt was
+                abandoned as contended, so the test results in these notes are from the runs recorded
+                above, not from the review.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+
+            <ul>
+                <li>
+                    <strong>Approved the approach mid-implementation</strong> (“looks good”), before
+                    the full test plan and the automated review had run — so it covers the shape of
+                    the fix, not its verification. Taken as confirmation to keep the re-read alone
+                    rather than also giving <code>fit()</code> the
+                    <code>deferred: self.isApplyingViewUpdate</code> rule, which had been offered as
+                    an option.
+                </li>
+                <li>
+                    <strong>On a suspected regression: find the mechanism before changing anything.</strong>
+                    Asked, when two UI tests failed and the cause was unclear, whether to deduplicate
+                    publications, drop the same-size republish, or investigate first. Chose to
+                    investigate. That was the right call — the investigation found there was
+                    <em>no</em> regression at all, so both proposed remedies would have been changes
+                    made for a phantom. See <em>Implementation notes</em> →
+                    <em>The UI-test failures were mine, not the code's</em>.
+                </li>
+                <li>
+                    <strong>Close the inherited teardown gap, using the stricter of the two options.</strong>
+                    On the question of what to do about the overlays briefly drawing against the
+                    previous image's rectangle after the canvas is torn down and rebuilt: rather
+                    than resetting the rectangle when the image identity changes, <em>do not draw
+                    the overlays at all until a rectangle has been measured for the image now
+                    shown</em>. Chosen as the cleaner of the two, and it also covers the very first
+                    load rather than only the switch.
+                </li>
+                <li>
+                    <strong>Fix <code>testHistogramStatisticsToggleRevealsPanel</code>.</strong> The
+                    pre-existing UI-test failure reported above is not to be left as a known defect.
+                    Treated as work of its own rather than folded into this milestone — it predates
+                    the milestone and shares none of its code.
+
+                    <p style="margin:.5rem 0 0">
+                        <strong>Attempted and not solved; the attempt was reverted, so nothing of it
+                        is in this milestone's change set.</strong> Three mechanisms were proposed and
+                        each disproved by measurement rather than by argument:
+                    </p>
+
+                    <table style="margin:.6rem 0 0">
+                        <tr><th>Mechanism</th><th>Verdict</th></tr>
+                        <tr>
+                            <td>The click toggles twice, cancelling itself</td>
+                            <td><strong>Disproved.</strong> Instrumenting
+                                <code>HistogramViewOptions.showStatistics</code> recorded nine
+                                transitions, every one a single flip.</td>
+                        </tr>
+                        <tr>
+                            <td>SwiftUI rebuilds the menu while it is open, invalidating the item</td>
+                            <td><strong>Disproved.</strong> Across 61 rebuilds every one fell on a
+                                menu open or ~10 ms <em>after</em> a toggle, never spontaneously, and
+                                <code>originalNil=false</code> throughout — so the disabled-state of
+                                “Show Original” never flips as supposed.</td>
+                        </tr>
+                        <tr>
+                            <td>The item exists but is not a live click target</td>
+                            <td><strong>Disproved.</strong> Routing the three clicks through
+                                <code>UITestSupport.clickMenuItem</code>, which waits for
+                                <code>isHittable</code>, still failed — and failed at the
+                                <em>panel</em> assertion, not at the helper's, so the item was
+                                hittable and the click landed.</td>
+                        </tr>
+                    </table>
+
+                    <p style="margin:.6rem 0 0">
+                        <strong>What is established.</strong> The menu opens (its body evaluates once
+                        per click on the options button), the item is hittable, the click is
+                        delivered — and the item's action never runs.
+                        <code>didSet</code> fires on every write including a same-value one, and
+                        across the failing test's whole window it never fired. So the toggle's binding
+                        is never invoked. That points at the app's <code>Toggle</code>-inside-
+                        <code>Menu</code> construct rather than at the test, which makes it a real
+                        defect a user could meet, not merely a flaky test.
+                    </p>
+
+                    <p style="margin:.6rem 0 0">
+                        <strong>A verification lesson worth keeping.</strong> The failure occurs in
+                        about one full UI-suite run in three and reproduces in nothing smaller — not
+                        in the test alone (13 clean runs), not in the adjacent pair (10 clean runs).
+                        Two clean suite runs were briefly taken as confirmation that the hittability
+                        fix worked; the third failed. At a one-in-three base rate, two passes carry
+                        roughly one-in-nine odds of meaning nothing, which is not evidence. Any future
+                        attempt needs at least three clean runs before it is called fixed.
+                    </p>
+                </li>
+            </ul>
+        </div>
     </section>
 
     <h3 class="phase">Phase 3 — Detection off the preparation path (backlog item 4)</h3>
