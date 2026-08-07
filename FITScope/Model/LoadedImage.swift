@@ -37,6 +37,27 @@ import SwiftUtilities
 @MainActor
 public class LoadedImage: ObservableObject
 {
+    /// The stage star detection has reached for this image.
+    ///
+    /// Completion is a stage rather than a fact outliving the stages, so the whole of
+    /// an image's detection state is this one value rather than a stage plus a
+    /// separate record of having run. A detection that runs again leaves
+    /// ``finished`` and passes through ``running`` once more.
+    public enum StarDetectionPhase: Equatable
+    {
+        /// Neither queued nor run.
+        case idle
+
+        /// Waiting for a slot before it can run.
+        case queued
+
+        /// Running now.
+        case running
+
+        /// Ran to completion.
+        case finished
+    }
+
     /// The source file's URL.
     public let url: URL
 
@@ -118,14 +139,33 @@ public class LoadedImage: ObservableObject
     /// from its noise, so the two share a single robust estimate.
     @Published public private( set ) var skyBackground: SkyBackground?
 
-    /// Whether star detection is currently running, so the UI can show progress.
-    /// `true` only while ``detectStars()`` is detecting stars.
-    @Published public private( set ) var isDetectingStars = false
+    /// The stage star detection has reached — the whole of this image's detection
+    /// state, from which ``isDetectingStars`` and ``hasDetectedStars`` are derived so
+    /// the three can never disagree.
+    @Published public private( set ) var starDetectionPhase = StarDetectionPhase.idle
 
-    /// Whether star detection has finished running at least once. Lets the UI tell
-    /// "detection hasn't run" from "detection ran and found nothing" — both leave
-    /// ``starField`` empty — so the stars overlay can warn about the latter.
-    @Published public private( set ) var hasDetectedStars = false
+    /// Whether star detection is queued or running, so the UI reports progress for
+    /// the whole wait.
+    public var isDetectingStars: Bool
+    {
+        self.starDetectionPhase == .queued || self.starDetectionPhase == .running
+    }
+
+    /// Whether star detection has run to completion. Lets the UI tell "detection
+    /// hasn't run" from "detection ran and found nothing" — both leave ``starField``
+    /// empty — so the stars overlay can warn about the latter. Work abandoned before
+    /// it ran never reaches this stage, so it stays distinguishable from work that ran
+    /// and found nothing.
+    public var hasDetectedStars: Bool
+    {
+        self.starDetectionPhase == .finished
+    }
+
+    /// The strategy star detection runs through, defaulting to the matched-filter
+    /// detector. Internal and settable so a test can substitute one whose timing it
+    /// controls: nothing public lets a caller *hold* the running stage open, which is
+    /// what testing behaviour during detection needs.
+    var starDetector: any StarDetecting = MatchedFilterStarDetector()
 
     /// Whether the sky-background measurement has finished running at least once.
     /// Lets the UI tell "not measured yet" from "measured but unavailable" (a
@@ -199,19 +239,71 @@ public class LoadedImage: ObservableObject
         }
     }
 
+    /// Records that star detection has been queued, so it reports as in progress
+    /// while it waits for a slot.
+    ///
+    /// Records no run: ``hasDetectedStars`` stays `false` until a detection actually
+    /// completes, so queued work is never mistaken for a detection that ran and
+    /// found nothing.
+    ///
+    /// Only an image that has not already queued, started or completed its detection
+    /// enters the queued stage, so a repeat can neither restart a running detection
+    /// nor erase a completed one. That bounds *queueing* alone: ``detectStars()`` is
+    /// public and ungated, so keeping a detection from running twice remains the
+    /// caller's business.
+    ///
+    /// - Returns: Whether the image entered the queued stage, so a caller can tell a
+    ///            queued detection from one it need not wait for.
+    @discardableResult
+    public func markStarDetectionQueued() -> Bool
+    {
+        guard self.starDetectionPhase == .idle
+        else
+        {
+            return false
+        }
+
+        self.starDetectionPhase = .queued
+
+        return true
+    }
+
+    /// Records that queued star detection was abandoned before it ran, clearing the
+    /// in-progress report without recording a run.
+    ///
+    /// Only queued work can be abandoned. A detection that has already started, or
+    /// already finished, is left alone — so a caller that cancels without knowing
+    /// which stage the work reached can neither report a running detection as idle
+    /// nor erase a completed one.
+    public func markStarDetectionAbandoned()
+    {
+        guard self.starDetectionPhase == .queued
+        else
+        {
+            return
+        }
+
+        self.starDetectionPhase = .idle
+    }
+
     /// Runs star detection and the sky-background measurement on the image's linear
     /// data and publishes the results.
     ///
     /// The two run as concurrent off-main-actor passes and publish independently,
     /// so the cheaper background estimate appears as soon as it is ready rather than
     /// waiting for star detection to finish. Both read the same linear detection
-    /// image. Does nothing when the render input is unavailable; awaits both before
-    /// returning.
+    /// image. Awaits both before returning.
+    ///
+    /// An image with no usable render input detects nothing, and releases the queued
+    /// stage on its way out rather than leaving the image reporting a detection that
+    /// will never run.
     public func detectStars() async
     {
         guard let input = try? self.renderer.renderSourceSnapshot()
         else
         {
+            self.markStarDetectionAbandoned()
+
             return
         }
 
@@ -223,22 +315,26 @@ public class LoadedImage: ObservableObject
         _ = await( stars, background )
     }
 
-    /// Detects the stars on the linear image and publishes ``starField``,
-    /// off the main actor, toggling ``isDetectingStars``/``hasDetectedStars``
-    /// around the work.
+    /// Detects the stars on the linear image and publishes ``starField``, off the
+    /// main actor, reporting the work as in progress while it runs and recording
+    /// that it ran once it finishes.
+    ///
+    /// Enters the running stage whether or not the work was queued first, so it
+    /// reports in progress for a direct call as well as a queued one.
     ///
     /// - Parameter image: The linear detection image.
     private func detectStarField( in image: PixelBuffer? ) async
     {
-        self.isDetectingStars = true
+        self.starDetectionPhase = .running
 
         defer
         {
-            self.isDetectingStars = false
-            self.hasDetectedStars = true
+            self.starDetectionPhase = .finished
         }
 
-        self.starField = await Task.detached { StarDetection.detectStars( in: image ) }.value
+        let detector = self.starDetector
+
+        self.starField = await Task.detached { StarDetection.detectStars( in: image, using: detector ) }.value
     }
 
     /// Measures the sky background on the linear image and publishes it, off the

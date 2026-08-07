@@ -479,16 +479,24 @@ public final class OpenFile: ObservableObject, Identifiable
 
             await self.load()
 
+            // Resolved once, so the rest of the preparation stays with the frame it
+            // began on. ``image`` is computed from ``selectedFrameIndex``, so reading
+            // it again after each await would follow a carousel selection made while
+            // this runs — leaving the frame the sidebar thumbnail is taken from
+            // half-prepared, and duplicating the work ``prepareSelectedFrame()`` is
+            // already doing on the newly selected frame.
+            let image = self.image
+
             // A graph (a NAXIS=1 file) has no render pipeline, no pixels to detect
             // stars in, and no raster thumbnail — it is fully prepared once decoded.
-            guard self.image?.graph == nil
+            guard image?.graph == nil
             else
             {
                 return
             }
 
-            await self.image?.renderer.render()
-            await self.image?.detectStars()
+            await image?.renderer.render()
+            await image?.detectStars()
 
             // The render commit above drives the thumbnail through
             // ``thumbnailObserver``; wait for that regeneration so the prepared

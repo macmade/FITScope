@@ -708,7 +708,7 @@
                     </li>
                     <li class="entry">
                         <a href="#m6">6. Make the detection indicator mean “queued or running”</a>
-                        <span class="status not-started">Not started</span>
+                        <span class="status completed">Completed</span>
                     </li>
                     <li class="entry">
                         <a href="#m7">7. Take star detection off the preparation slot</a>
@@ -3492,7 +3492,7 @@ after
 
     <section class="milestone" id="m6">
         <h4><span class="num">6.</span> Make the detection indicator mean “queued or running”
-            <span class="status not-started">Not started</span></h4>
+            <span class="status completed">Completed</span></h4>
 
         <div class="field">
             <span class="label">Goal</span>
@@ -3525,11 +3525,365 @@ after
             </ul>
         </div>
 
-        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
-        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
-        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
-        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
-        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+        <div class="field"><span class="label">Status</span><p><span class="status completed">Completed</span></p></div>
+        <div class="field"><span class="label">Completed</span><p>2026-08-08</p></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+
+            <p>
+                Implemented test-first, and rewritten twice at review before any of it was
+                right — the second rewrite is the one that matters and it came from the user,
+                not from me.
+            </p>
+
+            <h4>The model</h4>
+
+            <p>
+                One stored property. <code>LoadedImage.StarDetectionPhase</code> —
+                <code>idle</code>, <code>queued</code>, <code>running</code>,
+                <code>finished</code> — published, with <code>isDetectingStars</code> and
+                <code>hasDetectedStars</code> computed from it. Both keep their meanings and
+                every existing call site is untouched.
+            </p>
+
+            <p>
+                <strong>How it got there is worth recording, because the first two attempts were
+                worse and I defended them.</strong> The first added a third boolean beside the
+                two that existed, to tell "queued" from "running": three flags, eight
+                combinations, two of them meaningless, and the invariant "running implies
+                detecting" maintained by hand across three assignment sites. The user rejected
+                that as fragile. The second kept a phase enum but retained
+                <code>hasDetectedStars</code> as a separate latch; the user asked why a second
+                flag was needed at all. It was not: a latch is only independent of the phase if
+                detection can run twice and must remember the earlier run, and detection has
+                exactly two call sites, one of them guarded. Folding completion in as
+                <code>finished</code> left one value with four states, all legal, and nothing
+                to keep in step.
+            </p>
+
+            <p>
+                The type is <code>StarDetectionPhase</code> rather than
+                <code>StarDetection</code> because a nested <code>StarDetection</code> would
+                shadow the existing global type of that name — which
+                <code>detectStarField(in:)</code> itself calls, so the tidier name would have
+                broken the method it models. It nests inside <code>LoadedImage</code> following
+                <code>OpenFile.RenderPhase</code>.
+            </p>
+
+            <h4>Transitions</h4>
+
+            <ul>
+                <li><code>markStarDetectionQueued() -&gt; Bool</code> — enters the queued stage
+                    from <code>idle</code> only, reporting whether it did. The return exists so
+                    milestone&nbsp;7 can tell a detection it must wait for from one it need
+                    not; without it the method rejected silently and the caller could not
+                    tell.</li>
+                <li><code>markStarDetectionAbandoned()</code> — leaves the queued stage, and
+                    only that stage. A detection already running or already finished is left
+                    alone, so a caller cancelling without knowing how far the work got can
+                    neither report a running detection as idle nor erase a completed one.</li>
+                <li><code>detectStars()</code> drives <code>running</code> and
+                    <code>finished</code> itself, and releases a queued stage on the path where
+                    it cannot run at all.</li>
+            </ul>
+
+            <h4>What the readers do under the new meaning</h4>
+
+            <p>
+                All three verified against the source rather than assumed, and all three read
+                correctly:
+            </p>
+
+            <table>
+                <tr><th>Reader</th><th>Reads</th><th>Under the new meaning</th></tr>
+                <tr>
+                    <td>The toolbar's Stars button</td>
+                    <td><code>ImageCanvasView</code> → <code>StarsOverlay.isLoading</code> →
+                        <code>toolbarOverlays</code> → <code>ImageToolbarView</code> →
+                        <code>ImageToolbarButton</code></td>
+                    <td>Pulses and disables for the whole wait, queued included. This is the
+                        indicator the milestone exists for.</td>
+                </tr>
+                <tr>
+                    <td>The Analysis tab</td>
+                    <td><code>ImageInfoTabView</code> → <code>AnalysisView</code> →
+                        <code>StarsView</code>, on <code>hasDetected == false</code></td>
+                    <td>Spins through idle, queued and running; stops at finished.</td>
+                </tr>
+                <tr>
+                    <td>The re-detect guard</td>
+                    <td><code>OpenFile.swift:310</code></td>
+                    <td>Now exactly “only when idle”, which is what stops a second detection
+                        being queued on top of a pending one.</td>
+                </tr>
+            </table>
+
+            <h4>A claim of mine that was wrong, and how far it got</h4>
+
+            <p>
+                <strong>I reported this milestone's premise as false, twice, and it was
+                not.</strong> The Goal says a queued detection would leave “the toolbar
+                indicator reading idle for the whole wait”, and task&nbsp;4 points at
+                <code>ImageToolbarView</code>. Grepping that file for <em>detect</em> returns
+                nothing, and I concluded the indicator did not exist and that the milestone
+                needed different justification.
+            </p>
+
+            <p>
+                The first review round found it. The toolbar reaches it generically:
+                <code>ImageCanvasView.swift:419</code> passes
+                <code>isLoading: image.isDetectingStars</code> into <code>StarsOverlay</code>;
+                <code>toolbarOverlays</code> returns every overlay unfiltered;
+                <code>ImageToolbarView.swift:150</code> forwards
+                <code>isLoading: overlay.isLoading</code>; and
+                <code>ImageToolbarButton.swift:132,135</code> turn that into
+                <code>.symbolEffect( .pulse, isActive: )</code> and
+                <code>.disabled( … isLoading &amp;&amp; disablesWhileLoading )</code>, the latter
+                defaulting to <code>true</code>. So under milestone&nbsp;7's queueing the Stars
+                button would have sat still and enabled through the entire wait. The plan was
+                right; my search was too narrow, and I generalised from its silence.
+            </p>
+
+            <p>
+                The second justification I offered in its place was wrong too: I said the
+                milestone was needed to suppress <code>StarsOverlay</code>'s “ran and found
+                nothing” warning during a queued wait. Under the phase model
+                <code>hasDetectedStars</code> and <code>isLoading</code> are mutually exclusive,
+                so that warning is already suppressed without it. Of the two reasons I
+                substituted, one was real and one was not — and neither was needed, because the
+                plan's own reason was sound.
+            </p>
+
+            <h4>The bug the tests had missed</h4>
+
+            <p>
+                Round&nbsp;1 found that <code>detectStars()</code>'s early return — taken when
+                the renderer has no usable source — resolved no phase. Under milestone&nbsp;7
+                that parks an image at <code>queued</code> permanently: the Stars button pulsing
+                and <em>disabled</em>, the Analysis tab spinning, and re-detection blocked, for
+                the life of the image. Not a synthetic state: every loader deliberately captures
+                a decode failure into the render <code>Result</code> rather than failing the
+                load. The early return now releases the queued stage.
+            </p>
+
+            <p>
+                <code>idle</code> is the right release rather than <code>finished</code>, and it
+                preserves the existing behaviour exactly: <code>finished</code> would make the
+                overlay claim detection ran and found no stars on an image where nothing ran.
+                The pre-existing consequence — the Analysis tab spins forever for such a file —
+                is unchanged by this milestone and is left as it was found.
+            </p>
+
+            <h4>Detection stays with the frame it began on</h4>
+
+            <p>
+                <code>OpenFile.prepare()</code> resolved <code>self.image</code> separately on
+                each line, and <code>image</code> is computed from
+                <code>selectedFrameIndex</code> — so a carousel selection made during the render
+                moved the target mid-preparation. It now resolves once, after the load.
+            </p>
+
+            <p>
+                This was the user's suggestion, and a better fix than the guard I proposed: it
+                removes the moving target rather than checking for what the moving target
+                causes. It also fixes something older than this milestone — the previous code
+                could leave the primary frame rendered but never detected, which is the frame
+                the sidebar thumbnail is taken from.
+            </p>
+
+            <p>
+                <strong>Accepted residue, chosen deliberately:</strong> switching away from a
+                frame and back during the load still leaves both <code>prepare()</code> and
+                <code>prepareSelectedFrame()</code> on the same frame, and
+                <code>prepare()</code>'s call is unguarded, so both can detect it. The visible
+                cost is that the Analysis tab drops a populated star grid back to a spinner and
+                the Stars button re-pulses while the second detection runs — on screen, not
+                merely internal. Milestone&nbsp;7 closes it for nothing:
+                <code>guard image.markStarDetectionQueued() else { return }</code> in front of
+                that call, which is what the Bool return was added for.
+            </p>
+
+            <h4>Coverage</h4>
+
+            <p>
+                Ten tests in a new <code>LoadedImageTests</code>, registered in
+                <code>project.pbxproj</code>. <strong>Every branch of both guards, and every
+                phase transition, is mutation-verified</strong> — which took three rounds to
+                reach, because each round found a branch the previous round's mutations had not
+                reached:
+            </p>
+
+            <table>
+                <tr><th>Mutation</th><th>Caught by</th><th>Found in</th></tr>
+                <tr><td>Remove the <code>running</code> transition</td><td><code>detectionPassesThroughRunningOnItsWayToFinished</code></td><td>Round 1</td></tr>
+                <tr><td>Remove the early-return release</td><td><code>anImageThatCannotBeDetectedDoesNotStayQueued</code></td><td>Round 1</td></tr>
+                <tr><td>Remove the abandon guard</td><td><code>abandoningAfterDetectionFinishedLeavesTheRecordedRunIntact</code></td><td>Round 1</td></tr>
+                <tr><td><em>Narrow</em> the abandon guard to <code>!= .finished</code></td><td><code>abandoningDetectionThatIsAlreadyRunningIsIgnored</code></td><td>Round 2</td></tr>
+                <tr><td>Remove the queue guard</td><td><code>queueingIsIgnoredOnceDetectionHasFinished</code></td><td>Round 1</td></tr>
+                <tr><td><em>Widen</em> the queue guard to <code>!= .finished</code></td><td><code>queueingDetectionReportsItInProgressWithoutRecordingARun</code>, <code>abandoningDetectionThatIsAlreadyRunningIsIgnored</code></td><td>Round 3</td></tr>
+                <tr><td>Always return <code>true</code> from queueing</td><td>Three tests</td><td>Round 3</td></tr>
+            </table>
+
+            <p>
+                <strong>The pattern is worth keeping:</strong> removing a guard entirely was
+                caught every time; <em>narrowing or widening</em> one was invisible twice. A
+                mutation that deletes a condition tests far less than a mutation that alters it.
+            </p>
+
+            <h4>The seam, and the test it replaced</h4>
+
+            <p>
+                <code>LoadedImage</code> takes an injectable star detector, so a test can hold
+                the running stage open. It exists because the running stage is otherwise
+                unreachable: it lasts only as long as the matched-filter maths, inside a private
+                method, with nothing public to pause it.
+            </p>
+
+            <p>
+                An earlier test tried to <em>catch</em> that instant by spinning, and lost the
+                race — measured at <strong>7 passes and 1 failure in 8 runs</strong>, not
+                inferred. It was deleted with the user's approval. The replacement does not race:
+                the substituted detector blocks, so the stage persists until the test releases
+                it. Ten consecutive clean runs, and the narrowing mutation fails it 3 times in 3.
+            </p>
+
+            <p>
+                Recorded because the sequencing matters: at the point the racing test was
+                deleted, the belief was that the single-phase model made its coverage redundant.
+                That was half right. It covered the abandon guard, and round&nbsp;2 proved the
+                other half — a running detection being abandoned — was covered by nothing at
+                all. The seam was added afterwards, on the user's instruction, to close it
+                properly.
+            </p>
+
+            <h4>What is not covered by a test</h4>
+
+            <p>
+                <strong>The single resolution in <code>prepare()</code>.</strong> Exercising it
+                needs a carousel switch to land during the render, and there is no seam that
+                holds a render open the way the substituted detector holds detection open. The
+                existing <code>OpenFile</code>, <code>OpenFileFrames</code> and
+                <code>WindowModel</code> suites all drive <code>prepare()</code> and confirm
+                nothing regressed, but none of them reaches that interleaving. Verified by
+                reading — and by round&nbsp;3, which traced it independently and confirmed the
+                capture point is deterministic, the optional semantics on a failed load are
+                unchanged, and neither the thumbnail wait nor the frame previews are stranded.
+                Stated so the test count is not read as covering it.
+            </p>
+
+            <h4>Test results</h4>
+
+            <table>
+                <tr><th>Run</th><th>Result</th></tr>
+                <tr><td><code>LoadedImageTests</code></td><td><strong>10 tests passed</strong>, and 10 consecutive clean runs under review</td></tr>
+                <tr><td><code>FITScopeTests</code>, whole target</td><td><strong>830 tests in 99 suites passed</strong>, zero issues, no compiler warnings</td></tr>
+            </table>
+
+            <p>
+                The UI suite was not run: this milestone changes no view code, and
+                milestone&nbsp;4 recorded that UI tests are unreliable while a build shares the
+                machine, which was true throughout the review rounds.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+
+            <p>
+                <strong>Three rounds, the loop's cap</strong> — and unusually, each round found
+                something the previous one had not, rather than converging on polish. Round&nbsp;1
+                found a latent bug and corrected a claim of mine; round&nbsp;2 found the deleted
+                test's coverage had only half transferred; round&nbsp;3 found the symmetric hole
+                to round&nbsp;2's, on the other guard.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1.1</td><td><strong>The milestone's premise is not wrong; the toolbar indicator is real</strong>, reached generically through the overlay protocol rather than named in <code>ImageToolbarView</code>. The author's claim to the contrary was the reverse of the truth.</td><td>Medium</td><td><strong>Fixed by verifying the chain and withdrawing the claim.</strong> The plan needed no correction — the Goal and task&nbsp;4 were right. Recorded in full under <em>Implementation notes</em>, including that the substitute justification offered alongside it was also wrong.</td></tr>
+                <tr><td>1.2</td><td><strong><code>detectStars()</code>'s early return left the phase stuck at <code>queued</code> forever</strong> for an image with no usable render source — pulsing and disabling the toolbar button and spinning the Analysis tab for the life of the image, and blocking re-detection.</td><td>High</td><td><strong>Fixed.</strong> The early return releases the queued stage. Reproduced by the reviewer on a renderer built with a failure before it was fixed, and covered by a test that fails when the release is removed.</td></tr>
+                <tr><td>1.3</td><td><strong>Nothing tested the <code>running</code> transition</strong> — deleting it left all 826 tests green. This was the half of the deleted racing test's coverage the redesign did <em>not</em> subsume.</td><td>Medium</td><td><strong>Fixed</strong> by observing the published phase rather than racing it, which needs no seam.</td></tr>
+                <tr><td>1.4</td><td><code>markStarDetectionQueued()</code> was unguarded, so re-queueing after completion erased the record of the run — a regression against the old monotonic latch. Also: <code>OpenFile.prepare()</code>'s call is unguarded and re-resolved its image after an await.</td><td>Medium</td><td><strong>Guard fixed; the call site fixed differently.</strong> Queueing now enters from <code>idle</code> only. The call site was settled later by the user's capture suggestion — see <em>Review comments</em>.</td></tr>
+                <tr><td>1.5–1.6</td><td><code>StarsOverlay</code>'s <code>isLoading == false</code> clause is now unreachable from the app; two doc comments compared against previous behaviour.</td><td>Low</td><td><strong>Comments fixed; the clause left alone</strong> — <code>StarsOverlay</code> is a freely constructible value type and its own tests cover that combination.</td></tr>
+                <tr><td>2.1</td><td><strong>Doc comments claimed an “at most once per image” guarantee the type does not give.</strong> <code>detectStars()</code> is public and ungated, so a direct second call still re-runs.</td><td>Medium</td><td><strong>Fixed</strong> by narrowing the comments to what the code enforces, rather than by gating a public method silently.</td></tr>
+                <tr><td>2.2</td><td><code>markStarDetectionQueued()</code> rejected silently, leaving a caller believing it had queued something.</td><td>Medium</td><td><strong>Fixed</strong> — it returns whether the image entered the queued stage. Milestone&nbsp;7's guard depends on it.</td></tr>
+                <tr><td>2.3</td><td><strong>The abandon guard's “leaves a running detection alone” half was covered by nothing.</strong> Narrowing it to <code>!= .finished</code> passed all 829 tests.</td><td>Medium</td><td><strong>Fixed on the user's instruction</strong>, with the injectable-detector seam. The narrowing mutation now fails 3 times in 3.</td></tr>
+                <tr><td>3.1</td><td><strong>The same hole, mirrored on the queue guard.</strong> Widening it to <code>!= .finished</code> — letting a running detection be dragged back to queued — passed all 10 tests.</td><td>Medium</td><td><strong>Fixed.</strong> Two assertions inside the running stage the seam already holds open. Caught by two tests now.</td></tr>
+                <tr><td>3.2</td><td><strong>The new <code>Bool</code> return had no coverage at all</strong> — returning <code>true</code> unconditionally passed all 10 tests, on the one new contract milestone&nbsp;7 will build a decision on.</td><td>Medium</td><td><strong>Fixed.</strong> Asserted on a fresh image, on an already-queued one, on a finished one and on a running one; the mutation now fails three tests.</td></tr>
+                <tr><td>3.3</td><td><code>hasDetectedStars</code> is no longer monotonic, and the consequence is on screen — the Analysis tab drops a populated grid back to a spinner — which the plan had described only as “transiently un-recording”.</td><td>Low</td><td><strong>Recorded accurately</strong> rather than fixed, the call site fix being milestone&nbsp;7's. The reviewer's judgement that it is not worse than described is recorded with it.</td></tr>
+                <tr><td>3.4–3.8</td><td>The running-stage rendezvous is a bounded spin rather than a handshake; the <code>defer</code> release guards less than it appears; <code>@unchecked Sendable</code> was unnecessary and silences real checking; two doc comments still overclaimed; the detector property split the two derived flags.</td><td>Low / Info</td><td><strong>Fixed</strong>, except the spin, which was tidied into a direct wait on the phase rather than replaced by a semaphore handshake — it fails loudly rather than hanging, which the reviewer confirmed. <code>@unchecked</code> removed after the reviewer verified the class conforms outright.</td></tr>
+            </table>
+
+            <p>
+                <strong>Outcome — closed at the three-round cap with nothing above <em>Low</em>
+                outstanding.</strong> Every finding above <em>Low</em> is fixed and
+                mutation-verified. The rounds disagreed with me on substance twice — the toolbar
+                premise and the scope of the deleted test's coverage — and were right both times.
+            </p>
+
+            <p>
+                <strong>Recorded so the gap is visible:</strong> the round-3 fixes did not
+                themselves pass through a fourth round, the loop having reached its cap. They are
+                two assertions, one loop rewritten as a wait, one removed conformance and three
+                comments, each re-run against the full suite.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+
+            <ul>
+                <li>
+                    <strong>Rejected the first implementation's three booleans as fragile</strong>, given
+                    mid-implementation. <code>isDetectingStars</code>,
+                    <code>hasDetectedStars</code> and a new private
+                    <code>isRunningStarDetection</code> encoded one state machine across three
+                    independent flags.
+                </li>
+                <li>
+                    <strong>Then pressed further: why a second flag at all?</strong> The proposed
+                    replacement — a phase enum <em>plus</em> a retained <code>hasDetectedStars</code>
+                    boolean — was still one flag more than the model needs.
+                </li>
+                <li>
+                    <strong>Decided — a single phase, with both flags derived from it.</strong>
+                    <code>LoadedImage.StarDetectionPhase</code> (<code>idle</code>,
+                    <code>queued</code>, <code>running</code>, <code>finished</code>) becomes the only
+                    stored state; <code>isDetectingStars</code> and <code>hasDetectedStars</code>
+                    survive as computed properties so no call site changes.
+                </li>
+                <li>
+                    <strong>Approved deleting the racing test</strong>, on the ground that the single
+                    phase makes its coverage redundant rather than merely abandoning it — an unguarded
+                    abandon now regresses a deterministic test that previously could not detect it.
+                </li>
+                <li>
+                    <strong>Decided — add the injectable-detector seam.</strong> Told, after the second
+                    review round, that the abandon guard's “leaves a running detection alone” half is
+                    unprotected: <em>narrowing</em> the guard rather than removing it passes all 829
+                    tests. Chose to close that properly rather than record it as verified by reading —
+                    <code>LoadedImage</code> takes an injectable star detector so a test can hold the
+                    running stage open and cancel into it with no race.
+                </li>
+                <li>
+                    <strong>Deferred the duplicate-detection question</strong> — where to stop a second
+                    detection transiently un-recording a completed run — to a later discussion. No
+                    change made at the time.
+                </li>
+                <li>
+                    <strong>Decided — capture the image once rather than guard the call.</strong>
+                    Proposed capturing <code>self.image</code> instead of adding a second
+                    already-detected guard, which is the better fix: it removes the moving target
+                    rather than checking for what the moving target causes. Taken as
+                    <em>capture alone</em>, accepting the narrow residue where a switch away from a
+                    frame and back during the load leaves both paths on the same frame.
+                </li>
+                <li>
+                    <strong>Approved, with no changes requested.</strong> The pause surfaced the
+                    residue being visible on screen rather than merely internal, the single
+                    resolution in <code>prepare()</code> being verified by reading rather than by a
+                    test, and the round-3 fixes not having passed through a fourth round. None was
+                    objected to, so all three stand as recorded.
+                </li>
+            </ul>
+        </div>
     </section>
 
     <section class="milestone" id="m7">
@@ -3566,6 +3920,24 @@ after
                 <li>Re-check <code>prepareFramePreviews()</code>, which is spawned at the tail of
                     <code>prepare()</code> and acquires the throttle once per frame — confirm it is still correct
                     once the slot is released earlier.</li>
+                <li><strong>Gate the enqueue on <code>LoadedImage/markStarDetectionQueued()</code>’s
+                    result</strong> — <code>guard image.markStarDetectionQueued() else { return }</code>
+                    in front of <code>prepare()</code>’s detection. Milestone&nbsp;6 added that return
+                    for exactly this: it refuses an image already queued, running or finished, so the
+                    enqueue cannot duplicate work <code>prepareSelectedFrame()</code> is already doing.
+                    It also closes the residue milestone&nbsp;6 accepted, where switching away from a
+                    frame and back during the load leaves both paths detecting the same frame —
+                    visible as the Analysis tab dropping a populated star grid back to a spinner and
+                    the toolbar’s Stars button re-pulsing.</li>
+                <li><strong>Pair the acquire with
+                    <code>defer { image.markStarDetectionAbandoned() }</code>.</strong> The abandon
+                    guard releases only the queued stage, so that defer is a no-op after a detection
+                    that ran and a correct release on every early exit — including
+                    <code>prepareSelectedFrame()</code>’s <code>guard Task.isCancelled == false</code>,
+                    which would otherwise strand the image at <em>queued</em>: the Stars button pulsing
+                    and disabled, the Analysis tab spinning, and re-detection blocked, for as long as
+                    the file stays open. That is milestone&nbsp;6’s round-1 bug, relocated to this
+                    milestone’s new code path.</li>
                 <li><strong>Promote the selected file’s queued analysis too.</strong>
                     <code>WindowModel</code>’s selection observer calls
                     <code>WorkThrottle/prioritize(key:)</code> on the preparation pool only. Once
