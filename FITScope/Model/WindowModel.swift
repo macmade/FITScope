@@ -74,9 +74,17 @@ public final class WindowModel: ObservableObject
         }
     }
 
-    /// Bounds how many files render at once, so opening many files cannot
+    /// Bounds how many files are prepared at once, so opening many files cannot
     /// saturate the CPU or spike memory. Shared by every file in the window.
-    private let renderThrottle: RenderThrottle
+    /// Internal so tests can check the pool the window sized for itself.
+    let preparationThrottle: WorkThrottle
+
+    /// The window's second work pool, sized against ``preparationThrottle`` by
+    /// ``throttleLimits(processorCount:)``. Nothing acquires it: it is sized and
+    /// held here so star analyses have a pool of their own rather than competing
+    /// for preparation slots. Internal so tests can check the pool the window sized
+    /// for itself.
+    let analysisThrottle: WorkThrottle
 
     /// Per-file change subscriptions, so the window recomputes weights when a
     /// file finishes analysis (its metrics arrive asynchronously). Rebuilt
@@ -92,21 +100,59 @@ public final class WindowModel: ObservableObject
     /// single recompute.
     private var isWeightRecomputeScheduled = false
 
-    /// Creates an empty window model with a render throttle sized to the machine,
-    /// leaving a couple of cores free so preparing many files never saturates the
-    /// CPU.
-    public convenience init()
+    /// How many preparations and how many star analyses one window may run at once
+    /// on a machine with `processorCount` cores.
+    ///
+    /// A window's worker budget is `max( 2, processorCount - 2 )`, leaving a couple
+    /// of cores free. Its two pools divide that budget between them: analysis takes
+    /// a third, preparation the rest. The budget is per window, since each window
+    /// owns its own pair of pools, so a second window brings a second pair.
+    ///
+    /// Preparation keeps the larger share: it is the work a visible image waits on,
+    /// and part of it is spent reading the file rather than computing. Its renders
+    /// also fan out across cores on their own — SwiftPixel runs wide pixel passes
+    /// through `DispatchQueue.concurrentPerform` — so a preparation slot is not a
+    /// unit of one core. An analysis slot is closer to pure computation: star
+    /// detection and the cheaper background estimate, run concurrently, neither
+    /// fanning out further — so a slot occupies up to two threads, and only briefly
+    /// two, the estimate being much the cheaper. The smaller share caps that.
+    ///
+    /// Both shares have a floor — two preparations, one analysis — so a machine too
+    /// small to divide stays usable. Below five cores those floors win and their sum
+    /// exceeds the budget.
+    ///
+    /// - Parameter processorCount: The number of cores available to the process.
+    /// - Returns: The concurrency limit for each of the two pools.
+    nonisolated static func throttleLimits( processorCount: Int ) -> ( preparation: Int, analysis: Int )
     {
-        self.init( renderThrottle: RenderThrottle( limit: max( 2, ProcessInfo.processInfo.activeProcessorCount - 2 ) ) )
+        let budget   = max( 2, processorCount - 2 )
+        let analysis = max( 1, budget / 3 )
+
+        return ( preparation: max( 2, budget - analysis ), analysis: analysis )
     }
 
-    /// Creates an empty window model gated by the given render throttle. Exposed so
-    /// tests can inject a controllable throttle; production uses ``init()``.
-    ///
-    /// - Parameter renderThrottle: The throttle that bounds concurrent preparations.
-    init( renderThrottle: RenderThrottle )
+    /// Creates an empty window model with both work pools sized to the machine, so
+    /// preparing and analysing many files never saturates the CPU.
+    public convenience init()
     {
-        self.renderThrottle = renderThrottle
+        let limits = Self.throttleLimits( processorCount: ProcessInfo.processInfo.activeProcessorCount )
+
+        self.init(
+            preparationThrottle: WorkThrottle( limit: limits.preparation ),
+            analysisThrottle:    WorkThrottle( limit: limits.analysis )
+        )
+    }
+
+    /// Creates an empty window model gated by the given throttles. Exposed so
+    /// tests can inject controllable pools; production uses ``init()``.
+    ///
+    /// - Parameters:
+    ///   - preparationThrottle: The throttle that bounds concurrent preparations.
+    ///   - analysisThrottle:    The throttle that bounds concurrent star analyses.
+    init( preparationThrottle: WorkThrottle, analysisThrottle: WorkThrottle )
+    {
+        self.preparationThrottle = preparationThrottle
+        self.analysisThrottle    = analysisThrottle
 
         // Promote the selected file's preparation as the selection changes, so the
         // file the user is looking at is rendered ahead of the rest.
@@ -114,7 +160,7 @@ public final class WindowModel: ObservableObject
             .compactMap { $0 }
             .sink
             {
-                [ weak self ] id in self?.renderThrottle.prioritize( key: id )
+                [ weak self ] id in self?.preparationThrottle.prioritize( key: id )
             }
     }
 
@@ -172,7 +218,7 @@ public final class WindowModel: ObservableObject
         // gives the selected file priority.
         newFiles.forEach
         {
-            $0.prepare( throttle: self.renderThrottle, priority: $0.id == self.selectedFileID ? .high : .normal )
+            $0.prepare( throttle: self.preparationThrottle, priority: $0.id == self.selectedFileID ? .high : .normal )
         }
 
         self.observeFilesForWeighting()

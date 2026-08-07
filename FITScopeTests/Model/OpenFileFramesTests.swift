@@ -204,7 +204,7 @@ struct OpenFileFramesTests
     {
         let frames   = [ try Self.makeImage(), try Self.makeImage(), try Self.makeImage() ]
         let file     = OpenFile( url: TestFixtures.monoImage, loader: StubMultiFrameLoader( frames: frames ) )
-        let throttle = RenderThrottle( limit: 2 )
+        let throttle = WorkThrottle( limit: 2 )
 
         #expect( frames.allSatisfy { $0.renderer.result == nil } )
 

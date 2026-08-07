@@ -112,11 +112,11 @@ public final class OpenFile: ObservableObject, Identifiable
     /// redundant for the primary frame, which the loader already forwards.
     private var selectedFrameObserver: AnyCancellable?
 
-    /// The render throttle the window prepares files through, retained from
+    /// The preparation pool the window prepares files through, retained from
     /// ``prepare(throttle:priority:)`` so on-demand carousel frame selection routes
     /// its render/detect work through the same throttle. `nil` until the file is
     /// first prepared (e.g. in tests that drive selection directly).
-    private var renderThrottle: RenderThrottle?
+    private var preparationThrottle: WorkThrottle?
 
     /// The in-flight (or finished) load → render → thumbnail work, owned by the
     /// model rather than any view. `nil` until ``prepare(throttle:)`` is called.
@@ -279,7 +279,7 @@ public final class OpenFile: ObservableObject, Identifiable
     {
         self.frameSelectionTask?.cancel()
 
-        let throttle = self.renderThrottle
+        let throttle = self.preparationThrottle
         let id       = self.id
 
         self.frameSelectionTask = Task
@@ -442,14 +442,14 @@ public final class OpenFile: ObservableObject, Identifiable
     /// `throttle` bounds how many files prepare at once.
     ///
     /// The file's ``id`` is used as the throttle key, so the owning model can later
-    /// ``RenderThrottle/prioritize(key:)`` this preparation while it waits — e.g.
+    /// ``WorkThrottle/prioritize(key:)`` this preparation while it waits — e.g.
     /// when the file becomes the selection.
     ///
     /// - Parameters:
     ///   - throttle: Gates concurrent preparations across the window.
     ///   - priority: The initial render priority — `.high` for the file the user
     ///               is looking at, so it is processed ahead of the rest.
-    func prepare( throttle: RenderThrottle, priority: RenderThrottle.Priority = .normal )
+    func prepare( throttle: WorkThrottle, priority: WorkThrottle.Priority = .normal )
     {
         guard self.preparation == nil
         else
@@ -459,7 +459,7 @@ public final class OpenFile: ObservableObject, Identifiable
 
         // Retained so on-demand carousel frame selection can route through the very
         // same throttle rather than saturating the CPU alongside file preparations.
-        self.renderThrottle = throttle
+        self.preparationThrottle = throttle
 
         let id = self.id
 
@@ -507,7 +507,7 @@ public final class OpenFile: ObservableObject, Identifiable
     ///
     /// Render only: star detection stays lazy (see ``prepareSelectedFrame()``), so
     /// opening a multi-image cube does not run the full analysis on every plane up
-    /// front. Each frame's render goes through the same ``RenderThrottle`` at normal
+    /// front. Each frame's render goes through the same ``WorkThrottle`` at normal
     /// priority, behind the selected frame's high-priority work, so filling the strip
     /// can never saturate the CPU or outrank what the user is waiting on. Frames that
     /// have already rendered (or failed) are skipped, and the pass bails promptly on
@@ -516,7 +516,7 @@ public final class OpenFile: ObservableObject, Identifiable
     {
         let frames = self.frames
 
-        guard frames.count > 1, let throttle = self.renderThrottle
+        guard frames.count > 1, let throttle = self.preparationThrottle
         else
         {
             return

@@ -209,8 +209,8 @@ struct WindowModelTests
     @MainActor
     func selectingAFilePromotesItsWaitingRenderInTheThrottle() async throws
     {
-        let throttle = RenderThrottle( limit: 1 )
-        let model    = WindowModel( renderThrottle: throttle )
+        let throttle = WorkThrottle( limit: 1 )
+        let model    = WindowModel( preparationThrottle: throttle, analysisThrottle: WorkThrottle( limit: 1 ) )
 
         // Hold the only slot so the two simulated renders below must wait.
         await throttle.acquire( key: "held" )
@@ -250,230 +250,88 @@ struct WindowModelTests
 
         #expect( order == [ selected, earlier ], "selecting a file promotes its waiting render ahead of earlier ones" )
     }
-}
 
-/// Tests for `RenderThrottle`: it bounds how many preparations run at once.
-@Suite( "RenderThrottle" )
-@MainActor
-struct RenderThrottleTests
-{
-    @Test
-    func acquireBeyondTheLimitWaitsForARelease() async throws
+    // MARK: - Work pools
+
+    /// The window's worker budget is divided between the two pools rather than
+    /// each claiming it whole, with preparation keeping the larger share.
+    @Test( arguments: [
+        (  6,  3, 1 ),
+        (  8,  4, 2 ),
+        ( 10,  6, 2 ),
+        ( 12,  7, 3 ),
+        ( 16, 10, 4 ),
+    ] )
+    func dividesTheWorkerBudgetBetweenPreparationAndAnalysis( processorCount: Int, preparation: Int, analysis: Int ) throws
     {
-        let throttle = RenderThrottle( limit: 1 )
+        let limits = WindowModel.throttleLimits( processorCount: processorCount )
 
-        await throttle.acquire()
-
-        var secondAcquired = false
-
-        let waiter = Task
-        { @MainActor in
-            await throttle.acquire()
-            secondAcquired = true
-        }
-
-        // Let the waiter run; with the single slot taken it must block.
-        await Task.yield()
-        await Task.yield()
-
-        #expect( secondAcquired == false, "a second acquire beyond the limit must wait" )
-
-        throttle.release()
-        await waiter.value
-
-        #expect( secondAcquired, "releasing a slot lets a waiter proceed" )
+        #expect( limits.preparation == preparation, "preparation keeps the larger share of the worker budget" )
+        #expect( limits.analysis    == analysis,    "analysis takes a third of the worker budget" )
     }
 
+    /// From five cores up the division is exact: within a window the two pools
+    /// claim the whole worker budget between them and no more, so running analyses
+    /// beside preparations does not raise that window's ceiling.
     @Test
-    func acquiresUpToTheLimitWithoutWaiting() async throws
+    func theTwoPoolsDivideTheWindowWorkerBudgetExactly() throws
     {
-        let throttle = RenderThrottle( limit: 2 )
+        ( 5 ... 32 ).forEach
+        {
+            processorCount in
 
-        await throttle.acquire()
-        await throttle.acquire()
+            let limits = WindowModel.throttleLimits( processorCount: processorCount )
 
-        // Both acquired without suspending; release so the throttle is balanced.
-        throttle.release()
-        throttle.release()
+            #expect(
+                limits.preparation + limits.analysis == max( 2, processorCount - 2 ),
+                "\( processorCount ) cores: the two pools divide the window's worker budget exactly"
+            )
+        }
     }
 
-    // MARK: - Priority
-
-    /// A waiter promoted to high priority jumps ahead of an earlier normal waiter:
-    /// releasing the single slot hands it to the promoted waiter first.
+    /// A machine too small to divide keeps both pools usable rather than
+    /// arithmetically exact: the floors win, and their sum exceeds the budget.
     @Test
-    func aPrioritizedWaiterAcquiresBeforeAnEarlierNormalWaiter() async throws
+    func aSmallMachineKeepsBothPoolsUsable() throws
     {
-        let throttle = RenderThrottle( limit: 1 )
+        ( 1 ... 4 ).forEach
+        {
+            processorCount in
 
-        await throttle.acquire( key: "held" )
+            let limits = WindowModel.throttleLimits( processorCount: processorCount )
 
-        var order: [ String ] = []
-
-        let first = Task
-        { @MainActor in
-            await throttle.acquire( key: "first" )
-            order.append( "first" )
+            #expect( limits.preparation == 2, "\( processorCount ) cores: preparation never drops below two files at once" )
+            #expect( limits.analysis    == 1, "\( processorCount ) cores: analysis never drops below one detection at once" )
         }
-
-        // Let "first" reach the acquire suspension so it enqueues before "second".
-        await Task.yield()
-        await Task.yield()
-
-        let second = Task
-        { @MainActor in
-            await throttle.acquire( key: "second" )
-            order.append( "second" )
-        }
-
-        await Task.yield()
-        await Task.yield()
-
-        // Promote the later waiter; it must now win the next freed slot.
-        throttle.prioritize( key: "second" )
-
-        throttle.release()
-        await second.value
-
-        throttle.release()
-        await first.value
-
-        #expect( order == [ "second", "first" ], "a prioritized waiter jumps ahead of an earlier normal waiter" )
     }
 
-    /// Acquiring with high priority jumps ahead of a normal waiter that suspended
-    /// earlier, so the next freed slot goes to the high-priority acquirer.
+    /// Analysis always takes the minority share of the budget, at every core count,
+    /// so preparation keeps the majority of a window's slots.
     @Test
-    func highPriorityAcquireJumpsAheadOfAWaitingNormalAcquirer() async throws
+    func analysisAlwaysTakesTheMinorityShare() throws
     {
-        let throttle = RenderThrottle( limit: 1 )
+        ( 1 ... 32 ).forEach
+        {
+            processorCount in
 
-        await throttle.acquire( key: "held" )
+            let limits = WindowModel.throttleLimits( processorCount: processorCount )
 
-        var order: [ String ] = []
-
-        let normal = Task
-        { @MainActor in
-            await throttle.acquire( key: "normal" )
-            order.append( "normal" )
+            #expect( limits.analysis < limits.preparation, "\( processorCount ) cores: analysis never claims as many slots as preparation" )
         }
-
-        await Task.yield()
-        await Task.yield()
-
-        let high = Task
-        { @MainActor in
-            await throttle.acquire( key: "high", priority: .high )
-            order.append( "high" )
-        }
-
-        await Task.yield()
-        await Task.yield()
-
-        throttle.release()
-        await high.value
-
-        throttle.release()
-        await normal.value
-
-        #expect( order == [ "high", "normal" ], "a high-priority acquire wins over an earlier normal waiter" )
     }
 
-    /// Prioritizing a key that is not currently waiting does nothing: the waiters
-    /// keep their FIFO order.
+    /// The window sizes both pools from its worker budget, in the right order, and
+    /// keeps them separate — so neither can consume the other's slots.
     @Test
-    func prioritizingAKeyThatIsNotWaitingKeepsFIFOOrder() async throws
+    @MainActor
+    func sizesItsTwoPoolsFromTheWindowWorkerBudget() throws
     {
-        let throttle = RenderThrottle( limit: 1 )
+        let model  = WindowModel()
+        let limits = WindowModel.throttleLimits( processorCount: ProcessInfo.processInfo.activeProcessorCount )
 
-        await throttle.acquire( key: "held" )
-
-        var order: [ String ] = []
-
-        let first = Task
-        { @MainActor in
-            await throttle.acquire( key: "first" )
-            order.append( "first" )
-        }
-
-        await Task.yield()
-        await Task.yield()
-
-        let second = Task
-        { @MainActor in
-            await throttle.acquire( key: "second" )
-            order.append( "second" )
-        }
-
-        await Task.yield()
-        await Task.yield()
-
-        // No waiter carries this key, so the promotion is a no-op.
-        throttle.prioritize( key: "absent" )
-
-        throttle.release()
-        await first.value
-
-        throttle.release()
-        await second.value
-
-        #expect( order == [ "first", "second" ], "an unmatched prioritize leaves FIFO order intact" )
-    }
-
-    /// Re-prioritizing serves the most recently promoted waiter first, so rapid
-    /// navigation renders the file currently on screen ahead of the ones passed
-    /// through on the way there.
-    @Test
-    func repromotingServesTheMostRecentlyPromotedWaiterFirst() async throws
-    {
-        let throttle = RenderThrottle( limit: 1 )
-
-        await throttle.acquire( key: "held" )
-
-        var order: [ String ] = []
-
-        let a = Task
-        { @MainActor in
-            await throttle.acquire( key: "a" )
-            order.append( "a" )
-        }
-
-        await Task.yield()
-        await Task.yield()
-
-        let b = Task
-        { @MainActor in
-            await throttle.acquire( key: "b" )
-            order.append( "b" )
-        }
-
-        await Task.yield()
-        await Task.yield()
-
-        let c = Task
-        { @MainActor in
-            await throttle.acquire( key: "c" )
-            order.append( "c" )
-        }
-
-        await Task.yield()
-        await Task.yield()
-
-        // Navigation passes through "b" then lands on "c": the latest selection
-        // must win, then the earlier promotion, then the never-promoted waiter.
-        throttle.prioritize( key: "b" )
-        throttle.prioritize( key: "c" )
-
-        throttle.release()
-        await c.value
-
-        throttle.release()
-        await b.value
-
-        throttle.release()
-        await a.value
-
-        #expect( order == [ "c", "b", "a" ], "the most recently promoted waiter is served first" )
+        #expect( model.preparationThrottle.limit == limits.preparation, "the preparation pool is sized from the worker budget" )
+        #expect( model.analysisThrottle.limit    == limits.analysis,    "the analysis pool is sized from the worker budget" )
+        #expect( model.preparationThrottle !== model.analysisThrottle,  "the two pools are separate" )
     }
 
     // MARK: - Weighting

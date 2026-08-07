@@ -581,7 +581,7 @@
                 <td>Preparation pipeline (items 3 &amp; 4)</td>
                 <td>
                     <code>FITScope/Model/OpenFile.swift</code>,
-                    <code>FITScope/Model/RenderThrottle.swift</code>,
+                    <code>FITScope/Model/WorkThrottle.swift</code>,
                     <code>FITScope/Model/LoadedImage.swift</code>,
                     <code>FITScope/Model/WindowModel.swift</code>,
                     <code>FITScope/Model/ImageRenderer.swift</code>,
@@ -704,7 +704,7 @@
                 <ol>
                     <li class="entry">
                         <a href="#m5">5. Introduce a bounded, priority-inheriting analysis queue</a>
-                        <span class="status not-started">Not started</span>
+                        <span class="status completed">Completed</span>
                     </li>
                     <li class="entry">
                         <a href="#m6">6. Make the detection indicator mean “queued or running”</a>
@@ -3053,7 +3053,7 @@ after the change
 
     <section class="milestone" id="m5">
         <h4><span class="num">5.</span> Introduce a bounded, priority-inheriting analysis queue
-            <span class="status not-started">Not started</span></h4>
+            <span class="status completed">Completed</span></h4>
 
         <div class="field">
             <span class="label">Goal</span>
@@ -3087,11 +3087,407 @@ after the change
             </ul>
         </div>
 
-        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
-        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
-        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
-        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
-        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+        <div class="field"><span class="label">Status</span><p><span class="status completed">Completed</span></p></div>
+        <div class="field"><span class="label">Completed</span><p>2026-08-07</p></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+
+            <p>
+                Implemented test-first. The tests were written and watched fail against a
+                deliberately wrong implementation — the <em>rejected</em> alternative from the
+                decision below, so the red state shows the tests choosing between the two designs
+                rather than merely restating the one that was built. Then watched pass, then verified
+                by mutation.
+            </p>
+
+            <h4>Decision — a second <code>RenderThrottle</code>, not a new type</h4>
+
+            <p>
+                The milestone's first task, and the plan's first open question. <strong>No new type
+                was added.</strong> <code>WindowModel</code> holds a second <code>RenderThrottle</code>
+                instance instead.
+            </p>
+
+            <p>
+                The case for a wrapper type was put to the user and did not survive scrutiny. Three
+                arguments were offered for it and two dissolved: it would have removed the duplication
+                between milestone&nbsp;7's two enqueue sites, but both sites are in
+                <code>OpenFile</code>, so a private helper there removes exactly the same duplication;
+                and it would have given the limit arithmetic a documented home, but the arithmetic is a
+                statement about the <em>relationship</em> between two pools, and a type owning only its
+                own limit cannot see the other one — <code>WindowModel</code> is the only place both
+                are visible, which makes it the correct home rather than a fallback. What remained was
+                a pass-through forwarding <code>acquire</code>, <code>release</code> and
+                <code>prioritize</code> to a type that already does all three, adding no invariant of
+                its own.
+            </p>
+
+            <p>
+                What the decision costs, recorded so it is not discovered later: there is no
+                compile-time separation between the two pools — nothing stops analysis work being
+                enqueued on the preparation pool by mistake, beyond distinct property names — and
+                <code>RenderThrottle</code>'s name becomes a misnomer once it gates analyses.
+                Milestone&nbsp;7's task list already carries "update the doc comments on …
+                <code>RenderThrottle</code>", which is the natural moment to decide on a rename. It was
+                not done here: it would touch <code>WindowModel</code>, <code>OpenFile</code> and three
+                test files, and needs the user's approval.
+            </p>
+
+            <h4>Decision — one budget, divided</h4>
+
+            <p>
+                The user chose to divide the existing budget rather than add a pool beside it.
+                <code>WindowModel.throttleLimits(processorCount:)</code> is a
+                <code>nonisolated static</code> pure function — the same shape as
+                <code>OpenFile.renderPhase(hasImage:…)</code>, extracted for the same reason, so the
+                arithmetic is testable at fixed core counts rather than only at whatever the test
+                machine reports:
+            </p>
+
+<pre><code>let budget   = max( 2, processorCount - 2 )
+let analysis = max( 1, budget / 3 )
+
+return ( preparation: max( 2, budget - analysis ), analysis: analysis )</code></pre>
+
+            <table>
+                <tr><th>Cores</th><th>Budget</th><th>Preparation</th><th>Analysis</th><th>Combined</th></tr>
+                <tr><td>16</td><td>14</td><td>10</td><td>4</td><td>14</td></tr>
+                <tr><td>10</td><td>8</td><td>6</td><td>2</td><td>8</td></tr>
+                <tr><td>8</td><td>6</td><td>4</td><td>2</td><td>6</td></tr>
+                <tr><td>5</td><td>3</td><td>2</td><td>1</td><td>3</td></tr>
+                <tr><td>≤ 4</td><td>2</td><td>2</td><td>1</td><td><strong>3</strong> — the floors win</td></tr>
+            </table>
+
+            <p>
+                <strong>The transient this creates, stated plainly.</strong> Preparation's limit drops
+                now, while star detection still runs inside the preparation slot until milestone&nbsp;7
+                lifts it out. So for the commits between this milestone and milestone&nbsp;7 the
+                application strictly loses preparation concurrency and gains nothing: 8&nbsp;→&nbsp;6
+                on a 10-core machine, and worst relatively at 8 cores, 6&nbsp;→&nbsp;4, a third. The
+                user was shown this trade-off before choosing, alongside an option that deferred the
+                preparation half to milestone&nbsp;7, and chose to divide now. Both automated review
+                rounds raised it; it is recorded rather than acted on because it is the user's call,
+                not the reviewer's. See <em>Automated review</em>, round&nbsp;1 finding&nbsp;1.
+            </p>
+
+            <h4>Decision — cancelled waiters are guarded, not dropped</h4>
+
+            <p>
+                The milestone asked whether <code>RenderThrottle</code>'s existing behaviour — a
+                cancelled waiter is resumed on the next <code>release()</code> and expected to bail — is
+                sufficient, or whether the queue must drop it outright. <strong>Sufficient.</strong>
+                <code>RenderThrottle</code> is unchanged in this respect.
+            </p>
+
+            <p>
+                Teaching it cancellation would mean <code>acquire</code> reporting that no slot was
+                taken, and all three <code>defer { throttle.release() }</code> sites in
+                <code>OpenFile</code> would need auditing — releasing a slot that was never acquired
+                pushes <code>available</code> past the limit and breaks the concurrency bound outright.
+                Against that, the cost of keeping a cancelled waiter is one main-actor hop that runs no
+                work. There is also a timing argument the other way: the detection indicator must be
+                cleared by whoever cancels, synchronously, not whenever the hand-off arrives — a stale
+                “queued” flag left lit would make <code>prepareSelectedFrame()</code>'s
+                <code>isDetectingStars == false</code> check skip detection on a revisited carousel
+                frame.
+            </p>
+
+            <p>
+                <strong>Half of task&nbsp;4 is deliberately left to milestone&nbsp;6.</strong> “Work
+                cancelled while queued must not run” is settled and tested here. “Must be observable as
+                abandoned” is not addressed at all: there is nothing enqueued yet to observe, and
+                milestone&nbsp;6 owns the <code>isDetectingStars</code> / <code>hasDetectedStars</code>
+                transitions that give the observation its meaning. Called out rather than treated as
+                complete.
+            </p>
+
+            <h4>What was actually added</h4>
+
+            <ul>
+                <li><code>RenderThrottle.limit</code> — a stored <code>let</code>, so a pool can report
+                    the bound it was built with. <code>init</code> is otherwise byte-for-byte
+                    equivalent: <code>available</code> still starts at <code>max( 1, limit )</code>.
+                    Honest caveat: it has no production reader, only the sizing test.</li>
+                <li><code>WindowModel.throttleLimits(processorCount:)</code> and
+                    <code>WindowModel.analysisThrottle</code>. The analysis pool is inert — nothing
+                    acquires it, by design, since the milestone rewires nothing.</li>
+                <li><code>init( renderThrottle: )</code> became
+                    <code>init( renderThrottle:analysisThrottle: )</code>. It is internal and its only
+                    caller was one test; the <code>public convenience init()</code> is unchanged, so
+                    this is not a public API break.</li>
+                <li><code>renderThrottle</code> went from <code>private</code> to internal so tests can
+                    check the pools the window sized for itself — <code>@testable</code> promotes
+                    <code>internal</code>, not <code>private</code>. The same idiom
+                    <code>OpenFile</code> already uses for its four task properties.</li>
+            </ul>
+
+            <p>
+                Nothing else. Tasks&nbsp;3 and&nbsp;6 needed no work and it is worth being explicit
+                rather than silently ticking them: the two priorities were already modelled by
+                <code>RenderThrottle.Priority</code> and are exercised by tests that predate this
+                milestone, and no new file was created, so <code>project.pbxproj</code> needed no sync
+                — confirmed rather than assumed, <code>git status</code> shows three modified files and
+                nothing untracked.
+            </p>
+
+            <h4>Test-first evidence</h4>
+
+            <p>
+                The red state was produced against the rejected design — preparation keeping the whole
+                budget with analysis added beside it — so the failures show the tests discriminating,
+                not merely reacting to an empty implementation:
+            </p>
+
+<pre><code>before — the rejected "pool on top" design
+  ✘ dividesTheWorkerBudgetBetweenPreparationAndAnalysis( 10, 6, 2 )
+      Expectation failed: (limits.preparation → 8) == (preparation → 6)
+  ✘ theTwoPoolsDivideTheWindowWorkerBudgetExactly()
+      Expectation failed: (limits.preparation + limits.analysis → 10)
+                       == (max( 2, processorCount - 2 ) → 8)
+  ✘ Test run with 24 tests in 2 suites failed after 0.285 seconds with 33 issues.
+
+after
+  ✔ Test run with 24 tests in 2 suites passed after 0.289 seconds.</code></pre>
+
+            <p>
+                <strong>Verified by mutation, in two rounds.</strong> First, two production mutations
+                caught by <em>disjoint</em> tests, so no test passes for another's reason: removing the
+                floors fails <code>aSmallMachineKeepsBothPoolsUsable</code> and
+                <code>analysisAlwaysTakesTheMinorityShare</code>; swapping the two limits at the
+                <code>init()</code> call site fails
+                <code>sizesItsTwoPoolsFromTheWindowWorkerBudget</code>
+                (<code>renderThrottle.limit → 2</code> against <code>preparation → 6</code>). That last
+                one matters: it shows the wiring test genuinely catches a swap rather than restating
+                the arithmetic it derives its expectations from.
+            </p>
+
+            <p>
+                Second, after the review strengthened the abandonment test, its new setup guard was
+                mutated too — removing the <code>Task.yield()</code> pairs so neither acquirer reaches
+                its suspension point makes <code>abandonedStarted</code> and <code>liveStarted</code>
+                fail, where the <em>previous</em> version of the test would still have passed. That is
+                the vacuous-pass hole demonstrated closed rather than asserted closed.
+            </p>
+
+            <h4>Coverage</h4>
+
+            <p>
+                Six tests added, 814&nbsp;→&nbsp;820 in <code>FITScopeTests</code>. Against the
+                milestone's test task, honestly mapped rather than claimed wholesale: <em>bounded
+                concurrency</em>, <em>priority ordering</em>, <em>FIFO among equals</em> and
+                <em>promotion</em> were already covered by the six pre-existing
+                <code>RenderThrottleTests</code>, which apply unchanged because the analysis pool is
+                the same type. Only <em>cancellation while queued</em> was uncovered, and that is the
+                one behavioural test added here. The other five cover the limit arithmetic and the
+                window's wiring, which the task list did not ask for but task&nbsp;2 makes necessary.
+            </p>
+
+            <p>
+                The cancellation test is a <strong>characterization test, not a TDD artifact</strong>:
+                it passed from the start, because the decision above was to leave
+                <code>RenderThrottle</code> alone. It pins a documented contract; it did not drive out
+                any production change. Stated so the red/green evidence above is not read as covering
+                it.
+            </p>
+
+            <h4>A process failure worth recording</h4>
+
+            <p>
+                The first test run reported <code>** TEST SUCCEEDED **</code> having executed
+                <strong>zero tests</strong>. <code>-only-testing:</code> takes the Swift <em>type</em>
+                name, not the <code>@Suite</code> display name, so
+                <code>-only-testing:FITScopeTests/WindowModel</code> matched nothing and the run
+                trivially passed. Caught only by reading the test count. Any run of a filtered suite
+                has to be checked against an expected count before its result means anything.
+            </p>
+
+            <h4>Test results</h4>
+
+            <table>
+                <tr><th>Run</th><th>Result</th></tr>
+                <tr><td><code>WindowModelTests</code> + <code>RenderThrottleTests</code></td><td><strong>24 tests in 2 suites passed</strong>, zero issues</td></tr>
+                <tr><td><code>FITScopeTests</code>, whole target</td><td><strong>820 tests in 98 suites passed</strong>, zero issues, no compiler warnings</td></tr>
+                <tr><td><code>FITScopeTests</code>, again after the rename and the test split</td><td><strong>820 tests in 98 suites passed</strong> — the same count, so nothing was dropped in the move</td></tr>
+            </table>
+
+            <p>
+                The UI suite was not run. This milestone touches no view code and adds no behaviour to
+                the running application — the analysis pool is inert — and milestone&nbsp;4 recorded
+                that UI tests are unreliable while a build shares the machine, which was the case
+                throughout the review rounds here.
+            </p>
+
+            <h4 style="margin-top:1.6rem">Follow-up — renamed to <code>WorkThrottle</code>, and its
+                tests split out</h4>
+
+            <p>
+                Both on the user's instruction at review. <strong>Everything above this section, and
+                every finding in <em>Automated review</em>, names the type <code>RenderThrottle</code>,
+                because that is what it was called when those decisions were taken and those findings
+                raised.</strong> It is now <code>WorkThrottle</code>. Nothing about its behaviour
+                changed.
+            </p>
+
+            <ul>
+                <li><code>RenderThrottle</code> → <code>WorkThrottle</code>, with
+                    <code>RenderThrottle.swift</code> → <code>WorkThrottle.swift</code> (one type per
+                    file). The name had become a misnomer the moment a second instance gated analyses;
+                    the type's own doc comment already described it neutrally as bounding “how many
+                    asynchronous units of work run concurrently”, so the name was the only thing out of
+                    step.</li>
+                <li>The properties follow: <code>WindowModel.renderThrottle</code> and
+                    <code>OpenFile.renderThrottle</code> → <code>preparationThrottle</code>, which pairs
+                    with <code>analysisThrottle</code> and stops naming a pool whose slots cover load,
+                    render <em>and</em> thumbnail after only one of the three.</li>
+                <li><code>WorkThrottleTests</code> moved out of <code>WindowModelTests.swift</code> into
+                    its own <code>WorkThrottleTests.swift</code>, which was round&nbsp;2's finding&nbsp;5.
+                    That file was the test target's only two-suite file; both files now hold exactly
+                    one.</li>
+                <li><strong>Two tests were relocated rather than merely moved</strong>, which is more
+                    than “split the file” and is called out for that reason.
+                    <code>computesPerImageWeightFromMetricsAfterAnalysis</code> and
+                    <code>singleImageHasNoWeightUnderTheDefaultSetWideFormula</code> sat under a
+                    <em>Weighting</em> heading <em>inside</em> the throttle suite, though both drive
+                    <code>WindowModel</code>. Splitting mechanically would have carried them into
+                    <code>WorkThrottleTests.swift</code>, which is worse than where they started, so
+                    they went back into the <code>WindowModel</code> suite. They now report under
+                    “WindowModel” rather than “WorkThrottle”; their code is untouched.</li>
+                <li><code>project.pbxproj</code> synced by hand, as the project lists files explicitly:
+                    the renamed source keeps its two existing identifiers with both paths updated, and
+                    the new test file was registered in all four required places — build file, file
+                    reference, group children and the test target's sources phase. Validated with
+                    <code>plutil -lint</code> and by <code>xcodebuild -list</code> resolving all five
+                    targets.</li>
+            </ul>
+
+            <p>
+                <strong>Not renamed:</strong> <code>OpenFile.prepare(throttle:priority:)</code>'s
+                parameter label, which is already neutral. The rename is mechanical throughout — no
+                signature, isolation or behaviour changed — so the existing tests carry it: a
+                misapplied rename fails to compile rather than failing silently.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+
+            <p>
+                <strong>Round 1</strong> — a fresh-context reviewer read the changed files in full,
+                traced the throttle's existing call sites, consulted the git history and built and ran
+                the two suites itself. No <em>Critical</em> or <em>High</em> finding, and none
+                challenged the arithmetic: it hand-checked the limits for 1–16 cores and confirmed the
+                exactness invariant and the floors independently. Two <em>Medium</em>s.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td>Preparation concurrency drops (8&nbsp;→&nbsp;6 on 10 cores; a third at 8 cores) while the analysis pool is unused and detection still runs in the preparation slot — so this commit strictly loses throughput and gains nothing. Recommended keeping preparation's limit until milestone&nbsp;7.</td><td>Medium</td><td><strong>Deliberately not fixed.</strong> The recommendation is precisely the option the user was offered and declined, having been shown this exact trade-off. Verified accurate and recorded in the notes above rather than acted on: it is the user's decision, not the reviewer's. Round&nbsp;2 confirmed the description and refined it — the worst relative case is 8 cores, not 10.</td></tr>
+                <tr><td>2</td><td><strong>The abandonment test could pass without exercising abandonment.</strong> Nothing asserted the two acquirers had reached their suspension point, so if the <code>Task.yield()</code> pairs were ever insufficient the test degenerated: both tasks would run after the release, neither would have queued, and every assertion would still pass.</td><td>Medium</td><td><strong>Fixed</strong>, and it was the finding worth having — the same class of defect milestone&nbsp;4's review caught. Each task body now sets a <code>…Started</code> flag as its first statement, with no suspension point before its <code>acquire</code>, and the test asserts both started and neither ran <em>before</em> cancelling. Demonstrated by mutation, not assumed: removing the yields makes those two assertions fail. Round&nbsp;2 independently verified the “started but not run ⟹ suspended in the continuation” reasoning holds.</td></tr>
+                <tr><td>3</td><td><strong>Two errors of fact in the arithmetic's doc comment.</strong> “Its slots do not each pin a core: a render fans out across the machine” argues against itself — fanning out means a slot uses <em>more</em> than one core. And “star detection is single-threaded, so an analysis slot holds exactly one core” is wrong: <code>LoadedImage.detectStars()</code> runs two concurrent detached passes.</td><td>Low</td><td><strong>Fixed</strong>, and both were genuine mistakes of mine — the second especially, having read that code earlier and missed the implication. Rewritten to say what the code does; round&nbsp;2 re-verified it against <code>LoadedImage.swift:210-264</code> and <code>PixelUtilities.swift:71-84</code>, and confirmed by grep that the star-detection and background sources contain no fan-out of their own.</td></tr>
+                <tr><td>4</td><td>“Worker budget” was described as machine-wide, but both pools are per-<code>WindowModel</code> and <code>MainWindowView</code> creates one per window — two windows give two pairs. The claim was new even though the behaviour is pre-existing.</td><td>Low</td><td><strong>Fixed</strong> in the doc comment and in two test names (<code>theTwoPoolsDivideTheWindowWorkerBudgetExactly</code>, <code>sizesItsTwoPoolsFromTheWindowWorkerBudget</code>). Whether a genuinely machine-wide ceiling is wanted is a separate design question, left for the user.</td></tr>
+                <tr><td>5</td><td>The doc comment carried history and a rejected alternative — “one budget, divided — <em>not two budgets side by side</em>”, “the window <em>has always</em> left a couple of cores free” — which the project's convention puts in the commit message.</td><td>Low</td><td><strong>Fixed.</strong> The rationale for the choice lives here and in the commit message; the comment now states only the arithmetic and why the shares are sized as they are.</td></tr>
+                <tr><td>6</td><td><code>analysisThrottle</code>'s doc asserted “Bounds how many star analyses run at once” when nothing acquires it — describing a future milestone's behaviour, the same convention breach as&nbsp;5 in the other direction.</td><td>Low</td><td><strong>Fixed</strong>, then fixed again after round&nbsp;2 found the first attempt still implied live behaviour. It now says plainly that nothing acquires it.</td></tr>
+                <tr><td>7</td><td>The test suite's summary line still read “it bounds how many preparations run at once”, no longer the type's only role.</td><td>Low</td><td><strong>Fixed</strong> to “units of work”. The type <em>rename</em> was deliberately not done — see the decision above.</td></tr>
+                <tr><td>8</td><td>Now that <code>limit</code> is stored, <code>release()</code> could cheaply assert <code>available &lt; limit</code> and catch an unmatched release — the exact failure mode cited as the reason not to teach <code>acquire</code> cancellation.</td><td>Low</td><td><strong>Deferred to the user.</strong> It is a change to shared production code beyond this milestone's “add only what is missing” scope, and the risk it guards materialises in milestone&nbsp;7, where new acquire/release pairs appear. Round&nbsp;2 agreed with deferring, having traced all three existing call sites and confirmed they are balanced today — including that <code>prepareFramePreviews</code>' <code>defer</code> correctly fires on <code>continue</code>.</td></tr>
+            </table>
+
+            <p>
+                <strong>Round 2</strong> — a second, independent fresh-context reviewer, told to treat
+                round&nbsp;1's resolutions as claims to attack. It found <strong>no
+                <em>Critical</em>, <em>High</em> or <em>Medium</em></strong> finding, and no bug, crash,
+                undefined behaviour, isolation error or behavioural regression in the production code
+                beyond the accepted trade-off. It verified six of round&nbsp;1's eight resolutions
+                outright, disproved one claim, and partially verified another. The loop converged here.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td><strong>A claim of mine, disproven empirically.</strong> The <code>.timeLimit( .minutes( 1 ) )</code> trait added in round&nbsp;1 cannot turn a broken hand-off into a failure, as I had said it would: <code>Task&lt; Void, Never &gt;.value</code> is non-throwing, so cancelling the test's own task leaves the awaits blocked. The reviewer built a throwaway package reproducing exactly this and watched a one-minute limit fail to fire for over 180&nbsp;s, twice.</td><td>Low</td><td><strong>Fixed by removing the trait.</strong> The reviewer suggested keeping it as harmless; it was removed instead, because its only justification was the disproven claim and leaving it implies a protection that does not exist. What actually prevents the vacuous pass is the pre-cancel assertions from round&nbsp;1's finding&nbsp;2.</td></tr>
+                <tr><td>2</td><td>The abandonment test could not distinguish “resumed and bailed” from “dropped”, yet its doc comment asserted the former — so it did not defend the one design decision the user made. A throttle that dropped cancelled waiters would pass every assertion.</td><td>Low</td><td><strong>Fixed.</strong> An <code>abandonedResumed</code> flag is set the moment <code>acquire</code> returns, before the cancellation guard, and asserted at the end. One line, and it pins the contract the decision rests on.</td></tr>
+                <tr><td>3</td><td>An assertion message inverted the rule it checks — “analysis takes the rest of the worker budget”, where the code and the doc comment both say analysis takes a third and preparation the rest.</td><td>Low</td><td><strong>Fixed.</strong> A failure message that contradicts the invariant would mislead whoever hits it.</td></tr>
+                <tr><td>4</td><td>Round&nbsp;1's finding&nbsp;6 was fixed only where it was raised: two test doc comments still described a pipeline that does not run yet (“their detections run behind them”, “the enqueued task guards after acquiring”), and <code>analysisThrottle</code>'s replacement wording still implied live behaviour.</td><td>Low</td><td><strong>Fixed</strong> in all three places. A fair catch on the shape of the first fix rather than its substance.</td></tr>
+                <tr><td>5</td><td><code>RenderThrottleTests</code> lives inside <code>WindowModelTests.swift</code> — the only file in the test target with two <code>@Suite</code> types — and this milestone adds ~86 lines to it. Recommended splitting it into its own file, which task&nbsp;6's <code>project.pbxproj</code> budget would cover.</td><td>Low</td><td><strong>Not done; raised with the user.</strong> The condition is pre-existing and the split would move an unrelated suite plus edit the project file, well outside what was asked. Worth doing, but the user's call.</td></tr>
+                <tr><td>6</td><td>Milestone bookkeeping absent from the diff, and milestone&nbsp;7's task list had not received the selection-promotion item round&nbsp;1 raised — the exact defect milestone&nbsp;1's and milestone&nbsp;3's reviews caught, where guidance recorded only in the source milestone's notes never reached the milestone that needed it.</td><td>Low</td><td><strong>Fixed.</strong> This record is the first half; the second is a new task in milestone&nbsp;7, which also states why implementing it now would have been untestable dead code. The reviewer judged deferring the implementation correct and deferring the record not.</td></tr>
+                <tr><td>—</td><td><em>Info.</em> An analysis slot occupies up to two threads, which the doc stopped short of saying; <code>RenderThrottle.limit</code> has no production reader and names an invariant <code>release()</code> does not guard; the trade-off's worst relative case is 8 cores, not 10.</td><td>Info</td><td><strong>First fixed</strong> in the doc comment. The other two recorded above (finding&nbsp;8 and the trade-off note) rather than acted on.</td></tr>
+            </table>
+
+            <p>
+                <strong>Outcome — converged in two rounds.</strong> Both reviewers reached the same
+                verdict on the production code: correct, small, no regression. Every finding concerned
+                the tests' rigour or the accuracy of the prose. The two that changed something material
+                were round&nbsp;1's catch that the abandonment test could pass vacuously, and
+                round&nbsp;2's disproof of my own claim about <code>.timeLimit</code>. One
+                <em>Medium</em> stands unresolved by choice — round&nbsp;1's finding&nbsp;1 — because
+                resolving it would reverse a decision the user made with the trade-off in front of
+                them.
+            </p>
+
+            <p>
+                <strong>Recorded so the gap is visible:</strong> round&nbsp;2's six <em>Low</em> fixes
+                did not themselves pass through a further review round. The loop had already converged
+                — no <em>Critical</em>, <em>High</em> or <em>Medium</em> remained — and the changes are
+                one removed trait, one added assertion, one message and three comments, each re-run
+                against the full suite.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+
+            <ul>
+                <li>
+                    <strong>Asked for an explanation of the unresolved <em>Medium</em></strong> — the
+                    preparation pool losing slots now, while the analysis pool is still unused and star
+                    detection still runs inside the preparation slot. A question, not a change request:
+                    the decision to divide the budget now stands unless the explanation changes it.
+                </li>
+                <li>
+                    <strong>Asked for an explanation of the deferred <code>assert</code></strong> —
+                    round&nbsp;1's finding&nbsp;8, adding
+                    <code>assert( self.available &lt; self.limit )</code> to
+                    <code>RenderThrottle.release()</code>. Again a question rather than an instruction
+                    to add it.
+                </li>
+                <li>
+                    <strong>Decided — split the throttle's tests into their own file.</strong>
+                    <code>RenderThrottleTests</code> is to be moved out of
+                    <code>WindowModelTests.swift</code>, with the <code>project.pbxproj</code> sync that
+                    requires, rather than left as the test target's only two-suite file.
+
+                    <p style="margin:.5rem 0 0">
+                        <strong>Done</strong>, and it turned up something the split had to decide
+                        rather than perform blindly: two <code>WindowModel</code> weighting tests were
+                        sitting inside the throttle suite, so a mechanical split would have filed them
+                        under the throttle's own test file. They were returned to the
+                        <code>WindowModel</code> suite instead. See <em>Implementation notes</em> →
+                        <em>Follow-up</em>.
+                    </p>
+                </li>
+                <li>
+                    <strong>Decided — rename <code>RenderThrottle</code>.</strong> The type gates both
+                    preparation and analysis, so its name is a misnomer; it is to be renamed rather
+                    than merely re-documented in milestone&nbsp;7.
+
+                    <p style="margin:.5rem 0 0">
+                        <strong>Done —</strong> <code>WorkThrottle</code>, with the properties renamed
+                        to <code>preparationThrottle</code> to pair with <code>analysisThrottle</code>.
+                        820 tests still pass, unchanged in count. See <em>Implementation notes</em> →
+                        <em>Follow-up</em>.
+                    </p>
+                </li>
+                <li>
+                    <strong>Declined the proposed memory.</strong> The generalisable lesson from the
+                    wrapper-type discussion — that a type forwarding to another without adding an
+                    invariant is not worth introducing — is not to be recorded outside this plan.
+                </li>
+                <li>
+                    <strong>Approved, with no changes requested.</strong> The pause surfaced the
+                    unresolved <em>Medium</em> left standing by choice (the preparation pool losing
+                    slots until milestone&nbsp;7), the deferred <code>assert</code> in
+                    <code>release()</code>, and the fact that the rename and the test split landed
+                    after the review loop had closed and did not themselves pass through a round. None
+                    was objected to and no further round was requested, so all three stand as recorded.
+                </li>
+            </ul>
+        </div>
     </section>
 
     <section class="milestone" id="m6">
@@ -3170,11 +3566,21 @@ after the change
                 <li>Re-check <code>prepareFramePreviews()</code>, which is spawned at the tail of
                     <code>prepare()</code> and acquires the throttle once per frame — confirm it is still correct
                     once the slot is released earlier.</li>
+                <li><strong>Promote the selected file’s queued analysis too.</strong>
+                    <code>WindowModel</code>’s selection observer calls
+                    <code>WorkThrottle/prioritize(key:)</code> on the preparation pool only. Once
+                    analyses are enqueued here, a file selected <em>after</em> its analysis has queued
+                    would sit behind every background file’s detection — the same responsiveness
+                    problem promotion was introduced to solve for renders. Both pools key on
+                    <code>OpenFile.id</code>, so this is one extra <code>prioritize</code> call in the
+                    same sink. Raised by both of milestone&nbsp;5’s automated review rounds and
+                    deferred to here deliberately: promoting a pool nothing enqueues on would have been
+                    untestable dead code.</li>
                 <li>Consider whether <code>detectStarField</code>’s <code>Task.detached</code> should carry an
                     explicit priority: a detached task does not inherit the caller’s. Verify against the
                     documented behaviour of <code>Task.detached</code> before changing it.</li>
                 <li>Update the doc comments on <code>prepare(throttle:priority:)</code>,
-                    <code>prepareSelectedFrame()</code> and <code>RenderThrottle</code> to describe the new
+                    <code>prepareSelectedFrame()</code> and <code>WorkThrottle</code> to describe the new
                     division of work.</li>
                 <li>Extend <code>OpenFileTests</code>, <code>OpenFileFramesTests</code> and
                     <code>WindowModelTests</code> for the new sequencing — in particular that a second file’s

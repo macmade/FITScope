@@ -33,7 +33,7 @@ import Foundation
 /// needed. Cancellation is not specially handled: a caller cancelled while
 /// waiting still resumes on the next `release()` and should bail then.
 @MainActor
-final class RenderThrottle
+final class WorkThrottle
 {
     /// The initial urgency of an acquisition. Promoted work is served before
     /// unpromoted work; a ``high`` acquire enters already promoted, as if
@@ -66,6 +66,10 @@ final class RenderThrottle
         let continuation: CheckedContinuation< Void, Never >
     }
 
+    /// The maximum number of concurrent holders — at least one, whatever limit the
+    /// caller asked for.
+    let limit: Int
+
     /// The number of slots still available.
     private var available: Int
 
@@ -85,7 +89,8 @@ final class RenderThrottle
     /// - Parameter limit: The maximum number of concurrent holders.
     init( limit: Int )
     {
-        self.available = max( 1, limit )
+        self.limit     = max( 1, limit )
+        self.available = self.limit
     }
 
     /// Acquires a slot, suspending until one is free.

@@ -260,7 +260,7 @@
 		3E896C0B571D381C043C1846 /* BitmapRenderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D392BED62AAEDC93434757A /* BitmapRenderSource.swift */; };
 		3EABE11E3DCA74FC89100204 /* MoonPhaseDisc.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E9C27093943525176C6843 /* MoonPhaseDisc.swift */; };
 		3FE28DD6363347228F3C7BE2 /* EquatorialGridOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8344C5B19AE3FABC172CB8B1 /* EquatorialGridOverlay.swift */; };
-		3FF795FC8CD560EE3FBEC16C /* RenderThrottle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4DF9AFDBE4943238872A2C7 /* RenderThrottle.swift */; };
+		3FF795FC8CD560EE3FBEC16C /* WorkThrottle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4DF9AFDBE4943238872A2C7 /* WorkThrottle.swift */; };
 		428DF3B93E22083E09214995 /* NorthOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 799F647F7C536FA5329F2F55 /* NorthOverlayTests.swift */; };
 		42B9BD4E43A2D02914FDDE09 /* StatisticsFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C686F7A99DA48AB69336E13 /* StatisticsFormat.swift */; };
 		47488E190519065F0F17E6F7 /* MoonPhaseDiscTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE099AFB1D8E2318FF1E09B /* MoonPhaseDiscTests.swift */; };
@@ -276,6 +276,7 @@
 		4EE8F82573447720C0974D6A /* SessionMetricsActiveModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97CC8394F69D79027E76278A /* SessionMetricsActiveModelView.swift */; };
 		525E89AC8DB8D8F325B749AC /* SessionMetricsChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B264DF03E4047B5452A9DA7 /* SessionMetricsChartView.swift */; };
 		52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */; };
+		B7A41C3E90D25FE6A1C4D0B2 /* WorkThrottleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2E85D17F4A36B90E5710C8D /* WorkThrottleTests.swift */; };
 		54065838C048CFC29D3F7E9D /* AnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCACD7E9EC017435B0121B6 /* AnalysisView.swift */; };
 		546A99E3839DAF0FA8441186 /* HistogramPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78D7CBE758186E62FCA898A /* HistogramPlaceholderView.swift */; };
 		57C4FB597E4FAA17244A7F17 /* SunTwilightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0457D28C6A4D379B1D149226 /* SunTwilightView.swift */; };
@@ -759,6 +760,7 @@
 		0D5E09EBD752054C2EA4CC6C /* RAWImageInfo.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RAWImageInfo.swift; sourceTree = "<group>"; };
 		0E6A0CA25BD529178F2F9432 /* CursorReadout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CursorReadout.swift; sourceTree = "<group>"; };
 		0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowModelTests.swift; sourceTree = "<group>"; };
+		C2E85D17F4A36B90E5710C8D /* WorkThrottleTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkThrottleTests.swift; sourceTree = "<group>"; };
 		10D628DF4A1EE6FDEB030831 /* HeaderExport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeaderExport.swift; sourceTree = "<group>"; };
 		110F63821980B8EE7718494F /* GraphSeriesFITSTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GraphSeriesFITSTests.swift; sourceTree = "<group>"; };
 		1201F624701C957BABD10644 /* WindowCloseConfirmationDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowCloseConfirmationDelegate.swift; sourceTree = "<group>"; };
@@ -862,7 +864,7 @@
 		A0750384B9B00F3AF15C9AFC /* StatusBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatusBarView.swift; sourceTree = "<group>"; };
 		A18478C6716CEEB19F032F3F /* PlateSolveSessionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveSessionTests.swift; sourceTree = "<group>"; };
 		A18478C6716CEEB19F032FB1 /* PlateSolveHintsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlateSolveHintsTests.swift; sourceTree = "<group>"; };
-		A4DF9AFDBE4943238872A2C7 /* RenderThrottle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RenderThrottle.swift; sourceTree = "<group>"; };
+		A4DF9AFDBE4943238872A2C7 /* WorkThrottle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkThrottle.swift; sourceTree = "<group>"; };
 		A660D5D46BE16501558BFAEB /* LocationMapRepresentable.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LocationMapRepresentable.swift; sourceTree = "<group>"; };
 		A78D7CBE758186E62FCA898A /* HistogramPlaceholderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistogramPlaceholderView.swift; sourceTree = "<group>"; };
 		A7D979316B01C453664BD5CA /* BinaryFloatingPointTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BinaryFloatingPointTests.swift; sourceTree = "<group>"; };
@@ -1239,7 +1241,7 @@
 				C312A09479352778259D365A /* Preferences */,
 				209B69186583B9C65F810C23 /* HistogramMode.swift */,
 				C9BD5E1A3FC040B4E14E8824 /* HistogramViewOptions.swift */,
-				A4DF9AFDBE4943238872A2C7 /* RenderThrottle.swift */,
+				A4DF9AFDBE4943238872A2C7 /* WorkThrottle.swift */,
 				E0A86A0DF44489494DEF2C5C /* StarDetection.swift */,
 				FE01A0010000000000000001 /* WeightFormula.swift */,
 				5A516E0150000000000000B2 /* ImageWeighting.swift */,
@@ -1514,6 +1516,7 @@
 				FA778FED8ACCF6FFA37A007D /* OpenFileTests.swift */,
 				CA1100000000000000000004 /* OpenFileFramesTests.swift */,
 				0F2663B0A4058FC7D345AE2A /* WindowModelTests.swift */,
+				C2E85D17F4A36B90E5710C8D /* WorkThrottleTests.swift */,
 				641869CE5D1A76CCDB6FEAB3 /* CursorReadoutTests.swift */,
 				C07659F02B1A39E7821ED5BE /* ImageInformationTests.swift */,
 				05FB1000000000000000A004 /* ImageRendererTests.swift */,
@@ -2456,7 +2459,7 @@
 				1E9E33C8743D787B7D1F00C8 /* KeychainStoring.swift in Sources */,
 				16CA5451FED9C5F34706C016 /* HistogramMode.swift in Sources */,
 				FA14C3E0E2CE2FF26A71FF1B /* HistogramViewOptions.swift in Sources */,
-				3FF795FC8CD560EE3FBEC16C /* RenderThrottle.swift in Sources */,
+				3FF795FC8CD560EE3FBEC16C /* WorkThrottle.swift in Sources */,
 				73471F6671C722655FD0059F /* CanvasCommand.swift in Sources */,
 				EDA8C3FD25FFC3542CACB017 /* FITSMetadata.swift in Sources */,
 				3099EBF0657F94AB1C2C273A /* CanvasOverlay.swift in Sources */,
@@ -2589,6 +2592,7 @@
 				A3A4243F6B062C0617771CCE /* OpenFileGraphTests.swift in Sources */,
 				CA1100000000000000000015 /* ImageCarouselViewTests.swift in Sources */,
 				52B9E064492EB7C2B72DF494 /* WindowModelTests.swift in Sources */,
+				B7A41C3E90D25FE6A1C4D0B2 /* WorkThrottleTests.swift in Sources */,
 				05FB1000000000000000A0E2 /* AppModelTests.swift in Sources */,
 				D6356B42DB94E8CAD3027923 /* AppUpdaterTests.swift in Sources */,
 				05FB1000000000000000D302 /* PreferencesTests.swift in Sources */,

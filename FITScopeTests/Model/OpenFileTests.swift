@@ -140,7 +140,7 @@ struct OpenFileTests
     func prepareLoadsRendersAndThumbnails() async throws
     {
         let file     = OpenFile( url: TestFixtures.monoImage )
-        let throttle = RenderThrottle( limit: 2 )
+        let throttle = WorkThrottle( limit: 2 )
 
         file.prepare( throttle: throttle )
 
@@ -155,7 +155,7 @@ struct OpenFileTests
     func thumbnailIsRegeneratedWhenTheRenderResultChanges() async throws
     {
         let file     = OpenFile( url: TestFixtures.monoImage )
-        let throttle = RenderThrottle( limit: 2 )
+        let throttle = WorkThrottle( limit: 2 )
 
         file.prepare( throttle: throttle )
 
@@ -184,7 +184,7 @@ struct OpenFileTests
     func prepareIsIdempotent() async throws
     {
         let file     = OpenFile( url: TestFixtures.monoImage )
-        let throttle = RenderThrottle( limit: 2 )
+        let throttle = WorkThrottle( limit: 2 )
 
         file.prepare( throttle: throttle )
 
