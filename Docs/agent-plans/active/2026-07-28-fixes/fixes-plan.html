@@ -712,7 +712,7 @@
                     </li>
                     <li class="entry">
                         <a href="#m7">7. Take star detection off the preparation slot</a>
-                        <span class="status not-started">Not started</span>
+                        <span class="status completed">Completed</span>
                     </li>
                     <li class="entry">
                         <a href="#m8">8. Measure the preparation throughput gain</a>
@@ -3888,7 +3888,7 @@ after
 
     <section class="milestone" id="m7">
         <h4><span class="num">7.</span> Take star detection off the preparation slot
-            <span class="status not-started">Not started</span></h4>
+            <span class="status completed">Completed</span></h4>
 
         <div class="field">
             <span class="label">Goal</span>
@@ -3963,11 +3963,528 @@ after
             </ul>
         </div>
 
-        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
-        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
-        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
-        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
-        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+        <div class="field"><span class="label">Status</span><p><span class="status completed">Completed</span></p></div>
+        <div class="field"><span class="label">Completed</span><p>2026-08-08</p></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+
+            <p>
+                Implemented test-first. The tests were written and watched fail against a
+                deliberately wrong implementation — the analysis pool wired in, but detection still
+                run inline inside the preparation — so the red state shows the tests discriminating
+                between the two designs rather than merely reacting to missing code. Then watched
+                pass, then verified by mutation.
+            </p>
+
+            <h4>The change</h4>
+
+            <ul>
+                <li><strong>A preparation slot now covers load&nbsp;→&nbsp;render&nbsp;→&nbsp;thumbnail.</strong>
+                    <code>prepare()</code> hands the image's analysis to a new private
+                    <code>enqueueStarDetection(for:priority:)</code> the moment the render returns —
+                    before the thumbnail wait, as the milestone specifies — and neither waits for it
+                    nor holds its slot across it.</li>
+                <li><strong><code>prepareSelectedFrame()</code> does the same</strong>, at
+                    <code>.high</code>: the slot covers the render alone.</li>
+                <li><strong>The enqueue is gated on
+                    <code>LoadedImage/markStarDetectionQueued()</code></strong> and its task pairs
+                    the acquire with <code>defer { image.markStarDetectionAbandoned() }</code>, as
+                    tasks&nbsp;7 and&nbsp;8 asked.</li>
+                <li><strong><code>WindowModel</code>'s selection observer promotes both pools</strong>,
+                    not only preparation — task&nbsp;9, deferred here from milestone&nbsp;5
+                    deliberately because promoting a pool nothing enqueued on would have been
+                    untestable dead code.</li>
+                <li><strong><code>cancelPreparation()</code> cancels every enqueued analysis and
+                    abandons every frame's queued stage</strong>, synchronously. Milestone&nbsp;5's
+                    notes are why the abandon is not left to the task's own defer: a queued waiter
+                    only learns it was cancelled when the pool hands it a slot, which may be long
+                    after the file is gone.</li>
+            </ul>
+
+            <h4>Decision — <code>prepare(throttle:priority:)</code> renamed</h4>
+
+            <p>
+                It takes two pools now, so the neutral <code>throttle:</code> label milestone&nbsp;5
+                deliberately kept is no longer unambiguous. The signature is
+                <code>prepare(preparationThrottle:analysisThrottle:priority:)</code>, pairing with
+                <code>WindowModel</code>'s own property names. Internal, so no public API breaks; the
+                call sites are <code>WindowModel.open</code> and the tests.
+            </p>
+
+            <h4>Decision — one tracked analysis per frame, and a scrubbed frame keeps its place</h4>
+
+            <p>
+                <code>analysisTasks</code> is a dictionary keyed by
+                <code>ObjectIdentifier(image)</code> rather than a single task property, because
+                <code>prepare()</code> and <code>prepareSelectedFrame()</code> can each have a live
+                analysis for a <em>different</em> frame — milestone&nbsp;6's single-resolution fix
+                keeps <code>prepare()</code> on the frame it began on while a carousel selection moves
+                elsewhere. A single property would silently lose one of the two handles, and
+                <code>cancelPreparation()</code> would then leave it running. One entry per frame is
+                bounded by the frame count, since a frame can only re-enqueue once its previous
+                analysis has released the queued stage.
+            </p>
+
+            <p>
+                <strong>Selecting another frame does not cancel the previous frame's analysis</strong>
+                — a decision, not an oversight, and the one thing here most worth a second opinion.
+                Cancelling looks tidier but is worse: the abandon would return the frame to
+                <em>idle</em> while its cancelled task is still queued, so a revisit would find the
+                frame idle, enqueue a second analysis, and then have <em>that</em> one's queued stage
+                cleared by the first task's defer when the pool finally reaches it. Letting a visited
+                frame keep its place costs one detection per frame the user actually stopped on, whose
+                result is then cached against a return visit. The cost is real for a long scrub, and
+                is recorded in <code>prepareSelectedFrame()</code>'s doc comment rather than hidden.
+            </p>
+
+            <h4>Task&nbsp;10 — <code>Task.detached</code>'s priority, checked rather than assumed</h4>
+
+            <p>
+                <strong>No change, and the two Apple sources disagree.</strong> The stdlib's own
+                parameter doc for <code>Task.detached</code> says “omit this parameter or pass
+                <code>nil</code> to inherit the enclosing context's base priority”. The runtime says
+                otherwise: in <code>stdlib/public/Concurrency/Task.cpp</code>
+                (<code>main</code> and <code>release/6.2</code> both), <code>swift_task_create_common</code>
+                takes the <em>detached</em> branch, leaves <code>basePriority</code> unspecified, and
+                then falls through to <code>if (isUnspecified(basePriority)) basePriority =
+                JobPriority::Default;</code> — no inheritance. <code>Task.swift</code>'s own
+                <em>Task Priority</em> section agrees with the runtime. Review round&nbsp;2 confirmed
+                it empirically as well: from a <code>.high</code> context, a nested unstructured
+                <code>Task {}</code> reports <code>.high</code> and a <code>Task.detached {}</code>
+                reports <code>.medium</code>.
+            </p>
+
+            <p>
+                So detection lands at Default (21) while <code>ImageRenderer.render()</code> dispatches
+                its pixel work at <code>.userInitiated</code> (25) — renders already outrank detections
+                at the OS level, without an explicit priority. Queue ordering is the analysis pool's
+                job, and that is what this milestone wires up.
+            </p>
+
+            <h4>Task&nbsp;6 — <code>prepareFramePreviews()</code> re-checked</h4>
+
+            <p>
+                Still correct. It is spawned at the tail of the preparation task, so it starts just
+                before the slot is released and then acquires its own slot per frame, with the
+                <code>defer</code> correctly scoped inside the loop body. Releasing the preparation
+                slot earlier changes nothing about that; the previews simply start sooner, detection
+                no longer sitting in front of them. One pre-existing defect the re-check did surface
+                is recorded under <em>Automated review</em> and left for the user.
+            </p>
+
+            <h4>Test-first evidence</h4>
+
+<pre><code>before — the analysis pool wired in, detection still run inside the preparation
+  ✘ preparationSettlesWithoutWaitingForTheStarAnalysis()
+      Expectation failed: (image).isDetectingStars → false
+      Expectation failed: (image.hasDetectedStars → true) == false
+  ✘ aFilesDetectionNoLongerGatesTheNextFilesPreparation()
+      Expectation failed: (firstImage).isDetectingStars → false
+  ✘ theSelectedFilesAnalysisIsServedBeforeABackgroundFilesAnalysis()
+      Expectation failed: (order → []) == ["selected", "background"]
+  ✘ cancellingThePreparationAbandonsAQueuedAnalysis()
+  ✘ selectingAFrameEnqueuesItsAnalysisRatherThanRunningItInTheRenderSlot()
+  ✘ selectingAFilePromotesItsWaitingAnalysisInTheThrottle()
+  ✘ Test run with 49 tests in 3 suites failed after 1.690 seconds with 14 issues.
+
+after
+  ✔ Test run with 57 tests in 3 suites passed after 1.311 seconds.</code></pre>
+
+            <h4>Verified by mutation — eleven, each caught by exactly one test</h4>
+
+            <table>
+                <tr><th>Mutation</th><th>Caught by</th></tr>
+                <tr><td>Run detection inline in <code>prepare()</code> again</td><td>Four tests (the red state above)</td></tr>
+                <tr><td>Enqueue at <code>.normal</code> instead of the inherited priority</td><td><code>theSelectedFilesAnalysisIsServedBeforeABackgroundFilesAnalysis</code></td></tr>
+                <tr><td>Enqueue the frame selection at <code>.normal</code> instead of <code>.high</code></td><td><code>aSelectedFramesAnalysisIsServedBeforeOneQueuedEarlier</code></td></tr>
+                <tr><td>Enqueue under a fresh <code>UUID()</code> rather than the file's <code>id</code></td><td><code>aWaitingAnalysisIsPromotedByItsFilesIdentifier</code></td></tr>
+                <tr><td>Drop <code>analysisThrottle.prioritize</code> from the selection observer</td><td><code>selectingAFilePromotesItsWaitingAnalysisInTheThrottle</code></td></tr>
+                <tr><td>Move the enqueue behind the thumbnail wait</td><td><code>theAnalysisIsEnqueuedAheadOfTheThumbnailRatherThanBehindIt</code></td></tr>
+                <tr><td>Drop the frame abandon in <code>cancelPreparation()</code></td><td><code>cancellingThePreparationAbandonsAQueuedAnalysis</code></td></tr>
+                <tr><td>Drop the analysis-task cancel in <code>cancelPreparation()</code></td><td><code>cancellingThePreparationStopsAQueuedAnalysisFromRunning</code></td></tr>
+                <tr><td>Drop the in-task cancellation guard before <code>detectStars()</code></td><td><code>cancellingThePreparationStopsAQueuedAnalysisFromRunning</code></td></tr>
+                <tr><td><em>Widen</em> the enqueue gate to always queue</td><td><code>revisitingAnAnalysedFrameDoesNotEnqueueASecondAnalysis</code></td></tr>
+                <tr><td>Drop the cancellation guard before <code>prepare()</code>'s enqueue</td><td><code>aFileClosedWhileItRenderedEnqueuesNoAnalysis</code></td></tr>
+                <tr><td>Drop the cancellation guard before the frame selection's enqueue</td><td><code>aFrameSelectionCancelledWhileItRenderedEnqueuesNoAnalysis</code></td></tr>
+                <tr><td>Hand each opened file a private analysis pool</td><td><code>opensFilesAgainstTheWindowsAnalysisPool</code></td></tr>
+            </table>
+
+            <p>
+                The last three exist because the review found them uncovered, and the last one only
+                discriminates after a correction: its first version asserted that both opened files
+                report <em>detecting</em>, which is true under the mutation too, since an enqueued
+                analysis is marked <em>queued</em> synchronously whichever pool it waits on. It now
+                waits for both to be suspended <em>in the window's own pool</em>, which a file
+                prepared against any other pool cannot do.
+            </p>
+
+            <h4>A milestone-5 conclusion this contradicts</h4>
+
+            <p>
+                Milestone&nbsp;5's round&nbsp;2 recorded that <code>.timeLimit</code> “cannot turn a
+                broken hand-off into a failure”, because <code>Task&lt; Void, Never &gt;.value</code>
+                is non-throwing and cancelling the test's own task leaves the await blocked. That does
+                not hold here. Measured directly in this project rather than argued: a probe test with
+                <code>.timeLimit( .minutes( 1 ) )</code>, blocked on exactly that shape, reported
+                <code>Time limit was exceeded: 60.000 seconds</code> and the run terminated. Review
+                round&nbsp;2 reproduced it independently. The trait is therefore applied to the eight
+                new tests that would otherwise wedge the suite rather than fail it if the change were
+                reverted — the failure mode round&nbsp;2 raised as a <em>Medium</em>.
+            </p>
+
+            <h4>What is <em>not</em> covered by a test</h4>
+
+            <ul>
+                <li><strong>The <code>defer { image.markStarDetectionAbandoned() }</code> in the
+                    analysis task.</strong> Removing it leaves every test green, and all three review
+                    rounds confirmed it. Not merely uncovered but unreachable-as-effective: the only
+                    caller that cancels an analysis abandons the frame itself first, a detection that
+                    ran is already finished, and the no-source path abandons inside
+                    <code>detectStars()</code>. It is kept as the invariant that makes the acquire and
+                    the queued stage paired within one task — recorded as an invariant, not claimed as
+                    test-verified.</li>
+                <li><strong>The by-hand check.</strong> The application was not driven; nothing here
+                    was verified on screen. The milestone asks only for the test plan, but the
+                    queued-state UI (the Stars button pulsing through a longer wait, the Analysis tab
+                    spinning) is now visible for longer than before and has been read, not seen.</li>
+            </ul>
+
+            <h4 style="margin-top:1.6rem">Follow-up — a frame is now prepared exactly as a file is</h4>
+
+            <p>
+                On the user's instruction at review. <strong>Everything above this section describes
+                the carousel as it was before this follow-up, when selecting a frame cancelled the
+                previous selection.</strong> It no longer does.
+            </p>
+
+            <p>
+                The decision recorded above — “a visited frame keeps its place” — was only ever half
+                true, and the half that was not is what made it hard to explain. The <em>analysis</em>
+                was never cancelled, but <code>prepareSelectedFrame()</code> still opened with
+                <code>frameSelectionTask?.cancel()</code>, which killed the previous frame's
+                <em>render</em>. A frame left before its render finished was therefore dropped
+                entirely — no render, no analysis — until it was selected again. That asymmetry had no
+                counterpart on the sidebar, where a file's preparation is started once and never
+                cancelled by navigation, and it is what the instruction rejects.
+            </p>
+
+            <ul>
+                <li><code>frameSelectionTask</code> → <code>frameSelectionTasks</code>, keyed by
+                    frame, one entry per frame and kept rather than replaced. Selecting another frame
+                    starts its preparation instead of stopping the one before it; a frame already
+                    being prepared is not prepared twice.</li>
+                <li><strong>A frame that already has a result takes no preparation slot at all</strong>
+                    and enqueues its analysis straight away. Only a frame still waiting on its pixels
+                    acquires the throttle. Without this, dropping the cancel would have meant one
+                    high-priority slot acquisition per frame stepped through, ahead of the background
+                    files — the contention the original cancel was there to avoid.</li>
+                <li><code>cancelPreparation()</code> cancels them all, and remains the only thing that
+                    cancels anything.</li>
+                <li><code>awaitFrameSelection()</code> replaces awaiting a single
+                    <code>frameSelectionTask</code>, mirroring <code>awaitStarDetection()</code>:
+                    there is no longer one task to await.</li>
+            </ul>
+
+            <p>
+                <code>selectingAnotherFrameDoesNotStopThePreviousFramesPreparation</code> pins it —
+                two selections made back to back, then both frames asserted rendered <em>and</em>
+                analysed. Restoring the cancel fails it on exactly those two assertions for the frame
+                left behind.
+            </p>
+
+            <p>
+                <strong>And the double render it exposed, closed.</strong> Dropping the cancel made
+                a pre-existing hazard reachable far more often, and tracing it turned up a simpler
+                fix than the one first proposed: the background previews and a frame selection could
+                both render the same frame, because each tests for a committed <em>result</em> and a
+                render in flight has none. Adding <code>renderer.isRendering</code> to all three of
+                those checks closes it in both directions and needs no new capture — a render already
+                in flight commits sooner than a duplicate started now, so whichever path arrives
+                second simply lets it finish and, in the selection's case, enqueues the analysis
+                anyway. Detection reads the render <em>source</em>, not the rendered result, so it
+                never depended on the render it skipped.
+            </p>
+
+            <p>
+                <code>selectingAFrameAlreadyBeingRenderedDoesNotRenderItTwice</code> pins it by
+                counting <code>isRendering</code> transitions, which rise once per render started —
+                including one whose result is later discarded as superseded. Removing the guards makes
+                it read 2. Two existing tests had been passing <em>because of</em> the duplicate
+                render and were corrected: one now awaits the previews it defers to, the other no
+                longer prepares the file at all, so no background render can pre-empt the selection's.
+            </p>
+
+            <h4 style="margin-top:1.6rem">Follow-up — three deferred items taken up</h4>
+
+            <p>
+                On the user's instruction at review, the three items the review rounds had left for
+                them. Each is small, each is now pinned by a test that fails on its mutation.
+            </p>
+
+            <ul>
+                <li><strong><code>prepareFramePreviews()</code> is no longer spawned after a
+                    cancellation</strong> (round&nbsp;1's finding&nbsp;12, round&nbsp;3's&nbsp;8).
+                    Neither the render nor the thumbnail wait is cancellable, so a file closed during
+                    either reached the tail of <code>prepare()</code> having already been past
+                    <code>cancelPreparation()</code> and spawned a previews task nothing would then
+                    cancel — rendering every remaining frame of a file that was gone. Guarded, with
+                    the reasoning stated.
+                    <code>aFileClosedWhileItRenderedStartsNoFramePreviews</code> pins it.</li>
+                <li><strong><code>WorkThrottle/prioritize(key:)</code> promotes the <em>last</em>
+                    waiter carrying the key, not the first</strong> (round&nbsp;2's finding&nbsp;3).
+                    A key can carry several waiters — a file's frames each enqueue under the file's
+                    identifier — and the first is the one waited on longest, so the window was
+                    promoting the frame the user had left longest ago rather than the one on screen.
+                    A strict improvement: with a single waiter the two are the same index. The
+                    carousel follow-up above had widened the defect from one pool to both, since a
+                    file can now have several frame-selection waiters as well.
+                    <code>promotingAKeyServesItsMostRecentAcquirerFirst</code> pins it.</li>
+                <li><strong><code>selectingAFilePromotesItsWaitingRenderInTheThrottle</code> no longer
+                    pins its scenario with <code>Task.yield()</code></strong> (round&nbsp;2's
+                    finding&nbsp;4, round&nbsp;3's&nbsp;3). It is the pre-existing sibling of the test
+                    round&nbsp;2 caught flaking, with the same failure mode except that it would
+                    <em>hang</em> rather than fail. Converted to <code>waitForWaiters(_:)</code>, and
+                    its release imbalance fixed at the same time — the waiters now hand their slots
+                    on, so one release drains both. Removing the promotion now fails it with the
+                    wrong order rather than wedging the suite.</li>
+            </ul>
+
+            <p>
+                <strong>And one doc correction outside the diff, on the user's instruction.</strong>
+                <code>StarsOverlay/isLoading</code> and its initialiser parameter both read “whether
+                star detection is still <em>running</em>”, while the only caller feeds
+                <code>LoadedImage/isDetectingStars</code>, which since milestone&nbsp;6 means queued
+                <em>or</em> running. Milestone&nbsp;6 introduced the imprecision and it was harmless
+                then, detection starting the instant it was reached; this milestone makes queued a
+                state an analysis can sit in for a long time, so the property now spends much of its
+                lit time in the state its doc said it was not in. Reworded to match
+                <code>isDetectingStars</code>' own wording. Comment-only — confirmed by diffing: no
+                non-comment line changed in the file.
+            </p>
+
+            <p>
+                <strong>An error made while verifying these, recorded because it could have shipped
+                silently.</strong> Reverting a mutation with <code>git checkout --</code> on
+                <code>WindowModel.swift</code> discarded this milestone's own changes to that file
+                rather than only the mutation. It was caught immediately from the diff stat and
+                restored from a backup taken earlier; the file's five edits were then re-verified
+                against <code>git diff</code> line by line. Mutations are reverted from a copy, not
+                from Git, precisely because the tree already carries uncommitted work.
+            </p>
+
+            <p>
+                <strong>Recorded so the gap is visible:</strong> this follow-up and the two before it
+                landed after the review loop had closed and did not pass through a round. Together
+                they are six production lines, six new tests and three corrected ones, each
+                mutation-verified.
+            </p>
+
+            <h4>Test results</h4>
+
+            <table>
+                <tr><th>Run</th><th>Result</th></tr>
+                <tr><td><code>FITScopeTests</code>, whole target</td><td><strong>849 tests in 99 suites passed</strong>, zero issues, no compiler warnings</td></tr>
+                <tr><td>Full test plan — <code>SwiftFITSTests</code>, <code>SwiftAstroTests</code>, <code>SwiftPixelTests</code> and the rest</td><td><strong>All unit suites passed</strong> (231, 272, 529, 205, 47, 226 alongside the app's own). Run at 844 tests, before the follow-up added two.</td></tr>
+                <tr><td><code>FITScopeUITests</code></td><td>39 / 40 — one pre-existing failure, below</td></tr>
+            </table>
+
+            <p>
+                <strong>Two pre-existing flaky tests, and neither is this milestone's.</strong>
+                Reported rather than absorbed:
+            </p>
+
+            <ul>
+                <li><code>testHistogramStatisticsToggleRevealsPanel</code>
+                    (<code>FITScopeUITests.swift:995</code>) — the failure milestone&nbsp;4
+                    investigated at length, established as failing identically at HEAD, traced to the
+                    app's <code>Toggle</code>-inside-<code>Menu</code> construct whose action never
+                    runs, and left as work of its own. It recurred here.</li>
+                <li><code>abandoningDetectionThatIsAlreadyRunningIsIgnored</code>
+                    (<code>LoadedImageTests.swift:270</code>), milestone&nbsp;6's own test — failed in
+                    1 of 3 full unit runs with this change. <strong>Established as pre-existing by
+                    measurement, not asserted:</strong> with the change stashed and the tree at HEAD it
+                    failed in <strong>2 of 4</strong> full unit runs (830 tests), with the identical
+                    <code>starDetectionPhase → .finished</code> where <code>.running</code> was
+                    expected. Review round&nbsp;3 identified the mechanism, which is worth acting on
+                    separately: <code>BlockingStarDetector</code> is <em>never called</em>, because
+                    <code>ImageRenderer( file: )</code> builds a source with no
+                    <code>detectionImage</code>, so <code>StarDetection.detectStars</code> returns at
+                    its <code>guard let image</code> before reaching the detector. The running stage
+                    therefore lasts one hop, and the test is racing it after all — the thing the
+                    substituted detector was added to stop.</li>
+            </ul>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+
+            <p>
+                <strong>Three rounds, the loop's cap.</strong> No round found a defect in the shipped
+                behaviour: every <em>Medium</em> across all three was a gap in the tests or an
+                overclaiming comment, and each reviewer independently confirmed the concurrency —
+                acquire/release balance on every path including cancellation, main-actor isolation, no
+                retain cycle, no unbounded growth, no weakened assertion. What the rounds did do is
+                find, one after another, guards that no test would have noticed being removed.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1.1</td><td><strong>The <code>cancelPreparation()</code> analysis-task cancel was uncovered.</strong> Deleting it left all 837 tests green. Not dead code: the reviewer confirmed empirically that an unstructured <code>Task {}</code> does not inherit its creator's cancellation, so without it a closed file's queued analyses all run.</td><td>Medium</td><td><strong>Fixed</strong> with <code>cancellingThePreparationStopsAQueuedAnalysisFromRunning</code>, which also covers the in-task guard that makes the cancel take effect. Both mutations now fail it.</td></tr>
+                <tr><td>1.2</td><td><strong>Nothing asserted the analysis enqueues under the <em>file's</em> id</strong> — the key the window's promotion depends on. <code>let id = UUID()</code> left the suite green while silently breaking task&nbsp;9 end to end.</td><td>Medium</td><td><strong>Fixed</strong> with <code>aWaitingAnalysisIsPromotedByItsFilesIdentifier</code>, which promotes by <code>file.id</code> and asserts the order.</td></tr>
+                <tr><td>1.3</td><td><strong>The milestone's own ordering requirement was untested</strong> — moving the enqueue behind the thumbnail wait left the suite green.</td><td>Medium</td><td><strong>Fixed</strong> with <code>theAnalysisIsEnqueuedAheadOfTheThumbnailRatherThanBehindIt</code>, which records whether the frame was already queued at the moment the thumbnail landed.</td></tr>
+                <tr><td>1.4</td><td>Four new tests would <em>hang</em> rather than fail if the change were reverted, and the project does not enable test timeouts.</td><td>Medium</td><td><strong>Fixed</strong> — but only after re-testing the recommendation, since milestone&nbsp;5 had recorded that <code>.timeLimit</code> cannot fire in this situation. It does; see the note above. Applied to eight tests.</td></tr>
+                <tr><td>1.5</td><td><strong>A carousel analysis is no longer cancellable by a later selection</strong>, so scrubbing an N-plane cube enqueues N detections. Asked for an explicit decision.</td><td>Medium</td><td><strong>Decided and recorded</strong> rather than changed — see <em>Implementation notes</em>. Cancelling would introduce a worse defect. Raised for the user at the pause.</td></tr>
+                <tr><td>1.6–1.11</td><td><code>analysisTasks</code>' doc claimed a guarantee that does not hold across <code>cancelPreparation()</code>; <code>awaitStarDetection()</code>'s doc described history; a test did not pin that its revisit actually moved; a slot was acquired with no paired <code>defer</code>; misaligned <code>=</code>; tests leaked in-flight detections into the parallel suite.</td><td>Low</td><td><strong>All fixed.</strong></td></tr>
+                <tr><td>1.12</td><td><code>prepareFramePreviews()</code> is still spawned after <code>cancelPreparation()</code>, because the render is not cancellable — three lines below a guard added for the identical reason.</td><td>Low</td><td><strong>Deferred to the user</strong> as pre-existing and outside this milestone's fix. Rounds&nbsp;2 and&nbsp;3 both agreed with deferring; round&nbsp;3 noted the window is <em>narrower</em> after this change, not wider.</td></tr>
+                <tr><td>2.1</td><td><strong>The cancellation guard <em>this change added</em> in <code>prepare()</code> was itself uncovered</strong> — removing it left all 840 tests green, while the comment above it argued it was load-bearing.</td><td>Medium</td><td><strong>Fixed</strong> with <code>aFileClosedWhileItRenderedEnqueuesNoAnalysis</code>, which cancels from the renderer's own commit — the one moment the guard covers.</td></tr>
+                <tr><td>2.2</td><td><code>prepareSelectedFrame()</code>'s <code>.high</code> was uncovered: <code>.high</code>&nbsp;→&nbsp;<code>.normal</code> left the suite green.</td><td>Medium</td><td><strong>Fixed</strong> with <code>aSelectedFramesAnalysisIsServedBeforeOneQueuedEarlier</code>.</td></tr>
+                <tr><td>2.3</td><td><strong>A doc claim the code does not enforce.</strong> “The frame the user settles on is analysed ahead of the ones passed through” holds at enqueue, but <code>WorkThrottle/prioritize(key:)</code> promotes only the <em>first</em> waiter carrying the key, and a file's analyses share its id — so a promotion from a file re-selection lands on the oldest passed-through frame instead.</td><td>Medium</td><td><strong>Doc corrected</strong> to state what the pool guarantees and where it stops. Changing <code>prioritize</code> is a change to shared production code beyond this milestone; raised for the user.</td></tr>
+                <tr><td>2.4</td><td><strong>A new test was observed to flake.</strong> Two <code>Task.yield()</code>s do not guarantee a freshly created task has suspended inside <code>acquire</code>; if it has not, <code>prioritize</code> is a documented no-op and the order is decided by scheduling luck.</td><td>Medium</td><td><strong>Fixed properly rather than by adding yields.</strong> <code>WorkThrottle.waiterCount</code> is an exact signal — the waiter is appended synchronously inside the continuation, so there is no window where a task has suspended but is not counted. A bounded <code>waitForWaiters(_:)</code> now pins every ordering test's queue before it reorders it.</td></tr>
+                <tr><td>2.5–2.10</td><td>That test also over-released the pool by one; <code>waitForWaiters</code> was triplicated verbatim and used a soft <code>#expect</code> for a precondition it could carry on past; the scrubbing-cost wording was slightly over-broad; <code>awaitStarDetection()</code>'s “so far” should say “when this was called”; frame-preview tasks leaked from two tests.</td><td>Low / Info</td><td><strong>All fixed.</strong> The helper moved to an <code>extension WorkThrottle</code> beside its own tests and now uses <code>try #require</code>, so a queue that never forms stops the test where it failed.</td></tr>
+                <tr><td>3.1</td><td><strong>The same class of gap, mirrored.</strong> The cancellation guard on the <em>frame-selection</em> path was uncovered — and it is the sole enforcement of the scrubbing behaviour the doc had just been corrected to promise.</td><td>Medium</td><td><strong>Fixed</strong> with <code>aFrameSelectionCancelledWhileItRenderedEnqueuesNoAnalysis</code>.</td></tr>
+                <tr><td>3.2</td><td><strong>The milestone's integration point was untested.</strong> Giving each opened file a private analysis pool — instead of the window's — passed all 842 tests, so “files opened through the window share the window's pool” was asserted nowhere.</td><td>Low</td><td><strong>Fixed</strong> with <code>opensFilesAgainstTheWindowsAnalysisPool</code>, after a first version that did not discriminate (see <em>Implementation notes</em>).</td></tr>
+                <tr><td>3.3–3.5</td><td>The <em>pre-existing</em> render-promotion test still uses the yield heuristic round&nbsp;2 disqualified, and has the same release imbalance; the doc says the ordering is decided “at enqueue” when it is decided as each analysis suspends; the analysis task's abandon <code>defer</code> comment claims an effect it never has today.</td><td>Low / Info</td><td>The two doc imprecisions are <strong>fixed</strong>. The pre-existing test is <strong>deferred</strong> — it is outside the change and converting it is the user's call; the one-line fix is noted below.</td></tr>
+                <tr><td>3.6</td><td><strong>The mechanism of milestone&nbsp;6's flaky test, identified.</strong> <code>BlockingStarDetector</code> is never invoked, so the race it was added to remove is intact.</td><td>Info</td><td><strong>Recorded</strong> under <em>Test results</em>, with the HEAD measurement that establishes it as pre-existing. Not fixed here: it is milestone&nbsp;6's test and shares no code with this change.</td></tr>
+            </table>
+
+            <p>
+                <strong>Outcome — closed at the three-round cap with nothing above <em>Low</em>
+                outstanding.</strong> Every <em>Medium</em> is resolved: eleven by adding the missing
+                test and demonstrating it fails on the mutation, two by correcting a doc claim, one by
+                recording a decision the reviewer explicitly left open. The rounds were unusually
+                productive rather than converging on polish — each found a guard the previous round's
+                mutations had not reached, which is the pattern milestone&nbsp;6 recorded and this
+                milestone repeats: <em>removing</em> a guard is caught easily, <em>narrowing</em> one
+                is not, and a guard nothing tests at all is invisible to both.
+            </p>
+
+            <p>
+                <strong>Recorded so the gap is visible:</strong> the round-3 fixes did not themselves
+                pass through a fourth round, the loop having reached its cap. They are two new tests
+                (both mutation-verified here), one helper extracted and hardened, and three comments.
+            </p>
+
+            <p>
+                <strong>Left for the user</strong> — three pre-existing items no round proposed to fix
+                inside this milestone, and one design question:
+            </p>
+
+            <ul>
+                <li><code>prepareFramePreviews()</code> is spawned after a cancellation, since neither
+                    the render nor the thumbnail wait is cancellable — so a file closed mid-render
+                    renders every remaining frame of a file that is gone. One line:
+                    <code>guard Task.isCancelled == false else { return }</code> before the call.</li>
+                <li><code>WorkThrottle/prioritize(key:)</code> promotes only the first waiter with a
+                    key, which is the oldest. With several analyses under one file id that is the
+                    wrong one; <code>lastIndex(where:)</code> would promote the newest. A change to
+                    shared production code with its own test, so not made here.</li>
+                <li><code>selectingAFilePromotesItsWaitingRenderInTheThrottle</code> still pins its
+                    scenario with two <code>Task.yield()</code>s, which round&nbsp;2 showed is not a
+                    guarantee — and it would <em>hang</em> rather than fail. Two lines to convert it to
+                    <code>waitForWaiters</code>, now that the helper exists.</li>
+                <li>Whether keeping a scrubbed frame's analysis alive is the behaviour wanted — see the
+                    decision in <em>Implementation notes</em>.</li>
+            </ul>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+
+            <ul>
+                <li>
+                    <strong>“Scrubbing the carousel no longer cancels the previous frame's analysis
+                    — explain, I never accepted this.”</strong> Correcting the record: the decision
+                    was taken unilaterally while implementing, and the summary that reported it
+                    overstated its standing by saying reviewers had “accepted the reasoning”. The
+                    review rounds checked the reasoning was internally consistent; round&nbsp;1
+                    raised the behaviour as a <em>Medium</em> and asked for an explicit decision,
+                    which is not the same as approval, and none of it was the user's. A design
+                    decision of this kind should have been put before the user before it was made.
+                    An explanation was asked for — a question, not an instruction to change
+                    anything — so nothing is changed pending the answer.
+                </li>
+                <li>
+                    <strong>“<code>Task.detached</code> priority — explain.”</strong> An explanation
+                    of task&nbsp;10's outcome was asked for. A question rather than a change
+                    request; no code changed.
+                </li>
+                <li>
+                    <strong>“Why would the task be cancelled in the first place?”</strong> The right
+                    question, and the previous explanation had not answered it: it led with the
+                    implementation hazards of cancelling and never said what would motivate a cancel
+                    at all. The answer is that the pre-milestone code cancelled the detection as a
+                    side effect of cancelling the frame's render task — deliberately, per its own doc
+                    comment (“cancellation is honoured before the expensive detection step, so
+                    closing the file <em>or a rapid re-selection</em> stops the work promptly”),
+                    because detection then held a scarce <code>.high</code> <em>preparation</em>
+                    slot. This milestone removes that motive: detection no longer occupies a
+                    preparation slot. What remains is CPU thrift alone. Still a question; nothing
+                    changed.
+                </li>
+                <li>
+                    <strong>“When switching to another image in the sidebar, does the task get
+                    cancelled?”</strong> No — and not distinguishing the sidebar from the carousel is
+                    what made the exchange above confusing. Verified in the source: a sidebar
+                    selection changes <code>WindowModel/selectedFileID</code>, whose observer only
+                    calls <code>WorkThrottle/prioritize(key:)</code> on both pools. The sole caller of
+                    <code>cancelPreparation()</code> in the application is
+                    <code>WindowModel/close(_:)</code>. The only other cancellation,
+                    <code>frameSelectionTask?.cancel()</code>, belongs to the <em>carousel</em> —
+                    frames within one file. True before this milestone and unchanged by it;
+                    everything discussed above concerns carousel frames alone.
+                </li>
+                <li>
+                    <strong>Decided — fix <code>StarsOverlay/isLoading</code>'s doc.</strong> It
+                    read “still running” while the only caller feeds a flag that covers queued as
+                    well, which this milestone makes a long-lived state. Reworded; comment-only.
+                </li>
+                <li>
+                    <strong>Approved, with no changes requested.</strong> The pause surfaced that the
+                    three follow-ups after the review loop closed — no cancellation on frame switch,
+                    the double render they exposed, and the three deferred items — did not themselves
+                    pass through a review round; the two pre-existing flaky tests, one of which was
+                    measured failing at HEAD; that <code>WorkThrottle/waiterCount</code> is production
+                    surface serving only tests; that the analysis task's abandon <code>defer</code> is
+                    an invariant no test can reach; and that nothing was verified by hand in the
+                    running application. None was objected to, so all stand as recorded.
+                </li>
+                <li>
+                    <strong>“Why is it different with the carousel? Frames should behave just as
+                    other images.”</strong> A real inconsistency, and the asymmetry is not one this
+                    milestone introduced. A file's work is started <em>once, for every file</em>, at
+                    open; selection then only promotes, so there is no previous task to cancel. A
+                    frame's <em>analysis</em> is started lazily, on selection, so that path carries a
+                    cancel-the-previous idiom the sidebar never needed. Renders are already
+                    symmetric — <code>prepareFramePreviews()</code> renders every frame at
+                    <code>.normal</code>, exactly as every file is prepared — so it is detection
+                    alone that is lazy, deliberately, to keep opening a cube from analysing every
+                    plane. The symmetric alternative is set out in the answer and left for the user:
+                    enqueue each frame's analysis from <code>prepareFramePreviews()</code> and reduce
+                    <code>prepareSelectedFrame()</code> to promotion, which removes the cancellation
+                    question entirely. A question; nothing changed.
+                </li>
+                <li>
+                    <strong>Decided — the behaviour wanted is: the first frame is analysed when the
+                    file is prepared, a frame is analysed when it is selected, and nothing more.</strong>
+                    No cancellation, and no eager analysis of every plane. That is what the milestone
+                    already implements, so no code changed — but the requirement had been inferred
+                    from the existing design rather than stated, and nothing pinned it directly.
+                    <code>onlyTheFirstFrameIsAnalysedUntilTheOthersAreSelected</code> now asserts it
+                    end to end: after preparing a three-frame file every frame is rendered for its
+                    carousel preview, only the first is analysed, and selecting a third frame starts
+                    that frame's analysis and no other's. Mutation-verified against all three ways it
+                    could break.
+                </li>
+                <li>
+                    <strong>Decided — “switch to another one: nothing gets cancelled”, taken
+                    literally.</strong> One thing did still get cancelled and had been described
+                    imprecisely: <code>prepareSelectedFrame()</code> opened with
+                    <code>frameSelectionTask?.cancel()</code>, so a frame left <em>before its render
+                    completed</em> was dropped and never analysed until it was visited again. That is
+                    now removed — a frame behaves as an opened file does, prepared once and to
+                    completion, with only closing the file cancelling anything. See
+                    <em>Implementation notes</em> → <em>Follow-up</em>.
+                </li>
+            </ul>
+        </div>
     </section>
 
     <section class="milestone" id="m8">

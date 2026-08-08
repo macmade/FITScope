@@ -25,11 +25,87 @@
 @testable import FITScope
 import Testing
 
+/// Waiting for a pool's queue to form, so a test can reorder one it knows is there.
+@MainActor
+extension WorkThrottle
+{
+    /// Waits until `count` acquirers are suspended in this pool.
+    ///
+    /// An acquirer has to be scheduled before it can reach its `acquire` and suspend
+    /// there, and yielding a fixed number of times does not guarantee that has
+    /// happened — leaving a test to reorder a queue that has not formed, where
+    /// ``prioritize(key:)`` is a documented no-op and the resulting order is decided
+    /// by scheduling luck. The wait is bounded and throws, so a queue that never forms
+    /// stops the test here, with the count it reached, rather than surfacing as a
+    /// mysterious ordering further down.
+    ///
+    /// - Parameter count: The number of suspended acquirers to wait for.
+    /// - Throws: When the pool never reaches `count` suspended acquirers.
+    func waitForWaiters( _ count: Int ) async throws
+    {
+        var attempts = 0
+
+        while self.waiterCount < count, attempts < 10_000
+        {
+            attempts += 1
+
+            await Task.yield()
+        }
+
+        try #require( self.waiterCount == count, "\( count ) acquirers must be suspended in the pool before its queue is reordered" )
+    }
+}
+
 /// Tests for `WorkThrottle`: it bounds how many units of work run at once.
 @Suite( "WorkThrottle" )
 @MainActor
 struct WorkThrottleTests
 {
+    /// A key can carry several waiters — a file's frames each enqueue their own work
+    /// under the file's identifier — and promoting it serves the one that suspended
+    /// last, which is the one the user reached most recently. Promoting the earliest
+    /// instead would serve the frame they left longest ago.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    func promotingAKeyServesItsMostRecentAcquirerFirst() async throws
+    {
+        let throttle = WorkThrottle( limit: 1 )
+
+        // Hold the only slot so both acquirers below must wait, and let each hand its
+        // slot on so the single release drains both.
+        await throttle.acquire()
+
+        var order: [ String ] = []
+
+        let older = Task
+        { @MainActor in
+            await throttle.acquire( key: "file" )
+            order.append( "older" )
+            throttle.release()
+        }
+
+        try await throttle.waitForWaiters( 1 )
+
+        let newer = Task
+        { @MainActor in
+            await throttle.acquire( key: "file" )
+            order.append( "newer" )
+            throttle.release()
+        }
+
+        // Pin the scenario: both carry the same key and are suspended, so promoting it
+        // has to choose between them rather than finding only one.
+        try await throttle.waitForWaiters( 2 )
+
+        throttle.prioritize( key: "file" )
+
+        throttle.release()
+
+        await newer.value
+        await older.value
+
+        #expect( order == [ "newer", "older" ], "promoting a key serves its most recently suspended acquirer first" )
+    }
+
     @Test
     func acquireBeyondTheLimitWaitsForARelease() async throws
     {
@@ -332,5 +408,4 @@ struct WorkThrottleTests
         #expect( abandonedRan == false, "work cancelled while queued must not run" )
         #expect( liveRan,               "an abandoned waiter hands its slot to the waiter behind it" )
     }
-
 }

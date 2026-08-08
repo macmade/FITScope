@@ -84,6 +84,16 @@ final class WorkThrottle
     /// an earlier one and the newest selection is served first.
     private var nextPromotion = 0
 
+    /// How many acquirers are currently suspended waiting for a slot.
+    ///
+    /// Internal, with no production reader: a test that reorders the queue has to know
+    /// the queue has actually formed, and a suspended acquirer is otherwise invisible —
+    /// leaving the test to infer it from having yielded, which is not a guarantee.
+    var waiterCount: Int
+    {
+        self.waiters.count
+    }
+
     /// Creates a throttle allowing `limit` concurrent holders (at least one).
     ///
     /// - Parameter limit: The maximum number of concurrent holders.
@@ -128,10 +138,14 @@ final class WorkThrottle
     /// key — the acquirer already holds a slot, has finished, or has not suspended
     /// yet.
     ///
+    /// A key may carry several waiters — a file's frames each enqueue their own work
+    /// under the file's identifier — and the *last* to suspend is the one promoted,
+    /// since it is the one the user reached most recently.
+    ///
     /// - Parameter key: The key of the waiter to promote.
     func prioritize( key: AnyHashable )
     {
-        guard let index = self.waiters.firstIndex( where: { $0.key == key } )
+        guard let index = self.waiters.lastIndex( where: { $0.key == key } )
         else
         {
             return

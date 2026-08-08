@@ -113,24 +113,45 @@ public final class OpenFile: ObservableObject, Identifiable
     private var selectedFrameObserver: AnyCancellable?
 
     /// The preparation pool the window prepares files through, retained from
-    /// ``prepare(throttle:priority:)`` so on-demand carousel frame selection routes
-    /// its render/detect work through the same throttle. `nil` until the file is
-    /// first prepared (e.g. in tests that drive selection directly).
+    /// ``prepare(preparationThrottle:analysisThrottle:priority:)`` so on-demand
+    /// carousel frame selection routes its render work through the same throttle.
+    /// `nil` until the file is first prepared (e.g. in tests that drive selection
+    /// directly).
     private var preparationThrottle: WorkThrottle?
 
+    /// The analysis pool star detection is enqueued on, retained from
+    /// ``prepare(preparationThrottle:analysisThrottle:priority:)`` so on-demand
+    /// carousel frame selection enqueues onto the same pool. `nil` until the file is
+    /// first prepared, in which case a detection runs unbounded (e.g. in tests that
+    /// drive selection directly).
+    private var analysisThrottle: WorkThrottle?
+
     /// The in-flight (or finished) load → render → thumbnail work, owned by the
-    /// model rather than any view. `nil` until ``prepare(throttle:)`` is called.
+    /// model rather than any view. `nil` until
+    /// ``prepare(preparationThrottle:analysisThrottle:priority:)`` is called.
     private( set ) var preparation: Task< Void, Never >?
+
+    /// The star analyses enqueued on the analysis pool, keyed by the frame each one
+    /// detects, so closing the file can cancel them all.
+    ///
+    /// One entry per frame, so the dictionary is bounded by the file's frame count:
+    /// ``LoadedImage/markStarDetectionQueued()`` refuses a frame that is already
+    /// queued, running or finished, so a frame can only be enqueued again once its
+    /// previous analysis has released the queued stage.
+    private var analysisTasks: [ ObjectIdentifier: Task< Void, Never > ] = [ : ]
 
     /// The in-flight thumbnail (re)generation, cancelled when a newer render
     /// result supersedes it so the latest result always wins. Internal so the
     /// preparation and tests can await the current thumbnail settling.
     private( set ) var thumbnailTask: Task< Void, Never >?
 
-    /// The in-flight preparation of a newly selected frame — rendering and, if
-    /// needed, detecting it on demand. Internal so tests can await the selected
-    /// frame settling.
-    private( set ) var frameSelectionTask: Task< Void, Never >?
+    /// The in-flight on-demand preparations of selected frames — rendering each and
+    /// enqueuing its analysis — keyed by the frame each one prepares.
+    ///
+    /// One entry per frame, kept rather than replaced, so selecting another frame
+    /// starts its preparation instead of stopping this one and a visited frame is
+    /// always prepared to completion. Bounded by the file's frame count.
+    private var frameSelectionTasks: [ ObjectIdentifier: Task< Void, Never > ] = [ : ]
 
     /// The in-flight background render of the non-primary frames, so the carousel
     /// shows a thumbnail preview for every frame rather than only the visited ones.
@@ -262,27 +283,68 @@ public final class OpenFile: ObservableObject, Identifiable
         }
     }
 
-    /// Renders the selected frame if it has not rendered yet, then detects its
-    /// stars if detection has not run — so a frame is prepared lazily, the first
+    /// Renders the selected frame if it has not rendered yet, then enqueues its star
+    /// analysis if detection has not run — so a frame is prepared lazily, the first
     /// time it is shown, rather than every frame being processed up front.
     ///
     /// A frame already rendered (the initial frame, or one revisited) is left
     /// untouched, so switching back to it is instant and keeps its adjustments.
     ///
-    /// The work is user-driven, so it acquires the render throttle at ``high``
-    /// priority (ahead of background file preparations) but still through the
-    /// throttle, so scrubbing the carousel can never spawn unbounded concurrent
-    /// renders. Any prior in-flight selection is cancelled first, `self` is held
-    /// weakly, and cancellation is honoured before the expensive detection step, so
-    /// closing the file (or a rapid re-selection) stops the work promptly.
+    /// Selecting another frame starts that frame's preparation without stopping this
+    /// one: a frame the user has visited is prepared to completion, as an opened file
+    /// is, and its result is there when they come back to it. One preparation per
+    /// frame — a frame already being prepared is not prepared again — so scrubbing the
+    /// carousel spawns at most one per distinct frame rather than one per selection.
+    ///
+    /// A frame that already has a result needs no render, so it takes no preparation
+    /// slot at all and its analysis is enqueued straight away. Only a frame still
+    /// waiting on its pixels acquires the preparation throttle, at ``high`` priority
+    /// (ahead of background file preparations) but still through the throttle, so the
+    /// carousel can never spawn unbounded concurrent renders. That slot covers the
+    /// render alone: the analysis goes onto the analysis pool, at the same ``high``
+    /// priority, and the slot is released without waiting for it.
+    ///
+    /// `self` is captured weakly and only retained once a slot is granted. Cancellation
+    /// is honoured before the render and again before the analysis is enqueued, so
+    /// closing the file stops the work promptly — closing is the only thing that
+    /// cancels it.
+    ///
+    /// Each enqueue outranks the one before it, so the frame settled on is served
+    /// first. That ordering is decided as each analysis suspends in the pool, and only
+    /// until something reorders it: the pool is keyed by the *file*, so a later
+    /// ``WorkThrottle/prioritize(key:)`` from the window promotes whichever of the
+    /// file's analyses has waited longest, which need not be the frame on screen.
     private func prepareSelectedFrame()
     {
-        self.frameSelectionTask?.cancel()
+        guard let image = self.image
+        else
+        {
+            return
+        }
+
+        // Nothing to render, so nothing to wait for a preparation slot for. A render
+        // already in flight — the background previews', or an earlier selection's —
+        // counts as nothing to render: it commits sooner than a duplicate started now.
+        guard image.renderer.result == nil, image.renderer.error == nil, image.renderer.isRendering == false
+        else
+        {
+            self.enqueueStarDetection( for: image, priority: .high )
+
+            return
+        }
+
+        let frame = ObjectIdentifier( image )
+
+        guard self.frameSelectionTasks[ frame ] == nil
+        else
+        {
+            return
+        }
 
         let throttle = self.preparationThrottle
         let id       = self.id
 
-        self.frameSelectionTask = Task
+        self.frameSelectionTasks[ frame ] = Task
         {
             [ weak self ] in
 
@@ -290,13 +352,15 @@ public final class OpenFile: ObservableObject, Identifiable
 
             defer { throttle?.release() }
 
-            guard let image = self?.image, Task.isCancelled == false
+            guard let self, Task.isCancelled == false
             else
             {
                 return
             }
 
-            if image.renderer.result == nil, image.renderer.error == nil
+            // Re-tested after the wait for a slot: the previews may have started
+            // rendering this frame in the meantime.
+            if image.renderer.result == nil, image.renderer.error == nil, image.renderer.isRendering == false
             {
                 await image.renderer.render()
             }
@@ -307,10 +371,64 @@ public final class OpenFile: ObservableObject, Identifiable
                 return
             }
 
-            if image.hasDetectedStars == false, image.isDetectingStars == false
+            self.enqueueStarDetection( for: image, priority: .high )
+        }
+    }
+
+    /// Enqueues the image's star analysis on the analysis pool, so detection waits for
+    /// an analysis slot rather than holding the preparation slot that rendered it.
+    ///
+    /// A no-op unless the image enters the queued stage — ``LoadedImage`` refuses a
+    /// frame whose detection is already queued, running or finished, which is what
+    /// keeps the preparation and an on-demand frame selection from detecting the same
+    /// frame twice. The enqueued work bails on cancellation and releases the queued
+    /// stage on its way out, so a cancelled analysis never leaves the frame reporting
+    /// a detection that will not run.
+    ///
+    /// The file's ``id`` is the pool key, as it is for the preparation, so the owning
+    /// model can ``WorkThrottle/prioritize(key:)`` a waiting analysis when its file
+    /// becomes the selection.
+    ///
+    /// - Parameters:
+    ///   - image:    The frame to detect stars in.
+    ///   - priority: The urgency to enqueue at — `.high` for the frame the user is
+    ///               looking at, so its stars are not left behind every background
+    ///               file's analysis.
+    private func enqueueStarDetection( for image: LoadedImage, priority: WorkThrottle.Priority )
+    {
+        guard image.markStarDetectionQueued()
+        else
+        {
+            return
+        }
+
+        let throttle = self.analysisThrottle
+        let id       = self.id
+
+        self.analysisTasks[ ObjectIdentifier( image ) ] = Task
+        {
+            await throttle?.acquire( key: id, priority: priority )
+
+            defer
             {
-                await image.detectStars()
+                throttle?.release()
+
+                // Keeps the acquire and the queued stage paired within this task, so
+                // no exit from it can leave the frame reporting a detection that will
+                // not run. It releases the queued stage alone, and every exit reachable
+                // today has already left that stage — a detection that ran is finished,
+                // and the only caller that cancels one abandons the frame itself — so
+                // it is an invariant rather than an effect.
+                image.markStarDetectionAbandoned()
             }
+
+            guard Task.isCancelled == false
+            else
+            {
+                return
+            }
+
+            await image.detectStars()
         }
     }
 
@@ -439,17 +557,24 @@ public final class OpenFile: ObservableObject, Identifiable
     ///
     /// The work runs here — not in a view's `.task` — so the resulting
     /// `@Published` changes are published outside SwiftUI's view-update pass. The
-    /// `throttle` bounds how many files prepare at once.
+    /// `preparationThrottle` bounds how many files prepare at once.
     ///
-    /// The file's ``id`` is used as the throttle key, so the owning model can later
-    /// ``WorkThrottle/prioritize(key:)`` this preparation while it waits — e.g.
-    /// when the file becomes the selection.
+    /// A preparation slot covers load → render → thumbnail. The image's star analysis
+    /// is enqueued on `analysisThrottle` as soon as the render returns, at the same
+    /// priority, and the preparation neither waits for it nor holds its slot across
+    /// it — so one file's detection cannot decide when the next file may start
+    /// loading. Wait for it with ``awaitStarDetection()`` when the results matter.
+    ///
+    /// The file's ``id`` is used as the key in both pools, so the owning model can
+    /// later ``WorkThrottle/prioritize(key:)`` this preparation, or its analysis,
+    /// while either waits — e.g. when the file becomes the selection.
     ///
     /// - Parameters:
-    ///   - throttle: Gates concurrent preparations across the window.
-    ///   - priority: The initial render priority — `.high` for the file the user
-    ///               is looking at, so it is processed ahead of the rest.
-    func prepare( throttle: WorkThrottle, priority: WorkThrottle.Priority = .normal )
+    ///   - preparationThrottle: Gates concurrent preparations across the window.
+    ///   - analysisThrottle:    Gates concurrent star analyses across the window.
+    ///   - priority:            The initial render priority — `.high` for the file the
+    ///                          user is looking at, so it is processed ahead of the rest.
+    func prepare( preparationThrottle: WorkThrottle, analysisThrottle: WorkThrottle, priority: WorkThrottle.Priority = .normal )
     {
         guard self.preparation == nil
         else
@@ -458,8 +583,9 @@ public final class OpenFile: ObservableObject, Identifiable
         }
 
         // Retained so on-demand carousel frame selection can route through the very
-        // same throttle rather than saturating the CPU alongside file preparations.
-        self.preparationThrottle = throttle
+        // same pools rather than saturating the CPU alongside file preparations.
+        self.preparationThrottle = preparationThrottle
+        self.analysisThrottle    = analysisThrottle
 
         let id = self.id
 
@@ -467,9 +593,9 @@ public final class OpenFile: ObservableObject, Identifiable
         {
             [ weak self ] in
 
-            await throttle.acquire( key: id, priority: priority )
+            await preparationThrottle.acquire( key: id, priority: priority )
 
-            defer { throttle.release() }
+            defer { preparationThrottle.release() }
 
             guard let self, Task.isCancelled == false
             else
@@ -496,7 +622,17 @@ public final class OpenFile: ObservableObject, Identifiable
             }
 
             await image?.renderer.render()
-            await image?.detectStars()
+
+            // Enqueued before the thumbnail rather than after it: ``makeThumbnail``
+            // resizes on the global utility queue, which a folder of opening files
+            // saturates, so an analysis sequenced behind it would inherit that delay.
+            // The render is not cancellable, so the cancellation check is made here
+            // rather than only above: a file closed while it rendered must not then
+            // enqueue an analysis ``cancelPreparation()`` has already been past.
+            if let image, Task.isCancelled == false
+            {
+                self.enqueueStarDetection( for: image, priority: priority )
+            }
 
             // The render commit above drives the thumbnail through
             // ``thumbnailObserver``; wait for that regeneration so the prepared
@@ -504,7 +640,17 @@ public final class OpenFile: ObservableObject, Identifiable
             await self.thumbnailTask?.value
 
             // Fill in the carousel previews for the remaining frames in the
-            // background, once the primary frame the user is looking at is ready.
+            // background, once the primary frame the user is looking at is ready —
+            // and only if the file is still open. Neither the render above nor the
+            // thumbnail wait is cancellable, so a file closed during either arrives
+            // here having already been past ``cancelPreparation()``, which would
+            // leave this spawning a fresh task nothing then cancels.
+            guard Task.isCancelled == false
+            else
+            {
+                return
+            }
+
             self.prepareFramePreviews()
         }
     }
@@ -543,8 +689,11 @@ public final class OpenFile: ObservableObject, Identifiable
                 }
 
                 // Skip a frame that already has a result (the primary frame, or one
-                // the user has visited) or that has already failed.
-                if frame.renderer.result != nil || frame.renderer.error != nil
+                // the user has visited), that has already failed, or that a selection
+                // is already rendering — neither path can see the other's render until
+                // it commits a result, so the in-flight check is what keeps the two
+                // from rendering the same frame twice.
+                if frame.renderer.result != nil || frame.renderer.error != nil || frame.renderer.isRendering
                 {
                     continue
                 }
@@ -553,7 +702,7 @@ public final class OpenFile: ObservableObject, Identifiable
 
                 defer { throttle.release() }
 
-                guard Task.isCancelled == false, frame.renderer.result == nil, frame.renderer.error == nil
+                guard Task.isCancelled == false, frame.renderer.result == nil, frame.renderer.error == nil, frame.renderer.isRendering == false
                 else
                 {
                     continue
@@ -581,15 +730,55 @@ public final class OpenFile: ObservableObject, Identifiable
         }
     }
 
-    /// Cancels any in-flight preparation — the initial load/render/thumbnail work
-    /// and any on-demand carousel frame-selection render — e.g. when the file is
-    /// closed. The tasks capture `self` weakly, so an un-cancelled task simply
-    /// bails once the file is released — this just stops the work sooner.
+    /// Cancels any in-flight preparation — the initial load/render/thumbnail work, any
+    /// on-demand carousel frame-selection render, the background frame previews and
+    /// every enqueued star analysis — e.g. when the file is closed. The tasks capture
+    /// `self` weakly, so an un-cancelled task simply bails once the file is released —
+    /// this just stops the work sooner.
+    ///
+    /// An analysis still waiting for a slot only learns it was cancelled once the pool
+    /// hands it one, which may be long after the file is gone, so the frames are
+    /// abandoned here rather than left reporting a detection that will never run.
+    /// Abandoning releases the queued stage alone, so a detection already running or
+    /// already finished is untouched.
     func cancelPreparation()
     {
         self.preparation?.cancel()
-        self.frameSelectionTask?.cancel()
         self.framePreviewsTask?.cancel()
+
+        self.frameSelectionTasks.values.forEach { $0.cancel() }
+
+        self.analysisTasks.values.forEach { $0.cancel() }
+        self.frames.forEach { $0.markStarDetectionAbandoned() }
+    }
+
+    /// Awaits every on-demand frame preparation this file had started when this was
+    /// called — each selected frame's render, up to the point its analysis is enqueued.
+    ///
+    /// Internal: a selection no longer replaces the one before it, so there is no single
+    /// task to await; the application observes each frame's result as it is published
+    /// and only the tests need a point to wait at.
+    func awaitFrameSelection() async
+    {
+        for task in self.frameSelectionTasks.values
+        {
+            await task.value
+        }
+    }
+
+    /// Awaits every star analysis this file had enqueued when this was called.
+    ///
+    /// The analyses run on their own pool, outside the preparation, so a caller that
+    /// needs what detection produces — the star field, and the metrics the weighting
+    /// derives from it — awaits this rather than ``preparation``. Internal, since the
+    /// application observes those results as they are published and only the tests
+    /// need a point to wait at.
+    func awaitStarDetection() async
+    {
+        for task in self.analysisTasks.values
+        {
+            await task.value
+        }
     }
 
     /// Copies the original, unmodified file to a destination, byte for byte.

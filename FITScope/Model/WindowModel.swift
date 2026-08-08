@@ -79,10 +79,10 @@ public final class WindowModel: ObservableObject
     /// Internal so tests can check the pool the window sized for itself.
     let preparationThrottle: WorkThrottle
 
-    /// The window's second work pool, sized against ``preparationThrottle`` by
-    /// ``throttleLimits(processorCount:)``. Nothing acquires it: it is sized and
-    /// held here so star analyses have a pool of their own rather than competing
-    /// for preparation slots. Internal so tests can check the pool the window sized
+    /// Bounds how many star analyses run at once, so detection has a pool of its own
+    /// rather than competing for preparation slots. Sized against
+    /// ``preparationThrottle`` by ``throttleLimits(processorCount:)`` and shared by
+    /// every file in the window. Internal so tests can check the pool the window sized
     /// for itself.
     let analysisThrottle: WorkThrottle
 
@@ -91,8 +91,9 @@ public final class WindowModel: ObservableObject
     /// whenever the file set changes.
     private var fileObservers: [ AnyCancellable ] = []
 
-    /// Watches the selection so the selected file's still-waiting preparation can
-    /// be promoted in the throttle, keeping the on-screen image first in line.
+    /// Watches the selection so the selected file's still-waiting preparation and
+    /// star analysis can be promoted in their pools, keeping the on-screen image
+    /// first in line for both.
     private var selectionObserver: AnyCancellable?
 
     /// Whether a weight recomputation is already queued for the next runloop turn,
@@ -154,13 +155,18 @@ public final class WindowModel: ObservableObject
         self.preparationThrottle = preparationThrottle
         self.analysisThrottle    = analysisThrottle
 
-        // Promote the selected file's preparation as the selection changes, so the
-        // file the user is looking at is rendered ahead of the rest.
+        // Promote the selected file's preparation and analysis as the selection
+        // changes, so the file the user is looking at is rendered — and has its stars
+        // detected — ahead of the rest. Both pools key on the file's identifier, and a
+        // file can be waiting in either one.
         self.selectionObserver = self.$selectedFileID
             .compactMap { $0 }
             .sink
             {
-                [ weak self ] id in self?.preparationThrottle.prioritize( key: id )
+                [ weak self ] id in
+
+                self?.preparationThrottle.prioritize( key: id )
+                self?.analysisThrottle.prioritize( key: id )
             }
     }
 
@@ -218,7 +224,7 @@ public final class WindowModel: ObservableObject
         // gives the selected file priority.
         newFiles.forEach
         {
-            $0.prepare( throttle: self.preparationThrottle, priority: $0.id == self.selectedFileID ? .high : .normal )
+            $0.prepare( preparationThrottle: self.preparationThrottle, analysisThrottle: self.analysisThrottle, priority: $0.id == self.selectedFileID ? .high : .normal )
         }
 
         self.observeFilesForWeighting()

@@ -205,7 +205,7 @@ struct WindowModelTests
     /// Changing the selection promotes the selected file's still-waiting render in
     /// the shared throttle, so it jumps ahead of files queued earlier — the
     /// responsiveness win when navigating to a not-yet-rendered file.
-    @Test
+    @Test( .timeLimit( .minutes( 1 ) ) )
     @MainActor
     func selectingAFilePromotesItsWaitingRenderInTheThrottle() async throws
     {
@@ -220,35 +220,130 @@ struct WindowModelTests
 
         var order: [ UUID ] = []
 
+        // Each waiter hands its slot on when it is done, so the single release below
+        // is enough to drain both and the pool ends as balanced as it started.
+        //
         // The "earlier" render enqueues first, so under plain FIFO it would win.
         let earlierWaiter = Task
         { @MainActor in
             await throttle.acquire( key: earlier )
             order.append( earlier )
+            throttle.release()
         }
 
-        await Task.yield()
-        await Task.yield()
+        try await throttle.waitForWaiters( 1 )
 
         let selectedWaiter = Task
         { @MainActor in
             await throttle.acquire( key: selected )
             order.append( selected )
+            throttle.release()
         }
 
-        await Task.yield()
-        await Task.yield()
+        // Pin the scenario: both are suspended in the queue, so promoting one is what
+        // decides the order rather than which task happened to get there first.
+        try await throttle.waitForWaiters( 2 )
 
         // Selecting the later file must bump its render ahead of the earlier one.
         model.selectedFileID = selected
 
         throttle.release()
-        await selectedWaiter.value
 
-        throttle.release()
+        await selectedWaiter.value
         await earlierWaiter.value
 
         #expect( order == [ selected, earlier ], "selecting a file promotes its waiting render ahead of earlier ones" )
+    }
+
+    /// Changing the selection promotes the selected file's still-waiting *analysis*
+    /// too, not only its render. Both pools key on the file's identifier, so a file
+    /// selected after its analysis has queued would otherwise sit behind every
+    /// background file's detection.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    @MainActor
+    func selectingAFilePromotesItsWaitingAnalysisInTheThrottle() async throws
+    {
+        let throttle = WorkThrottle( limit: 1 )
+        let model    = WindowModel( preparationThrottle: WorkThrottle( limit: 1 ), analysisThrottle: throttle )
+
+        // Hold the only slot so the two simulated analyses below must wait.
+        await throttle.acquire( key: "held" )
+
+        let earlier  = UUID()
+        let selected = UUID()
+
+        var order: [ UUID ] = []
+
+        // Each waiter hands its slot on when it is done, so the single release below
+        // is enough to drain both and the pool ends as balanced as it started.
+        //
+        // The "earlier" analysis enqueues first, so under plain FIFO it would win.
+        let earlierWaiter = Task
+        { @MainActor in
+            await throttle.acquire( key: earlier )
+            order.append( earlier )
+            throttle.release()
+        }
+
+        try await throttle.waitForWaiters( 1 )
+
+        let selectedWaiter = Task
+        { @MainActor in
+            await throttle.acquire( key: selected )
+            order.append( selected )
+            throttle.release()
+        }
+
+        // Pin the scenario: both are suspended in the queue, so promoting one is what
+        // decides the order rather than which task happened to get there first.
+        try await throttle.waitForWaiters( 2 )
+
+        // Selecting the later file must bump its analysis ahead of the earlier one.
+        model.selectedFileID = selected
+
+        throttle.release()
+
+        await selectedWaiter.value
+        await earlierWaiter.value
+
+        #expect( order == [ selected, earlier ], "selecting a file promotes its waiting analysis ahead of earlier ones" )
+    }
+
+    /// Files opened through the window are prepared against the *window's* analysis
+    /// pool, so the pool sized for the machine is the one that actually bounds how many
+    /// detections run at once — rather than each file analysing unbounded on its own.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    @MainActor
+    func opensFilesAgainstTheWindowsAnalysisPool() async throws
+    {
+        let analysis = WorkThrottle( limit: 1 )
+        let model    = WindowModel( preparationThrottle: WorkThrottle( limit: 2 ), analysisThrottle: analysis )
+
+        // Hold the window pool's only slot: a file prepared against it can enqueue its
+        // analysis but never start it.
+        await analysis.acquire()
+
+        defer { analysis.release() }
+
+        defer { model.files.forEach { $0.cancelPreparation() } }
+
+        model.open( urls: self.fixtureURLs )
+
+        for file in model.files
+        {
+            await file.preparation?.value
+        }
+
+        #expect( model.files.count == 2 )
+
+        // Both analyses suspend in *this* pool, which is what a file prepared against
+        // any other pool could not do.
+        try await analysis.waitForWaiters( 2 )
+
+        #expect(
+            model.files.allSatisfy { $0.image?.isDetectingStars == true },
+            "every opened file's analysis is waiting rather than run"
+        )
     }
 
     // MARK: - Work pools
@@ -352,6 +447,10 @@ struct WindowModelTests
 
         await file.preparation?.value
 
+        // The metrics come from the star analysis, which settles on its own pool
+        // outside the preparation, so it needs its own await point.
+        await file.awaitStarDetection()
+
         model.recomputeWeights()
 
         let stars = try #require( file.metrics[ .stars ], "analysis should have produced a star count" )
@@ -372,6 +471,7 @@ struct WindowModelTests
         let file = try #require( model.files.first )
 
         await file.preparation?.value
+        await file.awaitStarDetection()
 
         model.recomputeWeights()
 

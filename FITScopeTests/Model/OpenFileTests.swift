@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+import Combine
 @testable import FITScope
 import Foundation
 import Testing
@@ -142,7 +143,7 @@ struct OpenFileTests
         let file     = OpenFile( url: TestFixtures.monoImage )
         let throttle = WorkThrottle( limit: 2 )
 
-        file.prepare( throttle: throttle )
+        file.prepare( preparationThrottle: throttle, analysisThrottle: WorkThrottle( limit: 1 ) )
 
         await file.preparation?.value
 
@@ -157,7 +158,7 @@ struct OpenFileTests
         let file     = OpenFile( url: TestFixtures.monoImage )
         let throttle = WorkThrottle( limit: 2 )
 
-        file.prepare( throttle: throttle )
+        file.prepare( preparationThrottle: throttle, analysisThrottle: WorkThrottle( limit: 1 ) )
 
         await file.preparation?.value
         await file.thumbnailTask?.value
@@ -186,17 +187,404 @@ struct OpenFileTests
         let file     = OpenFile( url: TestFixtures.monoImage )
         let throttle = WorkThrottle( limit: 2 )
 
-        file.prepare( throttle: throttle )
+        file.prepare( preparationThrottle: throttle, analysisThrottle: WorkThrottle( limit: 1 ) )
 
         let started = try #require( file.preparation )
 
         // A second prepare while one is in flight must not start another.
-        file.prepare( throttle: throttle )
+        file.prepare( preparationThrottle: throttle, analysisThrottle: WorkThrottle( limit: 1 ) )
 
         await started.value
         await file.preparation?.value
 
         #expect( file.renderPhase == .ready )
+    }
+
+
+    // MARK: - Star analysis off the preparation slot
+
+    /// The preparation covers load → render → thumbnail and no more: it settles while
+    /// the star analysis is still waiting for an analysis slot, rather than holding
+    /// its preparation slot until the detection has run.
+    ///
+    /// The analysis pool's only slot is held here, so the enqueued detection cannot
+    /// start — which makes "the preparation finished" and "the detection has not run"
+    /// simultaneously observable.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    @MainActor
+    func preparationSettlesWithoutWaitingForTheStarAnalysis() async throws
+    {
+        let file     = OpenFile( url: TestFixtures.monoImage )
+        let analysis = WorkThrottle( limit: 1 )
+
+        await analysis.acquire()
+
+        defer { analysis.release() }
+
+        // Cancelled before the slot is handed back, so the queued analysis takes it,
+        // finds itself cancelled and gives it straight back rather than detecting into
+        // the tests that follow. Defers run last-in-first-out, so this runs first.
+        defer { file.cancelPreparation() }
+
+        file.prepare( preparationThrottle: WorkThrottle( limit: 2 ), analysisThrottle: analysis )
+
+        await file.preparation?.value
+
+        let image = try #require( file.image )
+
+        #expect( file.renderPhase == .ready, "the preparation still loads and renders the file" )
+        #expect( file.thumbnail  != nil,     "and still produces the sidebar thumbnail" )
+
+        #expect( image.isDetectingStars,          "the analysis is enqueued and reports as in progress" )
+        #expect( image.hasDetectedStars == false, "the preparation settled without waiting for the detection" )
+    }
+
+    /// One file's star detection no longer gates when the next file may be prepared:
+    /// with a single preparation slot and no analysis slot at all, the second file
+    /// still loads and renders while the first file's detection sits queued.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    @MainActor
+    func aFilesDetectionNoLongerGatesTheNextFilesPreparation() async throws
+    {
+        let first    = OpenFile( url: TestFixtures.monoImage )
+        let second   = OpenFile( url: TestFixtures.monoImage )
+        let analysis = WorkThrottle( limit: 1 )
+
+        // One preparation slot, so the second file can only be prepared once the
+        // first has released it — and no analysis slot, so the first file's detection
+        // cannot run at all.
+        let preparation = WorkThrottle( limit: 1 )
+
+        await analysis.acquire()
+
+        defer { analysis.release() }
+
+        // Cancelled before the slot is handed back, so the queued analysis takes it,
+        // finds itself cancelled and gives it straight back rather than detecting into
+        // the tests that follow. Defers run last-in-first-out, so this runs first.
+        defer
+        {
+            first.cancelPreparation()
+            second.cancelPreparation()
+        }
+
+        first.prepare( preparationThrottle: preparation, analysisThrottle: analysis )
+        second.prepare( preparationThrottle: preparation, analysisThrottle: analysis )
+
+        await second.preparation?.value
+
+        let firstImage = try #require( first.image )
+
+        #expect( firstImage.isDetectingStars,          "the first file's detection is still waiting for a slot" )
+        #expect( firstImage.hasDetectedStars == false, "so it has not run" )
+        #expect( second.renderPhase == .ready,         "yet the second file has loaded and rendered" )
+    }
+
+    /// The enqueued analysis inherits the preparation's priority, so the selected
+    /// file's stars are not left behind every background file's detection.
+    ///
+    /// The background file is prepared first, so plain FIFO order would serve it
+    /// first; the selected file's `.high` enqueue must overtake it.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    @MainActor
+    func theSelectedFilesAnalysisIsServedBeforeABackgroundFilesAnalysis() async throws
+    {
+        let background = OpenFile( url: TestFixtures.monoImage )
+        let selected   = OpenFile( url: TestFixtures.monoImage )
+        let analysis   = WorkThrottle( limit: 1 )
+
+        // Hold the only analysis slot, so both files enqueue and wait. The slot is
+        // handed over explicitly below; the flag keeps the defer from releasing it a
+        // second time, while still returning it if an expectation exits early.
+        var holdsTheAnalysisSlot = true
+
+        await analysis.acquire()
+
+        defer
+        {
+            if holdsTheAnalysisSlot
+            {
+                analysis.release()
+            }
+        }
+
+        var order:     [ String ]         = []
+        var observers: [ AnyCancellable ] = []
+
+        defer { observers.forEach { $0.cancel() } }
+
+        background.prepare( preparationThrottle: WorkThrottle( limit: 2 ), analysisThrottle: analysis, priority: .normal )
+
+        await background.preparation?.value
+
+        let backgroundImage = try #require( background.image )
+
+        observers.append( backgroundImage.$starDetectionPhase.sink { if $0 == .running { order.append( "background" ) } } )
+
+        try await analysis.waitForWaiters( 1 )
+
+        selected.prepare( preparationThrottle: WorkThrottle( limit: 2 ), analysisThrottle: analysis, priority: .high )
+
+        await selected.preparation?.value
+
+        let selectedImage = try #require( selected.image )
+
+        observers.append( selectedImage.$starDetectionPhase.sink { if $0 == .running { order.append( "selected" ) } } )
+
+        // Pin the scenario: both are suspended in the queue and neither has run, so the
+        // order below is decided by the pool rather than by which file was prepared first.
+        try await analysis.waitForWaiters( 2 )
+
+        #expect( backgroundImage.isDetectingStars,          "the background file's analysis is queued" )
+        #expect( selectedImage.isDetectingStars,            "the selected file's analysis is queued" )
+        #expect( backgroundImage.hasDetectedStars == false, "and neither has run yet" )
+        #expect( selectedImage.hasDetectedStars   == false )
+
+        holdsTheAnalysisSlot = false
+
+        analysis.release()
+
+        await selected.awaitStarDetection()
+        await background.awaitStarDetection()
+
+        #expect( order == [ "selected", "background" ], "the selected file's analysis is served ahead of the background file's" )
+    }
+
+    /// A waiting analysis is enqueued under its *file's* identifier, which is what
+    /// lets the window promote it when that file becomes the selection. Both files
+    /// enqueue at the same priority here, so nothing but the promotion by key can
+    /// change the order they are served in.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    @MainActor
+    func aWaitingAnalysisIsPromotedByItsFilesIdentifier() async throws
+    {
+        let earlier  = OpenFile( url: TestFixtures.monoImage )
+        let promoted = OpenFile( url: TestFixtures.monoImage )
+        let analysis = WorkThrottle( limit: 1 )
+
+        var holdsTheAnalysisSlot = true
+
+        await analysis.acquire()
+
+        defer
+        {
+            if holdsTheAnalysisSlot
+            {
+                analysis.release()
+            }
+        }
+
+        var order:     [ String ]         = []
+        var observers: [ AnyCancellable ] = []
+
+        defer { observers.forEach { $0.cancel() } }
+
+        earlier.prepare( preparationThrottle: WorkThrottle( limit: 2 ), analysisThrottle: analysis, priority: .normal )
+
+        await earlier.preparation?.value
+
+        let earlierImage = try #require( earlier.image )
+
+        observers.append( earlierImage.$starDetectionPhase.sink { if $0 == .running { order.append( "earlier" ) } } )
+
+        try await analysis.waitForWaiters( 1 )
+
+        promoted.prepare( preparationThrottle: WorkThrottle( limit: 2 ), analysisThrottle: analysis, priority: .normal )
+
+        await promoted.preparation?.value
+
+        let promotedImage = try #require( promoted.image )
+
+        observers.append( promotedImage.$starDetectionPhase.sink { if $0 == .running { order.append( "promoted" ) } } )
+
+        // Pin the scenario: both are suspended in the queue at the same priority, so
+        // plain FIFO would serve the earlier one first.
+        try await analysis.waitForWaiters( 2 )
+
+        #expect( earlierImage.isDetectingStars,  "the earlier file's analysis is queued" )
+        #expect( promotedImage.isDetectingStars, "the later file's analysis is queued" )
+
+        analysis.prioritize( key: promoted.id )
+
+        holdsTheAnalysisSlot = false
+
+        analysis.release()
+
+        await promoted.awaitStarDetection()
+        await earlier.awaitStarDetection()
+
+        #expect( order == [ "promoted", "earlier" ], "promoting by the file's identifier reaches its waiting analysis" )
+    }
+
+    /// The analysis is enqueued as soon as the render returns, ahead of the thumbnail
+    /// the preparation then waits for — `makeThumbnail` resizes on the global utility
+    /// queue, which a folder of opening files saturates, so an analysis sequenced
+    /// behind it would inherit that delay.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    @MainActor
+    func theAnalysisIsEnqueuedAheadOfTheThumbnailRatherThanBehindIt() async throws
+    {
+        let file     = OpenFile( url: TestFixtures.monoImage )
+        let analysis = WorkThrottle( limit: 1 )
+
+        await analysis.acquire()
+
+        defer { analysis.release() }
+
+        var wasQueuedWhenTheThumbnailLanded: Bool?
+
+        // `@Published` publishes on `willSet`, so this fires as the thumbnail is being
+        // assigned — the moment the preparation's wait for it is ending.
+        let observer = file.$thumbnail.sink
+        {
+            thumbnail in
+
+            if thumbnail != nil, wasQueuedWhenTheThumbnailLanded == nil
+            {
+                wasQueuedWhenTheThumbnailLanded = file.image?.isDetectingStars
+            }
+        }
+
+        defer { observer.cancel() }
+
+        // Cancelled before the slot is handed back, so the queued analysis takes it,
+        // finds itself cancelled and gives it straight back rather than detecting into
+        // the tests that follow. Defers run last-in-first-out, so this runs first.
+        defer { file.cancelPreparation() }
+
+        file.prepare( preparationThrottle: WorkThrottle( limit: 2 ), analysisThrottle: analysis )
+
+        await file.preparation?.value
+
+        #expect( file.thumbnail != nil, "the thumbnail must have landed before its ordering means anything" )
+        #expect( wasQueuedWhenTheThumbnailLanded == true, "the analysis was already queued when the thumbnail landed" )
+    }
+
+    /// Closing a file abandons a star analysis that is still queued, so the frame
+    /// stops reporting a detection that will never run — without recording a run it
+    /// never made.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    @MainActor
+    func cancellingThePreparationAbandonsAQueuedAnalysis() async throws
+    {
+        let file     = OpenFile( url: TestFixtures.monoImage )
+        let analysis = WorkThrottle( limit: 1 )
+
+        await analysis.acquire()
+
+        defer { analysis.release() }
+
+        file.prepare( preparationThrottle: WorkThrottle( limit: 2 ), analysisThrottle: analysis )
+
+        await file.preparation?.value
+
+        let image = try #require( file.image )
+
+        #expect( image.isDetectingStars, "the analysis must be queued before cancelling it means anything" )
+
+        file.cancelPreparation()
+
+        #expect( image.isDetectingStars == false, "a cancelled file stops reporting a detection that will never run" )
+        #expect( image.hasDetectedStars == false, "and abandoned work records no run" )
+    }
+
+    /// Closing a file also stops a queued analysis from ever running, rather than only
+    /// clearing what it reports. An enqueued analysis is an independent task — an
+    /// unstructured task does not inherit its creator's cancellation — so without the
+    /// explicit cancel it would take its slot and detect a frame nobody is looking at.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    @MainActor
+    func cancellingThePreparationStopsAQueuedAnalysisFromRunning() async throws
+    {
+        let file     = OpenFile( url: TestFixtures.monoImage )
+        let analysis = WorkThrottle( limit: 1 )
+
+        var holdsTheAnalysisSlot = true
+
+        await analysis.acquire()
+
+        defer
+        {
+            if holdsTheAnalysisSlot
+            {
+                analysis.release()
+            }
+        }
+
+        file.prepare( preparationThrottle: WorkThrottle( limit: 2 ), analysisThrottle: analysis )
+
+        await file.preparation?.value
+
+        let image = try #require( file.image )
+
+        #expect( image.isDetectingStars, "the analysis must be queued before cancelling it means anything" )
+
+        file.cancelPreparation()
+
+        // Hand the slot over: a cancelled analysis must take it, find itself cancelled
+        // and give it straight back rather than running the detection.
+        holdsTheAnalysisSlot = false
+
+        analysis.release()
+
+        await file.awaitStarDetection()
+
+        #expect( image.hasDetectedStars == false, "a cancelled analysis must not run the detection after all" )
+        #expect( image.starField        == nil,   "so it publishes no results" )
+    }
+
+    /// A file closed *while it was rendering* enqueues no analysis at all. The render is
+    /// not cancellable, so the preparation runs on past the cancellation and reaches the
+    /// enqueue — which `cancelPreparation()` has already been past, and so could neither
+    /// cancel nor abandon.
+    ///
+    /// The renderer commits its result on the main actor from inside `render()`, so
+    /// cancelling from that commit lands in exactly the window the guard covers.
+    @Test( .timeLimit( .minutes( 1 ) ) )
+    @MainActor
+    func aFileClosedWhileItRenderedEnqueuesNoAnalysis() async throws
+    {
+        let file     = OpenFile( url: TestFixtures.monoImage )
+        let analysis = WorkThrottle( limit: 1 )
+
+        await analysis.acquire()
+
+        defer { analysis.release() }
+
+        var cancelledDuringTheRender = false
+
+        let observer = file.loader.imagePublisher
+            .compactMap { $0 }
+            .map { $0.renderer.$result }
+            .switchToLatest()
+            .compactMap { $0 }
+            .sink
+            {
+                _ in
+
+                guard cancelledDuringTheRender == false
+                else
+                {
+                    return
+                }
+
+                cancelledDuringTheRender = true
+
+                file.cancelPreparation()
+            }
+
+        defer { observer.cancel() }
+
+        file.prepare( preparationThrottle: WorkThrottle( limit: 2 ), analysisThrottle: analysis )
+
+        await file.preparation?.value
+
+        let image = try #require( file.image )
+
+        #expect( cancelledDuringTheRender, "the file must have been closed while it rendered for this to prove anything" )
+
+        #expect( image.isDetectingStars == false, "a file closed while it rendered enqueues no analysis" )
+        #expect( image.hasDetectedStars == false, "and none runs" )
     }
 
     @Test

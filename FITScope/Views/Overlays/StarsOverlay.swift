@@ -50,8 +50,10 @@ public struct StarsOverlay: CanvasOverlay
     /// source-space star centroids into the displayed frame.
     private let orientation: Processors.Orient.Orientation
 
-    /// Whether star detection is still running. Drives the toolbar's in-progress
-    /// state until ``isAvailable`` becomes true (or detection finds nothing).
+    /// Whether star detection is still in progress — queued as well as running, so the
+    /// toolbar reports the whole wait rather than only the computation. Drives the
+    /// in-progress state until ``isAvailable`` becomes true (or detection finds
+    /// nothing).
     public let isLoading: Bool
 
     /// Whether star detection has finished running at least once for this image.
@@ -71,7 +73,8 @@ public struct StarsOverlay: CanvasOverlay
     /// - Parameters:
     ///   - stars:            The detected stars, in source-image pixel coordinates.
     ///   - orientation:      The orientation applied to the displayed image.
-    ///   - isLoading:        Whether detection is still running. Defaults to `false`.
+    ///   - isLoading:        Whether detection is still in progress, queued as well as
+    ///                       running. Defaults to `false`.
     ///   - hasDetectedStars: Whether detection has finished running at least once.
     ///                       Defaults to `false`.
     ///   - appearance:       The markers' colour and opacity. Defaults to
