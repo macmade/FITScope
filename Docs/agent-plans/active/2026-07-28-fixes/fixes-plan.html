@@ -716,7 +716,7 @@
                     </li>
                     <li class="entry">
                         <a href="#m8">8. Measure the preparation throughput gain</a>
-                        <span class="status not-started">Not started</span>
+                        <span class="status completed">Completed</span>
                     </li>
                 </ol>
             </li>
@@ -4489,7 +4489,7 @@ after
 
     <section class="milestone" id="m8">
         <h4><span class="num">8.</span> Measure the preparation throughput gain
-            <span class="status not-started">Not started</span></h4>
+            <span class="status completed">Completed</span></h4>
 
         <div class="field">
             <span class="label">Goal</span>
@@ -4518,11 +4518,1174 @@ after
             </ul>
         </div>
 
-        <div class="field"><span class="label">Status</span><p><span class="status not-started">Not started</span></p></div>
-        <div class="field"><span class="label">Completed</span><p class="placeholder">—</p></div>
-        <div class="field"><span class="label">Implementation notes</span><p class="placeholder">To be filled in as work progresses.</p></div>
-        <div class="field"><span class="label">Automated review</span><p class="placeholder">No findings recorded yet.</p></div>
-        <div class="field"><span class="label">Review comments</span><p class="placeholder">No review comments yet.</p></div>
+        <div class="field"><span class="label">Status</span><p><span class="status completed">Completed</span></p></div>
+        <div class="field"><span class="label">Completed</span><p>2026-08-09</p></div>
+        <div class="field">
+            <span class="label">Implementation notes</span>
+
+            <p>
+                <strong>The throughput gain this milestone set out to confirm is not
+                there.</strong> Aggregate completion is slightly <em>worse</em> after phase 3 than
+                before it, and the difference is statistically real rather than noise. What did
+                improve — materially, and in the cases the user actually watches — is the time to
+                the <em>first</em> preview and the response to clicking a file while the others
+                load. The milestone's own task list asked for this outcome to be recorded
+                “including any case where the improvement is smaller than expected”, so the
+                numbers are below in full rather than summarised to the favourable ones.
+            </p>
+
+            <p>
+                No production code changed. Everything below was obtained with a throwaway
+                measurement harness and a temporary in-tree reconstruction of the pre-phase-3
+                shape, both reverted from backup copies afterwards; <code>git diff HEAD</code> is
+                empty. TDD does not apply — there is no behaviour to drive out, only a
+                measurement to take — which is stated rather than quietly skipped.
+            </p>
+
+            <h4>Method</h4>
+
+            <ul>
+                <li><strong>Instrument.</strong> A <code>@MainActor</code> Swift Testing function
+                    opens the reproduction set through a production-sized <code>WindowModel()</code>
+                    — so the real <code>throttleLimits(processorCount:)</code> arithmetic applies —
+                    and polls the published state every 5&nbsp;ms, recording for each file the first
+                    instant it has a committed render result, a thumbnail, and
+                    <code>hasDetectedStars</code>. CPU is sampled every 100&nbsp;ms from
+                    <code>getrusage( RUSAGE_SELF )</code> (user + system, over every thread) and
+                    divided by the wall interval to give instantaneous cores.</li>
+                <li><strong>“Preview painted” is a proxy, and this is the milestone's one
+                    substitution.</strong> It is <code>image.renderer.result != nil</code> — the
+                    exact condition under which <code>ImageCanvasView.canvasContent</code> emits
+                    <code>ZoomableImageView</code> (<code>ImageCanvasView.swift:187</code>). Nothing
+                    was observed on screen; driving the GUI has been out of reach since
+                    milestone&nbsp;3 (<code>osascript</code> is refused assistive access). So these
+                    are model-level times, one SwiftUI frame ahead of a painted pixel.</li>
+                <li><strong>Build.</strong> The Debug scheme carries
+                    <code>ENABLE_TESTABILITY</code>, which Release does not, so <code>@testable
+                    import</code> rules Release out. It was therefore built with Release's
+                    optimisation settings passed on the command line —
+                    <code>SWIFT_OPTIMIZATION_LEVEL=-O</code>,
+                    <code>GCC_OPTIMIZATION_LEVEL=s</code>,
+                    <code>SWIFT_COMPILATION_MODE=wholemodule</code>. All three match what
+                    <code>xcodebuild -showBuildSettings -scheme 'FITScope - Release'</code> actually
+                    resolves to for this project, which was checked rather than assumed. Not a
+                    cosmetic choice: plain <code>-Onone</code> took <strong>584&nbsp;s</strong> for
+                    one uniform run against <strong>32&nbsp;s</strong> optimised, an 18× difference
+                    that would have made both the repetitions and the render-versus-detection
+                    balance unrepresentative. That 584&nbsp;s run predates the results directory and
+                    left no artifact, so it is a quoted observation rather than a checkable one.
+                    This is still <em>not</em> the shipped Release build: the Debug base carries
+                    <code>DEBUG=1</code>, <code>SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG</code>,
+                    <code>ENABLE_NS_ASSERTIONS=YES</code> and <code>ONLY_ACTIVE_ARCH=YES</code>
+                    alongside the optimisation — and, the most performance-relevant of the residue,
+                    it does <em>not</em> define <code>NDEBUG=1</code> as
+                    <code>Release.xcconfig</code> does, so C and C++ <code>assert()</code>s were live
+                    in every measured build. All common-mode between the shapes.</li>
+                <li><strong>Hygiene.</strong> <code>clean build-for-testing</code> before every
+                    configuration, with <code>codesign -v</code> checked each time; one discarded
+                    warm-up run per configuration, then the measured repetitions; machine otherwise
+                    quiet, with no concurrent build or review agent — milestone&nbsp;4's contention
+                    lesson applies with more force to a stopwatch than to a test.</li>
+                <li><strong>Machine.</strong> Apple&nbsp;M4, 32&nbsp;GB, macOS&nbsp;26.6 (25G72).
+                    Ten cores, but <strong>4 performance + 6 efficiency</strong> — so
+                    budget&nbsp;8, preparation&nbsp;6, analysis&nbsp;2, and every “cores” figure
+                    below is thread occupancy rather than a fraction of the machine's
+                    throughput.</li>
+            </ul>
+
+            <h4>The three configurations</h4>
+
+            <table>
+                <tr><th>Id</th><th>Shape</th><th>Preparation</th><th>Analysis</th></tr>
+                <tr>
+                    <td><strong>A</strong> “before”</td>
+                    <td>Pre-phase-3: <code>await image?.detectStars()</code> inline, inside the
+                        preparation slot</td>
+                    <td>8</td><td>unused</td>
+                </tr>
+                <tr>
+                    <td><strong>B</strong> “after”</td>
+                    <td>HEAD, unmodified</td>
+                    <td>6</td><td>2</td>
+                </tr>
+                <tr>
+                    <td><strong>C</strong> “split&nbsp;8”</td>
+                    <td>HEAD's enqueue, but preparation keeping the whole budget — the “pool on
+                        top” design milestone&nbsp;5 rejected</td>
+                    <td>8</td><td>2</td>
+                </tr>
+            </table>
+
+            <p>
+                <strong>C exists because “after” changes two things at once.</strong> Phase&nbsp;3
+                both lifted detection out of the preparation slot <em>and</em> cut preparation from
+                8 slots to 6. Comparing only A against B cannot say which of the two any difference
+                belongs to, so C isolates them.
+            </p>
+
+            <p>
+                A was <strong>reconstructed in place rather than checked out</strong>, per the
+                approach agreed at the start: two edits, each verified line by line against
+                <code>git show 16b5e7b:…</code> (the commit before phase&nbsp;3), then reverted from
+                a backup copy rather than with <code>git checkout --</code> — milestone&nbsp;7's
+                lesson, since the tree carried the uncommitted harness.
+                <code>prepareSelectedFrame()</code> was deliberately left at HEAD: the harness never
+                selects a frame, so that path is not on the measured route. The reconstruction is
+                faithful for what was measured; it is not a checkout of 16b5e7b, and that
+                distinction is the write-up's, not a reviewer's discovery.
+            </p>
+
+            <h4>The reproduction sets</h4>
+
+            <p>
+                Two, so that one number isolates the effect and the other shows what a session
+                feels like. The repository's own <code>Test Files/</code> is useless here — all but three
+                fixtures are under 100&nbsp;KB, the exceptions being two PNGs and one small FITS — so both sets come from
+                <code>Submodules/SwiftAstro/Test Files</code>.
+            </p>
+
+            <ul>
+                <li><strong>uniform</strong> — 12 separate copies of
+                    <code>C6-ASI585-M42-Light.fits</code> (16&nbsp;MB each), so every file costs the
+                    same and the variance is the scheduler's rather than the data's. Twelve against
+                    six preparation slots means two waves, which is what makes a gating effect
+                    visible at all.</li>
+                <li><strong>session</strong> — 10 real captures (4–48&nbsp;MB, FITS / FIT / XISF),
+                    heterogeneous, as an actual evening's work would be. Mostly single light
+                    frames, but not purely: it also contains
+                    <code>S30Pro-NGC7822-Stacked.fit</code> (a stack) and
+                    <code>S30-M42-Corrected.xisf</code> (a corrected frame), which is realistic
+                    rather than a flaw but means “light frames” would be the wrong word for it.</li>
+            </ul>
+
+            <h4>Results — uniform × 12</h4>
+
+            <p>
+                Medians in milliseconds, with a bootstrap 95% interval on the relative difference;
+                <em>p</em> from an exact permutation test on the difference of medians, enumerating
+                all <code>C(18,9) = 48620</code> splits. <strong>n&nbsp;=&nbsp;9</strong> for A and
+                B. “All previews” is named for the milestone's wording but means <em>time until
+                every file has a committed render result</em> — see the caveat below the table.
+            </p>
+
+            <table>
+                <tr><th>Metric</th><th>A before</th><th>B after</th><th>Δ (95% CI)</th><th><em>p</em></th></tr>
+                <tr><td>Time to first preview</td><td>7893</td><td><strong>5872</strong></td><td><strong>−25.6%</strong> [−28.0, −14.0]</td><td>0.0029 — <em>the floor</em></td></tr>
+                <tr><td>Time to all render results</td><td><strong>28695</strong></td><td>29566</td><td><strong>+3.0%</strong> [+2.0, +5.3]</td><td>0.027</td></tr>
+                <tr><td>Time to all thumbnails</td><td>28706</td><td>29578</td><td>+3.0%</td><td>—</td></tr>
+                <tr><td>Time to all detections</td><td><strong>30198</strong></td><td>31351</td><td><strong>+3.8%</strong> [+2.7, +5.8]</td><td>0.010</td></tr>
+                <tr><td>Selected file's stars</td><td>18231</td><td>14687</td><td>−19.4% [−60.6, +11.5]</td><td>0.126 — <strong>not significant</strong></td></tr>
+            </table>
+
+            <p>
+                <strong>Two things about these <em>p</em>-values, so they are not read for more than
+                they say.</strong> First, a two-sided permutation test on the difference of medians
+                at 9-vs-9 cannot return less than <code>140/48620 = 0.0029</code>; the first-preview
+                result sits exactly on that floor, so it means “perfectly separated at
+                n&nbsp;=&nbsp;9” rather than a measured strength. Second, <strong>thirteen</strong>
+                <em>p</em>-values are quoted across these notes — four here, two in the switch
+                table, two for its normalised form, two for the CPU comparisons and three
+                block-stratified — with no multiplicity control. Bonferroni at
+                0.05/13&nbsp;=&nbsp;0.0038 would leave only the first-preview family — though the
+                metrics are heavily correlated (all render results, all thumbnails and all
+                detections differ by 3.0 / 3.0 / 3.8%, and selection→stars is selection→preview plus
+                the detection lag), so Bonferroni is conservative here. Read them as descriptive.
+            </p>
+
+            <p>
+                <strong>And a caveat on “all previews” that the earlier draft understated.</strong>
+                There is one canvas per window, so only the <em>selected</em> file's render is ever
+                painted; the other eleven files' render results are never drawn as a canvas preview
+                at all. Their only user-visible artefact is the sidebar thumbnail, which is why the
+                thumbnail row is in the table — and the last file's thumbnail lands a median 12&nbsp;ms
+                after the last render (never more than 20). That bounds the <em>tail</em> only: the
+                harness recorded no per-file thumbnail timestamp, just the two maxima, so a
+                first-wave file whose thumbnail took seconds — the contention milestone&nbsp;7's
+                first task was designed around, <code>makeThumbnail</code> resizing on a saturated
+                global queue — would be invisible to this statistic. Calling this
+                quantity “previews painted” was the
+                milestone's phrasing; the measurement is of committed render results, which for
+                eleven of twelve files is not one SwiftUI frame ahead of a painted pixel but a
+                preview that never happens.
+            </p>
+
+            <p>
+                C (n&nbsp;=&nbsp;3): first preview 7368, all render results 29838, all detections
+                32153, selected file's stars 22014.
+            </p>
+
+            <h4>Results — session × 10</h4>
+
+            <p>
+                n&nbsp;=&nbsp;3 for each configuration, so these are indicative rather than tested —
+                and <em>necessarily</em> so: at 3-vs-3 the permutation test enumerates 20 splits,
+                and on the difference of <em>medians</em> — which is what every figure here and
+                every figure for configuration C is — its smallest attainable two-sided <em>p</em>
+                is <code>4/20 = 0.20</code>. (0.10 is the floor for the difference of means at that
+                depth; an earlier draft quoted it against medians, which is the same
+                statistic-versus-design confusion the switch table had to be re-based to fix, made
+                again one design smaller while making that very correction.) Three of the five session
+                comparisons sit exactly on that floor (all render results, all thumbnails, all
+                detections); the other two return 8/20&nbsp;=&nbsp;0.40, so they are not even
+                maximally separated. An earlier draft claimed the floor for all of them, which is
+                the same over-application in the other direction. No comparison at this depth could reach
+                significance however cleanly separated it was.
+            </p>
+
+            <table>
+                <tr><th>Metric</th><th>A before</th><th>B after</th><th>Δ</th><th>C split 8</th></tr>
+                <tr><td>Time to first preview</td><td>2189</td><td>2098</td><td>−4.1%</td><td>2366</td></tr>
+                <tr><td>Time to all render results</td><td>22063</td><td>23755</td><td>+7.7%</td><td>22774</td></tr>
+                <tr><td>Time to all detections</td><td>26502</td><td>27735</td><td>+4.7%</td><td>27170</td></tr>
+                <tr><td>Selected file's stars</td><td>16391</td><td>12047</td><td>−26.5%</td><td>14353</td></tr>
+            </table>
+
+            <h4>The scenario the backlog actually describes</h4>
+
+            <p>
+                The tables above select the first file before opening, which confounds “the
+                selection is promoted” with “the selection was first in the queue anyway”. So a
+                second experiment does what the backlog describes: open all 12, then at exactly
+                3.0&nbsp;s — with the pipeline in full flight — set <code>selectedFileID</code> to
+                the <em>last</em> file, which is sitting mid-queue at <code>.normal</code>, and
+                measure from that instant. This is the one measurement that exercises
+                milestone&nbsp;7's task&nbsp;9 (promoting <em>both</em> pools) end to end at
+                production scale. n&nbsp;=&nbsp;5 each.
+            </p>
+
+            <table>
+                <tr><th>Metric</th><th>A before</th><th>B after</th><th>Δ of means</th><th><em>p</em> (means)</th><th>Hodges–Lehmann shift</th></tr>
+                <tr><td>Selection → its preview</td><td>24812</td><td><strong>18423</strong></td><td><strong>−25.8%</strong></td><td>0.016</td><td>−6285 ms</td></tr>
+                <tr><td>Selection → its stars</td><td>27258</td><td><strong>20787</strong></td><td><strong>−23.7%</strong></td><td>0.024</td><td>−6536 ms</td></tr>
+            </table>
+
+            <p>
+                <strong>Reported on means rather than medians, deliberately.</strong> The first
+                version of this table quoted medians (−26.2% and −22.7%) with
+                <em>p</em>&nbsp;=&nbsp;0.048 for both — which looked like two independent near-misses
+                and was nothing of the kind: a two-sided permutation test on the difference of
+                <em>medians</em> at 5-vs-5 returns <code>12/252 = 0.0476</code> even for infinitely
+                separated data. It is the floor of that design, so it conveyed only “as extreme as
+                this statistic can register”. The difference of means has a floor of
+                <code>2/252 = 0.0079</code> at the same depth, so the values above are genuinely off
+                the floor and do say something about strength.
+            </p>
+
+            <p>
+                <strong>The baseline arm of this experiment misbehaved, and that has to be
+                disclosed.</strong> The two arms were <em>not</em> interleaved — all five A runs at
+                21:26–21:29, all five B runs at 21:33–21:36 — which is worse design than the main
+                experiment, and it matters because that A arm was the most variable block in the
+                study. Its total run time spread <strong>45%</strong>
+                (26.1 → 31.9 → 37.7 → 35.8 → 33.4&nbsp;s) against its own B arm's 4%, and against
+                the <strong>5.1%</strong> that configuration A spread across all nine runs of the
+                main experiment (29.5–31.0&nbsp;s). Those nine did not all run at the same remove:
+                six finished five to ten minutes before this block and three about half an hour
+                before, and it is the three early ones that generate the 5.1% — the nearer six
+                spread 1.5%. Both figures are given because quoting either alone flatters a
+                different point. For
+                context rather than excuse, the main experiment's B arm spread 11.0%
+                (29.2–32.5&nbsp;s), so a wide block is not unique to this arm — 45% is. Something
+                slowed it; what, is not known, and it inflates exactly the baseline the improvement
+                is measured against.
+            </p>
+
+            <p>
+                <strong>The effect survives correcting for it.</strong> Normalising each run's
+                selection latency by that same run's own total completion time removes the
+                run-level inflation, and the improvement holds and sharpens: selection → preview
+                0.750&nbsp;→&nbsp;0.573 of the run (−23.6%), selection → stars
+                0.825&nbsp;→&nbsp;0.647 (−21.6%), both at <em>p</em>&nbsp;=&nbsp;0.0079 — the floor
+                for this statistic at n&nbsp;=&nbsp;5, i.e. perfectly separated.
+            </p>
+
+            <p>
+                <strong>That normalisation is a corroboration, not an independent check, and should
+                not be read as one.</strong> The harness terminates on the last detection, so a
+                run's total time <em>is</em> its last file's detection — and the promoted file's own
+                latency is 59–86% of that denominator. The normalised statistic is therefore close
+                to a restatement of where in the queue the promoted file landed, which is the same
+                thing the rank result reports. It is a legitimate correction for a uniformly slower
+                run, and the arms are genuinely separated on it, but it is not a second, independent
+                route to the conclusion.
+            </p>
+
+            <h4>CPU — and the “no saturation” check, which is <em>not</em> confirmed</h4>
+
+            <p>
+                Median across runs of each run's mean core draw, against the median of each run's
+                peak 100&nbsp;ms sample. The machine has 10 cores, but not ten equal ones:
+                <code>hw.perflevel*.logicalcpu</code> reports <strong>4 performance and 6
+                efficiency</strong> cores, so these figures are <em>thread occupancy</em> and 8.6
+                of 10 is not 86% of the machine's throughput. Identical work also accrues more CPU
+                time on an E core than a P core.
+            </p>
+
+            <table>
+                <tr><th>Set</th><th>A before</th><th>B after</th><th>C split 8</th></tr>
+                <tr><td>uniform</td><td>8.71 / 9.89</td><td>8.60 / 9.93</td><td>8.41 / 9.90</td></tr>
+                <tr><td>session</td><td>7.60 / 9.90</td><td>7.92 / 9.84</td><td>7.68 / 9.93</td></tr>
+            </table>
+
+            <p>
+                <strong>Milestone&nbsp;8's task&nbsp;5 asked to confirm “no saturation”, and the
+                measurement does not confirm it.</strong> Every configuration peaks at essentially
+                all ten cores, and <em>on the uniform set</em> the mean draw of 8.6–8.7 exceeds the
+                design's own worker budget of
+                <code>max( 2, processorCount - 2 )</code>&nbsp;=&nbsp;8, whose doc comment says it
+                leaves “a couple of cores free”. Neither couple is free there, because a preparation
+                slot is not one core — the renders fan out through
+                <code>DispatchQueue.concurrentPerform</code>, which
+                <code>WindowModel.throttleLimits</code>' own comment acknowledges. On the session set
+                the mean draw is 7.6–7.9, <em>below</em> the budget, so the overrun is not general.
+                The pools are bounded in the sense that they never ran away; occupancy is
+                nonetheless high enough that “no saturation” cannot be signed off. Recorded as a
+                failed check rather than folded into a favourable summary.
+            </p>
+
+            <p>
+                Two things this does <em>not</em> establish, so the failure is not overstated
+                either. It is a statement about <em>average</em> occupancy: the 100&nbsp;ms series
+                that could show whether occupancy was high <em>throughout</em> was collected and
+                discarded, and a uniform run's tail has four files for eight slots. And the four
+                samples reading fractionally above 10.0 on a ten-core machine are arithmetically
+                impossible as measurements — they are quantisation noise in the CPU-over-wall
+                ratio, not evidence of anything. The other half of the task — “the machine stays
+                usable” — was not assessed at all; no GUI was driven and no subjective judgement is
+                offered.
+            </p>
+
+            <h4>Why there is no throughput gain — <span class="status not-started" style="vertical-align:middle">Superseded</span></h4>
+
+            <p>
+                <strong>Superseded by <em>Re-measured under a corrected design</em> below, which
+                removes this section's evidence.</strong> The CPU-second rise everything here turns
+                on does not reproduce when the two shapes are interleaved run by run rather than
+                measured in blocks. Kept because the sequence of three wrong answers is the record's
+                most useful part. This section has been wrong twice and is worth reading with that in mind. The first
+                draft asserted that the pipeline is CPU-bound and that “the total work is identical
+                either way”, which the harness's own CPU figures refute. The second, written after
+                round&nbsp;1, threw out the whole claim and adopted the reviewer's alternative —
+                <em>under-fill</em>, B's two analysis slots idling until the first render commits.
+                Round&nbsp;2 showed that alternative is refuted by the same data, and that the
+                withdrawal had discarded the half of the original claim the evidence supports. What
+                follows is the third account and the first one derived from the measurements rather
+                than fitted to them.
+            </p>
+
+            <p>
+                <strong>The regression decomposes exactly, because the instrument makes it an
+                identity.</strong> <code>meanCores</code> is <code>cpuSeconds / wallSeconds</code> by
+                construction, so wall-clock is CPU work divided by occupancy and any change in one
+                must be a change in the other two:
+            </p>
+
+            <table>
+                <tr><th>Set</th><th>Wall (observed)</th><th>=</th><th>CPU work</th><th>−</th><th>Occupancy</th></tr>
+                <tr><td>uniform</td><td><strong>+3.8%</strong></td><td></td><td>+2.3%</td><td></td><td>−1.3%</td></tr>
+                <tr><td>session</td><td><strong>+4.7%</strong></td><td></td><td>+8.8%</td><td></td><td>+4.2%</td></tr>
+            </table>
+
+            <p>
+                The decomposition closes to 0.3&nbsp;pp on the uniform set and 0.1&nbsp;pp on the
+                session set. Read across both rows, the answer is unambiguous: <strong>the term that
+                is present, large and the same sign in both sets is the CPU work.</strong> B burns
+                265.5&nbsp;→&nbsp;271.5&nbsp;s on the uniform set (+2.3%, p&nbsp;=&nbsp;0.017) and
+                202.7&nbsp;→&nbsp;220.5&nbsp;s on the session set (+8.8%) to do the same job. On the
+                session set that increase is the <em>entire</em> story and more — occupancy actually
+                <em>rose</em> 4.2%, partly offsetting it.
+            </p>
+
+            <p>
+                <strong>What that rules out, and what it does not.</strong> Under-fill — B's two
+                analysis slots idling until the first render commits — can only ever express itself
+                in the occupancy term. That term is −1.3% of a 3.8% regression on the uniform set,
+                at most a third of it, and on the session set it moved the <em>other way</em>. More
+                decisively: running narrower cannot make a machine burn <em>more</em> CPU-seconds
+                for the same job, and CPU-seconds rose. So under-fill is not what produces the
+                regression, and adopting it wholesale after round&nbsp;1 was an over-correction.
+            </p>
+
+            <p>
+                <strong>But it is not the opposite of saturation either, and a later draft argued
+                that badly.</strong> That draft offered B's faster first preview as proof of
+                saturation and hence as a refutation of under-fill. The two are not alternatives:
+                under-fill only <em>matters</em> on a saturated machine — if there were spare
+                capacity, running 6-wide instead of 8-wide would cost nothing. The first-preview
+                ratio is a demonstration of under-fill's premise, not of its falsity. The honest
+                statement is the narrow one above: a width difference alone cannot move the
+                numerator, and the numerator moved.
+            </p>
+
+            <p>
+                <strong>And the ratio itself was quoted with a precision it does not have.</strong>
+                A/B first preview is 7893/5872&nbsp;=&nbsp;1.344 against a concurrency ratio
+                8/6&nbsp;=&nbsp;1.333, which an earlier draft advertised as agreeing “to 0.8%”. That
+                is an artefact of the statistic: the ratio of <em>means</em> is 1.258, the bootstrap
+                interval on the ratio of medians is <strong>[1.16, 1.39]</strong>, and only the
+                <em>first</em> order statistic tracks 8/6 at all — the second is below 1. The
+                sharpest check is the internal control: A and C are structurally identical through
+                the opening (both 8-wide, no detection running before the first commit) and should
+                agree exactly, yet they differ by 7% at the first position and 20% at the second.
+                That is this statistic's reproducibility. The point estimate is consistent with
+                equal sharing; nothing finer than that is supportable.
+            </p>
+
+            <p>
+                So the term that survives every cross-check is the work term: <strong>B pays more
+                CPU for the same result.</strong> Two things about that remain open, and the second
+                is wider than an earlier draft admitted:
+            </p>
+
+            <ul>
+                <li><strong>Why the cost rises.</strong> Process-wide <code>getrusage</code> cannot
+                    separate real extra work — a second pool, more hand-offs — from identical work
+                    placed on efficiency cores, which on a 4P&nbsp;+&nbsp;6E machine accrues more
+                    CPU-seconds for the same result. Per-QoS accounting could. Worth noting that
+                    phase&nbsp;3 changes no QoS annotation: <code>WorkThrottle</code> is a pure
+                    ordering semaphore with no thread-priority effect, and detection routes through
+                    the same <code>Task.detached</code> in both shapes — so the placement candidate
+                    would have to arise from the scheduler reacting to a different concurrency mix,
+                    which is a narrower hypothesis than “it is on the E cores”.</li>
+                <li><strong>Why it is so much larger on one set.</strong> +6.0&nbsp;CPU-s over 12
+                    files is <strong>+0.50&nbsp;s per file</strong>; +17.9&nbsp;CPU-s over 10 files
+                    is <strong>+1.79&nbsp;s per file</strong> — a 3.6× difference between two sets
+                    of near-identical mean file size (16.0 against ~16.8&nbsp;MB). Neither candidate
+                    explains that, so the magnitude is unaccounted for, not merely the cause.</li>
+            </ul>
+
+            <p>
+                One structural note that costs nothing and probably explains the occupancy sign
+                flip: the session set is 10 files, so its tail is 2 files in 8 slots under A and 4
+                in 6 under B — B's tail is geometrically fuller. On a set barely longer than one
+                wave, occupancy differences are dominated by tail geometry rather than by anything
+                the change did.
+            </p>
+
+            <p>
+                <strong>Finally, on how much the decomposition itself proves.</strong> It is an
+                algebraic identity, not a finding: <code>meanCores</code> is <em>defined</em> as
+                <code>cpuSeconds/wallSeconds</code>, so “wall = work ÷ occupancy” carries no more
+                information than “CPU rose and occupancy fell”, and occupancy is an output of the
+                scheduler rather than a free parameter. Its whole non-circular content is the
+                elimination above. It is used here for that and nothing more. (“Decomposes exactly”
+                is also loose: the identity is exact <em>per run</em>, and medians of ratios are not
+                ratios of medians, which is why the two rows close to 0.29 and 0.05&nbsp;pp rather
+                than to zero.)
+            </p>
+
+            <p>
+                Two notes on what the pre-registered risk does and does not cover.
+                <strong>B adds no concurrency over A</strong>: A runs 8 preparation slots with
+                detection inline, B runs 6&nbsp;+&nbsp;2, and both cap at eight concurrent units.
+                Only C, at 8&nbsp;+&nbsp;2&nbsp;=&nbsp;10, oversubscribes — so the plan's risk that
+                “two concurrent pools can oversubscribe the CPU”, which is conditional in its own
+                wording on the limits not being chosen together, describes C and not B.
+                Milestone&nbsp;5 chose them together. And a caveat on how firmly that is established:
+                the runs' own records report <code>preparationLimit</code> 6 for B but
+                <strong>8 for A <em>and</em> for C alike</strong>, so the records distinguish B from
+                the other two but cannot by themselves prove an “A” run carried the inline-detection
+                mutation rather than being a mislabelled C run. The labels are corroborated by
+                behaviour rather than by the record — C's per-file render-to-detection lag is longer
+                and far more spread (median 2464&nbsp;ms, max 4282) than A's (2268, max 3020), which
+                is what a 2-slot analysis pool behind 8-wide rendering looks like — but one more
+                printed line would have made it a fact instead of an inference.
+            </p>
+
+            <p>
+                One further figure, and a correction to how the earlier draft read it. From the
+                per-file records (n&nbsp;=&nbsp;108 each), the median lag from a file's render
+                committing to its detection finishing is <strong>2268&nbsp;ms</strong> before and
+                <strong>2371&nbsp;ms</strong> after. The earlier draft called the 103&nbsp;ms
+                difference “the queueing the analysis pool adds”. It is not: in A that lag
+                <em>is</em> the detection, with no queue at all, while in B it is queue wait
+                <em>plus</em> a detection that runs at most 2-concurrent against A's up-to-8 and
+                should therefore be individually faster. The 103&nbsp;ms is a net of two opposing
+                terms, so the true queue wait is larger than that and the claim that “detection
+                costs about the same either way” is not established either. Measuring the wait
+                itself needs a timestamp around the <code>acquire</code> inside
+                <code>enqueueStarDetection</code>, which was not taken.
+            </p>
+
+            <h4>Where the latency win actually comes from — and it is not what the milestone assumed</h4>
+
+            <p>
+                Configuration C was added to separate the two things phase&nbsp;3 changed at once,
+                and the answer it gives was missed by three review rounds and by this write-up until
+                the third of them forced a look at the wave structure. C moves detection off the
+                preparation slot but keeps preparation 8 slots wide. If the first-preview gain came
+                from freeing the slot, C should look like B. It does not — it looks like A:
+            </p>
+
+            <table>
+                <tr><th>Configuration</th><th>Detection</th><th>Preparation width</th><th>Time to first preview</th></tr>
+                <tr><td>A before</td><td>inside the slot</td><td>8</td><td>7893 ms</td></tr>
+                <tr><td>C split 8</td><td>own pool</td><td>8</td><td>7368 ms</td></tr>
+                <tr><td>B after</td><td>own pool</td><td>6</td><td><strong>5872 ms</strong></td></tr>
+            </table>
+
+            <p>
+                Holding width at 8 and moving detection off the slot buys <strong>−6.7%</strong>.
+                Holding detection off the slot and narrowing the pool from 8 to 6 buys
+                <strong>−20.3%</strong>. <strong>So roughly three quarters of the headline
+                first-preview improvement is bought by the pool being narrower, not by detection
+                leaving the slot</strong> — which is the change backlog item&nbsp;4 actually asked
+                for. The same reading explains the switch experiment: B's second preparation wave
+                begins at 20.2&nbsp;s against A's 27.0&nbsp;s, because six files clear before eight
+                do, and that is what a file clicked mid-load is waiting for.
+            </p>
+
+            <p>
+                <strong>Held as indicative, not established.</strong> C has n&nbsp;=&nbsp;3, and the
+                fourth cell of the 2×2 — preparation 6 with detection inline — was never measured,
+                which is exactly the configuration that would settle it. The attribution is a
+                reading of three points, not a tested one. But it is the reading the data support,
+                and it inverts the milestone's working assumption, so it belongs in front of the
+                numbers rather than behind them.
+            </p>
+
+            <p>
+                It also reframes what taking detection off the slot is <em>for</em>. On this
+                evidence its contribution is not the latency win but making the narrower pool safe:
+                with detection inline, a 6-wide pool would hold each slot across the detection too,
+                and the slot would not free at render time at all. Lifting detection out is what
+                lets the width be cut without the wait growing back. That is a coherent account of
+                phase&nbsp;3 — but it is a different one from “detection was gating the pipeline, so
+                removing the gate made it faster”.
+            </p>
+
+            <h4>Milestone 5's budget split is vindicated, weakly</h4>
+
+            <p>
+                The obvious suspicion is that the regression comes from preparation dropping
+                8&nbsp;→&nbsp;6. Configuration C tests it and says no: giving preparation its two
+                slots back makes the aggregate <em>worse</em> still (all render results 29838
+                against B's 29566, all detections 32153 against 31351) and the selected file's stars
+                much worse (22014 against 14687). So restoring preparation's share does not recover
+                the cost, and the “pool on top” alternative the user declined at milestone&nbsp;5
+                would have been the worse of the two — a decision taken on reasoning then, and
+                consistent with measurement now.
+            </p>
+
+            <p>
+                <strong>Held weakly, and the weakness is structural rather than a matter of
+                taste.</strong> C has n&nbsp;=&nbsp;3, at which depth no permutation test can return
+                below 0.10, so this comparison cannot be significant however clean it looks. It is
+                also the one configuration that genuinely oversubscribes — 8&nbsp;+&nbsp;2 against a
+                budget of 8 — so if any arm of this study is entitled to the plan's
+                “two pools can oversubscribe the CPU” risk, it is C and only C.
+            </p>
+
+            <h4>Task 3 — is that “promptly”? Judged, rather than left as a percentage</h4>
+
+            <p>
+                The milestone asks to <em>confirm the selected file's stars still appear
+                promptly</em>. A percentage improvement is not that confirmation, so here is the
+                absolute answer: after clicking a background file mid-load, its image appears
+                <strong>~18&nbsp;s</strong> later and its stars <strong>~21&nbsp;s</strong> later,
+                and it still finishes 7th or 8th of 12. <strong>That is not “prompt” by any ordinary
+                reading.</strong> What the measurement supports is the narrower claim the task's own
+                wording allows — “<em>still</em>” — that promotion is not a regression and is
+                markedly better than before, by about a quarter.
+            </p>
+
+            <p>
+                <strong>The promotion machinery works — but the rank improvement is not evidence
+                that it works <em>better</em>, and an earlier draft presented it as though it
+                were.</strong> Across all five runs of each arm the promoted file moves from
+                rendering 9th or 10th (A) to 7th or 8th (B). Read against each shape's own wave
+                width, however, those are the same position: A's first wave is ranks 1–8 and B's is
+                1–6, so in <em>both</em> shapes the promoted file takes the first or second
+                preparation slot to free. Promotion was already doing its job before phase&nbsp;3.
+                The rank shift is the arithmetic of a narrower wave.
+            </p>
+
+            <p>
+                The analysis half of task&nbsp;9 — promoting the <em>second</em> pool — is likewise
+                not measurable from this comparison, and saying so costs nothing: configuration A
+                has no analysis pool in use at all, so an A-versus-B contrast has no term for it.
+                The promoted file's own render-to-detection lag is 2523&nbsp;ms (A) against
+                2554&nbsp;ms (B) — indistinguishable. What the B arm shows is that the code path
+                runs; milestone&nbsp;7's own tests are what establish that it orders correctly.
+            </p>
+
+            <p>
+                So the −25.8% / −23.7% improvement is real but its cause is the same one as the
+                first preview's: B's second wave begins at 20.2&nbsp;s where A's begins at
+                27.0&nbsp;s, because six files clear before eight do. And the reason the wait is
+                still tens of seconds is simply that a 16&nbsp;MB load and render at 6-wide takes
+                about 14&nbsp;s — derived, not measured: B's 7th render commits at 20.1&nbsp;s
+                against its 1st at 5.9&nbsp;s, and that span also contains the 7th file's own work.
+                An earlier draft blamed the thumbnail wait that <code>prepare()</code> holds its
+                slot across (<code>OpenFile.swift:640</code>, the span
+                <a href="#appendix-b">Appendix&nbsp;B</a> specifies); that is wrong on this
+                evidence — the only thumbnail figure available puts that wait at tens of
+                milliseconds, not seconds.
+            </p>
+
+            <h4>The indicator, and every file detected</h4>
+
+            <p>
+                <strong>Zero indicator gaps</strong>, across every file of every run — the detection
+                indicator never went out between coming on and detection finishing. That is also
+                true by construction, which is the stronger statement:
+                <code>prepare()</code> calls <code>enqueueStarDetection</code> synchronously in the
+                same main-actor turn the render's <code>await</code> resumes in, so
+                <code>markStarDetectionQueued()</code> lights the flag with no suspension point in
+                between; the phase then only moves <code>queued</code> →
+                <code>running</code> → <code>finished</code>. The 5&nbsp;ms sampling could in
+                principle miss a shorter gap, so the measurement corroborates the argument rather
+                than carrying it. <strong>Every file reached <code>finished</code> in every
+                run</strong> — no file was left queued or abandoned.
+            </p>
+
+            <h4>The regression is not an ordering artefact — checked two ways</h4>
+
+            <p>
+                The runs alternate by configuration rather than sitting in one block per shape —
+                B&nbsp;(20:46) → A&nbsp;(20:55) → C&nbsp;(21:03) → B&nbsp;(21:11) → A&nbsp;(21:17) —
+                so a thermal or session-long drift cannot masquerade as the effect. Two checks
+                confirm it:
+            </p>
+
+            <ul>
+                <li><strong>The effect appears independently in each block.</strong> Time to all
+                    render results, B against A: <strong>+2.0%</strong> within the first block and
+                    <strong>+3.8%</strong> within the second, where the two configurations were
+                    measured minutes apart. Drift within a configuration between its blocks is
+                    smaller than the effect (+2.1% for B, +0.4% for A).</li>
+                <li><strong>A block-stratified permutation test agrees.</strong> Permuting labels
+                    only within blocks (18480 splits) returns first preview 0.0016, all render
+                    results 0.0200, all detections 0.0092 — essentially the pooled values.</li>
+            </ul>
+
+            <p>
+                <strong>Both checks are uniform-set only, and the claim above should be read that
+                way.</strong> The session set was run <em>once</em> per configuration — B at 20:49,
+                A at 20:57, C at 21:05 — and never repeated, so the session comparison is a single
+                unreplicated block, fully confounded with time order. It is a replication of the
+                <em>file set</em>, not of the design, which matters because the CPU argument leans
+                on it. Two things keep it usable: the direction is conservative (B ran first and
+                measured worse), and the inter-block drift measured on the uniform set is 0.4–2.1%,
+                far below the +8.8% CPU effect it is asked to support.
+            </p>
+
+            <p>
+                One ordering weakness remains and is not repaired: within each block B was measured
+                before A. A monotone slow-down over a block would therefore flatter B on the
+                aggregate metrics — but B measured <em>worse</em> on those, so the bias, if any,
+                works against the finding rather than for it. It would flatter B's first-preview
+                advantage, which is the one place to hold the number a little more loosely.
+            </p>
+
+            <h4>What this means for the backlog item</h4>
+
+            <p>
+                Backlog item&nbsp;4 asked that one file's detection stop deciding when the next may
+                start loading. Phase&nbsp;3 achieves that structurally, and milestone&nbsp;7's tests
+                pin it. What this milestone establishes is that the structural fix buys
+                <strong>latency, not throughput</strong>, on this machine with these files: the
+                first image appears a quarter sooner, and clicking a file mid-load gets its image
+                and its stars about a quarter sooner, at a cost of 3–8% on the time for the whole
+                folder to settle. That is a good trade for perceived responsiveness and a poor one
+                for batch completion, and which matters is the user's call rather than
+                the measurement's — so it is raised at the pause rather than declared a success.
+            </p>
+
+            <p>
+                <strong>Two qualifications on that summary, both of which cut against it.</strong>
+                First, the latency win is mostly bought by the preparation pool being narrower
+                rather than by detection leaving the slot — see <em>Where the latency win actually
+                comes from</em> — so it is the budget split, not the backlog's own fix, doing most
+                of the work. Second, the cost side has no established cause at all — the CPU-second
+                rise it was attributed to does not survive an interleaved re-measurement. If the
+                2–3% matters, the cheapest experiment is still the 2×2's missing cell: preparation 6
+                with detection inline.
+            </p>
+
+            <h4>What is <em>not</em> established</h4>
+
+            <ul>
+                <li><strong>Nothing was seen on screen.</strong> “Painted” is proxied by the
+                    committed render result, and machine usability under load was not judged
+                    subjectively — the CPU figures are given instead of an opinion.</li>
+                <li><strong>The “no saturation” check is failed, not passed</strong> — see the CPU
+                    section. It is listed here as well so a reader skimming the limits meets it.</li>
+                <li><strong>The regression's cause is unknown.</strong> Not narrowed — unknown. The
+                    CPU-second rise that three drafts built an explanation on does not reproduce
+                    under an interleaved design.</li>
+                <li><strong>The original study was blocked, not interleaved.</strong> A control run
+                    showed that design producing a 15% effect from machine drift alone. The
+                    directions of the two headline findings were re-confirmed under interleaving;
+                    every other number above carries that design's uncertainty.</li>
+                <li><strong>The latency win's attribution is indicative only.</strong> It rests on
+                    configuration C at n&nbsp;=&nbsp;3 and on a 2×2 whose fourth cell was never
+                    measured.</li>
+                <li><strong>The harness ran with no <code>Preferences</code>.</strong>
+                    <code>WindowModel.preferences</code> was never assigned, so every file opened
+                    linear and the per-format auto-stretch-on-open the application applies never
+                    ran. Common-mode between the shapes, so the comparison is unaffected — but it
+                    shifts the render-to-detection cost ratio, and that ratio is exactly what the
+                    “a machine with more cores could show the gain” caveat turns on.</li>
+                <li><strong>The instrument shares the actor it measures.</strong>
+                    <code>WorkThrottle</code>, <code>OpenFile</code> and <code>LoadedImage</code> are
+                    all <code>@MainActor</code>, and so is the 5&nbsp;ms poll loop. The perturbation
+                    can be bounded — about 6000 iterations of a 12-element loop over a 30&nbsp;s run,
+                    plausibly well under 0.5% duty cycle against a 3% effect, and the 5&nbsp;ms
+                    quantisation truncates every timestamp by at most 0.02% of a run — but it was
+                    bounded by argument afterwards, not measured, and it is common-mode rather than
+                    absent.</li>
+                <li><strong>The indicator-gap count is one-sided.</strong> In configuration A
+                    <code>markStarDetectionQueued()</code> is never called, so
+                    <code>isDetectingStars</code> only becomes true once detection is already
+                    running and the detector is structurally pinned at zero for that column. The
+                    zero that means something is B's.</li>
+                <li><strong>The selected-file improvement in the main tables is not
+                    significant</strong> (p&nbsp;=&nbsp;0.126 at n&nbsp;=&nbsp;9). This is worth
+                    recording as a near-miss: the first three runs read 7.5 / 7.5 / 15.6&nbsp;s and
+                    would have supported a “63% faster” headline; six further runs moved the median
+                    from 7.5&nbsp;s to 14.7&nbsp;s. Milestone&nbsp;4's lesson about two clean runs
+                    meaning nothing, met again in the other direction. Only the switch scenario
+                    supports a tested claim about the selected file.</li>
+                <li><strong>One machine, one core count.</strong> The whole finding turns on there
+                    being no idle cores. A machine with many more cores than the budget uses, or a
+                    file set whose detection dominates its render far more than 2.3&nbsp;s against a
+                    multi-second render, could show the throughput gain that is absent here. This
+                    is a result about a 10-core M4, not a general one.</li>
+                <li><strong>Not the shipped build.</strong> Optimised and testable, not Release.</li>
+                <li><strong>A is a reconstruction</strong>, not a checkout of 16b5e7b.</li>
+            </ul>
+
+            <h4 style="margin-top:1.6rem">Re-measured under a corrected design — and one conclusion did not survive</h4>
+
+            <p>
+                Run at review, to settle the termination asymmetry left open above. It settled
+                that — and incidentally exposed a defect in the study's <em>design</em> that costs
+                the causal argument its evidence. Everything in this section supersedes the
+                corresponding claim above; the earlier numbers are left in place because the
+                comparison between them is the point.
+            </p>
+
+            <p>
+                <strong>The termination asymmetry is real but measures zero.</strong> The harness
+                now stops only once every frame has finished <em>both</em> its star detection and
+                its sky-background pass, and additionally reports the CPU and wall reading at the
+                old stopping point. Across all 24 runs the two readings are identical to the
+                microsecond — the background pass always completed before the last star detection,
+                exactly as <code>WindowModel.throttleLimits</code>' comment predicts. Nothing was
+                being truncated. Closed by measurement rather than by the argument offered for it
+                above.
+            </p>
+
+            <p>
+                <strong>The design defect, and how it announced itself.</strong> The first
+                re-measurement repeated the original method — all of B, then all of A — and returned
+                B as <strong>15% faster</strong>, reversing the recorded result outright. Neither
+                shape had changed. The cause is that the machine drifts: those B runs completed in
+                ~23&nbsp;s on a cool machine, the A runs that followed in ~27.5&nbsp;s as it warmed.
+                <strong>A blocked design cannot separate that from the configuration.</strong> The
+                original study alternated between blocks (B, A, C, B, A), which is why it survived a
+                block-stratified test — but alternating <em>blocks</em> is much weaker than
+                alternating <em>runs</em>, and it is not what was claimed for it.
+            </p>
+
+            <p>
+                So the comparison was re-run properly: both configurations built once, their built
+                products snapshotted, and swapped in run by run so A and B alternate with nothing
+                else changing. Six pairs, uniform set. A paired test over the six differences is the
+                right statistic — it removes exactly the run-to-run variation that produced the
+                reversal.
+            </p>
+
+            <table>
+                <tr><th>Metric</th><th>A before</th><th>B after</th><th>Δ</th><th>Pairs favouring B</th><th>Paired <em>p</em></th><th>Blocked design said</th></tr>
+                <tr><td>Time to first preview</td><td>7304</td><td><strong>5991</strong></td><td><strong>−18.0%</strong></td><td>6 / 6</td><td>0.031</td><td>−25.6%</td></tr>
+                <tr><td>Time to all render results</td><td><strong>29435</strong></td><td>30157</td><td><strong>+2.5%</strong></td><td>0 / 6</td><td>0.031</td><td>+3.0%</td></tr>
+                <tr><td>Time to all detections</td><td><strong>31120</strong></td><td>31930</td><td>+2.6%</td><td>1 / 6</td><td>0.094</td><td>+3.8%</td></tr>
+                <tr><td>Total CPU seconds</td><td>257.4</td><td>259.3</td><td>+0.7%</td><td>2 / 6</td><td><strong>0.188</strong></td><td>+2.3%</td></tr>
+                <tr><td>Mean core draw</td><td>8.3</td><td>8.1</td><td>−2.7%</td><td>—</td><td>0.250</td><td>−1.3%</td></tr>
+            </table>
+
+            <p>
+                <strong>The two descriptive findings survive, on a better footing than before.</strong>
+                First preview is faster in <em>every</em> pair and aggregate completion slower in
+                <em>every</em> pair — 6/6 each, as clean as six pairs can be. The magnitudes shift
+                (the latency gain smaller than recorded, the regression about the same), but the
+                directions are exactly as reported, now from the strongest design used anywhere in
+                this milestone.
+            </p>
+
+            <p>
+                <strong>The causal argument does not survive.</strong> All of it rested on B
+                spending more CPU for the same job — “the term that is present, large and the same
+                sign in both sets”. Under interleaving that term is <strong>+0.7%, favouring B in
+                only 2 of 6 pairs, p&nbsp;=&nbsp;0.188</strong>. It is not there. The +2.3% it was
+                built on is, on this evidence, an artefact of the blocked design — the same artefact
+                that produced the 15% reversal, merely smaller. The session set's +8.8%, which
+                carried even more of the argument, came from a single unreplicated block and is
+                weaker still.
+            </p>
+
+            <p>
+                <strong>So the mechanism is unestablished, and this time that is the finding rather
+                than a placeholder for the next theory.</strong> Four explanations have now been
+                offered for a 2.5% regression — CPU-bound, then under-fill, then more-work — and each
+                was refuted by a measurement that could have been taken first. What is known is that
+                the regression is real, small, and reproduces under a paired design. What causes it
+                is not known, and no explanation offered here has survived its own data. The honest
+                next step is a targeted experiment, not a fifth theory; the missing 2×2 cell remains
+                the cheapest one.
+            </p>
+
+            <h4>The latency attribution, re-measured the same way — and it strengthens</h4>
+
+            <p>
+                The claim that the latency win comes from the preparation pool narrowing rather than
+                from detection leaving the slot rested on configuration C, measured in its own
+                block — exactly the design just shown capable of inventing a 15% effect. So it was
+                re-run three-way interleaved, A → C → B, five rounds, products swapped between every
+                run.
+            </p>
+
+            <table>
+                <tr><th>Comparison</th><th>What changes</th><th>Δ first preview</th><th>Pairs</th><th>Paired <em>p</em></th></tr>
+                <tr><td>A → C</td><td>detection leaves the slot; width stays 8</td><td><strong>−1.3%</strong></td><td>3 / 5</td><td>0.688</td></tr>
+                <tr><td>C → B</td><td>width 8&nbsp;→&nbsp;6; detection unchanged</td><td><strong>−19.2%</strong></td><td>4 / 5</td><td>0.125</td></tr>
+                <tr><td>A → B</td><td>both — phase 3 as shipped</td><td><strong>−20.3%</strong></td><td>5 / 5</td><td>0.062</td></tr>
+            </table>
+
+            <p>
+                <strong>Taking detection off the preparation slot contributes essentially nothing to
+                first-preview latency on its own</strong> — −1.3%, faster in three of five pairs,
+                which is a coin toss. Narrowing the pool contributes all of it. The blocked design
+                had put the split at −6.7% / −20.3%; interleaved it is −1.3% / −19.2%, so what the
+                earlier numbers credited to the backlog's own fix shrinks to nothing under a better
+                design, while the width effect stands.
+            </p>
+
+            <p>
+                This is the one conclusion in the milestone that got <em>stronger</em> under
+                scrutiny, and the one that matters most for what to do next: <strong>the
+                user-visible improvement in phase 3 is bought by preparing fewer files at once, not
+                by moving detection.</strong> Moving detection remains what makes the narrower pool
+                viable — with detection inline, a 6-wide pool would hold each slot across the
+                detection too — but it is a structural enabler, not the source of the gain.
+            </p>
+
+            <h4>Test plan</h4>
+
+            <p>
+                Reported honestly, and none of it is this milestone's doing — the working tree is
+                byte-identical to HEAD, so every result below is a property of HEAD.
+            </p>
+
+            <table>
+                <tr><th>Run</th><th>Result</th></tr>
+                <tr><td>Full plan, first attempt</td><td>Every other unit suite passed (231, 272, 529, 205, 47, 226). The app's own suite reported <strong>4 issues, all four inside <code>abandoningDetectionThatIsAlreadyRunningIsIgnored()</code></strong> (<code>LoadedImageTests.swift:270–279</code>) — milestone&nbsp;6's test, which milestone&nbsp;7 measured failing in 2 of 4 runs at HEAD and whose mechanism it identified. The UI runner then failed to initialise (<em>“Timed out while enabling automation mode”</em>), the transient milestone&nbsp;2 recorded.</td></tr>
+                <tr><td><code>FITScopeTests</code> alone, re-run</td><td><strong>849 tests in 99 suites passed</strong>, zero issues — the same suite that had just reported the 4 flaky issues.</td></tr>
+                <tr><td>Full plan, second attempt</td><td><strong>Started and then stopped by me after ~45 minutes, with no result.</strong> The unit suites had completed; the UI runner was still alive and relaunching the app long past the ~9–10 minutes the whole plan took in milestone&nbsp;2. Stopped rather than waited out, because the machine was needed for the review round and — the working tree being byte-identical to HEAD — any UI result would have been a statement about HEAD rather than about this milestone, which milestone&nbsp;7 already recorded as 39/40. Recorded as an abandoned run rather than omitted.</td></tr>
+            </table>
+
+            <p>
+                One process note worth keeping, since it cost two failed attempts before any
+                measurement was taken: an <em>incremental</em> <code>build-for-testing</code> left
+                the app with a signature its own <code>Info.plist</code> no longer matched, and the
+                test runner then failed to launch with an opaque <em>“Runningboard has returned
+                error 5”</em>. <code>codesign -v</code> named it in one line where the xcodebuild
+                error did not; a clean build fixed it. Every measurement build was cleaned and
+                signature-checked for that reason.
+            </p>
+
+            <p>
+                And milestone&nbsp;5's <code>-only-testing:</code> trap, met again and worth
+                restating because the first form failed silently:
+                <code>-only-testing:FITScopeTests/WindowModelTests/measurePreparationThroughput</code>
+                ran <strong>zero tests and reported success</strong>. Swift Testing needs the
+                parenthesised form, <code>…/measurePreparationThroughput()</code>. Caught only by
+                reading the test count, exactly as milestone&nbsp;5 warned.
+            </p>
+
+            <h4>How to reproduce this</h4>
+
+            <p>
+                The harness, the raw per-run records, the driver script and both reproduction sets
+                were kept rather than described — milestone&nbsp;3 reverted its instrumentation and
+                all three of its review rounds then recorded traces they could not verify. They are
+                in this session's scratchpad: <code>harness.patch</code>,
+                <code>baseline-mutation.patch</code>, <code>measure.sh</code>,
+                <code>results/*.txt</code> — one file per run, carrying a
+                <code>MEASURE|key|value</code> line per metric and a <code>MEASURE|file|…</code>
+                line per file — and the <code>uniform/</code> and <code>session/</code> directories.
+                Both patches apply at HEAD with a plain <code>git apply</code> from the repository
+                root, which was checked with <code>git apply --check</code> rather than assumed, and
+                the harness was applied and compiled once to confirm the artifact is usable.
+            </p>
+
+            <p>
+                <strong>Two artifact defects the review caught, both now fixed, recorded because
+                they would have made this section a false claim.</strong>
+                <code>baseline-mutation.patch</code> was <strong>0 bytes</strong> — it was generated
+                after the mutation had already been reverted, so configuration A, half of every
+                comparison here, existed only as two sentences of prose and could not have been
+                re-created by anyone. And the apply instruction did not work: the diffs carried no
+                <code>a/</code>&nbsp;/&nbsp;<code>b/</code> prefixes, so <code>git apply</code>
+                failed with <em>“No such file or directory”</em>. Both were regenerated. In doing so
+                the original <code>harness.patch</code> was briefly overwritten with an empty diff
+                and had to be rebuilt from the edits that produced it; the rebuild is the same
+                195 lines and compiles, but it is a reconstruction of the instrument rather than the
+                original capture.
+            </p>
+
+            <p>
+                <strong>And the instrument was not constant across the study — which the published
+                patch quietly reveals, so it is better said outright.</strong> The selection-switch
+                branch was added <em>after</em> the 38 main-experiment runs had been taken, to run
+                the 12 switch runs. The patch that is kept is that final version, and it prints the
+                three switch keys unconditionally; the 38 earlier records contain no
+                <code>switchedAt</code> line at all, which is how one can tell they were produced by
+                an earlier build of the harness. The difference is three printed lines and a branch
+                that is inert unless the run's label begins with <code>sel-</code>, so it is
+                measurement-neutral — but re-running the published patch reproduces the numbers
+                while producing a differently shaped record for the non-switch runs, and anyone
+                comparing the two would otherwise be entitled to wonder why.
+            </p>
+
+            <p>
+                <strong>A third artifact gap, the same class as the other two, one layer up.</strong>
+                <code>measure.sh</code> runs <code>test-without-building</code> — the
+                <code>clean build-for-testing</code> carrying the optimisation overrides appeared in
+                no kept artifact at all, so anyone following “the harness, the records, the driver
+                and both sets were kept” would have reproduced the <code>-Onone</code>
+                configuration: the 584&nbsp;s case the method section says is unrepresentative. The
+                build command and the signature check are now recorded in
+                <code>measure.sh</code>'s header.
+            </p>
+
+            <p>
+                The artifacts are outside the repository, so they are as perishable as the session;
+                whether any of it should be archived beside this plan is left for the user.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Automated review</span>
+
+            <p>
+                <strong>Round 1</strong> — a fresh-context reviewer re-parsed all 50 result files and
+                recomputed every figure independently, including the exact permutation tests
+                (enumerating all 48620 and 252 splits rather than sampling). <strong>Every number in
+                these notes reproduced to the digit</strong>, including the ones that make the
+                milestone look worse and the “63%” hypothetical it declined to claim. It confirmed
+                the baseline reconstruction faithful, the paint and indicator proxies correct
+                against the source, the block design sound, and the warm-up discard rule applied
+                uniformly — including to the one warm-up that would have flattered the baseline
+                arm. It was told not to build, so it could not re-run anything; that limit is the
+                cost of running it while the test plan held the machine.
+            </p>
+
+            <p>
+                It found no arithmetic error anywhere. What it did find was that the
+                <em>explanation</em> was a story fitted to the numbers, and that a task reported as
+                satisfied was in fact contradicted by the data. Both were right.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>1</td><td><strong>The “no saturation” acceptance criterion is contradicted by the data and was not recorded as failed.</strong> The process peaks at all ten cores, four of fifty runs sampled marginally above 10.0, and the mean draw of 8.6–8.7 exceeds the design's own 8-core budget, whose comment promises “a couple of cores free”. The notes reported the numbers and reframed saturation as the <em>explanation</em> for the missing gain, never as a check that failed.</td><td>High</td><td><strong>Fixed.</strong> The CPU section now states plainly that task&nbsp;5's “no saturation” half is not confirmed but contradicted, with the budget comparison spelled out, and it is repeated in the limits list. This was the finding most worth having: it is the difference between reporting a measurement and marking one's own homework.</td></tr>
+                <tr><td>2</td><td><strong>The causal claim is internally inconsistent: B adds no concurrency over A.</strong> A is 8 preparation slots; B is 6&nbsp;+&nbsp;2 — both cap at eight concurrent units. Only C (8&nbsp;+&nbsp;2&nbsp;=&nbsp;10) oversubscribes. The plan also invoked its own pre-registered oversubscription risk, whose wording is conditional (“if their limits are not chosen together”) and which milestone&nbsp;5 satisfied.</td><td>High</td><td><strong>Fixed.</strong> Verified against the runs' own <code>preparationLimit</code> records. The “extra concurrency” sentence is withdrawn and the risk re-attributed to configuration C alone, which is the only arm it describes.</td></tr>
+                <tr><td>3</td><td><strong>“The total work is identical either way” is contradicted by the instrument's own numbers.</strong> Total process CPU rises 265.5&nbsp;→&nbsp;271.5&nbsp;s on the uniform set (+2.3%) and 202.7&nbsp;→&nbsp;220.5&nbsp;s on the session set (+8.8%).</td><td>High</td><td><strong>Fixed.</strong> I had computed these figures myself before the review and then wrote a sentence they refute — the worse error of the two. The claim is withdrawn and the CPU-second increase is now reported as the thing needing explanation.</td></tr>
+                <tr><td>4</td><td><strong>The CPU numbers point away from saturation.</strong> On the uniform set B draws <em>fewer</em> mean cores than A (8.60 against 8.71, p&nbsp;=&nbsp;0.047) while taking longer — the signature of under-fill, not saturation — and the sign flips on the session set. It offered a mechanism the notes never considered: B's two analysis slots idle until the first render commits, so B works 6-wide where A works 8-wide for the opening ~6&nbsp;s, of order 5% of the worker-seconds against an observed 3.8%.</td><td>High</td><td><strong>Adopted, and then reversed by round&nbsp;2 — see&nbsp;2.1.</strong> The reviewer's under-fill mechanism was taken as the leading candidate and the section rewritten as “the mechanism is not settled”. Round&nbsp;2 showed the mechanism is refuted by the same data and that this reply had conceded a claim the evidence supports. The finding's <em>first</em> half — that the original wording was fitted rather than derived — stands; its proposed replacement does not.</td></tr>
+                <tr><td>5</td><td>The n&nbsp;=&nbsp;5 switch experiment's <em>p</em>&nbsp;=&nbsp;0.048 is the <strong>floor</strong> of a permutation test on the difference of medians at that depth (<code>12/252</code>), attainable even by infinitely separated data — yet it was presented beside <em>p</em>&nbsp;=&nbsp;0.003 as if comparable. The n&nbsp;=&nbsp;9 first-preview value is likewise exactly its floor (<code>140/48620</code>).</td><td>High</td><td><strong>Fixed</strong>, after reproducing both floors independently. The switch table now reports the difference of <em>means</em>, whose floor is <code>2/252</code>, giving <em>p</em>&nbsp;=&nbsp;0.016 and 0.024 — genuinely off the floor — plus Hodges–Lehmann shifts of about −6.3&nbsp;s. The first-preview floor is labelled in the table.</td></tr>
+                <tr><td>6</td><td><strong>The switch experiment's arms were not interleaved and its baseline arm was unstable</strong> — 45% spread in total run time against B's 4%, and against 1.5% for the same configuration in the main experiment — which inflates the very baseline the improvement is measured against.</td><td>High</td><td><strong>Fixed by disclosure, the effect having survived the correction.</strong> Confirmed the spread and the missing interleaving. Normalising each run's latency by its own total completion time removes the inflation and the improvement holds and sharpens (−23.6% / −21.6%). Both the raw and normalised figures are now given, with the instability stated and left unexplained rather than guessed at.</td></tr>
+                <tr><td>7</td><td><strong>The reproduction instructions do not work and the baseline is not reproducible at all.</strong> <code>baseline-mutation.patch</code> was 0 bytes, and the documented <code>git apply</code> fails because the diffs carry no <code>a/</code>/<code>b/</code> prefixes.</td><td>High</td><td><strong>Fixed.</strong> Both patches regenerated with prefixes and verified with <code>git apply --check</code>; the harness was applied and compiled to prove the artifact usable. Recorded in the notes, along with the fact that the original <code>harness.patch</code> was destroyed while fixing this and had to be rebuilt from the edits that produced it.</td></tr>
+                <tr><td>8</td><td><strong>“The analysis pool adds only ~0.1&nbsp;s of queueing” is not what the lag measures.</strong> In A the lag is detection with no queue; in B it is queue wait plus a detection that runs at most 2-concurrent against A's up-to-8 and should be individually faster. The 103&nbsp;ms is a net of opposing terms.</td><td>Medium</td><td><strong>Fixed.</strong> The decomposition is withdrawn; only the observed lag is reported, with a note that measuring the wait needs a timestamp around the <code>acquire</code> that was not taken.</td></tr>
+                <tr><td>9</td><td><strong>Only one file per window ever paints.</strong> “Time to all previews painted” is not a user-visible quantity — eleven of twelve files never draw a canvas preview; the sidebar thumbnail is their only visible artefact.</td><td>Medium</td><td><strong>Fixed.</strong> Renamed throughout to “time to all render results”, with the milestone's original wording noted and the thumbnail row explained as the per-file visible artefact (it tracks within 12&nbsp;ms, so nothing hides between them).</td></tr>
+                <tr><td>10</td><td><strong>Task&nbsp;3 was reported as an improvement, not confirmed as “prompt”.</strong> In absolute terms the clicked file's stars still arrive ~20&nbsp;s later and it finishes 7th of 12; the notes gave only the percentage.</td><td>Medium</td><td><strong>Fixed with an explicit verdict:</strong> not “prompt” by any ordinary reading, but not a regression and about a quarter better — which is what “<em>still</em> appear promptly” licenses. The reviewer's observation that slots turn over on thumbnail time (the slot is held across <code>await thumbnailTask?.value</code>) is recorded as what bounds promotion, and as the lever if that answer is unsatisfactory. Its rank claim was verified and strengthened: the promoted file moves from 9th–10th to 7th–8th in <em>every</em> run, not one.</td></tr>
+                <tr><td>11</td><td>Metric validity: <code>getrusage</code>-derived “cores” is thread occupancy on a <strong>4P + 6E</strong> machine, so 8.6 of 10 is not 86% of throughput, and the CPU-second deltas may reflect placement on efficiency cores rather than more work.</td><td>Medium</td><td><strong>Fixed.</strong> Confirmed the split via <code>hw.perflevel*.logicalcpu</code>. Stated at the machine description and beside the CPU table, and the placement ambiguity is now given as one of the three candidate mechanisms.</td></tr>
+                <tr><td>12</td><td><strong>The CPU time series was collected and thrown away</strong> — only the mean and maximum were printed — so “there were never idle cores” is asserted rather than shown. One extra line of output would have settled it.</td><td>Medium</td><td><strong>Accepted, and the scope of the withdrawal corrected by round&nbsp;3.</strong> What is unshowable from the kept records is the <em>time course</em> — whether occupancy was high <em>throughout</em>. Occupancy on average is measured, and it is high on the uniform set and below the design's own budget on the session set. The wording no longer claims “throughout”.</td></tr>
+                <tr><td>13</td><td>Seven <em>p</em>-values with no multiplicity control; Bonferroni would leave only the first-preview result, though the metrics are heavily correlated so that is conservative.</td><td>Medium</td><td><strong>Fixed.</strong> The count, the correction and the correlation caveat are stated, and the values are labelled descriptive.</td></tr>
+                <tr><td>14</td><td>No intervals reported for any effect.</td><td>Low</td><td><strong>Fixed.</strong> Bootstrap 95% intervals recomputed independently and added to the uniform table. The one for the selected file's stars, [−60.6%, +11.5%], makes the near-miss self-evident, which is the point of quoting it.</td></tr>
+                <tr><td>15</td><td>The harness runs with <code>preferences == nil</code>, so auto-stretch-on-open never applies — common-mode, but it shifts the render-to-detection ratio the caveats turn on.</td><td>Low</td><td><strong>Fixed</strong> — added to the limits.</td></tr>
+                <tr><td>16</td><td>The harness's perturbation is asserted common-mode and never bounded, while sitting on the same actor as the scheduler under test.</td><td>Low</td><td><strong>Fixed</strong> by recording the reviewer's own bound (well under 0.5% duty cycle against a 3% effect; 5&nbsp;ms quantisation ≈ 0.02% of a run) and stating plainly that it was bounded by argument afterwards rather than measured.</td></tr>
+                <tr><td>17</td><td>The indicator-gap detector is structurally pinned at zero for configuration A, so that column's zero means nothing.</td><td>Low</td><td><strong>Fixed</strong> — added to the limits. Independently worked out here before the review and then not written down, which is the same failure as finding&nbsp;3 in miniature.</td></tr>
+                <tr><td>18</td><td>Small slips: macOS given as 26.5.1 (<code>sw_vers</code> reports <strong>26.6 / 25G72</strong>); the CPU table mislabelled as raw means and peaks when it is the median across runs of each; “two samples above 10” when it is four; “10 real light frames” when the set includes a stack and a corrected frame.</td><td>Low</td><td><strong>All fixed.</strong> The macOS version was carried over from milestone&nbsp;1's notes rather than checked — a fact asserted from memory, which is precisely what this project's conventions forbid.</td></tr>
+                <tr><td>19</td><td><strong>Disputed and rejected.</strong> The reviewer held that <code>SWIFT_COMPILATION_MODE=wholemodule</code> is <em>more</em> aggressive than this project's Release, whose effective value it read as <code>singlefile</code>.</td><td>Low</td><td><strong>Not a defect — the reviewer is wrong here, and flagged the claim as unverified itself.</strong> It read Xcode's <code>.xcspec</code> defaults rather than the resolved settings. <code>xcodebuild -showBuildSettings -scheme 'FITScope - Release'</code> reports <code>SWIFT_COMPILATION_MODE = wholemodule</code>, <code>SWIFT_OPTIMIZATION_LEVEL = -O</code>, <code>GCC_OPTIMIZATION_LEVEL = s</code> — all three exactly what the measurement build used. Re-run and quoted in the method section. Its neighbouring point stands and was adopted: the Debug base still carries <code>DEBUG=1</code> and assertions, so this is still not the shipped build.</td></tr>
+                <tr><td>—</td><td><em>Info.</em> The baseline reconstruction is faithful (<code>prepareSelectedFrame()</code> has one caller the harness never invokes; the uniform copies are byte-identical so <code>prepareFramePreviews()</code> returns early; the intended limits took effect in every run's record). The block design holds: a block-stratified permutation returns essentially the pooled <em>p</em>-values, so the regression is not an ordering or thermal artefact. The backups are byte-identical to HEAD, so the revert was clean.</td><td>Info</td><td><strong>Recorded</strong>, and the block-stratified result added to the notes alongside a per-block check I had run independently (+2.0% and +3.8% within the two blocks). Two independent routes to the same conclusion.</td></tr>
+            </table>
+
+            <p>
+                <strong>Round&nbsp;1's verdict, recorded because it is sharper than a summary of
+                mine:</strong> the measurement supports the descriptive conclusions and does not
+                support the explanatory one. The arithmetic is impeccable and the main experiment's
+                design survived the strongest test it could throw at it; what did not hold up was
+                the “because”.
+            </p>
+
+            <p style="margin-top:1.4rem">
+                <strong>Round 2</strong> — a second, independent fresh-context reviewer, told to
+                treat round&nbsp;1's findings and my resolutions of them as claims to attack. It
+                recomputed all 50 records again and <strong>every figure reproduced</strong>,
+                including the newly added ones: the decomposition, the bootstrap intervals, the
+                block-stratified <em>p</em>-values, the Hodges–Lehmann shifts, the rank claims and
+                all four permutation floors. It confirmed both patches apply, that
+                <code>baseline-mutation.patch</code> genuinely reconstructs 16b5e7b's shape for the
+                measured route, that the instrument is correct on every point it could check, and —
+                independently, from the <code>xcconfig</code> sources rather than a settings dump —
+                that round&nbsp;1's finding&nbsp;19 was rightly rejected. It found no <em>Critical</em>.
+                Its two <em>High</em> findings both say the same thing: <strong>round&nbsp;1's
+                correction was itself wrong, and I accepted it too readily.</strong>
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>2.1</td><td><strong>The under-fill mechanism adopted from round&nbsp;1 is refuted by the same data.</strong> Three ways. Its own arithmetic predicts 4.7% for the uniform set and 1.9% for the session set, so it predicts uniform&nbsp;≫&nbsp;session while the data show session&nbsp;&gt;&nbsp;uniform. Because <code>meanCores ≡ cpuSeconds/wallSeconds</code>, the regression decomposes exactly into a work term and an occupancy term — and under-fill can only live in the occupancy term, which is a third of the uniform regression and <em>negative</em> (i.e. absent) on the session set. And the evidence cited for it, B's faster first preview, is a <em>saturation</em> observation: the ratio 7893/5872&nbsp;=&nbsp;1.344 tracks the concurrency ratio 8/6&nbsp;=&nbsp;1.333 to 0.8%, which is what an equally shared, fully occupied resource looks like.</td><td>High</td><td><strong>Fixed — the section is rewritten a third time, and this version is derived rather than fitted.</strong> Every step re-derived here before accepting it: the decomposition closes to 0.3&nbsp;pp and 0.1&nbsp;pp, the cross-set prediction is anti-correlated, the first-preview ratio agrees with 8/6 to 0.8%. The account is now: the resource <em>is</em> saturated, and the dominant, cross-set-consistent term is that B spends more CPU for the same job.</td></tr>
+                <tr><td>2.2</td><td><strong>“The mechanism is not settled” over-conceded.</strong> Round&nbsp;1 killed “the total work is unchanged” — correctly — and the withdrawal took the resource-bound claim with it, which is the half the data support. “Whether there were idle cores” is answerable from the kept records via the identity, the first-preview ratio and the session set as a replication; only “when, and which resource” needs the discarded time series.</td><td>High</td><td><strong>Fixed.</strong> The gap is narrowed to what it actually is: the CPU cost rises, and process-wide <code>getrusage</code> cannot separate real extra work from identical work placed on efficiency cores. Per-QoS accounting would.</td></tr>
+                <tr><td>2.3</td><td><strong>The published harness could not have produced 38 of the 50 records</strong> — it prints three switch keys unconditionally, and 38 records contain none of them.</td><td>Medium</td><td><strong>Fixed by disclosure.</strong> The cause is that the switch branch was added after the main experiment had run, so the instrument was not constant across the study. Measurement-neutral (a branch inert unless the label begins <code>sel-</code>, plus three printed lines), but it is now stated outright instead of being left for a reader to infer, and “byte-plausible” is dropped.</td></tr>
+                <tr><td>2.4</td><td><strong>The stated n&nbsp;=&nbsp;3 floor of 0.10 is the floor for <em>means</em>; every n&nbsp;=&nbsp;3 figure here is a <em>median</em>, whose floor is <code>4/20 = 0.20</code></strong> — and the session comparisons sit exactly on it.</td><td>Medium</td><td><strong>Fixed.</strong> Galling, and recorded as such: this is the identical statistic-versus-design confusion that round&nbsp;1 caught at n&nbsp;=&nbsp;5, committed one design smaller in a paragraph written while making that correction. The conclusion is unaffected and slightly strengthened.</td></tr>
+                <tr><td>2.5</td><td>The switch section's stability contrast quoted the <strong>tightest available subset</strong> (1.5%, six runs) rather than all nine configuration-A runs (5.1%); said “forty minutes earlier” when the gap is five to eight; and omitted that the main experiment's B arm spread 11.0%, making “unstable in a way it is nowhere else in this study” too strong.</td><td>Medium</td><td><strong>All three fixed.</strong> The subset choice was the worst of them — quoting the comparison that most flatters the point being made.</td></tr>
+                <tr><td>2.6</td><td><strong>“Confirmed in every run's own record” proves less than it needs to:</strong> configurations A and C are <em>indistinguishable</em> in the records, both printing <code>preparationLimit 8</code>, so the record cannot establish that an A run carried the inline-detection mutation rather than being a mislabelled C run.</td><td>Medium</td><td><strong>Fixed.</strong> The claim is narrowed to what the record supports (B versus the other two) and the label corroboration is stated as the inference it is, with the behavioural evidence — C's longer, far more spread render-to-detection lag — given alongside. One more printed line would have made it a fact.</td></tr>
+                <tr><td>2.7–2.11</td><td>Thirteen <em>p</em>-values quoted, not seven; “tracks within 12&nbsp;ms” is a median (max 19.1); the “~14&nbsp;s to the first slot freeing” figure is not in the records; “7th of 12” contradicts the adjacent “7th or 8th”; the switch normalisation is a corroboration rather than an independent check, since the harness terminates on the last detection so the numerator is 75–86% of its own denominator.</td><td>Low</td><td><strong>All fixed.</strong> The last is the one that mattered: it was presented as the effect independently surviving, and it is closer to a restatement of the rank result.</td></tr>
+                <tr><td>2.12</td><td><em>Info.</em> The Debug base does not define <code>NDEBUG=1</code>, so C/C++ <code>assert()</code>s were live in every measured build — arguably the most performance-relevant residue, and absent from the “not the shipped build” list.</td><td>Info</td><td><strong>Added</strong> to that list.</td></tr>
+            </table>
+
+            <p style="margin-top:1.4rem">
+                <strong>Round 3</strong> — a third independent reviewer, told to attack the twice-rewritten
+                causal section specifically. It recomputed all 40 measured runs again with its own
+                parsers, re-derived every permutation test by exhaustive enumeration and every
+                bootstrap at five seeds × 400k resamples, and checked the instrument, the mutation
+                and the driver. Of roughly sixty distinct figures, <strong>one</strong> failed to
+                reproduce and two further statements were numerically wrong. It found one
+                <em>Critical</em> and, more valuably, a finding neither earlier round reached that
+                touches the milestone's most favourable result.
+            </p>
+
+            <table>
+                <tr><th>#</th><th>Finding</th><th>Severity</th><th>Resolution</th></tr>
+                <tr><td>3.1</td><td><strong>Stale v2 text survived the v3 rewrite and contradicted it in the two places a reader lands.</strong> The “what this means for the backlog item” summary still recommended the refuted under-fill candidate as “the candidate that fits best” and “where to look first”; the limits list still said the mechanism was “undetermined … three untested candidates”; and a round-1 resolution still said the saturation claim was withdrawn. A document that states both a claim and its refutation, in its own summary and its own limits, is not honest about what it establishes.</td><td><strong>Critical</strong></td><td><strong>Fixed</strong>, and it is the worst defect any round found — self-inflicted, and exactly the failure milestones&nbsp;1 and&nbsp;3 recorded in another form: a correction written in one place and not carried to the places that depend on it. All three passages rewritten.</td></tr>
+                <tr><td>3.2</td><td><strong>The saturation argument was self-defeating.</strong> v3 argued that the first-preview ratio proves the resource is saturated and therefore refutes under-fill. Under-fill <em>requires</em> saturation — if there were spare capacity, running 6-wide instead of 8-wide would cost nothing — so that ratio demonstrates under-fill's premise rather than its falsity.</td><td>High</td><td><strong>Fixed.</strong> A clean catch. The refutation now rests only on the part that works: a width difference cannot make a machine burn more CPU-seconds, and CPU-seconds rose.</td></tr>
+                <tr><td>3.3</td><td><strong>“Agreeing to 0.8%” was spurious precision.</strong> Only the first order statistic tracks 8/6 (the second is below 1); the ratio of means is 1.258; the bootstrap interval on the ratio of medians is [1.16, 1.39]; and the A-versus-C internal control — structurally identical through the opening — differs by 7% and 20% at the first two positions.</td><td>High</td><td><strong>Fixed.</strong> The A/C control is the decisive part and was there to be used. The claim is reduced to “consistent with equal sharing”.</td></tr>
+                <tr><td>3.4</td><td><strong>“Unambiguous” overclaimed, and the cross-set ordering used the wrong term.</strong> The wall-clock regressions (+3.8% at n=9, +4.7% at n=3) are statistically indistinguishable; the CPU term is what is cleanly separated.</td><td>High</td><td><strong>Fixed</strong> — re-based on the CPU term, and the word dropped. Round&nbsp;2's diagnosis of over-conceding had been over-applied.</td></tr>
+                <tr><td>3.5</td><td><strong>The rank result does not show what it was used for.</strong> Wave-relative, the promoted file takes the first or second freed preparation slot in <em>both</em> shapes — A's first wave is ranks 1–8, B's is 1–6 — so the 9th–10th&nbsp;→&nbsp;7th–8th shift is the arithmetic of a narrower wave, not better promotion. And since configuration A has no analysis pool in use, an A-versus-B contrast structurally cannot attribute anything to milestone&nbsp;7's “promote both pools”; the promoted file's render-to-detection lag is 2523&nbsp;ms against 2554&nbsp;ms.</td><td>High</td><td><strong>Fixed, and it opened the milestone's real finding.</strong> Verified independently, then pushed further than the reviewer took it: the same width reasoning applied to configuration C shows that <strong>three quarters of the first-preview gain comes from the pool being narrower, not from detection leaving the slot</strong>. That inverts the milestone's working assumption and is now its headline. Nobody — three reviewers or me — had read C that way.</td></tr>
+                <tr><td>3.6</td><td>The “all detections” bootstrap interval <strong>[+2.4, +5.8] does not reproduce</strong>; it is [+2.71, +5.75], stable across seeds. Both earlier rounds claimed to have checked it.</td><td>Medium</td><td><strong>Fixed</strong> after reproducing at 400k resamples × 3 seeds; my original used 20k, which was too few. The only figure in the record that was actually wrong.</td></tr>
+                <tr><td>3.7</td><td><strong>“The session comparisons sit exactly on their floor” is false for two of the five</strong>, which return 8/20 = 0.40.</td><td>Medium</td><td><strong>Fixed.</strong> Introduced by round&nbsp;2's own floor correction — the fix got the floor right and then over-applied it.</td></tr>
+                <tr><td>3.8</td><td><strong>“Five to eight minutes earlier” is wrong for a third of the runs it describes</strong>, and the 5.1% spread it is attached to is generated entirely by the three runs that ran half an hour earlier; the nearer six spread 1.5%.</td><td>Medium</td><td><strong>Fixed</strong> by giving both figures and both intervals. Round&nbsp;2 objected to quoting the tightest subset and the fix then paired the widest block's number with the nearest block's timing.</td></tr>
+                <tr><td>3.9</td><td><strong>“Nothing hides between them” is not supported by that statistic</strong> — the harness prints only the two maxima, so the 12&nbsp;ms is the last file's thumbnail lag and says nothing about a first-wave file. Relatedly, “slots turn over on thumbnail time” is contradicted by that same 12&nbsp;ms.</td><td>Medium</td><td><strong>Both fixed.</strong> The thumbnail-time explanation for the promotion wait is withdrawn; the real bound is that a 16&nbsp;MB load and render at 6-wide takes ~14&nbsp;s.</td></tr>
+                <tr><td>3.10</td><td><strong>“At or near full occupancy throughout” is not showable</strong> from records whose time series was discarded; the 8.6–8.7 overrun is uniform-set-only (session is 7.6–7.9, below budget); and samples above 10.0 on a ten-core machine are quantisation noise, not evidence.</td><td>Medium</td><td><strong>All three fixed.</strong> The reviewer nonetheless judged the “task&nbsp;5 failed” verdict correct, which is recorded because it is the one place it said the record was at its strongest.</td></tr>
+                <tr><td>3.11</td><td><strong>The ordering checks are uniform-set only.</strong> The session set was run once per configuration and never repeated, so it is a replication of the file set, not of the design — and the CPU argument leans on it.</td><td>Medium</td><td><strong>Fixed</strong> by stating the scope limit, with the two reasons it stays usable (conservative direction; measured drift far below the effect).</td></tr>
+                <tr><td>3.12</td><td><strong>The build command exists in no kept artifact.</strong> <code>measure.sh</code> runs <code>test-without-building</code>, so anyone following the reproduction recipe would have rebuilt at <code>-Onone</code> — the configuration the method section calls unrepresentative.</td><td>Medium</td><td><strong>Fixed</strong> — the build line and the signature check are now in <code>measure.sh</code>'s header. The same class of defect as round&nbsp;1's artifact finding, one layer up, which is the third time this milestone shipped a reproduction recipe that did not reproduce.</td></tr>
+                <tr><td>3.13</td><td>Smaller: the decomposition is partly circular and should say so; the session occupancy sign flip has a mechanical explanation in tail geometry; the per-file CPU rise differs 3.6× between sets and neither candidate explains it; “75–86%” of the normalisation denominator does not reproduce (59–86%); <code>OpenFile.swift:648</code> should be 640; “every fixture under 100&nbsp;KB” is false (<code>StarGrid.png</code> is 3.9&nbsp;MB); a termination asymmetry truncates some background-measurement CPU and was never bounded.</td><td>Low</td><td><strong>All fixed or recorded</strong>, except the termination asymmetry, which is <strong>carried to the pause unresolved</strong>: it lands directly in the <code>cpuSeconds</code> term the whole argument now rests on, and bounding it needs a re-run.</td></tr>
+            </table>
+
+            <p>
+                <strong>Outcome — closed at the three-round cap, with one item carried unresolved.</strong>
+                Three independent reviewers recomputed the measurements and every number reproduced
+                but one, which is corrected. Not one round challenged the descriptive result:
+                latency improved, aggregate completion regressed 3–8%, CPU-seconds rose, and “no
+                saturation” cannot be signed off. What each round successively demolished was the
+                <em>explanation</em>, and the third also overturned the attribution — the latency
+                win is mostly the narrower pool, not the change the backlog asked for. Round&nbsp;3's
+                own fixes have not themselves been reviewed, the cap having been reached; they are
+                one rewritten section, four corrected numbers and the artifact fix.
+            </p>
+
+            <p>
+                <strong>The lesson this milestone actually taught, recorded because it cost three
+                rewrites.</strong> Round&nbsp;1 was right that my explanation was fitted to the
+                numbers, and I fixed that by adopting <em>its</em> explanation — which was also
+                fitted, just to a different subset. Round&nbsp;2 caught that and I over-corrected
+                the other way. Round&nbsp;3 caught <em>that</em>, and then the finding that mattered
+                most turned out to have been sitting in configuration C the whole time, in three
+                numbers this document had been printing since the first draft. Receiving a review
+                well is not the same as agreeing with it — and the data one has already collected
+                deserve at least as much suspicion as the reviewer one is answering.
+            </p>
+        </div>
+        <div class="field">
+            <span class="label">Review comments</span>
+
+            <ul>
+                <li>
+                    <strong>Asked for an explanation of the budget-split finding</strong> — that most
+                    of the latency gain comes from preparation narrowing 8&nbsp;→&nbsp;6 rather than
+                    from detection leaving the slot. A question, not a change request; nothing
+                    changed pending the answer.
+                </li>
+                <li>
+                    <strong>Asked what the artifact-archiving question involves</strong> — what the
+                    measurement artifacts are, why keeping them matters, and what archiving them
+                    beside the plan would cost. A question; no files moved.
+                </li>
+                <li>
+                    <strong>Asked for an explanation of the unresolved termination asymmetry</strong>
+                    — the harness stopping on the last star detection while the sky-background pass
+                    may still be running, and why that lands in the <code>cpuSeconds</code> term the
+                    causal argument rests on. A question; nothing changed.
+                </li>
+                <li>
+                    <strong>Asked for an explanation of the two tasks recorded as not clean</strong>
+                    — task&nbsp;5's “no saturation” and task&nbsp;3's “stars appear promptly”. A
+                    question; nothing changed.
+                </li>
+                <li>
+                    <strong>Decided — archive nothing.</strong> The measurement artifacts stay in
+                    the session scratchpad and are not committed beside the plan. The same call as
+                    at milestone&nbsp;1, and it carries the same consequence: the harness, the
+                    baseline mutation and the 50 raw records are perishable, so once the session is
+                    gone the numbers in these notes can be re-derived only by re-running the
+                    measurement. Three independent reviewers reproduced every one of them from those
+                    files while they existed, which is what the record rests on.
+                </li>
+                <li>
+                    <strong>Asked whether the budget should be changed</strong>, given that
+                    preparation width rather than detection placement appears to drive the latency
+                    gain. Answered: not on this evidence — see the reasoning given at the pause. A
+                    question; no code changed, and the 6/2 split stands.
+                </li>
+                <li>
+                    <strong>Asked for both explanations again in simpler terms.</strong> Restated
+                    without the statistics; no change of substance and nothing in the record
+                    altered.
+                </li>
+                <li>
+                    <strong>Accepted the answer on the budget</strong> — it is not changed, and the
+                    6/2 split milestone&nbsp;5 chose stands. The question of whether preparation
+                    width should be tuned is left to phase&nbsp;4, which re-measures responsiveness
+                    anyway.
+                </li>
+                <li>
+                    <strong>Asked whether the termination asymmetry can be fixed.</strong> Answered:
+                    yes, and cheaply — the harness's stop condition also requires every frame's
+                    sky-background pass to have finished, and the same run additionally reports the
+                    CPU and wall at the <em>old</em> stopping point, so one set of runs yields both
+                    the corrected totals and the size of the tail that was being dropped in each
+                    shape. Put to the user before running, since it re-measures numbers already in
+                    this record.
+
+                    <p style="margin:.5rem 0 0">
+                        <strong>Done, and it was the most productive thing asked of this
+                        milestone.</strong> The asymmetry itself measures <em>zero</em> — the
+                        background pass always finishes first, so nothing was being truncated. But
+                        the re-measurement exposed that the study was <strong>blocked rather than
+                        interleaved</strong>, a design that a control run showed can produce a 15%
+                        effect from machine drift alone. Re-run with the two shapes alternating run
+                        by run, the two descriptive findings hold at 6/6 pairs each — and the
+                        causal argument's evidence disappears. See <em>Implementation notes</em> →
+                        <em>Re-measured under a corrected design</em>.
+                    </p>
+                </li>
+                <li>
+                    <strong>Approved, with no changes requested.</strong> The pause surfaced that
+                    two of the six tasks came out negative — “no saturation” recorded as a failed
+                    check, and the clicked file's stars judged not prompt; that the cause of the
+                    regression is unknown after three refuted explanations; that the magnitudes in
+                    the main tables come from the blocked design and only their <em>directions</em>
+                    were re-confirmed interleaved; and that the plan's own Q&amp;A calls for
+                    hand-verification in the running app, which this milestone has none of, as
+                    milestones&nbsp;4 and&nbsp;7 also had none. None was objected to, so all stand
+                    as recorded and the blocked-design numbers are kept with their supersession
+                    marked rather than re-run.
+                </li>
+            </ul>
+        </div>
     </section>
 
     <h3 class="phase">Phase 4 — Responsiveness re-assessment (backlog item 3)</h3>
